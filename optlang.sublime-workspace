@@ -1,0 +1,1500 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"pro",
+				"property	New Property"
+			],
+			[
+				"pr",
+				"property	New Property"
+			],
+			[
+				"p",
+				"property	New Property"
+			],
+			[
+				"No",
+				"NotImplementedError"
+			],
+			[
+				"add",
+				"add_reactions  (function)"
+			],
+			[
+				"E",
+				"LookupError  (class)"
+			],
+			[
+				"glp_ge",
+				"glp_get_col_lb"
+			],
+			[
+				"glp",
+				"glp_find_col"
+			],
+			[
+				"Guro",
+				"GurobiSolver"
+			],
+			[
+				"gur",
+				"gurobipy  (module)"
+			],
+			[
+				"__",
+				"__init__"
+			],
+			[
+				"fl",
+				"flux_variability_analysis  (function)"
+			],
+			[
+				"if",
+				"ifmain	if __name__ == '__main__'"
+			],
+			[
+				"GPR",
+				"GPRConstrainedModel"
+			],
+			[
+				"Con",
+				"ConstraintBasedModel"
+			],
+			[
+				"guro",
+				"gurobi_ko_timing"
+			],
+			[
+				"ol",
+				"old_constraints"
+			],
+			[
+				"ess",
+				"essential_reactions  (function)"
+			],
+			[
+				"e",
+				"essential_reactions  (function)"
+			],
+			[
+				"gl",
+				"glpk_ko_timing"
+			],
+			[
+				"MAPNO",
+				"MAPNODEPOSITIONX"
+			],
+			[
+				"MAP",
+				"MAPNODEPOSITIONY"
+			],
+			[
+				"MAPLI",
+				"MAPLINESEGMENTFROMNODE_ID"
+			],
+			[
+				"M",
+				"MAPNODE"
+			],
+			[
+				"pat",
+				"pathway_chart"
+			],
+			[
+				"op",
+				"optPercentage"
+			],
+			[
+				"dou",
+				"double"
+			],
+			[
+				"sol",
+				"solve_min_max"
+			],
+			[
+				"outer",
+				"outerHeight	.outerHeight"
+			],
+			[
+				"inn",
+				"innerHeight	.innerHeight"
+			],
+			[
+				"tas",
+				"task_fields"
+			],
+			[
+				"curr",
+				"current_task"
+			],
+			[
+				"ce",
+				"celery"
+			],
+			[
+				"re",
+				"reqparse"
+			],
+			[
+				"const",
+				"constr_ids"
+			],
+			[
+				"var",
+				"var_ids"
+			],
+			[
+				"solv",
+				"solver_from_pickle"
+			],
+			[
+				"f",
+				"fix_bigg_model"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "setup.py",
+			"settings":
+			{
+				"buffer_size": 1558,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "optlang/interface.py",
+			"settings":
+			{
+				"buffer_size": 3762,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "optlang/glpk_interface.py",
+			"settings":
+			{
+				"buffer_size": 7062,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "optlang/tests/test_interface.py",
+			"settings":
+			{
+				"buffer_size": 1457,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "optlang/tests/test_glpk_interface.py",
+			"settings":
+			{
+				"buffer_size": 811,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": ".travis.yml",
+			"settings":
+			{
+				"buffer_size": 266,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "Packages/Python/Python.sublime-build",
+	"command_palette":
+	{
+		"height": 392.0,
+		"selected_items":
+		[
+			[
+				"pep",
+				"PEP8: Format Code"
+			],
+			[
+				"pci",
+				"Package Control: Install Package"
+			],
+			[
+				"pcr",
+				"Package Control: Remove Package"
+			],
+			[
+				"jso",
+				"Pretty JSON: Reformat (Pretty Print) JSON"
+			],
+			[
+				"pep8",
+				"PEP8: Format Code"
+			],
+			[
+				"set m",
+				"Set Syntax: Markdown"
+			],
+			[
+				"json",
+				"Pretty JSON: Reformat (Pretty Print) JSON"
+			],
+			[
+				"calcu",
+				"Calculate"
+			],
+			[
+				"cal",
+				"Calculate"
+			],
+			[
+				"enable",
+				"LiveReload: Enable/disable plug-ins"
+			],
+			[
+				"disable",
+				"LiveReload: Enable/disable plug-ins"
+			],
+			[
+				"LiveReload: Enable/disable plugins",
+				"LiveReload: Enable/disable plug-ins"
+			],
+			[
+				"format",
+				"Format Code"
+			],
+			[
+				"pce",
+				"Package Control: Enable Package"
+			],
+			[
+				"enabl",
+				"LiveReload: Enable/disable plug-ins"
+			],
+			[
+				"git",
+				"GitHub: Open Gist in Editor"
+			],
+			[
+				"comm",
+				"Toggle Block Comment"
+			],
+			[
+				"mark",
+				"Set Syntax: Markdown"
+			],
+			[
+				"conver",
+				"Indentation: Convert to Spaces"
+			],
+			[
+				"live rel",
+				"LiveReload: Enable/disable plug-ins"
+			],
+			[
+				"pcr ",
+				"Package Control: Remove Package"
+			],
+			[
+				"pc",
+				"Package Control: List Packages"
+			],
+			[
+				"pcen",
+				"Package Control: Enable Package"
+			],
+			[
+				"set",
+				"Set Syntax: Python"
+			],
+			[
+				"pcd",
+				"Package Control: Disable Package"
+			],
+			[
+				"set ",
+				"Set Syntax: Python"
+			],
+			[
+				"package rem",
+				"Package Control: Remove Package"
+			],
+			[
+				"pack",
+				"Package Control: Disable Package"
+			],
+			[
+				"codeinte",
+				"SublimeCodeIntel: Reset"
+			],
+			[
+				"set python",
+				"Set Syntax: Python"
+			],
+			[
+				"pytho",
+				"Python: Get back"
+			]
+		],
+		"width": 647.0
+	},
+	"console":
+	{
+		"height": 480.0,
+		"history":
+		[
+			"dir(LiveReload.Plugin)",
+			"LiveReload.Settings",
+			"dir(LiveReload)",
+			"import LiveReload"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/Users/niko/Arbejder/Dev/optlang/tests/test_interface.py",
+		"/Users/niko/Arbejder/Dev/optlang/optlang/model.lp",
+		"/Users/niko/Arbejder/Dev/optlang/optlang/interface.py",
+		"/Users/niko/Arbejder/Dev/optlang/optlang/gurobi_interface.py",
+		"/Users/niko/Arbejder/Dev/optlang/optlang/glpk_interface.py",
+		"/Users/niko/Arbejder/Dev/optlang/setup.py",
+		"/Users/niko/Arbejder/Dev/optlang/optlang/__init__.py",
+		"/Users/niko/Arbejder/Dev/optlang/README.md",
+		"/Scientific software engineer",
+		"/Users/niko/.bashrc",
+		"/Users/niko/Downloads/mcard_sdf_all.txt.txt",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/core/Model.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/flux_analysis/double_deletion.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/solvers/gurobi_solver.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/flux_analysis/variability.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/oven/phantomas1234/strain_design.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/oven/phantomas1234/solvers/gurobi_interfac.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/oven/phantomas1234/solvers/__init__.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/oven/phantomas1234/solvers/glpk_interface.py",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/core/Reaction.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobrapy.sublime-project",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/oven/phantomas1234/sampling.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/solvers/glpk_solver.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/core/ArrayBasedModel.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/oven/phantomas1234/solvers/model.lp",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/oven/phantomas1234/gurobi.py",
+		"/Users/niko/Arbejder/Dev/cobrapy/cobra/oven/phantomas1234/solvers.py",
+		"/Users/niko/Arbejder/Dev/pyorganism/pyorganism/metabolism/systems.py",
+		"/Users/niko/tmp/yaposib/build/lib.macosx-10.9-intel-2.7/yaposib/test/test_yaposib.py",
+		"/Users/niko/Arbejder/Dev/GurobiML/gurobi_mathlink.c",
+		"/Users/niko/Downloads/DBD-Oracle-1.66/Makefile",
+		"/Users/niko/Arbejder/Dev/framed/src/framed/benchmarks/101newcontraints.lp",
+		"/Users/niko/Arbejder/Projects/PatentDesigns/PatentLense/blast_against_patent_lense.py",
+		"/Users/niko/Arbejder/Dev/framed/src/framed/solvers/glpk_wrapper.py",
+		"/Users/niko/Arbejder/Dev/framed/src/framed/tests/test_glpk_alone.py",
+		"/Users/niko/tmp/python-glpk-0.4.45/src/swig/Makefile",
+		"/Users/niko/Downloads/unison-2.40.102/uimacnew/build/uimacnew.build/Default/Create ExternalSettings.build/Script-2A124E7E0DE1C4BE00524237.sh",
+		"/Users/niko/Downloads/unison-2.40.102/uimacnew/ExternalSettings.xcconfig",
+		"/Users/niko/tmp/test_ipcluster.py",
+		"/Users/niko/Dropbox/Arbejder/Data/simpheny_dumps/dump2json.py",
+		"/Users/niko/Dropbox/Arbejder/Projects/visualization/d3play/_site/jekyll/update/2013/10/21/pathway-map.html",
+		"/Users/niko/Dropbox/Arbejder/Projects/Visualization/d3prototypes/strain_lineage/growth_vs_yield_lineage.js",
+		"/Users/niko/Dropbox/Arbejder/Projects/visualization/d3prototypes/.gitignore",
+		"/Users/niko/Dropbox/Arbejder/Projects/Visualization/d3prototypes/strain_lineage/lineage.js",
+		"/Users/niko/Dropbox/Arbejder/Projects/Visualization/d3prototypes/strain_lineage/lineage3.json",
+		"/Users/niko/Dropbox/Arbejder/Projects/Visualization/d3prototypes/strain_lineage/.gitignore",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/User/LiveReload.sublime-settings",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/LiveReload/LiveReload.sublime-settings",
+		"/Users/niko/Dropbox/Arbejder/Projects/Visualization/d3prototypes/strain_lineage/strain_timeline.js",
+		"/Users/niko/Dropbox/Arbejder/Data/ecmdb/ecmdb2csv.py",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/CodeFormatter/CodeFormatter.sublime-settings",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/User/CodeFormatter.sublime-settings",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/Package Control/Package Control.sublime-settings",
+		"/Users/niko/Dropbox/Arbejder/Data/ecmdb/output.csv",
+		"/Users/niko/Dropbox/Arbejder/Projects/RESTfulCOBRA/rfcobra/templates/layout.html",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/SublimeCodeIntel/SublimeCodeIntel.sublime-settings",
+		"/Users/niko/Dropbox/Arbejder/Projects/RESTfulCOBRA/index.html",
+		"/Users/niko/tmp/flask/examples/persona/persona.py",
+		"/Users/niko/Dropbox/Arbejder/Projects/Visualization/visandbox/index.html",
+		"/Users/niko/Dropbox/Arbejder/Projects/Visualization/visandbox/map.html",
+		"/Users/niko/tmp/iMM904.xml",
+		"/Users/niko/Dropbox/Arbejder/Projects/RESTfulCOBRA/setup.py",
+		"/Users/niko/Dropbox/Arbejder/Projects/RESTfulCOBRA/README.md",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/User/Terminal.sublime-settings",
+		"/Users/niko/Dropbox/Arbejder/Projects/RESTfulCOBRA/tests/test_api.py",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/SublimePythonIDE/SublimePython.sublime-settings",
+		"/Users/niko/Dropbox/Arbejder/Dev/framed/src/framed/analysis/variability.py",
+		"/Users/niko/Dropbox/Arbejder/Dev/framed/src/framed/solvers/solver.py",
+		"/Users/niko/Dropbox/Arbejder/Dev/framed/src/framed/solvers/pulp_wrapper.py",
+		"/Users/niko/Dropbox/Arbejder/Dev/framed/src/framed/solvers/gurobi_wrapper.py",
+		"/Users/niko/Dropbox/Arbejder/Dev/framed/src/framed/tests/test_solvers.py",
+		"/Users/niko/Dropbox/Arbejder/Dev/framed/src/framed/bioreactor/base.py",
+		"/Users/niko/Dropbox/Arbejder/Software/scipoptsuite-3.0.1/Makefile",
+		"/Users/niko/Dropbox/Arbejder/Software/scipoptsuite-3.0.1/make",
+		"/Users/niko/Dropbox/Arbejder/Dev/framed/src/framed/design/gdls.py",
+		"/Users/niko/Dropbox/Arbejder/Projects/SloppyParams/.bashrc",
+		"/Users/niko/Library/Application Support/Sublime Text 3/Packages/Jedi - Python autocompletion/sublime_jedi.sublime-settings",
+		"/Users/niko/Downloads/islocked",
+		"/Users/niko/Dropbox/Arbejder/Projects/Serine/tmp/cobrapy/build/lib/cobra/mlab/__init__.py",
+		"/Users/niko/Dropbox/Arbejder/Projects/Serine/tmp/cobrapy/build/lib/cobra/io/__init__.py",
+		"/Users/niko/Dropbox/Arbejder/Publishing/MASS-Toolbox-PLoSCompBio/Plan.txt"
+	],
+	"find":
+	{
+		"height": 38.0
+	},
+	"find_in_files":
+	{
+		"height": 93.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"arg",
+			"index",
+			"_type_to_glpk_kind",
+			"__del",
+			"pro",
+			"@id",
+			"self.id",
+			"OrderedDict",
+			"self.reactions",
+			"_set_column_bounds",
+			"_var2index",
+			"self.problem",
+			"_set_column_bounds",
+			"var2index",
+			"_var2index",
+			"self.constraints",
+			"constraints",
+			"variables",
+			"self.id",
+			"index",
+			"glp_set_obj_coef",
+			"Colum",
+			"_update_matrices",
+			"type",
+			"pring",
+			"reaction_list",
+			"the_reactions",
+			"the_problem",
+			"add_reaction",
+			"reaction",
+			"getObjVal",
+			"interiorPoint",
+			"getNumRows",
+			"getNumCols",
+			"__repr__",
+			"eraseHistory",
+			"self.lp",
+			".lp",
+			"lp",
+			"numCols",
+			".lp",
+			"lp",
+			"LP",
+			"lp",
+			"999999",
+			"cobra_model",
+			"update_matrices",
+			"flux_variability_analysis",
+			"cvxopt",
+			"_cvx_populate",
+			"cvx.solver",
+			"OPTIONS",
+			"_grb___ini",
+			"FBAModel",
+			"suffix",
+			"kw_args",
+			"suffix",
+			"compartment_suffixes",
+			"OPTIONS",
+			"OptionsManager",
+			"ESCHERICHIA_COLI_iJO1366",
+			"OPTIONS",
+			"ESCHERICHIA_COLI_textbook",
+			"OptionsManager",
+			"compartment_suff",
+			"OPTIONS",
+			"pyel",
+			"elements",
+			"MetaLPModelFacade",
+			"optimize",
+			"solve",
+			"to_array",
+			"ArrayBasedModel",
+			"_load_stoichiometry",
+			"add_stoichiometry",
+			"_load_reaction",
+			"_load_reactions",
+			"add_reaction",
+			"kw",
+			"glp_create",
+			"_glp_create",
+			"BiGG is currently down. ",
+			"write",
+			"lin_obj",
+			"old_constraints",
+			"smcp",
+			"MSG",
+			"msg_lev",
+			"self.smcp.presolve = GLP_OFF",
+			">",
+			"lcl|NC_000913.2_cdsid_NP_418660.1",
+			"BlastOutput",
+			"version=\"1.0\"",
+			"version",
+			"problemStatus",
+			"solver",
+			"glp_set_row_bnds",
+			"glp_",
+			"FBA",
+			"constraints",
+			"print",
+			"self.problem",
+			"print",
+			"glp_creat",
+			"print",
+			"var_ids",
+			"index",
+			"problem",
+			"preso",
+			"mac",
+			"os x",
+			"sdk",
+			"line",
+			"nodes",
+			"line",
+			"href",
+			"new J",
+			"pygm",
+			"width",
+			"diagonal",
+			"xscale",
+			"scale",
+			"my_links",
+			"my_nodes",
+			"scale",
+			"net",
+			"function",
+			"link"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"get_obj_val",
+			"get_num_rows",
+			"get_num_cols",
+			"self.problem",
+			"1000",
+			"selection"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 2,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "setup.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1558,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								935,
+								973
+							]
+						],
+						"settings":
+						{
+							"codeintel": true,
+							"codeintel_config":
+							{
+								"JavaScript":
+								{
+									"codeintel_max_recursive_dir_depth": 2,
+									"codeintel_scan_files_in_project": false,
+									"javascriptExtraPaths":
+									[
+									]
+								},
+								"PHP":
+								{
+									"codeintel_max_recursive_dir_depth": 5,
+									"codeintel_scan_files_in_project": false,
+									"phpExtraPaths":
+									[
+									]
+								},
+								"Python":
+								{
+									"env":
+									{
+									}
+								}
+							},
+							"codeintel_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_live": true,
+							"codeintel_live_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_max_recursive_dir_depth": 10,
+							"codeintel_scan_exclude_dir":
+							{
+								"JavaScript":
+								[
+									"/build/",
+									"/min/"
+								]
+							},
+							"codeintel_scan_files_in_project": true,
+							"codeintel_selected_catalogs":
+							[
+								"PyWin32",
+								"jQuery",
+								"Rails"
+							],
+							"codeintel_snippets": true,
+							"codeintel_syntax_map":
+							{
+								"Python Django": "Python"
+							},
+							"codeintel_tooltips": "popup",
+							"sublime_auto_complete": true,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 82.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "optlang/interface.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3762,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3494,
+								3745
+							]
+						],
+						"settings":
+						{
+							"codeintel": true,
+							"codeintel_config":
+							{
+								"JavaScript":
+								{
+									"codeintel_max_recursive_dir_depth": 2,
+									"codeintel_scan_files_in_project": false,
+									"javascriptExtraPaths":
+									[
+									]
+								},
+								"PHP":
+								{
+									"codeintel_max_recursive_dir_depth": 5,
+									"codeintel_scan_files_in_project": false,
+									"phpExtraPaths":
+									[
+									]
+								},
+								"Python":
+								{
+									"env":
+									{
+									}
+								}
+							},
+							"codeintel_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_live": true,
+							"codeintel_live_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_max_recursive_dir_depth": 10,
+							"codeintel_scan_exclude_dir":
+							{
+								"JavaScript":
+								[
+									"/build/",
+									"/min/"
+								]
+							},
+							"codeintel_scan_files_in_project": true,
+							"codeintel_selected_catalogs":
+							[
+								"PyWin32",
+								"jQuery",
+								"Rails"
+							],
+							"codeintel_snippets": true,
+							"codeintel_syntax_map":
+							{
+								"Python Django": "Python"
+							},
+							"codeintel_tooltips": "popup",
+							"sublime_auto_complete": true,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2036.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "optlang/glpk_interface.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 7062,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1166,
+								1166
+							]
+						],
+						"settings":
+						{
+							"codeintel": true,
+							"codeintel_config":
+							{
+								"JavaScript":
+								{
+									"codeintel_max_recursive_dir_depth": 2,
+									"codeintel_scan_files_in_project": false,
+									"javascriptExtraPaths":
+									[
+									]
+								},
+								"PHP":
+								{
+									"codeintel_max_recursive_dir_depth": 5,
+									"codeintel_scan_files_in_project": false,
+									"phpExtraPaths":
+									[
+									]
+								},
+								"Python":
+								{
+									"env":
+									{
+									}
+								}
+							},
+							"codeintel_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_live": true,
+							"codeintel_live_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_max_recursive_dir_depth": 10,
+							"codeintel_scan_exclude_dir":
+							{
+								"JavaScript":
+								[
+									"/build/",
+									"/min/"
+								]
+							},
+							"codeintel_scan_files_in_project": true,
+							"codeintel_selected_catalogs":
+							[
+								"PyWin32",
+								"jQuery",
+								"Rails"
+							],
+							"codeintel_snippets": true,
+							"codeintel_syntax_map":
+							{
+								"Python Django": "Python"
+							},
+							"codeintel_tooltips": "popup",
+							"sublime_auto_complete": true,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 736.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "optlang/tests/test_interface.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1457,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								706,
+								806
+							]
+						],
+						"settings":
+						{
+							"codeintel": true,
+							"codeintel_config":
+							{
+								"JavaScript":
+								{
+									"codeintel_max_recursive_dir_depth": 2,
+									"codeintel_scan_files_in_project": false,
+									"javascriptExtraPaths":
+									[
+									]
+								},
+								"PHP":
+								{
+									"codeintel_max_recursive_dir_depth": 5,
+									"codeintel_scan_files_in_project": false,
+									"phpExtraPaths":
+									[
+									]
+								},
+								"Python":
+								{
+									"env":
+									{
+									}
+								}
+							},
+							"codeintel_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_live": true,
+							"codeintel_live_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_max_recursive_dir_depth": 10,
+							"codeintel_scan_exclude_dir":
+							{
+								"JavaScript":
+								[
+									"/build/",
+									"/min/"
+								]
+							},
+							"codeintel_scan_files_in_project": true,
+							"codeintel_selected_catalogs":
+							[
+								"PyWin32",
+								"jQuery",
+								"Rails"
+							],
+							"codeintel_snippets": true,
+							"codeintel_syntax_map":
+							{
+								"Python Django": "Python"
+							},
+							"codeintel_tooltips": "popup",
+							"sublime_auto_complete": true,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "optlang/tests/test_glpk_interface.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 811,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								771,
+								771
+							]
+						],
+						"settings":
+						{
+							"codeintel": true,
+							"codeintel_config":
+							{
+								"JavaScript":
+								{
+									"codeintel_max_recursive_dir_depth": 2,
+									"codeintel_scan_files_in_project": false,
+									"javascriptExtraPaths":
+									[
+									]
+								},
+								"PHP":
+								{
+									"codeintel_max_recursive_dir_depth": 5,
+									"codeintel_scan_files_in_project": false,
+									"phpExtraPaths":
+									[
+									]
+								},
+								"Python":
+								{
+									"env":
+									{
+									}
+								}
+							},
+							"codeintel_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_live": true,
+							"codeintel_live_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_max_recursive_dir_depth": 10,
+							"codeintel_scan_exclude_dir":
+							{
+								"JavaScript":
+								[
+									"/build/",
+									"/min/"
+								]
+							},
+							"codeintel_scan_files_in_project": true,
+							"codeintel_selected_catalogs":
+							[
+								"PyWin32",
+								"jQuery",
+								"Rails"
+							],
+							"codeintel_snippets": true,
+							"codeintel_syntax_map":
+							{
+								"Python Django": "Python"
+							},
+							"codeintel_tooltips": "popup",
+							"sublime_auto_complete": true,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 3,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": ".travis.yml",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 266,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								266,
+								266
+							]
+						],
+						"settings":
+						{
+							"codeintel": true,
+							"codeintel_config":
+							{
+								"JavaScript":
+								{
+									"codeintel_max_recursive_dir_depth": 2,
+									"codeintel_scan_files_in_project": false,
+									"javascriptExtraPaths":
+									[
+									]
+								},
+								"PHP":
+								{
+									"codeintel_max_recursive_dir_depth": 5,
+									"codeintel_scan_files_in_project": false,
+									"phpExtraPaths":
+									[
+									]
+								},
+								"Python":
+								{
+									"env":
+									{
+									}
+								}
+							},
+							"codeintel_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_live": true,
+							"codeintel_live_enabled_languages":
+							[
+								"JavaScript",
+								"Mason",
+								"XBL",
+								"XUL",
+								"RHTML",
+								"SCSS",
+								"Python",
+								"HTML",
+								"Ruby",
+								"Python3",
+								"XML",
+								"Sass",
+								"XSLT",
+								"Django",
+								"HTML5",
+								"Perl",
+								"CSS",
+								"Twig",
+								"Less",
+								"Smarty",
+								"Node.js",
+								"Tcl",
+								"TemplateToolkit",
+								"PHP"
+							],
+							"codeintel_max_recursive_dir_depth": 10,
+							"codeintel_scan_exclude_dir":
+							{
+								"JavaScript":
+								[
+									"/build/",
+									"/min/"
+								]
+							},
+							"codeintel_scan_files_in_project": true,
+							"codeintel_selected_catalogs":
+							[
+								"PyWin32",
+								"jQuery",
+								"Rails"
+							],
+							"codeintel_snippets": true,
+							"codeintel_syntax_map":
+							{
+								"Python Django": "Python"
+							},
+							"codeintel_tooltips": "popup",
+							"sublime_auto_complete": true,
+							"syntax": "Packages/YAML/YAML.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 30.0
+	},
+	"input":
+	{
+		"height": 37.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 258.0
+	},
+	"project": "optlang.sublime-project",
+	"replace":
+	{
+		"height": 70.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"ben",
+				"src/framed/benchmarks/knockout_benchmarks.py"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 265.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"path": "/Users/niko/Arbejder/Dev/optlang",
+            "cmd": ["~/.virtualenvs/optlang/bin/python", "manage.py", "test"]
+		}
+	]
+}
