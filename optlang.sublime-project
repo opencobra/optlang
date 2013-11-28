@@ -3,8 +3,26 @@
 	[
 		{
 			"follow_symlinks": true,
-			"path": "/Users/niko/Arbejder/Dev/optlang",
-            "cmd": ["~/.virtualenvs/optlang/bin/python", "manage.py", "test"]
+			"path": "/Users/niko/Arbejder/Dev/optlang"
+
 		}
-	]
+	],
+    "build_systems":
+    [
+    {
+        "selector": "source.python",
+        "env": {"PYTHONPATH":"/Users/niko/Arbejder/Dev/optlang"},
+        "path":"/Users/niko/.virtualenvs/optlang/bin:$PATH",
+        "name": "Run virtualenv python",
+        "cmd": ["python", "-u", "$file"],
+        "file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
+
+        "variants": [
+            {   "name": "Run all Tests",
+                "working_dir": "/Users/niko/Arbejder/Dev/optlang",
+                "cmd": ["nosetests"]
+            } 
+        ]
+    }
+    ]
 }

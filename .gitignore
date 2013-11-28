@@ -1,3 +1,7 @@
+optlang.sublime-workspace
+
+*.log
+
 *.py[cod]
 
 # C extensions
