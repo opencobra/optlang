@@ -1,23 +1,10 @@
-'''
+# Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
+# See LICENSE for details.
 
-@author: Nikolaus sonnenschein
-
-   Copyright 2013 Novo Nordisk Foundation Center for Biosustainability,
-   Technical University of Denmark.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-   
-'''
+"""Abstract solver interface definitions (:class:`Model`, :class:`Variable`,
+:class:`Constraint`, :class:`Objective`) intended to be subclassed and
+extended for individual solvers.
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -25,43 +12,112 @@ import collections
 import sympy
 
 
-OPTIMAL = 0
-UNDEFINED = 1
-FEASIBLE = 2
-INFEASIBLE = 3
-NOFEASIBLE = 4
-UNBOUNDED = 5
-INFEASIBLE_OR_UNBOUNDED = 6
-LOADED = 7
-CUTOFF = 8
-ITERATION_LIMIT = 9
-NODE_LIMIT = 10
-TIME_LIMIT = 11
-SOLUTION_LIMIT = 12
-INTERRUPTED = 13
-NUMERIC = 14
-SUBOPTIMAL = 15
-IN_PROGRESS = 16
+OPTIMAL = 'optimal'
+UNDEFINED = 'undefined'
+FEASIBLE = 'feasible'
+INFEASIBLE = 'infeasible'
+NOFEASIBLE = 'nofeasible'
+UNBOUNDED = 'unbounded'
+INFEASIBLE_OR_UNBOUNDED = 'infeasible_or_unbouned'
+LOADED = 'loaded'
+CUTOFF = 'cutoff'
+ITERATION_LIMIT = 'iteration_limit'
+NODE_LIMIT = 'node_limit'
+TIME_LIMIT = 'time_limit'
+SOLUTION_LIMIT = 'solution_limit'
+INTERRUPTED = 'interrupted'
+NUMERIC = 'numeric'
+SUBOPTIMAL = 'suboptimal'
+INPROGRESS = 16
 
 # class Status(object):
 #     """docstring for Status"""
 #     def __init__(self, arg):
 #         super(Status, self).__init__()
 #         self.arg = arg
-        
+
 
 class Variable(sympy.Symbol):
 
-    """docstring for Column"""
+    """
+    Class to model optimization variables. Extends sympy Symbol
+    with optimization specific attributes and methods.
 
-    def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, primal=None, dual=None, *args, **kwargs):
+    Attributes
+    ----------
+    name: str
+        The variable's name.
+    lb: float or None, optional
+        The lower bound, if None then -inf.
+    ub: float or None, optional
+        The upper bound, if None then inf.
+    type: str, optional
+        The variable type, 'continuous' or 'integer' or 'binary'.
+    problem: Model or None, optional
+        A reference to the optimization model the variable belongs to.
+    See Also
+    --------
+    Constraint, Objective, Model
+
+    Examples
+    --------
+    ...
+
+    """
+
+    def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
         super(Variable, self).__init__(name, *args, **kwargs)
+
         self.lb = lb
         self.ub = ub
         self.type = type
         self.problem = problem
-        self.primal = primal
-        self.dual = dual
+        # self.primal = primal
+        # self.dual = dual
+
+    def __str__(self):
+        """Print a string representation.
+
+    #     Examples
+    #     --------
+    #     >>> str(Variable('x', lb=-10, ub=10))
+    #     '-10 <= x <= 10'
+
+    #     and
+
+    #     >>> str(Variable('x', lb=-10))
+    #     '-10 <= x'
+
+    #     """
+        if self.lb is not None:
+            lb_str = str(self.lb) + " <= "
+        else:
+            lb_str = ""
+        if self.ub is not None:
+            ub_str = " <= " + str(self.ub)
+        else:
+            ub_str = ""
+        return ''.join((lb_str, super(Variable, self).__str__(), ub_str))
+
+    def __setattr__(self, name, value):
+
+        if name == 'lb' and hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
+            raise ValueError(
+                'The provided lower bound %g is larger than the upper bound %g of variable %s.', value, self.ub, self)
+
+        if name == 'ub' and hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
+            raise ValueError(
+                'The provided upper bound %g is smaller than the lower bound %g of variable %s.', value, self.lb, self)
+
+        elif name == 'type':
+            if value in ('continuous', 'integer', 'binary'):
+                super(Variable, self).__setattr__(name, value)
+            else:
+                raise ValueError(
+                    "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
+
+        else:
+            super(Variable, self).__setattr__(name, value)
 
     def __del__(self):
         if self.problem is not None:
@@ -70,28 +126,38 @@ class Variable(sympy.Symbol):
         del self
 
 
-class Objective(object):
-
-    """docstring for Objective"""
-
-    def __init__(self, expression, name=None, problem=None, *args, **kwargs):
-        super(Objective, self).__init__(*args, **kwargs)
-        self.expression = expression
-        self.name = name
-        self.problem = problem
-
-
 class Constraint(object):
 
-    """docstring for Constraint"""
+    """
+    Class to model optimization constraints. Wraps sympy expressions and extends
+    them with optimization specific attributes and methods.
+
+
+    Attributes
+    ----------
+
+    expression: sympy
+    name: str, optional
+        The constraint's name.
+    lb: float or None, optional
+        The lower bound, if None then -inf.
+    ub: float or None, optional
+        The upper bound, if None then inf.
+    problem: Model or None, optional
+        A reference to the optimization model the variable belongs to.
+
+    """
 
     def __init__(self, expression, name=None, lb=None, ub=None, problem=None, *args, **kwargs):
         super(Constraint, self).__init__(*args, **kwargs)
-        self.expression = expression
-        self.name = name
-        self.problem = problem
         self.lb = lb
         self.ub = ub
+        self._expression = self._canonicalize(expression)        
+        if name is None:
+            self.name = sympy.Dummy().name
+        else:
+            self.name = name
+        self.problem = problem
 
     def __str__(self):
         if self.lb:
@@ -99,32 +165,144 @@ class Constraint(object):
         else:
             lhs = ''
         if self.ub:
-            rhs = '<=' + str(self.lb)
+            rhs = ' <= ' + str(self.ub)
         else:
             rhs = ''
         return str(self.name) + ": " + lhs + self.expression.__str__() + rhs
 
-    def __repr__(self):
-        return self.__str__()
+    def _canonicalize(self, expression):
+        if expression.is_Atom or expression.is_Mul:
+            return expression
+        lonely_coeffs = [arg for arg in expression.args if arg.is_Number]
+        if lonely_coeffs == []:
+            return expression
+        assert len(lonely_coeffs) == 1
+        coeff = lonely_coeffs[0]
+        if self.lb is None and self.ub is None:
+            raise ValueError(
+                "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set." % expression)
+        elif self.lb is not None:
+            expression = expression - coeff
+            self.lb = self.lb - coeff
+        else:
+            expression = expression - coeff
+            self.ub = self.ub - coeff
+        return expression
+
+    @property
+    def expression(self):
+        return self._expression
+
+    @expression.setter
+    def expression(self, expression):
+        self._expression = self._canonicalize(expression)
+
+    @property
+    def is_Linear(self):
+        try:
+            poly = self.expression.as_poly(*self.variables)
+        except sympy.PolynomialError:
+            poly = None
+        if poly is not None:
+            return poly.is_linear
+        else:
+            return False
+
+    @property
+    def is_Quadratic(self):
+        try:
+            poly = self.expression.as_poly(*self.expression.free_symbols)
+        except sympy.PolynomialError:
+            poly = None
+        if poly is not None and poly.is_quadratic and not poly.is_linear:
+            return True
+        else:
+            return False
 
     @property
     def variables(self):
         return self.expression.free_symbols
 
+    # def __getattr__(self, name):
+    #     return getattr(self.expression, name)
 
-class Solver(object):
+    # def __dir__(self):
+    #     return self.__dict__.keys() + dir(self.expression)
 
-    """docstring for Solver"""
+    def __iadd__(self, other):
+        self.expression += other
+        return self
 
-    def __init__(self, obj=None, *args, **kwargs):
-        super(Solver, self).__init__(*args, **kwargs)
-        self.objective = obj
+    def __isub__(self, other):
+        self.expression -= other
+        return self
+    
+    def __imul__(self, other):
+        self.expression *= other
+        return self
+    
+    def __idiv__(self, other):
+        self.expression /= other
+        return self
+
+    def __itruediv__(self, other):
+        self.expression /= other
+        return self
+
+
+class Objective(object):
+
+    """docstring for Objective"""
+
+    def __init__(self, expression, name=None, value=None, problem=None, direction='max', *args, **kwargs):
+        super(Objective, self).__init__(*args, **kwargs)
+        self.expression = expression
+        self.name = name
+        self.value = value
+        self.problem = problem
+        self._direction = direction
+
+    def __str__(self):
+        return {'max': 'Maximize', 'min': 'Minimize'}[self.direction] + '\n' + str(self.expression)
+        # return ' '.join((self.direction, str(self.expression)))
+
+    @property
+    def direction(self):
+        return self._direction
+
+    @direction.setter
+    def direction(self, value):
+        # TODO: implement direction parsing, e.g. 'Maximize' -> 'max'
+        self._direction = value
+
+
+class Model(object):
+
+    """docstring for Model"""
+
+    def __init__(self, objective=None, *args, **kwargs):
+        super(Model, self).__init__(*args, **kwargs)
+        self._objective = objective
         self.variables = collections.OrderedDict()
         self.constraints = collections.OrderedDict()
         self.status = None
 
+    @property
+    def objective(self):
+        return self._objective
+    @objective.setter
+    def objective(self, value):
+        self._objective = value
+    
+
     def __str__(self):
-        print self.objective
+        return '\n'.join((
+            str(self.objective),
+            "subject to",
+            '\n'.join([str(constr) for constr in self.constraints.values()]),
+            'Bounds',
+            '\n'.join([str(var) for var in self.variables.values()])
+        ))
 
     def add(self, stuff):
         """Add variables, constraints, ..."""
@@ -161,6 +339,7 @@ class Solver(object):
     def _add_variable(self, variable):
         variable.problem = self
         self.variables[variable.name] = variable
+        return variable
 
     def _remove_variable(self, variable):
         if isinstance(variable, Variable):
@@ -174,7 +353,11 @@ class Solver(object):
         else:
             raise LookupError("Variable %s not in solver" % s)
 
-    def _add_constraint(self, constraint):
+    def _add_constraint(self, constraint, sloppy=False):
+        if sloppy is False:
+            for var in constraint.variables:
+                if var not in self.variables.values():
+                    self._add_variable(var)
         if constraint.name is None:
             self.constraints[constraint.__hash__()] = constraint
         else:
@@ -184,38 +367,49 @@ class Solver(object):
         del self.constraints[constraint.__hash__]
         del constraint
 
-class Solution(object):
-    """docstring for Solution"""
-    def __init__(self, *args, **kwargs):
-        super(Solution, self).__init__(*args, **kwargs)
-        self.status = None
-        self.variable_primals = OrderedDict()
-        self.variable_duals = OrderedDict()
-        self.constrain_primals = OrderedDict()
-        self.variable_primals = OrderedDict()
 
-    def populate(self, solver, var_primals=True, var_duals=True, constr_primals=True, constr_duals=True):
-        pass
-        
+# class Solution(object):
+
+#     """docstring for Solution"""
+
+#     def __init__(self, status=None, objval=None, *args, **kwargs):
+#         super(Solution, self).__init__(*args, **kwargs)
+#         self.status = None
+#         self.objval = None
+#         self.variables = OrderedDict()
+#         self.constraints = OrderedDict()
+
+#     def populate(self):
+#         pass
+
+#     @property
+#     def variable(self):
+#         return self._variable
+#     @variable.setter
+#     def variable(self, value):
+#         self._variable = value
+
 
 if __name__ == '__main__':
     # Example workflow
-    solver = Solver()
+    model = Model()
     x = Variable('x', lb=0, ub=10)
     y = Variable('y', lb=0, ub=10)
     # constr = Constraint(x + y + z > 3, name="constr1")
     constr = Constraint(x + y, lb=3, name="constr1")
     obj = Objective(2 * x + y)
 
-    solver.add(x)
-    solver.add(y)
-
-    solver.add(constr)
-    solver.add(obj)
+    # model.add(x)
+    # model.add(y)
+    model.add(constr)
+    model.add(obj)
 
     try:
-        sol = solver.optimize()
+        sol = model.optimize()
     except NotImplementedError, e:
         print e
-    
-    solver.remove(x)
+
+    print model
+    print model.variables
+
+    model.remove(x)

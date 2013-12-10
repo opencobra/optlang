@@ -69,7 +69,7 @@ class Variable(interface.Variable):
 
     def __getattr__(self, name):
         
-        if getattr(self, '_internal_var', None):
+        if hasattr(self, '_internal_var'):
             if name == 'primal':
                 primal = self._internal_var.getAttr('X')
                 # super(Variable, self).__setattr__(name, primal)
@@ -85,9 +85,9 @@ class Variable(interface.Variable):
 # class Objective(interface.Objective):
 #     pass
 
-class Solver(interface.Solver):
+class Model(interface.Model):
 
-    """docstring for Solver"""
+    """docstring for Model"""
     _type2vtype = {'continuous': gurobipy.GRB.CONTINUOUS, 'integer': gurobipy.GRB.INTEGER, 'BINARY': gurobipy.GRB.BINARY}
     _vtype2type = dict([(val, key)for key, val in _type2vtype.iteritems()])
     _gurobi_status_to_status = {
@@ -95,7 +95,7 @@ class Solver(interface.Solver):
         gurobipy.GRB.OPTIMAL: interface.OPTIMAL,
         gurobipy.GRB.INFEASIBLE: interface.INFEASIBLE,
         gurobipy.GRB.INF_OR_UNBD: interface.INFEASIBLE_OR_UNBOUNDED,
-        gurobipy.GRB.UNBOUNED: interface.UNBOUNDED,
+        gurobipy.GRB.UNBOUNDED: interface.UNBOUNDED,
         gurobipy.GRB.CUTOFF: interface.CUTOFF,
         gurobipy.GRB.ITERATION_LIMIT: interface.ITERATION_LIMIT,
         gurobipy.GRB.NODE_LIMIT: interface.NODE_LIMIT,
@@ -104,11 +104,11 @@ class Solver(interface.Solver):
         gurobipy.GRB.INTERRUPTED: interface.INTERRUPTED,
         gurobipy.GRB.NUMERIC: interface.NUMERIC,
         gurobipy.GRB.SUBOPTIMAL: interface.SUBOPTIMAL,
-        gurobipy.GRB.IN_PROGRESS: interface.IN_PROGRESS
+        gurobipy.GRB.INPROGRESS: interface.INPROGRESS
     }
 
     def __init__(self, problem=None, *args, **kwargs):
-        super(Solver, self).__init__(*args, **kwargs)
+        super(Model, self).__init__(*args, **kwargs)
         if problem is None:
             self.problem = gurobipy.Model()
         elif isinstance(problem, gurobipy.Model):
@@ -123,9 +123,9 @@ class Solver(interface.Solver):
                         )
                
                 var._internal_var = gurobi_var
-                super(Solver, self)._add_variable(var)
+                super(Model, self)._add_variable(var)
             for constr in self.problem.getConstrs():
-                super(Solver, self)._add_constraint(
+                super(Model, self)._add_constraint(
                         Constraint(
                             sympy.Rel(
                                 sympy.var('x'),
@@ -148,7 +148,7 @@ class Solver(interface.Solver):
 
     def optimize(self):
         self.problem.optimize()
-        self.status = self._gurobi_status_to_status(self.problem.getAttr("Status"))
+        self.status = self._gurobi_status_to_status[self.problem.getAttr("Status")]
 
 
     def _add_variable(self, variable):
@@ -159,10 +159,10 @@ class Solver(interface.Solver):
             vtype=self._type2vtype[variable.type]
         )
         variable._internal_var = gurobi_var
-        super(Solver, self)._add_variable(variable)
+        super(Model, self)._add_variable(variable)
 
     def _remove_variable(self, variable):
-        super(Solver, self)._remove_variable(variable)
+        super(Model, self)._remove_variable(variable)
         if isinstance(variable, Variable):
             self.problem.remove(variable._internal_var)
         elif isinstance(variable, str):
@@ -206,7 +206,7 @@ class Solver(interface.Solver):
             self.problem.addConstr(lhs, sense, constraint.lb, name=constraint.name)
         elif isinstance(lhs, gurobipy.QuadExpr):
             self.problem.addQConstr(lhs, sense, rhs)
-        super(Solver, self)._add_constraint(constraint)
+        super(Model, self)._add_constraint(constraint)
 
     def _sympy_relational_to_gurobi_constraint(self, constraint):
         if constraint.is_Relational:
@@ -226,7 +226,7 @@ if __name__ == '__main__':
     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
 
     from gurobipy import read
-    solver = Solver(problem=read("tests/data/model.lp"))
+    solver = Model(problem=read("tests/data/model.lp"))
     
     solver.add(z)
     solver.add(constr)
