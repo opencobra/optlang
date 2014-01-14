@@ -18,7 +18,7 @@ def read_netlib_sif_glpk(fhandle):
     with open(tmp_file, 'w') as tmp_handle:
         content = ''.join([s for s in fhandle if s.strip()])
         tmp_handle.write(content)
-        # other_handle = open('/Users/niko/tmp/stuff.sif', 'w').write(content)
+        other_handle = open('/Users/niko/tmp/stuff.sif', 'w').write(content)
         fhandle.close()
     problem = glp_create_prob()
     glp_read_mps(problem, GLP_MPS_DECK, None, tmp_file)
@@ -54,7 +54,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
     tar = tarfile.open(netlib_tar_path)
     model_paths_in_tar = glob.fnmatch.filter(tar.getnames(), '*.SIF')
 
-    for model_path_in_tar in model_paths_in_tar[0:10]:
+    for model_path_in_tar in model_paths_in_tar[0:20]:
         fhandle = tar.extractfile(model_path_in_tar)
         glpk_problem = read_netlib_sif_glpk(fhandle)
         model = Model(problem=glpk_problem)
@@ -67,5 +67,19 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
         yield func
 
 if __name__ == '__main__':
-    test_netlib().next()
-    # nose.runmodule(verbosity=3)
+    # tar = tarfile.open('data/netlib_lp_problems.tar.gz')
+    # model_paths_in_tar = glob.fnmatch.filter(tar.getnames(), '*.SIF')
+    # fhandle = tar.extractfile('./netlib/ADLITTLE.SIF')
+    # glpk_problem = read_netlib_sif_glpk(fhandle)
+    # glp_simplex(glpk_problem, None)
+    # print glp_get_obj_val(glpk_problem)
+    # print glpk_problem
+    # fhandle = tar.extractfile('./netlib/ADLITTLE.SIF')
+    # glpk_problem = read_netlib_sif_glpk(fhandle)
+    # model = Model(problem=glpk_problem)
+    # glp_simplex(glpk_problem, None)
+    # model.optimize()
+    # print model.objective.value
+    # print model
+    # test_netlib().next()
+    nose.runmodule()

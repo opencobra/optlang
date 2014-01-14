@@ -178,6 +178,8 @@ class Constraint(object):
             return expression
         assert len(lonely_coeffs) == 1
         coeff = lonely_coeffs[0]
+        print self.lb
+        print self.ub
         if self.lb is None and self.ub is None:
             raise ValueError(
                 "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set." % expression)

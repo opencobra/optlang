@@ -22,48 +22,49 @@ except:
 def solve_with_glpsol(glp_prob):
     '''Solve glpk problem with glpsol commandline solver. Mainly for testing purposes.
 
-    Examples
-    --------
+    # Examples
+    # --------
 
-    >>> problem = glp_create_prob()
-    ... glp_read_lp(problem, None, "../tests/data/model.lp")
-    ... solution = solve_with_glpsol(problem)
-    ... solution['objval']
-    0.839784
+    # >>> problem = glp_create_prob()
+    # ... glp_read_lp(problem, None, "../tests/data/model.lp")
+    # ... solution = solve_with_glpsol(problem)
+    # ... print 'asdf'
+    # 'asdf'
+    # >>> print solution
+    # 0.839784
 
-    Returns
-    -------
-    dict
-        A dictionary containing the objective value (key ='objval')
-        and variable primals.
+    # Returns
+    # -------
+    # dict
+    #     A dictionary containing the objective value (key ='objval')
+    #     and variable primals.
     '''
     row_ids = [glp_get_row_name(glp_prob, i) for i in xrange(1, glp_get_num_rows(glp_prob)+1)]
-    print glp_get_num_rows(glp_prob)
-    print len(row_ids)
+    
     col_ids = [glp_get_col_name(glp_prob, i) for i in xrange(1, glp_get_num_cols(glp_prob)+1)]
-    print len(col_ids)
-    tmp_file = tempfile.mktemp(suffix='.mps')
-    glp_write_mps(glp_prob, GLP_MPS_DECK, None, tmp_file)
+    
+    tmp_file = tempfile.mktemp(suffix='.lp')
+    # glp_write_mps(glp_prob, GLP_MPS_DECK, None, tmp_file)
+    glp_write_lp(glp_prob, None, tmp_file)
     # with open(tmp_file, 'w') as tmp_handle:
     #     tmp_handle.write(mps_string)
-    cmd = ['glpsol', '--mps', tmp_file, '-w', tmp_file+'.sol', '--log', '/dev/null']
+    cmd = ['glpsol', '--lp', tmp_file, '-w', tmp_file+'.sol', '--log', '/dev/null']
     term = check_output(cmd)
-    print term
     log.info(term)
 
     with open(tmp_file+'.sol') as sol_handle:
         # print sol_handle.read()
         solution = dict()
         for i, line in enumerate(sol_handle.readlines()):
-            if i == 0:
-                print line
+            if i <= 1 or line == '\n':
+                pass
             elif i <= len(row_ids):
-                print 'i', i
-                solution[row_ids[i-1]] = line.strip().split(' ')
-            elif i <= len(row_ids)+len(col_ids):
-                print 'j', i
-                solution[col_ids[i-1]] = line.strip().split(' ')
+                solution[row_ids[i-2]] = line.strip().split(' ')
+            elif i <= len(row_ids)+len(col_ids)+1:
+                solution[col_ids[i-2-len(row_ids)]] = line.strip().split(' ')
             else:
+                print i
+                print line
                 raise "Argggh!"
     return solution
 
@@ -119,4 +120,11 @@ class Container(OrderedDict):
     def __init__(self, *args, **kwargs):
         super(DictContainer, self).__init__(*args, **kwargs)
         self.arg = arg
+
+if __name__ == '__main__':
+    problem = glp_create_prob()
+    glp_read_lp(problem, None, "../tests/data/model.lp")
+    print "asdf", glp_get_num_rows(problem)
+    solution = solve_with_glpsol(problem)
+    print solution['R_Biomass_Ecoli_core_w_GAM']
         

@@ -73,6 +73,10 @@ class SolverTestCase(unittest.TestCase):
         self.assertIn(constr1, self.model.constraints.values())
         self.assertIn(constr2, self.model.constraints.values())
         self.assertIn(constr3, self.model.constraints.values())
+        cplex_lines = [line.strip() for line in str(self.model).split('\n')]
+        self.assertIn('test: + 0.3 x + 66 z + 0.4 y - ~r_73 = -100', cplex_lines)
+        self.assertIn('test2: + 2.333 x + y <= 96.997', cplex_lines)
+        self.assertIn('Dummy_14: + 2.333 x + y + z - ~r_75 = -300', cplex_lines)
 
     def test_add_nonlinear_constraint_raises(self):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')

@@ -23,15 +23,15 @@
                 "working_dir": "/Users/niko/Arbejder/Dev/optlang/docs",
                 "shell": true,
                 "cmd": ["make html && open build/html/index.html"]
+            },
+            {   "name": "Run all Tests",
+                "working_dir": "/Users/niko/Arbejder/Dev/optlang",
+                "cmd": ["nosetests"]
             }
-            // {   "name": "Run all Tests",
-            //     "working_dir": "/Users/niko/Arbejder/Dev/optlang",
-            //     "cmd": ["nosetests"]
-            // },
-            // {   "name": "Run tests in file",
+            // ,{   "name": "Run tests in file",
             //     "working_dir": "/Users/niko/Arbejder/Dev/optlang",
             //     "cmd": ["nosetests", "$file"]
-            // },
+            // }
         ]
     }
     ]

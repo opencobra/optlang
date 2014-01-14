@@ -37,11 +37,11 @@ class Variable(interface.Variable):
 
     @property
     def primal(self):
-        return glp_get_col_prim(self.problem, self.index)
+        return glp_get_col_prim(self.problem.problem, self.index)
     
     @property
     def dual(self):
-        return glp_get_col_dual(self.problem, self.index)
+        return glp_get_col_dual(self.problem.problem, self.index)
 
     def __setattr__(self, name, value):
 
@@ -82,6 +82,14 @@ class Constraint(interface.Constraint):
                 raise Exception("Could not determine row index for variable %s" % self)
         except:
             return None
+
+    @property
+    def primal(self):
+        return glp_get_row_prim(self.problem.problem, self.index)
+    
+    @property
+    def dual(self):
+        return glp_get_row_dual(self.problem.problem, self.index)
 
 
     def __setattr__(self, name, value):
@@ -151,6 +159,7 @@ class Model(interface.Model):
                         )
                 super(Model, self)._add_variable(var)  # This avoids adding the variable to the glpk problem
             var = self.variables.values()
+
             for j in xrange(1, row_num+1):
                 ia = intArray(col_num + 1)
                 da = doubleArray(col_num + 1)
@@ -183,9 +192,11 @@ class Model(interface.Model):
                         Constraint(lhs, lb=row_lb, ub=row_ub, name=glp_get_row_name(self.problem, j), problem=self),
                         sloppy=True
                     )
+            
             term_generator = ((glp_get_obj_coef(self.problem, index), var[index-1]) for index in xrange(1, glp_get_num_cols(problem)+1))        
-            self.objective = interface.Objective(_unevaluated_Add(*[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.]))
-            self.objective.direction = {GLP_MIN:'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)]
+            # print _unevaluated_Add(*[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.])
+            self._objective = interface.Objective(_unevaluated_Add(*[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.]), problem=self)
+            self._objective.direction = {GLP_MIN:'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)]
         else:
             raise Exception, "Provided problem is not a valid GLPK model."
         glp_scale_prob(self.problem, GLP_SF_AUTO)
@@ -205,7 +216,8 @@ class Model(interface.Model):
             coeff, var = expression.args
             glp_set_obj_coef(self.problem, var.index, float(coeff))
         elif expression.is_Add:
-            for coeff, var in expression.args:
+            for term in expression.args:
+                coeff, var = term.args
                 glp_set_obj_coef(self.problem, var.index, float(coeff))
         else:
             raise ValueError("Provided objective %s doesn't seem to be appropriate." % self._objective)
@@ -341,12 +353,13 @@ class Model(interface.Model):
 
 
 if __name__ == '__main__':
-
+    import pdb
+    pdb.set_trace()
     x = Variable('x', lb=0, ub=10)
     y = Variable('y', lb=0, ub=10)
     z = Variable('z', lb=-100, ub=99.)
     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
-
+    print 1/0
     from glpk.glpkpi import glp_read_lp
     problem = glp_create_prob()
     # print glp_get_obj_coef(problem, 0)
