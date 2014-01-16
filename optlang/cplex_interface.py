@@ -11,6 +11,8 @@ import logging
 log = logging.getLogger(__name__)
 import tempfile
 import sympy
+from sympy.core.add import _unevaluated_Add
+from sympy.core.mul import _unevaluated_Mul
 import cplex
 import interface
 
@@ -71,6 +73,7 @@ class Variable(interface.Variable):
 
 class Constraint(interface.Constraint):
     """CPLEX constraint interface."""
+
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
 
@@ -113,6 +116,11 @@ class Objective(interface.Objective):
 class Model(interface.Model):
     """CPLEX solver interface."""
 
+    _vtype_to_cplex_type = {'continuous': cplex.Cplex.variables.type.continuous,
+        'integer': cplex.Cplex.variables.type.continuous,
+        'binary': cplex.Cplex.variables.type.continuous
+        }
+
     _cplex_status_to_status = {
         cplex.Cplex.solution.status.feasible: interface.FEASIBLE,
         cplex.Cplex.solution.status.infeasible: interface.INFEASIBLE,
@@ -130,13 +138,39 @@ class Model(interface.Model):
         
         elif isinstance(problem, cplex.Cplex):
             self.problem = problem
-            zipped_args = zip(self.problem.variables.get_names(),
+            zipped_var_args = zip(self.problem.variables.get_names(),
                 self.problem.variables.get_lower_bounds(),
                 self.problem.variables.get_upper_bounds()
                 )
-            for name, lb, ub in zipped_args:
+            for name, lb, ub in zipped_var_args:
                 var = Variable(name, lb=lb, ub=ub, problem=self)
                 super(Model, self)._add_variable(var)  # This avoids adding the variable to the glpk problem
+            zipped_constr_args = zip(self.problem.linear_constraints.get_names(),
+                self.problem.linear_constraints.get_rows(),
+                self.problem.linear_constraints.get_senses(),
+                self.problem.linear_constraints.get_rhs()
+                )
+            var = self.variables.values()
+            for name, row, sense, rhs in zipped_constr_args:
+                lhs = _unevaluated_Add(*[val * var[i-1] for i, val in zip(row.ind, row.val)])
+                if isinstance(lhs, int):
+                    lhs = sympy.Integer(lhs)
+                elif isinstance(lhs, float):
+                    lhs = sympy.Real(lhs)
+                if sense == 'E':
+                    constr = Constraint(lhs, lb=rhs, ub=rhs, name=name, problem=self)
+                elif sense == 'G':
+                    constr = Constraint(lhs, lb=rhs, name=name, problem=self)
+                elif sense == 'L':
+                    constr = Constraint(lhs, ub=rhs, name=name, problem=self)
+                elif sense == 'R':
+                    raise Exception, 'optlang does not provide support for CPLEX range constraints yet.'
+                else:
+                    raise Exception, '%s is not a recognized constraint sense.' % sense
+                super(Model, self)._add_constraint(
+                        constr,
+                        sloppy=True
+                    )
         else:
             raise Exception, "Provided problem is not a valid GLPK model."
     
@@ -161,14 +195,27 @@ class Model(interface.Model):
         self.objective.value = blub.solution.get_objective_value()
         return self.status
 
-    # def _add_variable(self, variable):
-    #     super(Model, self)._add_variable(variable)
-    #     glp_add_cols(self.problem, 1)
-    #     index = glp_get_num_cols(self.problem)
-    #     glp_set_col_name(self.problem, index, variable.name)
-    #     variable.problem = self
-    #     self._glpk_set_col_bounds(variable)
-    #     return variable
+    def _cplex_sense_to_sympy(self, sense, translation={'E': '==', 'L': '<', 'G': '>'}):
+        try:
+            return translation[sense]
+        except KeyError, e:
+            print ' '.join('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')
+            print e
+
+    def _add_variable(self, variable):
+        super(Model, self)._add_variable(variable)
+        if variable.lb == None:
+            lb = -cplex.infinity
+        else:
+            lb = variable.lb
+        if variable.ub == None:
+            ub = cplex.infinity
+        else:
+            ub = variable.ub
+        vtype = _vtype_to_cplex_type[variable.type]
+        self.problem.varibles.add([0], lb=[variable.lb], ub=[variable.ub], types=[vtype], names=[variable.name])
+        variable.problem = self
+        return variable
     
     # def _remove_variable(self, variable):
     #     num = intArray(2)
@@ -176,55 +223,54 @@ class Model(interface.Model):
     #     glp_del_cols(self.problem, 1, num)
     #     super(Model, self)._remove_variable(variable)
 
-    # def _add_constraint(self, constraint, sloppy=False):
-    #     if sloppy is False:
-    #         if not constraint.is_Linear:
-    #             raise ValueError("GLPK only supports linear constraints. %s is not linear." % constraint)
-    #     super(Model, self)._add_constraint(constraint, sloppy=sloppy)
-    #     # for var in constraint.variables:
-    #     #     if var.index is None:
-    #     #         var.index = glp_find_col(self.problem, var.name)
-    #         # if var.name not in self.variables:
-    #         #     var
-    #         #     self._add_variable(var)
-    #     constraint.problem = self
-    #     glp_add_rows(self.problem, 1)
-    #     index = glp_get_num_rows(self.problem)
-    #     glp_set_row_name(self.problem, index, constraint.name)
-    #     # constraint.index = index
-    #     num_vars = len(constraint.variables)
-    #     index_array = intArray(num_vars + 1)
-    #     value_array = doubleArray(num_vars + 1)
-    #     if constraint.expression.is_Atom and constraint.expression.is_Symbol:
-    #         var = constraint.expression
-    #         index_array[1] = var.index
-    #         value_array[1] = 1
-    #     elif constraint.expression.is_Mul:
-    #         args = constraint.expression.args
-    #         if len(args) > 2:
-    #             raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
-    #         coeff = float(args[0])
-    #         var = args[1]
-    #         index_array[1] = var.index
-    #         value_array[1] = coeff
-    #     else:
-    #         for i, term in enumerate(constraint.expression.args):
-    #             args = term.args
-    #             if args == ():
-    #                 assert term.is_Symbol
-    #                 coeff = 1
-    #                 var = term
-    #             elif len(args) == 2:
-    #                 assert args[0].is_Number
-    #                 assert args[1].is_Symbol
-    #                 var = args[1]
-    #                 coeff = float(args[0])
-    #             elif leng(args) > 2:
-    #                 raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
-    #             index_array[i+1] = var.index
-    #             value_array[i+1] = coeff
-    #     glp_set_mat_row(self.problem, index, num_vars, index_array, value_array)
-    #     self._glpk_set_row_bounds(constraint)
+    def _add_constraint(self, constraint, sloppy=False):
+        if sloppy is False:
+            if constraint.is_Linear or constraint.is_Quadratic:
+                raise ValueError("CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
+        super(Model, self)._add_constraint(constraint, sloppy=sloppy)
+        for var in constraint.variables:
+            if var.name not in self.variables:
+                self._add_variable(var)
+        if constraint.is_Linear:
+            self.problem.constraints.add(lin_expr=[], senses='', rhs=[], range_values=[], names=[constraint.name])
+        constraint.problem = self
+        glp_add_rows(self.problem, 1)
+        index = glp_get_num_rows(self.problem)
+        glp_set_row_name(self.problem, index, constraint.name)
+        # constraint.index = index
+        num_vars = len(constraint.variables)
+        index_array = intArray(num_vars + 1)
+        value_array = doubleArray(num_vars + 1)
+        if constraint.expression.is_Atom and constraint.expression.is_Symbol:
+            var = constraint.expression
+            index_array[1] = var.index
+            value_array[1] = 1
+        elif constraint.expression.is_Mul:
+            args = constraint.expression.args
+            if len(args) > 2:
+                raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
+            coeff = float(args[0])
+            var = args[1]
+            index_array[1] = var.index
+            value_array[1] = coeff
+        else:
+            for i, term in enumerate(constraint.expression.args):
+                args = term.args
+                if args == ():
+                    assert term.is_Symbol
+                    coeff = 1
+                    var = term
+                elif len(args) == 2:
+                    assert args[0].is_Number
+                    assert args[1].is_Symbol
+                    var = args[1]
+                    coeff = float(args[0])
+                elif leng(args) > 2:
+                    raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
+                index_array[i+1] = var.index
+                value_array[i+1] = coeff
+        glp_set_mat_row(self.problem, index, num_vars, index_array, value_array)
+        self._glpk_set_row_bounds(constraint)
 
 if __name__ == '__main__':
 

@@ -33,23 +33,27 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.variables.keys(), inner_prob.variables.get_names())
         self.assertEqual(self.model.constraints.keys(), inner_prob.linear_constraints.get_names())
 
-    # def test_add_variable(self):
-    #     var = Variable('x')
-    #     self.assertEqual(var.index, None)
-    #     self.model.add(var)
-    #     self.assertTrue(var in self.model.variables.values())
-    #     self.assertEqual(var.index, glp_get_num_cols(self.model.problem))
-    #     self.assertEqual(self.model.variables['x'].problem, var.problem)
-    #     var = Variable('y', lb=-13)
-    #     self.model.add(var)
-    #     self.assertTrue(var in self.model.variables.values())
-    #     self.assertEqual(self.model.variables['x'].lb, None)
-    #     self.assertEqual(self.model.variables['x'].ub, None)
+    def test_add_variable(self):
+        var = Variable('x')
+        self.assertEqual(var.problem, None)
+        self.model.add(var)
+        self.assertTrue(var in self.model.variables.values())
+        self.assertEqual(self.model.variables['x'].problem, var.problem)
+        self.assertEqual(self.model.variables['x'].problem, self.model)
+        var = Variable('y', lb=-13)
+        self.model.add(var)
+        self.assertTrue(var in self.model.variables.values())
+        self.assertEqual(self.model.variables['x'].lb, None)
+        self.assertEqual(self.model.variables['x'].ub, None)
+        self.assertEqual(self.model.variables['y'].lb, -13)
+        self.assertEqual(self.model.variables['x'].ub, None)
 
-    # def test_remove_variable(self):
-    #     var = self.model.variables.values()[0]
-    #     self.model.remove(var)
-    #     self.assertNotIn(var, self.model.variables.values())
+    def test_remove_variable(self):
+        var = self.model.variables.values()[0]
+        self.assertEqual(var.problem, self.model)
+        self.model.remove(var)
+        self.assertNotIn(var, self.model.variables.values())
+        self.assertEqual(var.problem, None)
 
     # def test_add_constraint(self):
     #     x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -58,20 +62,30 @@ class SolverTestCase(unittest.TestCase):
     #     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
     #     self.model.add(constr)
 
-    # def test_add_constraints(self):
-    #     x = Variable('x', lb=-83.3, ub=1324422., type='binary')
-    #     y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-    #     z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-    #     constr1 = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
-    #     # constr1 = Constraint(x + 2* y  + 3.333*z, lb=-10, name='hongo')
-    #     constr2 = Constraint(2.333*x + y + 3.333, ub=100.33, name='test2')
-    #     constr3 = Constraint(2.333*x + y + z, ub=100.33, lb=-300)
-    #     self.model.add(constr1)
-    #     self.model.add(constr2)
-    #     self.model.add(constr3)
-    #     self.assertIn(constr1, self.model.constraints.values())
-    #     self.assertIn(constr2, self.model.constraints.values())
-    #     self.assertIn(constr3, self.model.constraints.values())
+    def test_add_constraints(self):
+        x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+        y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        constr1 = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
+        # constr1 = Constraint(x + 2* y  + 3.333*z, lb=-10, name='hongo')
+        constr2 = Constraint(2.333*x + y + 3.333, ub=100.33, name='test2')
+        constr3 = Constraint(2.333*x + y + z, ub=100.33, lb=-300)
+        constr4 = constraint = Constraint(0.3*x + 0.4*y**2 + 66.*z, lb=-100, ub=0., name='test_q')
+        self.model.add(constr1)
+        self.model.add(constr2)
+        self.model.add(constr3)
+        self.model.add(constr4)
+        self.assertIn(constr1, self.model.constraints.values())
+        self.assertIn(constr2, self.model.constraints.values())
+        self.assertIn(constr3, self.model.constraints.values())
+        self.assertIn(constr4, self.model.constraints.values())
+        print self.model
+        cplex_lines = [line.strip() for line in str(self.model).split('\n')]
+        self.assertIn('test: + 0.3 x + 66 z + 0.4 y - ~r_73 = -100', cplex_lines)
+        self.assertIn('test2: + 2.333 x + y <= 96.997', cplex_lines)
+        self.assertIn('Dummy_14: + 2.333 x + y + z - ~r_75 = -300', cplex_lines)
+        
+
 
     # def test_add_nonlinear_constraint_raises(self):
     #     x = Variable('x', lb=-83.3, ub=1324422., type='binary')

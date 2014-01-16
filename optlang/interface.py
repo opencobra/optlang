@@ -99,6 +99,10 @@ class Variable(sympy.Symbol):
             ub_str = ""
         return ''.join((lb_str, super(Variable, self).__str__(), ub_str))
 
+    def __repr__(self):
+        """Does exactly the same as __str__ for now."""
+        return self.__str__()
+
     def __setattr__(self, name, value):
 
         if name == 'lb' and hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:

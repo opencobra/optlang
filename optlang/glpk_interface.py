@@ -201,6 +201,12 @@ class Model(interface.Model):
             raise Exception, "Provided problem is not a valid GLPK model."
         glp_scale_prob(self.problem, GLP_SF_AUTO)
     
+
+    def __deepcopy__(self, memo):
+        copy_problem = glp_create_prob()
+        glp_copy_prob(copy_problem, self.problem, GLP_ON)
+        return Model(problem=copy_problem)
+
     @property
     def objective(self):
         return self._objective
