@@ -212,8 +212,8 @@ class Model(interface.Model):
             ub = cplex.infinity
         else:
             ub = variable.ub
-        vtype = _vtype_to_cplex_type[variable.type]
-        self.problem.varibles.add([0], lb=[variable.lb], ub=[variable.ub], types=[vtype], names=[variable.name])
+        vtype = self._vtype_to_cplex_type[variable.type]
+        self.problem.variables.add([0.], lb=[lb], ub=[ub], types=[vtype], names=[variable.name])
         variable.problem = self
         return variable
     
@@ -225,52 +225,40 @@ class Model(interface.Model):
 
     def _add_constraint(self, constraint, sloppy=False):
         if sloppy is False:
-            if constraint.is_Linear or constraint.is_Quadratic:
+            if not constraint.is_Linear and not constraint.is_Quadratic:
                 raise ValueError("CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
         super(Model, self)._add_constraint(constraint, sloppy=sloppy)
         for var in constraint.variables:
             if var.name not in self.variables:
                 self._add_variable(var)
         if constraint.is_Linear:
-            self.problem.constraints.add(lin_expr=[], senses='', rhs=[], range_values=[], names=[constraint.name])
-        constraint.problem = self
-        glp_add_rows(self.problem, 1)
-        index = glp_get_num_rows(self.problem)
-        glp_set_row_name(self.problem, index, constraint.name)
-        # constraint.index = index
-        num_vars = len(constraint.variables)
-        index_array = intArray(num_vars + 1)
-        value_array = doubleArray(num_vars + 1)
-        if constraint.expression.is_Atom and constraint.expression.is_Symbol:
-            var = constraint.expression
-            index_array[1] = var.index
-            value_array[1] = 1
-        elif constraint.expression.is_Mul:
-            args = constraint.expression.args
-            if len(args) > 2:
-                raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
-            coeff = float(args[0])
-            var = args[1]
-            index_array[1] = var.index
-            value_array[1] = coeff
-        else:
-            for i, term in enumerate(constraint.expression.args):
-                args = term.args
-                if args == ():
-                    assert term.is_Symbol
-                    coeff = 1
-                    var = term
-                elif len(args) == 2:
-                    assert args[0].is_Number
-                    assert args[1].is_Symbol
-                    var = args[1]
-                    coeff = float(args[0])
-                elif leng(args) > 2:
+            if constraint.expression.is_Atom and constraint.expression.is_Symbol:
+                ind = constraint.expression.name
+                val = 1.
+            elif constraint.expression.is_Mul:
+                args = constraint.expression.args
+                if len(args) > 2:
                     raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
-                index_array[i+1] = var.index
-                value_array[i+1] = coeff
-        glp_set_mat_row(self.problem, index, num_vars, index_array, value_array)
-        self._glpk_set_row_bounds(constraint)
+                val = float(args[0])
+                ind = args[1].name
+            else:
+                for i, term in enumerate(constraint.expression.args):
+                    args = term.args
+                    if args == ():
+                        assert term.is_Symbol
+                        val = 1.
+                        ind = term.name
+                    elif len(args) == 2:
+                        assert args[0].is_Number
+                        assert args[1].is_Symbol
+                        ind = args[1].name
+                        val = float(args[0])
+                    elif leng(args) > 2:
+                        raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
+                    
+            self.problem.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=[ind], val=[val])], senses='', rhs=[0], range_values=[], names=[constraint.name])
+        constraint.problem = self
+        return constraint
 
 if __name__ == '__main__':
 
