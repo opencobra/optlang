@@ -79,7 +79,7 @@ class SolverTestCase(unittest.TestCase):
         self.assertIn(constr2, self.model.constraints.values())
         self.assertIn(constr3, self.model.constraints.values())
         self.assertIn(constr4, self.model.constraints.values())
-        print self.model
+        import ipdb; ipdb.set_trace()
         cplex_lines = [line.strip() for line in str(self.model).split('\n')]
         self.assertIn('test: + 0.3 x + 66 z + 0.4 y - ~r_73 = -100', cplex_lines)
         self.assertIn('test2: + 2.333 x + y <= 96.997', cplex_lines)

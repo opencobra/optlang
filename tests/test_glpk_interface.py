@@ -4,8 +4,9 @@
 import os
 import unittest
 import random
+import pickle
 import nose
-from optlang.glpk_interface import Variable, Constraint, Model
+from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from glpk.glpkpi import *
 
 random.seed(666)
@@ -26,6 +27,14 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(len(model.constraints), 0)
         self.assertEqual(len(model.variables), 0)
         self.assertEqual(model.objective, None)
+
+    def test_pickle_ability(self):
+        self.model.optimize()
+        value = self.model.objective.value
+        pickle_string = pickle.dumps(self.model)
+        from_pickle = pickle.loads(pickle_string)
+        from_pickle.optimize()
+        self.assertEqual(value, from_pickle.objective.value)
 
     def test_init_from_existing_problem(self):
         inner_prob = self.model.problem
@@ -113,13 +122,27 @@ class SolverTestCase(unittest.TestCase):
         self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
         self.assertEqual(bounds_new, inner_problem_bounds_new)
 
-    def test_objective(self):
+    def test_initial_objective(self):
         self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
 
     def test_optimize(self):
         self.model.optimize()
         self.assertEqual(self.model.status, 'optimal')
         self.assertAlmostEqual(self.model.objective.value, 0.8739215069684303)
+
+    def test_change_objective(self):
+        """Test that all different kinds of linear objective specification work."""
+        print self.model.variables.values()[0:2]
+        v1, v2 = self.model.variables.values()[0:2]
+        self.model.objective = Objective(1.*v1 + 1.*v2)
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+        self.model.objective = Objective(v1 + v2)
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+
+    # def test_raise_on_non_linear_objective(self):
+    #     """Test that an exception is raised when a non-linear objective is added to the model."""
+    #     v1, v2 = self.model.variables[0:1]
+    #     self.assertRaises(Exception, self.model.objective = Objective(v1 * v2))
 
 if __name__ == '__main__':
     nose.runmodule()
