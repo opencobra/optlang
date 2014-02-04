@@ -28,10 +28,10 @@
                 "working_dir": "/Users/niko/Arbejder/Dev/optlang",
                 "cmd": ["nosetests"]
             }
-            // ,{   "name": "Run tests in file",
-            //     "working_dir": "/Users/niko/Arbejder/Dev/optlang",
-            //     "cmd": ["nosetests", "$file"]
-            // }
+            ,{   "name": "Run tests in file",
+                "working_dir": "/Users/niko/Arbejder/Dev/optlang",
+                "cmd": ["nosetests", "$file"]
+            }
         ]
     }
     ]

@@ -262,25 +262,60 @@ class Objective(object):
 
     def __init__(self, expression, name=None, value=None, problem=None, direction='max', *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
-        self.expression = expression
+        self._expression = self._canonicalize(expression)
         self.name = name
-        self.value = value
-        self.problem = problem
+        self._value = value
         self._direction = direction
+        self.problem = problem
+
+    @property
+    def value(self):
+        return self._value    
 
     def __str__(self):
         return {'max': 'Maximize', 'min': 'Minimize'}[self.direction] + '\n' + str(self.expression)
         # return ' '.join((self.direction, str(self.expression)))
 
+    def _canonicalize(self, expression):
+        """Change x + y to 1.*x + 1.*y"""
+        expression = 1.*expression
+        return expression
+
+    @property
+    def expression(self):
+        return self._expression
+    @expression.setter
+    def expression(self, value):
+        self._expression = self._canonicalize(value)
+    
     @property
     def direction(self):
         return self._direction
-
     @direction.setter
     def direction(self, value):
         # TODO: implement direction parsing, e.g. 'Maximize' -> 'max'
         self._direction = value
 
+
+class Configuration(object):
+
+    def __init__(self):
+        pass
+
+    @property
+    def presolve(self):
+        raise NotImplementedError
+    @presolve.setter
+    def presolve(self, value):
+        raise NotImplementedError
+
+    @property
+    def verbose(self):
+        raise NotImplementedError
+    @verbose.setter
+    def verbose(self, value):
+        raise NotImplementedError
+    
 
 class Model(object):
 
@@ -292,6 +327,7 @@ class Model(object):
         self.variables = collections.OrderedDict()
         self.constraints = collections.OrderedDict()
         self.status = None
+        self._presolve = False    
 
     @property
     def objective(self):

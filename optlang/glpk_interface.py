@@ -113,7 +113,79 @@ class Constraint(interface.Constraint):
 class Objective(interface.Objective):
     """docstring for Objective"""
     def __init__(self, *args, **kwargs):
+        # import pdb; pdb.set_trace()
         super(Objective, self).__init__(*args, **kwargs)
+
+    @property
+    def value(self):
+        return glp_get_obj_val(self.problem.problem)
+
+    @property
+    def value(self):
+        return glp_get_obj_val(self.problem.problem)
+
+    def __setattr__(self, name, value):
+
+        if getattr(self, 'problem', None):
+            if name == 'direction':
+                glp_set_obj_dir(self.problem.problem, {'min': GLP_MIN, 'max': GLP_MAX}[value])
+                super(Objective, self).__setattr__(name, value)
+        else:
+            super(Objective, self).__setattr__(name, value)            
+
+
+class Configuration(interface.Configuration):
+    """docstring for Configuration"""
+    def __init__(self, presolve=False, verbosity=0, *args, **kwargs):
+        super(Configuration, self).__init__(*args, **kwargs)
+        self._smcp = glp_smcp()
+        self._iocp = glp_iocp()
+        glp_init_smcp(self._smcp)
+        glp_init_iocp(self._iocp)
+        self._set_presolve(presolve)
+        self._presolve = presolve
+        self._set_verbosity(verbosity)
+        self._verbosity = verbosity
+
+    def _set_presolve(self, value):
+        self._smcp.presolve = {False:GLP_OFF, True:GLP_ON}[value]
+        self._iocp.presolve = {False:GLP_OFF, True:GLP_ON}[value]
+
+    def _set_verbosity(self, value):
+        if value == 0:
+            glp_term_out(GLP_OFF)
+            self._smcp.msg_lev = GLP_MSG_OFF
+            self._iocp.msg_lev = GLP_MSG_OFF
+        elif value == 1:
+            glp_term_out(GLP_OFF)
+            self._smcp.msg_lev = GLP_MSG_ERR
+            self._iocp.msg_lev = GLP_MSG_ERR
+        elif value == 2:
+            glp_term_out(GLP_OFF)
+            self._smcp.msg_lev = GLP_MSG_ON
+            self._iocp.msg_lev = GLP_MSG_ON
+        elif value == 3:
+            glp_term_out(GLP_ON)
+            self._smcp.msg_lev = GLP_MSG_ALL
+            self._iocp.msg_lev = GLP_MSG_ALL
+        else:
+            raise Exception("%s is not a valid verbosity level ranging between 0 and 3." % value)
+
+    @property
+    def presolve(self):
+        return self._presolve
+    @presolve.setter
+    def presolve(self, value):
+        self._set_presolve(value)
+        self._presolve = value
+
+    @property
+    def verbosity(self):
+        return self._verbosity
+    @verbosity.setter
+    def verbosity(self, value):
+        self._set_verbosity(value)
+        self._verbosity = value        
 
 class Model(interface.Model):
     """GLPK solver interface"""
@@ -131,15 +203,17 @@ class Model(interface.Model):
 
         super(Model, self).__init__(*args, **kwargs)
 
-        glp_term_out(GLP_OFF)
-        self._smcp = glp_smcp()
-        self._iocp = glp_iocp()
-        glp_init_smcp(self._smcp)
-        glp_init_iocp(self._iocp)
-        self._smcp.msg_lev = GLP_MSG_ALL
-        self._iocp.msg_lev = GLP_MSG_ON
-        self._smcp.presolve = GLP_OFF
-        self._iocp.presolve = GLP_OFF
+        self.configuration = Configuration()
+
+        # glp_term_out(GLP_OFF)
+        # self._smcp = glp_smcp()
+        # self._iocp = glp_iocp()
+        # glp_init_smcp(self._smcp)
+        # glp_init_iocp(self._iocp)
+        # self._smcp.msg_lev = GLP_MSG_ALL
+        # self._iocp.msg_lev = GLP_MSG_ON
+        # self._smcp.presolve = GLP_OFF
+        # self._iocp.presolve = GLP_OFF
         
         if problem is None:
             self.problem = glp_create_prob()
@@ -193,14 +267,28 @@ class Model(interface.Model):
                         sloppy=True
                     )
             
-            term_generator = ((glp_get_obj_coef(self.problem, index), var[index-1]) for index in xrange(1, glp_get_num_cols(problem)+1))        
-            # print _unevaluated_Add(*[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.])
-            self._objective = interface.Objective(_unevaluated_Add(*[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.]), problem=self)
-            self._objective.direction = {GLP_MIN:'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)]
+            term_generator = ((glp_get_obj_coef(self.problem, index), var[index-1]) for index in xrange(1, glp_get_num_cols(problem)+1))            
+            self._objective = Objective(
+                _unevaluated_Add(*[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.]),
+                problem=self,
+                direction={GLP_MIN:'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)]
+                )
         else:
             raise Exception, "Provided problem is not a valid GLPK model."
         glp_scale_prob(self.problem, GLP_SF_AUTO)
     
+    def __getstate__(self):
+        cplex_form = self.__repr__()
+        repr_dict = {'cplex_form': cplex_form}
+        return repr_dict
+
+    def __setstate__(self, repr_dict):
+        tmp_file = tempfile.mktemp(suffix=".lp")
+        open(tmp_file, 'w').write(repr_dict['cplex_form'])
+        problem = glp_create_prob()
+        # print glp_get_obj_coef(problem, 0)
+        glp_read_lp(problem, None, tmp_file)
+        self.__init__(problem=problem)
 
     def __deepcopy__(self, memo):
         copy_problem = glp_create_prob()
@@ -228,18 +316,25 @@ class Model(interface.Model):
         else:
             raise ValueError("Provided objective %s doesn't seem to be appropriate." % self._objective)
         glp_set_obj_dir(self.problem, {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction])
+        value.problem = self
 
     def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
         tmp_file = tempfile.mktemp(suffix=".lp")
         glp_write_lp(self.problem, None, tmp_file)
         cplex_form = open(tmp_file).read()
         return cplex_form
 
     def optimize(self):
-        glp_simplex(self.problem, self._smcp)
+        # glp_simplex(self.problem, self._smcp)
+        glp_simplex(self.problem, self.configuration._smcp)
         glpk_status = glp_get_status(self.problem)
         self.status = self._glpk_status_to_status[glpk_status]
-        self.objective.value = glp_get_obj_val(self.problem)
+        
+        # self.objective.value = glp_get_obj_val(self.problem)
+        
         # for var_id, variable in self.variables.items():
         #     variable.primal = glp_get_col_prim(self.problem, variable.index)
         #     variable.dual = glp_get_col_dual(self.problem, variable.index)
@@ -347,8 +442,6 @@ class Model(interface.Model):
         elif constraint.lb is constraint.ub:
             glp_set_row_bnds(self.problem, constraint.index, GLP_FX, float(constraint.lb), float(constraint.lb))
         elif constraint.lb < constraint.ub:
-            print 'Double bounded constraint!'
-            print constraint.lb, constraint.ub, constraint.lb - constraint.ub
             glp_set_row_bnds(self.problem, constraint.index, GLP_DB, float(constraint.lb), float(constraint.ub))
         elif constraint.lb > constraint.ub:
             raise ValueError("Lower bound %f is larger than upper bound %f in constraint %s" %
@@ -359,13 +452,12 @@ class Model(interface.Model):
 
 
 if __name__ == '__main__':
-    import pdb
-    pdb.set_trace()
+    import pickle
+
     x = Variable('x', lb=0, ub=10)
     y = Variable('y', lb=0, ub=10)
     z = Variable('z', lb=-100, ub=99.)
     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
-    print 1/0
     from glpk.glpkpi import glp_read_lp
     problem = glp_create_prob()
     # print glp_get_obj_coef(problem, 0)
@@ -380,3 +472,14 @@ if __name__ == '__main__':
     # print solver
     print solver.optimize()
     print solver.objective
+
+    pickle_string = pickle.dumps(solver)
+    resurrected_solver = pickle.loads(pickle_string)
+    resurrected_solver.optimize()
+    print "Halelujah!", resurrected_solver.objective.value
+
+
+
+
+
+
