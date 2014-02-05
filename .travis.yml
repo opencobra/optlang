@@ -1,10 +1,12 @@
 language: python
+python:
+  - "2.7.5"
 before_install:
   - sudo apt-get install libglpk-dev
   - cd /home/travis
   - wget http://www.dcc.fc.up.pt/~jpp/code/python-glpk/python-glpk_0.4.45.orig.tar.gz
   - tar xzf python-glpk_0.4.45.orig.tar.gz
-  - cd python-glpk_0.4.45
+  - cd python-glpk_0.4.45.orig
   - make install
 install:
   - pip install -r requirements.txt
