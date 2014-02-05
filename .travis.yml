@@ -2,7 +2,8 @@ language: python
 python:
   - "2.7"
 before_install:
-  - sudo apt-get install libglpk-dev
+  - sudo apt-get install libglpk-dev swig numpy
+  - pip install ply
   - cd /home/travis
   - wget http://www.dcc.fc.up.pt/~jpp/code/python-glpk/python-glpk_0.4.45.orig.tar.gz
   - tar xzf python-glpk_0.4.45.orig.tar.gz
