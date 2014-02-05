@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/biosustain/optlang.png?branch=master)](https://travis-ci.org/biosustain/optlang)
-[![Coverage Status](https://coveralls.io/repos/biosustain/flask-presst/badge.png?branch=master)](https://coveralls.io/r/biosustain/optlang?branch=master)
+[![Coverage Status](https://coveralls.io/repos/biosustain/optlang/badge.png?branch=master)](https://coveralls.io/r/biosustain/optlang?branch=master)
 
 optlang
 =======
