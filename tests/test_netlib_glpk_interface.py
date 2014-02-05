@@ -18,7 +18,6 @@ def read_netlib_sif_glpk(fhandle):
     with open(tmp_file, 'w') as tmp_handle:
         content = ''.join([s for s in fhandle if s.strip()])
         tmp_handle.write(content)
-        other_handle = open('/Users/niko/tmp/stuff.sif', 'w').write(content)
         fhandle.close()
     problem = glp_create_prob()
     glp_read_mps(problem, GLP_MPS_DECK, None, tmp_file)

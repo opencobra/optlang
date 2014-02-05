@@ -31,6 +31,7 @@ setup(
     version=__version__,
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
+    test_suite='nose.collector',
     author='Nikolaus Sonnenschein',
     author_email='niko.sonnenschein@gmail.com',
     description='optlang - symbolic optimization language',
