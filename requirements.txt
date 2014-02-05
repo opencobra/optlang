@@ -1,5 +1,4 @@
 setuptools==2.1
--e git+https://github.com:phantomas1234/cobrapy.git#egg=cobra-master
 coverage==3.7
 docutils==0.11
 ipdb==0.8
