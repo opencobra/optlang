@@ -7,10 +7,12 @@ from .util import list_available_solvers
 available_solvers = list_available_solvers()
 
 if available_solvers['GLPK']:
-   from .glpk_interface import Model, Variable, Constraint, Objective
+    from .glpk_interface import Model, Variable, Constraint, Objective
 elif available_solvers['GUROBI']:
-   from .gurobi_interface import Model, Variable, Constraint, Objective
+    from .gurobi_interface import Model, Variable, Constraint, Objective
+elif available_solvers['CPLEX']:
+    from .cplex_interface import Model, Variable, Constraint, Objective
 else:
-   raise Exception('No solvers available.')
+    raise Exception('No solvers available.')
 
 __all__ = []

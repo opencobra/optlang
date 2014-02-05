@@ -6,6 +6,7 @@ import unittest
 import random
 import pickle
 import nose
+import re
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from glpk.glpkpi import *
 
@@ -85,7 +86,9 @@ class SolverTestCase(unittest.TestCase):
         cplex_lines = [line.strip() for line in str(self.model).split('\n')]
         self.assertIn('test: + 0.3 x + 66 z + 0.4 y - ~r_73 = -100', cplex_lines)
         self.assertIn('test2: + 2.333 x + y <= 96.997', cplex_lines)
-        self.assertIn('Dummy_14: + 2.333 x + y + z - ~r_75 = -300', cplex_lines)
+        regex = re.compile("Dummy_\d+\: \+ 2\.333 x \+ y \+ z - \~r_75 = -300")
+        matches = [line for line in cplex_lines if regex.match(line) is not None]
+        self.assertNotEqual(matches, [])
 
     def test_add_nonlinear_constraint_raises(self):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')
