@@ -1,11 +1,7 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-"""Utility functions for optlang.
-
-.. moduleauthor:: Nikolaus Sonnenschein <niko.sonnenschein@gmail.com>
-
-"""
+"""Utility functions for optlang."""
 
 import os
 import logging
@@ -13,10 +9,7 @@ log = logging.getLogger(__name__)
 import tempfile
 from collections import OrderedDict
 from subprocess import check_output
-try:
-    from glpk.glpkpi import *
-except:
-    pass
+from glpk.glpkpi import *
 
 
 def solve_with_glpsol(glp_prob):
@@ -115,11 +108,6 @@ def list_available_solvers():
         log.info('CPLEX python bindings not available.')
     return solvers
 
-class Container(OrderedDict):
-    """..."""
-    def __init__(self, *args, **kwargs):
-        super(DictContainer, self).__init__(*args, **kwargs)
-        self.arg = arg
 
 if __name__ == '__main__':
     problem = glp_create_prob()

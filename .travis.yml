@@ -4,7 +4,7 @@ python:
 virtualenv:
   system_site_packages: true
 before_install:
-  - sudo apt-get install libglpk-dev swig python-numpy
+  - sudo apt-get install libglpk-dev swig python-numpy glpk-utils
   - pip install ply
   - cd /home/travis
   - wget http://www.dcc.fc.up.pt/~jpp/code/python-glpk/python-glpk_0.4.45.orig.tar.gz
