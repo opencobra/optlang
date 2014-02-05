@@ -6,8 +6,8 @@ before_install:
   - cd /home/travis
   - wget http://www.dcc.fc.up.pt/~jpp/code/python-glpk/python-glpk_0.4.45.orig.tar.gz
   - tar xzf python-glpk_0.4.45.orig.tar.gz
-  - cd python-glpk-0.4.45/
-  - make install
+  - cd python-glpk-0.4.45/src/
+  - sudo make install
   - cd $TRAVIS_BUILD_DIR
 install:
   - pip install -r requirements.txt
