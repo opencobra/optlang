@@ -1,4 +1,5 @@
 tests/coverage/
+tests/data/netlib_reference_results/*.txt.gz
 
 optlang.sublime-workspace
 

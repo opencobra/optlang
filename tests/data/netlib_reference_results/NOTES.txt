@@ -1,0 +1,5 @@
+Place the final netlib results (stored in *.txt.gz files available on http://www.zib.de/koch/perplex/data/netlib/txt/) here if you want reparse the reference results.
+
+See also
+
+Koch, T. The final NETLIB-LP results. Operations Research Letters 32, 138–142 (2004).
