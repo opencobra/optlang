@@ -1,6 +1,9 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
+from warnings import warn
+warn("Be careful! The GUROBI interface is still under construction ...")
+
 import logging
 log = logging.getLogger(__name__)
 import tempfile

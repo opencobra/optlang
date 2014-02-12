@@ -7,6 +7,9 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
 
+from warnings import warn
+warn("Be careful! The CPLEX interface is still under construction ...")
+
 import logging
 log = logging.getLogger(__name__)
 import tempfile
@@ -19,7 +22,6 @@ import interface
 
 class Variable(interface.Variable):
     """CPLEX variable interface."""
-    # _type_to_glpk_kind = {'continuous': GLP_CV, 'integer': GLP_IV, 'binary': GLP_BV}
 
     def __init__(self, name, index=None, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
