@@ -66,11 +66,13 @@ class Variable(sympy.Symbol):
     """
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
+        for char in name:
+            if char.isspace():
+                raise ValueError('Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (name, char))
         super(Variable, self).__init__(name, *args, **kwargs)
-
         self.lb = lb
         self.ub = ub
-        self.type = type
+        self.type = type  # TODO: binary is probably not a good idea ...
         self.problem = problem
         # self.primal = primal
         # self.dual = dual
@@ -129,6 +131,11 @@ class Variable(sympy.Symbol):
             self.problem = None
         del self
 
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__ = state
 
 class Constraint(object):
 
@@ -182,8 +189,6 @@ class Constraint(object):
             return expression
         assert len(lonely_coeffs) == 1
         coeff = lonely_coeffs[0]
-        print self.lb
-        print self.ub
         if self.lb is None and self.ub is None:
             raise ValueError(
                 "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set." % expression)

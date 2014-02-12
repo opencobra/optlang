@@ -7,6 +7,7 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
 
+import copy
 import logging
 log = logging.getLogger(__name__)
 import tempfile
@@ -42,6 +43,12 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         return glp_get_col_dual(self.problem.problem, self.index)
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__ = state
 
     def __setattr__(self, name, value):
 
@@ -146,6 +153,14 @@ class Configuration(interface.Configuration):
         self._presolve = presolve
         self._set_verbosity(verbosity)
         self._verbosity = verbosity
+
+    def __getstate__(self):
+        return {'presolve': self.presolve, 'verbosity': self.verbosity}
+
+    def __setstate__(self, state):
+        self.__init__()
+        for key, val in state.iteritems():
+            setattr(self, key, val)
 
     def _set_presolve(self, value):
         self._smcp.presolve = {False:GLP_OFF, True:GLP_ON}[value]
@@ -278,17 +293,40 @@ class Model(interface.Model):
         glp_scale_prob(self.problem, GLP_SF_AUTO)
     
     def __getstate__(self):
-        cplex_form = self.__repr__()
-        repr_dict = {'cplex_form': cplex_form}
+        glpk_repr = self.__repr__()
+        repr_dict = {'glpk_repr': glpk_repr}
         return repr_dict
 
     def __setstate__(self, repr_dict):
         tmp_file = tempfile.mktemp(suffix=".lp")
-        open(tmp_file, 'w').write(repr_dict['cplex_form'])
+        open(tmp_file, 'w').write(repr_dict['glpk_repr'])
         problem = glp_create_prob()
         # print glp_get_obj_coef(problem, 0)
-        glp_read_lp(problem, None, tmp_file)
+        glp_read_prob(problem, 0, tmp_file)
         self.__init__(problem=problem)
+
+    # For some reason this is slower then the two methods above ...
+    # def __getstate__(self):
+    #     state = dict()
+    #     for key, val in self.__dict__.iteritems():
+    #         if key is not 'problem':
+    #             state[key] = val
+    #     state['glpk_repr'] = self.__repr__()
+    #     return state
+
+    # def __setstate__(self, state):
+    #     tmp_file = tempfile.mktemp(suffix=".lp")
+    #     open(tmp_file, 'w').write(state.pop('glpk_repr'))
+    #     problem = glp_create_prob()
+    #     glp_read_prob(problem, 0, tmp_file)
+    #     glp_create_index(problem)
+    #     state['problem'] = problem
+    #     self.__init__()
+    #     self.__dict__ = state
+    #     for var in self.variables.values():
+    #         var.problem = self
+    #     for constr in self.constraints.values():
+    #         constr.problem = self
 
     def __deepcopy__(self, memo):
         copy_problem = glp_create_prob()
@@ -319,13 +357,16 @@ class Model(interface.Model):
         value.problem = self
 
     def __str__(self):
-        return self.__repr__()
-
-    def __repr__(self):
         tmp_file = tempfile.mktemp(suffix=".lp")
         glp_write_lp(self.problem, None, tmp_file)
         cplex_form = open(tmp_file).read()
         return cplex_form
+
+    def __repr__(self):
+        tmp_file = tempfile.mktemp(suffix=".glpk")
+        glp_write_prob(self.problem, 0, tmp_file)
+        glpk_form = open(tmp_file).read()
+        return glpk_form
 
     def optimize(self):
         # glp_simplex(self.problem, self._smcp)
@@ -458,6 +499,7 @@ if __name__ == '__main__':
     y = Variable('y', lb=0, ub=10)
     z = Variable('z', lb=-100, ub=99.)
     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
+    
     from glpk.glpkpi import glp_read_lp
     problem = glp_create_prob()
     # print glp_get_obj_coef(problem, 0)
@@ -473,12 +515,34 @@ if __name__ == '__main__':
     print solver.optimize()
     print solver.objective
 
+    import time
+    t1 = time.time()
+    print "pickling"
     pickle_string = pickle.dumps(solver)
     resurrected_solver = pickle.loads(pickle_string)
+    t2 = time.time()
+    print "Execution time: %s" % (t2-t1)
+    
     resurrected_solver.optimize()
     print "Halelujah!", resurrected_solver.objective.value
 
+    # print solver.variables.values()[0]
+    # # print solver.variables.values()[0].problem
+    # from copy import copy
+    # t1 = time.time()
+    # cp_variables = [copy(var) for var in solver.variables.values()]
+    # t2 = time.time()
+    # print "Execution time: %s" % (t2-t1)
+    # print cp_variables[0]
+    # print cp_variables[0].problem
+    # for var in cp_variables:
+    #     var.problem = None
+    # print cp_variables[0].problem
 
+    # t1 = time.time()
+    # cp_constraints = [copy(var) for var in solver.variables.values()]
+    # t2 = time.time()
+    # print "Execution time: %s" % (t2-t1)
 
 
 

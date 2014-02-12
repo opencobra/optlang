@@ -35,7 +35,9 @@ class SolverTestCase(unittest.TestCase):
         pickle_string = pickle.dumps(self.model)
         from_pickle = pickle.loads(pickle_string)
         from_pickle.optimize()
-        self.assertEqual(value, from_pickle.objective.value)
+        self.assertAlmostEqual(value, from_pickle.objective.value)
+        self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in from_pickle.variables.values()], [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+        self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints.values()], [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints.values()])
 
     def test_init_from_existing_problem(self):
         inner_prob = self.model.problem
@@ -50,12 +52,28 @@ class SolverTestCase(unittest.TestCase):
         self.model.add(var)
         self.assertTrue(var in self.model.variables.values())
         self.assertEqual(var.index, glp_get_num_cols(self.model.problem))
+        self.assertEqual(var.name, glp_get_col_name(self.model.problem, var.index))
         self.assertEqual(self.model.variables['x'].problem, var.problem)
         var = Variable('y', lb=-13)
         self.model.add(var)
         self.assertTrue(var in self.model.variables.values())
+        self.assertEqual(var.name, glp_get_col_name(self.model.problem, var.index))
         self.assertEqual(self.model.variables['x'].lb, None)
         self.assertEqual(self.model.variables['x'].ub, None)
+        self.assertEqual(self.model.variables['y'].lb, -13)
+        self.assertEqual(self.model.variables['x'].ub, None)
+
+    def test_add_non_cplex_conform_variable(self):
+        var = Variable('12x!!@#5_3', lb=-666, ub=666)
+        self.assertEqual(var.index, None)
+        self.model.add(var)
+        self.assertTrue(var in self.model.variables.values())
+        self.assertEqual(var.name, glp_get_col_name(self.model.problem, var.index))
+        self.assertEqual(self.model.variables['12x!!@#5_3'].lb, -666)
+        self.assertEqual(self.model.variables['12x!!@#5_3'].ub, 666)
+        repickled = pickle.loads(pickle.dumps(self.model))
+        var_from_pickle = repickled.variables['12x!!@#5_3']
+        self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle.index))
 
     def test_remove_variable(self):
         var = self.model.variables.values()[0]

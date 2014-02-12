@@ -1,6 +1,7 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
+import pickle
 import unittest
 from optlang.interface import Variable, Constraint, Objective, Model
 
@@ -9,6 +10,10 @@ class VariableTestCase(unittest.TestCase):
 
     def setUp(self):
         self.var = Variable('x')
+
+    def test_white_space_name_raises(self):
+        with self.assertRaises(ValueError):
+            Variable('White Space')
 
     def test_init(self):
         self.assertEqual(self.var.name, 'x')
@@ -60,6 +65,12 @@ class VariableTestCase(unittest.TestCase):
         self.var.lb = 0
         self.var.ub = 10
         self.assertRaises(Exception, setattr, self.var, 'ub', -20)
+
+    def test_pickle_ability(self):
+        var = Variable('name', lb=-10, ub=10., type='binary')
+        pickle_var = pickle.loads(pickle.dumps(var))
+        keys = var.__dict__.keys()
+        self.assertEqual([getattr(var, k) for k in keys], [getattr(pickle_var, k) for k in keys])
 
 class ConstraintTestCase(unittest.TestCase):
 
@@ -120,6 +131,13 @@ class ConstraintTestCase(unittest.TestCase):
         self.assertEqual(constraint.lb, -649)
         self.assertEqual(constraint.ub, 666)
         self.assertEqual(constraint.expression, self.x)
+
+    # def test_pickle_ability(self):
+    #     constraint = Constraint(
+    #         0.3*self.x**self.y + 0.4*self.y*self.x + self.y + 66.*self.z, lb=-100, ub=0., name='nonlinear_constraint')
+    #     pickle_constraint = pickle.loads(pickle.dumps(constraint))
+    #     keys = constraint.__dict__.keys()
+    #     self.assertEqual([getattr(constraint, k) for k in keys], [getattr(pickle_constraint, k) for k in keys])
 
 if __name__ == '__main__':
     import nose
