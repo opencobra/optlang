@@ -81,7 +81,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
             glpk_problem = read_netlib_sif_glpk(fhandle)
             model = Model(problem=glpk_problem)
             model.configuration.presolve = True
-            model.configuration.verbosity = 3
+            # model.configuration.verbosity = 3
             func = partial(check_dimensions, glpk_problem, model)
             func.description = "test_netlib_check_dimensions_%s (%s)" % (netlib_id, os.path.basename(str(__file__)))
             yield func

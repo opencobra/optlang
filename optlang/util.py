@@ -70,7 +70,7 @@ def glpk_read_cplex(path):
         A glpk problems (same type as returned by glp_create_prob)
     """
     problem = glp_create_prob()
-    glp_read_lp(problem, None, "../tests/data/model.lp")
+    glp_read_lp(problem, None, path)
     return problem
 
 def list_available_solvers():

@@ -30,7 +30,6 @@ def test_list_available_solvers():
 
 def test_glpk_read_cplex():
     problem = glpk_read_cplex(TESTMODELPATH)
-    print glp_get_num_rows(problem)
     nose.tools.assert_equal(glp_get_num_rows(problem), 72)
     nose.tools.assert_equal(glp_get_num_cols(problem), 95)
 
