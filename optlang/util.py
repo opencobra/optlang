@@ -31,7 +31,7 @@ def solve_with_glpsol(glp_prob):
     #     A dictionary containing the objective value (key ='objval')
     #     and variable primals.
     '''
-    from glpk.glpkpi import *
+    from glpk.glpkpi import glp_get_row_name, glp_get_col_name, glp_write_lp, glp_get_num_rows, glp_get_num_cols
     row_ids = [glp_get_row_name(glp_prob, i) for i in xrange(1, glp_get_num_rows(glp_prob)+1)]
     
     col_ids = [glp_get_col_name(glp_prob, i) for i in xrange(1, glp_get_num_cols(glp_prob)+1)]
@@ -69,6 +69,7 @@ def glpk_read_cplex(path):
     glp_prob
         A glpk problems (same type as returned by glp_create_prob)
     """
+    from glpk.glpkpi import glp_create_prob, glp_read_lp
     problem = glp_create_prob()
     glp_read_lp(problem, None, path)
     return problem

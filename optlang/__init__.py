@@ -13,6 +13,6 @@ elif available_solvers['GUROBI']:
 elif available_solvers['CPLEX']:
     from .cplex_interface import Model, Variable, Constraint, Objective
 else:
-    raise Exception('No solvers available.')
+    raise Warning('No solvers available.')
 
 __all__ = []
