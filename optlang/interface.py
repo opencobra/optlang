@@ -68,7 +68,8 @@ class Variable(sympy.Symbol):
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
         for char in name:
             if char.isspace():
-                raise ValueError('Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (name, char))
+                raise ValueError(
+                    'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (name, char))
         super(Variable, self).__init__(name, *args, **kwargs)
         self.lb = lb
         self.ub = ub
@@ -125,17 +126,12 @@ class Variable(sympy.Symbol):
         else:
             super(Variable, self).__setattr__(name, value)
 
-    def __del__(self):
-        if self.problem is not None:
-            self.problem._remove_variable(self)
-            self.problem = None
-        del self
-
     def __getstate__(self):
         return self.__dict__
 
     def __setstate__(self, state):
         self.__dict__ = state
+
 
 class Constraint(object):
 
@@ -163,7 +159,7 @@ class Constraint(object):
         super(Constraint, self).__init__(*args, **kwargs)
         self.lb = lb
         self.ub = ub
-        self._expression = self._canonicalize(expression)        
+        self._expression = self._canonicalize(expression)
         if name is None:
             self.name = sympy.Dummy().name
         else:
@@ -191,7 +187,9 @@ class Constraint(object):
         coeff = lonely_coeffs[0]
         if self.lb is None and self.ub is None:
             raise ValueError(
-                "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set." % expression)
+                "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set."
+                % expression
+                )
         elif self.lb is not None:
             expression = expression - coeff
             self.lb = self.lb - coeff
@@ -234,12 +232,6 @@ class Constraint(object):
     def variables(self):
         return self.expression.free_symbols
 
-    # def __getattr__(self, name):
-    #     return getattr(self.expression, name)
-
-    # def __dir__(self):
-    #     return self.__dict__.keys() + dir(self.expression)
-
     def __iadd__(self, other):
         self.expression += other
         return self
@@ -247,11 +239,11 @@ class Constraint(object):
     def __isub__(self, other):
         self.expression -= other
         return self
-    
+
     def __imul__(self, other):
         self.expression *= other
         return self
-    
+
     def __idiv__(self, other):
         self.expression /= other
         return self
@@ -275,7 +267,7 @@ class Objective(object):
 
     @property
     def value(self):
-        return self._value    
+        return self._value
 
     def __str__(self):
         return {'max': 'Maximize', 'min': 'Minimize'}[self.direction] + '\n' + str(self.expression)
@@ -283,19 +275,21 @@ class Objective(object):
 
     def _canonicalize(self, expression):
         """Change x + y to 1.*x + 1.*y"""
-        expression = 1.*expression
+        expression = 1. * expression
         return expression
 
     @property
     def expression(self):
         return self._expression
+
     @expression.setter
     def expression(self, value):
         self._expression = self._canonicalize(value)
-    
+
     @property
     def direction(self):
         return self._direction
+
     @direction.setter
     def direction(self, value):
         # TODO: implement direction parsing, e.g. 'Maximize' -> 'max'
@@ -310,6 +304,7 @@ class Configuration(object):
     @property
     def presolve(self):
         raise NotImplementedError
+
     @presolve.setter
     def presolve(self, value):
         raise NotImplementedError
@@ -317,10 +312,11 @@ class Configuration(object):
     @property
     def verbose(self):
         raise NotImplementedError
+
     @verbose.setter
     def verbose(self, value):
         raise NotImplementedError
-    
+
 
 class Model(object):
 
@@ -332,15 +328,15 @@ class Model(object):
         self.variables = collections.OrderedDict()
         self.constraints = collections.OrderedDict()
         self.status = None
-        self._presolve = False    
+        self._presolve = False
 
     @property
     def objective(self):
         return self._objective
+
     @objective.setter
     def objective(self, value):
         self._objective = value
-    
 
     def __str__(self):
         return '\n'.join((
@@ -366,15 +362,30 @@ class Model(object):
             raise TypeError("Cannot add %s" % stuff)
 
     def remove(self, stuff):
-        if isinstance(stuff, collections.Iterable):
+        if isinstance(stuff, str):
+            try:
+                variable = self.variables[stuff]
+                self._remove_variable(variable)
+            except KeyError:
+                try:
+                    constraint = self.constraints[stuff]
+                    self._remove_constraint(constraint)
+                except KeyError:
+                    raise LookupError(
+                        "%s is neither a variable nor a constraint in the current solver instance." % stuff)
+        elif isinstance(stuff, collections.Iterable):
             for elem in stuff:
                 self.remove(elem)
         elif isinstance(stuff, Variable):
             self._remove_variable(stuff)
         elif isinstance(stuff, Constraint):
             self._remove_constraint(stuff)
+        elif isinstance(stuff, Objective):
+            raise TypeError(
+                "Cannot remove objective %s. Use model.objective = Objective(...) to change the current objective." % stuff)
         else:
-            raise TypeError("Cannot remove %s" % stuff)
+            raise TypeError(
+                "Cannot remove %s. It neither a variable or constraint." % stuff)
 
     def optimize(self):
         raise NotImplementedError(
@@ -391,10 +402,6 @@ class Model(object):
     def _remove_variable(self, variable):
         if isinstance(variable, Variable):
             var = self.variables[variable.name]
-            var.problem = None
-            del self.variables[variable.name]
-        elif isinstance(variable, str):
-            var = self.variables[variable]
             var.problem = None
             del self.variables[variable.name]
         else:

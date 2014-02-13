@@ -25,9 +25,8 @@ class SolverTestCase(unittest.TestCase):
 
     def test_create_empty_model(self):
         model = Model()
-        self.assertEqual(len(model.constraints), 0)
-        self.assertEqual(len(model.variables), 0)
-        self.assertEqual(model.objective, None)
+        self.assertEqual(glp_get_num_cols(model.problem), 0)
+        self.assertEqual(glp_get_num_rows(model.problem), 0)
 
     def test_pickle_ability(self):
         self.model.optimize()
@@ -54,14 +53,24 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(var.index, glp_get_num_cols(self.model.problem))
         self.assertEqual(var.name, glp_get_col_name(self.model.problem, var.index))
         self.assertEqual(self.model.variables['x'].problem, var.problem)
+        self.assertEqual(glp_get_col_kind(self.model.problem, var.index), GLP_CV)
         var = Variable('y', lb=-13)
         self.model.add(var)
         self.assertTrue(var in self.model.variables.values())
         self.assertEqual(var.name, glp_get_col_name(self.model.problem, var.index))
+        self.assertEqual(glp_get_col_kind(self.model.problem, var.index), GLP_CV)
         self.assertEqual(self.model.variables['x'].lb, None)
         self.assertEqual(self.model.variables['x'].ub, None)
         self.assertEqual(self.model.variables['y'].lb, -13)
         self.assertEqual(self.model.variables['x'].ub, None)
+
+    def test_add_integer_var(self):
+        var = Variable('int_var', lb=-13, ub=499.4, type='integer')
+        self.model.add(var)
+        self.assertEqual(self.model.variables['int_var'].type, 'integer')
+        self.assertEqual(glp_get_col_kind(self.model.problem, var.index), GLP_IV)
+        self.assertEqual(self.model.variables['int_var'].ub, 499.4)
+        self.assertEqual(self.model.variables['int_var'].lb, -13)
 
     def test_add_non_cplex_conform_variable(self):
         var = Variable('12x!!@#5_3', lb=-666, ub=666)
@@ -77,8 +86,18 @@ class SolverTestCase(unittest.TestCase):
 
     def test_remove_variable(self):
         var = self.model.variables.values()[0]
+        self.assertEqual(var.problem, self.model)
         self.model.remove(var)
         self.assertNotIn(var, self.model.variables.values())
+        self.assertEqual(glp_find_col(self.model.problem, var.name), 0)
+        self.assertEqual(var.problem, None)
+
+    def test_remove_variable_str(self):
+        var = self.model.variables.values()[0]
+        self.model.remove(var.name)
+        self.assertNotIn(var, self.model.variables.values())
+        self.assertEqual(glp_find_col(self.model.problem, var.name), 0)
+        self.assertEqual(var.problem, None)
 
     def test_add_constraint(self):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -160,10 +179,10 @@ class SolverTestCase(unittest.TestCase):
         self.model.objective = Objective(v1 + v2)
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
 
-    # def test_raise_on_non_linear_objective(self):
-    #     """Test that an exception is raised when a non-linear objective is added to the model."""
-    #     v1, v2 = self.model.variables[0:1]
-    #     self.assertRaises(Exception, self.model.objective = Objective(v1 * v2))
+    def test_raise_on_non_linear_objective(self):
+        """Test that an exception is raised when a non-linear objective is added to the model."""
+        v1, v2 = self.model.variables.values()[0:2]
+        self.assertRaises(Exception, setattr, self.model, 'objective', Objective(v1 * v2))
 
 if __name__ == '__main__':
     nose.runmodule()

@@ -18,13 +18,33 @@ from glpk.glpkpi import *
 import interface
 
 
+_GLPK_STATUS_TO_STATUS = {
+    GLP_UNDEF: interface.UNDEFINED,
+    GLP_FEAS: interface.FEASIBLE,
+    GLP_INFEAS: interface.INFEASIBLE,
+    GLP_NOFEAS: interface.INFEASIBLE,
+    GLP_OPT: interface.OPTIMAL,
+    GLP_UNBND: interface.UNBOUNDED
+}
+
+_GLPK_VTYPE_TO_VTYPE = {
+    GLP_CV: 'continuous',
+    GLP_IV: 'integer',
+    GLP_BV: 'binary'
+}
+
+_VTYPE_TO_GLPK_VTYPE = dict(
+    [(val, key) for key, val in _GLPK_VTYPE_TO_VTYPE.iteritems()]
+    )
+
+
 class Variable(interface.Variable):
+
     """..."""
-    _type_to_glpk_kind = {'continuous': GLP_CV, 'integer': GLP_IV, 'binary': GLP_BV}
 
     def __init__(self, name, index=None, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
-        
+
     @property
     def index(self):
         try:
@@ -32,14 +52,15 @@ class Variable(interface.Variable):
             if i != 0:
                 return i
             else:
-                raise Exception("Could not determine row index for variable %s" % self)
+                raise Exception(
+                    "Could not determine row index for variable %s" % self)
         except:
             return None
 
     @property
     def primal(self):
         return glp_get_col_prim(self.problem.problem, self.index)
-    
+
     @property
     def dual(self):
         return glp_get_col_dual(self.problem.problem, self.index)
@@ -53,29 +74,32 @@ class Variable(interface.Variable):
     def __setattr__(self, name, value):
 
         if getattr(self, 'problem', None):
-            
+
             if name == 'lb' or name == 'ub':
                 super(Variable, self).__setattr__(name, value)
                 self.problem._glpk_set_col_bounds(self)
-            
-            # elif name == 'type':
-            #     super(Variable, self).__setattr__(name, value)
-            #     try:
-            #         glpk_kind = self._type_to_glpk_kind[self.type]
-            #     except KeyError, e:
-            #         raise Exception("GLPK cannot handle variables of type %s. \
-            #             The following variable types are available:\n" + " ".join(self._type_to_glpk_kind.keys()))
-            #     glp_set_col_kind(self.problem, index, glpk_kind)
-            # elif hasattr(self, name):
-            #     super(Variable, self).__setattr__(name, value)
+
+            elif name == 'type':
+                try:
+                    glpk_kind = _VTYPE_TO_GLPK_VTYPE[self.type]
+                except KeyError:
+                    raise Exception("GLPK cannot handle variables of type %s. \
+                        The following variable types are available:\n" +
+                                    " ".join(_VTYPE_TO_GLPK_VTYPE.keys()))
+                glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
+                super(Variable, self).__setattr__(name, value)
+
             else:
                 super(Variable, self).__setattr__(name, value)
+
         else:
             super(Variable, self).__setattr__(name, value)
 
 
 class Constraint(interface.Constraint):
+
     """GLPK solver interface"""
+
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
 
@@ -86,24 +110,24 @@ class Constraint(interface.Constraint):
             if i != 0:
                 return i
             else:
-                raise Exception("Could not determine row index for variable %s" % self)
+                raise Exception(
+                    "Could not determine row index for variable %s" % self)
         except:
             return None
 
     @property
     def primal(self):
         return glp_get_row_prim(self.problem.problem, self.index)
-    
+
     @property
     def dual(self):
         return glp_get_row_dual(self.problem.problem, self.index)
-
 
     def __setattr__(self, name, value):
 
         if getattr(self, 'problem', None):
         # if super(Constraint, self).__getattr__('problem'):
-            
+
             if name == 'name':
                 super(Constraint, self).__setattr__(name, value)
                 self.problem._glpk_set_row_name(self)
@@ -117,8 +141,11 @@ class Constraint(interface.Constraint):
         else:
             super(Constraint, self).__setattr__(name, value)
 
+
 class Objective(interface.Objective):
+
     """docstring for Objective"""
+
     def __init__(self, *args, **kwargs):
         # import pdb; pdb.set_trace()
         super(Objective, self).__init__(*args, **kwargs)
@@ -135,14 +162,17 @@ class Objective(interface.Objective):
 
         if getattr(self, 'problem', None):
             if name == 'direction':
-                glp_set_obj_dir(self.problem.problem, {'min': GLP_MIN, 'max': GLP_MAX}[value])
+                glp_set_obj_dir(self.problem.problem,
+                                {'min': GLP_MIN, 'max': GLP_MAX}[value])
                 super(Objective, self).__setattr__(name, value)
         else:
-            super(Objective, self).__setattr__(name, value)            
+            super(Objective, self).__setattr__(name, value)
 
 
 class Configuration(interface.Configuration):
+
     """docstring for Configuration"""
+
     def __init__(self, presolve=False, verbosity=0, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._smcp = glp_smcp()
@@ -163,8 +193,8 @@ class Configuration(interface.Configuration):
             setattr(self, key, val)
 
     def _set_presolve(self, value):
-        self._smcp.presolve = {False:GLP_OFF, True:GLP_ON}[value]
-        self._iocp.presolve = {False:GLP_OFF, True:GLP_ON}[value]
+        self._smcp.presolve = {False: GLP_OFF, True: GLP_ON}[value]
+        self._iocp.presolve = {False: GLP_OFF, True: GLP_ON}[value]
 
     def _set_verbosity(self, value):
         if value == 0:
@@ -184,11 +214,15 @@ class Configuration(interface.Configuration):
             self._smcp.msg_lev = GLP_MSG_ALL
             self._iocp.msg_lev = GLP_MSG_ALL
         else:
-            raise Exception("%s is not a valid verbosity level ranging between 0 and 3." % value)
+            raise Exception(
+                "%s is not a valid verbosity level ranging between 0 and 3."
+                % value
+                )
 
     @property
     def presolve(self):
         return self._presolve
+
     @presolve.setter
     def presolve(self, value):
         self._set_presolve(value)
@@ -197,22 +231,16 @@ class Configuration(interface.Configuration):
     @property
     def verbosity(self):
         return self._verbosity
+
     @verbosity.setter
     def verbosity(self, value):
         self._set_verbosity(value)
-        self._verbosity = value        
+        self._verbosity = value
+
 
 class Model(interface.Model):
-    """GLPK solver interface"""
 
-    _glpk_status_to_status = {
-        GLP_UNDEF:interface.UNDEFINED,
-        GLP_FEAS:interface.FEASIBLE,
-        GLP_INFEAS:interface.INFEASIBLE,
-        GLP_NOFEAS:interface.INFEASIBLE,
-        GLP_OPT:interface.OPTIMAL,
-        GLP_UNBND:interface.UNBOUNDED
-    }
+    """GLPK solver interface"""
 
     def __init__(self, problem=None, *args, **kwargs):
 
@@ -220,40 +248,34 @@ class Model(interface.Model):
 
         self.configuration = Configuration()
 
-        # glp_term_out(GLP_OFF)
-        # self._smcp = glp_smcp()
-        # self._iocp = glp_iocp()
-        # glp_init_smcp(self._smcp)
-        # glp_init_iocp(self._iocp)
-        # self._smcp.msg_lev = GLP_MSG_ALL
-        # self._iocp.msg_lev = GLP_MSG_ON
-        # self._smcp.presolve = GLP_OFF
-        # self._iocp.presolve = GLP_OFF
-        
         if problem is None:
             self.problem = glp_create_prob()
             glp_create_index(self.problem)
-        
+
         elif isinstance(problem, glp_prob):
             self.problem = problem
             glp_create_index(self.problem)
             row_num = glp_get_num_rows(self.problem)
             col_num = glp_get_num_cols(self.problem)
-            for i in xrange(1, col_num+1):
+            for i in xrange(1, col_num + 1):
                 var = Variable(
-                            glp_get_col_name(self.problem, i),
-                            lb=glp_get_col_lb(self.problem, i),
-                            ub=glp_get_col_ub(self.problem, i),
-                            problem=self
-                        )
-                super(Model, self)._add_variable(var)  # This avoids adding the variable to the glpk problem
+                    glp_get_col_name(self.problem, i),
+                    lb=glp_get_col_lb(self.problem, i),
+                    ub=glp_get_col_ub(self.problem, i),
+                    problem=self,
+                    type=_GLPK_VTYPE_TO_VTYPE[
+                        glp_get_col_kind(self.problem, i)]
+                )
+                # This avoids adding the variable to the glpk problem
+                super(Model, self)._add_variable(var)
             var = self.variables.values()
 
-            for j in xrange(1, row_num+1):
+            for j in xrange(1, row_num + 1):
                 ia = intArray(col_num + 1)
                 da = doubleArray(col_num + 1)
                 nnz = glp_get_mat_row(self.problem, j, ia, da)
-                lhs = _unevaluated_Add(*[da[i] * var[ia[i]-1] for i in range(1, nnz+1)])
+                lhs = _unevaluated_Add(*[da[i] * var[ia[i] - 1]
+                                       for i in range(1, nnz + 1)])
                 glpk_row_type = glp_get_row_type(self.problem, j)
                 if glpk_row_type == GLP_FX:
                     row_lb = glp_get_row_lb(self.problem, j)
@@ -268,30 +290,39 @@ class Model(interface.Model):
                     row_lb = glp_get_row_lb(self.problem, j)
                     row_ub = glp_get_row_ub(self.problem, j)
                 elif glpk_row_type == GLP_FR:
-                    row_lb = None 
-                    row_ub = None 
+                    row_lb = None
+                    row_ub = None
                 else:
-                    raise Exception("Currently, optlang does not support glpk row type " + str(glpk_row_type))
+                    raise Exception(
+                        "Currently, optlang does not support glpk row type %s"
+                        % str(glpk_row_type)
+                        )
                     log.exception()
                 if isinstance(lhs, int):
                     lhs = sympy.Integer(lhs)
                 elif isinstance(lhs, float):
                     lhs = sympy.Real(lhs)
                 super(Model, self)._add_constraint(
-                        Constraint(lhs, lb=row_lb, ub=row_ub, name=glp_get_row_name(self.problem, j), problem=self),
-                        sloppy=True
-                    )
-            
-            term_generator = ((glp_get_obj_coef(self.problem, index), var[index-1]) for index in xrange(1, glp_get_num_cols(problem)+1))            
+                    Constraint(lhs, lb=row_lb, ub=row_ub,
+                               name=glp_get_row_name(
+                                   self.problem, j), problem=self),
+                    sloppy=True
+                )
+
+            term_generator = (
+                (glp_get_obj_coef(self.problem, index), var[index - 1])
+                for index in xrange(1, glp_get_num_cols(problem) + 1)
+                )
             self._objective = Objective(
                 _unevaluated_Add(*[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.]),
                 problem=self,
-                direction={GLP_MIN:'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)]
-                )
+                direction={GLP_MIN: 'min', GLP_MAX:
+                           'max'}[glp_get_obj_dir(self.problem)]
+            )
         else:
-            raise Exception, "Provided problem is not a valid GLPK model."
+            raise Exception("Provided problem is not a valid GLPK model.")
         glp_scale_prob(self.problem, GLP_SF_AUTO)
-    
+
     def __getstate__(self):
         glpk_repr = self.__repr__()
         repr_dict = {'glpk_repr': glpk_repr}
@@ -336,10 +367,11 @@ class Model(interface.Model):
     @property
     def objective(self):
         return self._objective
+
     @objective.setter
     def objective(self, value):
         self._objective = value
-        for i in xrange(1, glp_get_num_cols(self.problem)+1):
+        for i in xrange(1, glp_get_num_cols(self.problem) + 1):
             glp_set_obj_coef(self.problem, i, 0.)
         expression = self._objective.expression
         if expression.is_Atom:
@@ -352,8 +384,13 @@ class Model(interface.Model):
                 coeff, var = term.args
                 glp_set_obj_coef(self.problem, var.index, float(coeff))
         else:
-            raise ValueError("Provided objective %s doesn't seem to be appropriate." % self._objective)
-        glp_set_obj_dir(self.problem, {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction])
+            raise ValueError(
+                "Provided objective %s doesn't seem to be appropriate." %
+                self._objective)
+        glp_set_obj_dir(
+            self.problem,
+            {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction]
+            )
         value.problem = self
 
     def __str__(self):
@@ -369,19 +406,17 @@ class Model(interface.Model):
         return glpk_form
 
     def optimize(self):
-        # glp_simplex(self.problem, self._smcp)
-        glp_simplex(self.problem, self.configuration._smcp)
+        if all([var.type == 'continuous' for var in self.variables.values()]):
+            glp_simplex(self.problem, self.configuration._smcp)
+        else:
+            glp_intopt(self.problem, self.configuration._iocp)
+            if _GLPK_STATUS_TO_STATUS[glp_get_status(self.problem)] == 'undefined':
+                original_presolve_setting = self.configuration.presolve
+                self.configuration.presolve = True
+                glp_intopt(self.problem, self.configuration._iocp)
+                self.configuration.presolve = original_presolve_setting
         glpk_status = glp_get_status(self.problem)
-        self.status = self._glpk_status_to_status[glpk_status]
-        
-        # self.objective.value = glp_get_obj_val(self.problem)
-        
-        # for var_id, variable in self.variables.items():
-        #     variable.primal = glp_get_col_prim(self.problem, variable.index)
-        #     variable.dual = glp_get_col_dual(self.problem, variable.index)
-        # for constr_id, constraint in self.constraints.items():
-        #     constraint.primal = glp_get_row_prim(self.problem, constraint.index)
-        #     constraint.dual = glp_get_row_dual(self.problem, constraint.index)
+        self.status = _GLPK_STATUS_TO_STATUS[glpk_status]
         return self.status
 
     def _add_variable(self, variable):
@@ -391,8 +426,9 @@ class Model(interface.Model):
         glp_set_col_name(self.problem, index, variable.name)
         variable.problem = self
         self._glpk_set_col_bounds(variable)
+        glp_set_col_kind(self.problem, variable.index, _VTYPE_TO_GLPK_VTYPE[variable.type])
         return variable
-    
+
     def _remove_variable(self, variable):
         num = intArray(2)
         num[1] = variable.index
@@ -402,19 +438,13 @@ class Model(interface.Model):
     def _add_constraint(self, constraint, sloppy=False):
         if sloppy is False:
             if not constraint.is_Linear:
-                raise ValueError("GLPK only supports linear constraints. %s is not linear." % constraint)
+                raise ValueError(
+                    "GLPK only supports linear constraints. %s is not linear." % constraint)
         super(Model, self)._add_constraint(constraint, sloppy=sloppy)
-        # for var in constraint.variables:
-        #     if var.index is None:
-        #         var.index = glp_find_col(self.problem, var.name)
-            # if var.name not in self.variables:
-            #     var
-            #     self._add_variable(var)
         constraint.problem = self
         glp_add_rows(self.problem, 1)
         index = glp_get_num_rows(self.problem)
         glp_set_row_name(self.problem, index, constraint.name)
-        # constraint.index = index
         num_vars = len(constraint.variables)
         index_array = intArray(num_vars + 1)
         value_array = doubleArray(num_vars + 1)
@@ -425,7 +455,8 @@ class Model(interface.Model):
         elif constraint.expression.is_Mul:
             args = constraint.expression.args
             if len(args) > 2:
-                raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
+                raise Exception(
+                    "Term %s from constraint %s is not a proper linear term.", term, constraint)
             coeff = float(args[0])
             var = args[1]
             index_array[1] = var.index
@@ -443,52 +474,66 @@ class Model(interface.Model):
                     var = args[1]
                     coeff = float(args[0])
                 elif leng(args) > 2:
-                    raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
-                index_array[i+1] = var.index
-                value_array[i+1] = coeff
-        glp_set_mat_row(self.problem, index, num_vars, index_array, value_array)
+                    raise Exception(
+                        "Term %s from constraint %s is not a proper linear term.", term, constraint)
+                index_array[i + 1] = var.index
+                value_array[i + 1] = coeff
+        glp_set_mat_row(self.problem, index, num_vars,
+                        index_array, value_array)
         self._glpk_set_row_bounds(constraint)
-
-    # def _glpk_set_col_name(self, variable):
-    #     glp_set_col_name(self.problem, variable.index, variable.name)
-
-    # def _glpk_set_row_name(self, constraint):
-    #     glp_set_row_name(self.problem, constraint.index, constraint.name)
 
     def _glpk_set_col_bounds(self, variable):
         if variable.lb is None and variable.ub is None:
-            glp_set_col_bnds(self.problem, variable.index, GLP_FR, 0., 0.) # 0.'s are ignored
+            # 0.'s are ignored
+            glp_set_col_bnds(self.problem, variable.index, GLP_FR, 0., 0.)
         elif variable.lb is None:
-            glp_set_col_bnds(self.problem, variable.index, GLP_UP, 0., float(variable.ub)) # 0. is ignored
+            # 0. is ignored
+            glp_set_col_bnds(self.problem, variable.index,
+                             GLP_UP, 0., float(variable.ub))
         elif variable.ub is None:
-            glp_set_col_bnds(self.problem, variable.index, GLP_LO, float(variable.lb), 0.) # 0. is ignored
+            # 0. is ignored
+            glp_set_col_bnds(self.problem, variable.index,
+                             GLP_LO, float(variable.lb), 0.)
         elif variable.lb == variable.ub:
-            glp_set_col_bnds(self.problem, variable.index, GLP_FX, float(variable.lb), float(variable.lb))
+            glp_set_col_bnds(self.problem, variable.index,
+                             GLP_FX, float(variable.lb), float(variable.lb))
         elif variable.lb < variable.ub:
-            glp_set_col_bnds(self.problem, variable.index, GLP_DB, float(variable.lb), float(variable.ub))
+            glp_set_col_bnds(self.problem, variable.index,
+                             GLP_DB, float(variable.lb), float(variable.ub))
         elif variable.lb > variable.ub:
-            raise ValueError("Lower bound %f is larger than upper bound %f in variable %s" %
+            raise ValueError(
+                "Lower bound %f is larger than upper bound %f in variable %s" %
                 (variable.lb, variable.ub, variable))
         else:
-            raise Exception("Something is wrong with the provided bounds %f and %f in variable %s" %
+            raise Exception(
+                "Something is wrong with the provided bounds %f and %f in variable %s" %
                 (variable.lb, variable.ub, variable))
 
     def _glpk_set_row_bounds(self, constraint):
         if constraint.lb is None and constraint.ub is None:
-            glp_set_row_bnds(self.problem, constraint.index, GLP_FR, 0., 0.) # 0.'s are ignored
+            # 0.'s are ignored
+            glp_set_row_bnds(self.problem, constraint.index, GLP_FR, 0., 0.)
         elif constraint.lb is None:
-            glp_set_row_bnds(self.problem, constraint.index, GLP_UP, 0., float(constraint.ub)) # 0. is ignored
+            # 0. is ignored
+            glp_set_row_bnds(self.problem, constraint.index,
+                             GLP_UP, 0., float(constraint.ub))
         elif constraint.ub is None:
-            glp_set_row_bnds(self.problem, constraint.index, GLP_LO, float(constraint.lb), 0.) # 0. is ignored
+            # 0. is ignored
+            glp_set_row_bnds(self.problem, constraint.index,
+                             GLP_LO, float(constraint.lb), 0.)
         elif constraint.lb is constraint.ub:
-            glp_set_row_bnds(self.problem, constraint.index, GLP_FX, float(constraint.lb), float(constraint.lb))
+            glp_set_row_bnds(self.problem, constraint.index,
+                             GLP_FX, float(constraint.lb), float(constraint.lb))
         elif constraint.lb < constraint.ub:
-            glp_set_row_bnds(self.problem, constraint.index, GLP_DB, float(constraint.lb), float(constraint.ub))
+            glp_set_row_bnds(self.problem, constraint.index,
+                             GLP_DB, float(constraint.lb), float(constraint.ub))
         elif constraint.lb > constraint.ub:
-            raise ValueError("Lower bound %f is larger than upper bound %f in constraint %s" %
+            raise ValueError(
+                "Lower bound %f is larger than upper bound %f in constraint %s" %
                 (constraint.lb, constraint.ub, constraint))
         else:
-            raise Exception("Something is wrong with the provided bounds %f and %f in constraint %s" %
+            raise Exception(
+                "Something is wrong with the provided bounds %f and %f in constraint %s" %
                 (constraint.lb, constraint.ub, constraint))
 
 
@@ -498,20 +543,16 @@ if __name__ == '__main__':
     x = Variable('x', lb=0, ub=10)
     y = Variable('y', lb=0, ub=10)
     z = Variable('z', lb=-100, ub=99.)
-    constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
-    
+    constr = Constraint(0.3 * x + 0.4 * y + 66. * z,
+                        lb=-100, ub=0., name='test')
+
     from glpk.glpkpi import glp_read_lp
     problem = glp_create_prob()
-    # print glp_get_obj_coef(problem, 0)
     glp_read_lp(problem, None, "../tests/data/model.lp")
 
-    # from optlang.util import solve_with_glpsol
-    # print solve_with_glpsol(problem)
-    
     solver = Model(problem=problem)
     solver.add(z)
     solver.add(constr)
-    # print solver
     print solver.optimize()
     print solver.objective
 
@@ -521,29 +562,7 @@ if __name__ == '__main__':
     pickle_string = pickle.dumps(solver)
     resurrected_solver = pickle.loads(pickle_string)
     t2 = time.time()
-    print "Execution time: %s" % (t2-t1)
-    
+    print "Execution time: %s" % (t2 - t1)
+
     resurrected_solver.optimize()
     print "Halelujah!", resurrected_solver.objective.value
-
-    # print solver.variables.values()[0]
-    # # print solver.variables.values()[0].problem
-    # from copy import copy
-    # t1 = time.time()
-    # cp_variables = [copy(var) for var in solver.variables.values()]
-    # t2 = time.time()
-    # print "Execution time: %s" % (t2-t1)
-    # print cp_variables[0]
-    # print cp_variables[0].problem
-    # for var in cp_variables:
-    #     var.problem = None
-    # print cp_variables[0].problem
-
-    # t1 = time.time()
-    # cp_constraints = [copy(var) for var in solver.variables.values()]
-    # t2 = time.time()
-    # print "Execution time: %s" % (t2-t1)
-
-
-
-
