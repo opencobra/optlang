@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 import tempfile
 from collections import OrderedDict
 from subprocess import check_output
-from glpk.glpkpi import *
 
 
 def solve_with_glpsol(glp_prob):
@@ -32,6 +31,7 @@ def solve_with_glpsol(glp_prob):
     #     A dictionary containing the objective value (key ='objval')
     #     and variable primals.
     '''
+    from glpk.glpkpi import *
     row_ids = [glp_get_row_name(glp_prob, i) for i in xrange(1, glp_get_num_rows(glp_prob)+1)]
     
     col_ids = [glp_get_col_name(glp_prob, i) for i in xrange(1, glp_get_num_cols(glp_prob)+1)]
