@@ -240,7 +240,7 @@ class Model(interface.Model):
             elif constraint.expression.is_Mul:
                 args = constraint.expression.args
                 if len(args) > 2:
-                    raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
+                    raise Exception("Term %s from constraint %s is not a proper linear term." % (term, constraint))
                 val = float(args[0])
                 ind = args[1].name
             else:
@@ -256,7 +256,7 @@ class Model(interface.Model):
                         ind = args[1].name
                         val = float(args[0])
                     elif leng(args) > 2:
-                        raise Exception("Term %s from constraint %s is not a proper linear term.", term, constraint)
+                        raise Exception("Term %s from constraint %s is not a proper linear term." % (term, constraint))
                     
             self.problem.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=[ind], val=[val])], senses='', rhs=[0], range_values=[], names=[constraint.name])
         constraint.problem = self

@@ -456,7 +456,7 @@ class Model(interface.Model):
             args = constraint.expression.args
             if len(args) > 2:
                 raise Exception(
-                    "Term %s from constraint %s is not a proper linear term.", term, constraint)
+                    "Term %s from constraint %s is not a proper linear term." % (term, constraint))
             coeff = float(args[0])
             var = args[1]
             index_array[1] = var.index
@@ -475,7 +475,7 @@ class Model(interface.Model):
                     coeff = float(args[0])
                 elif leng(args) > 2:
                     raise Exception(
-                        "Term %s from constraint %s is not a proper linear term.", term, constraint)
+                        "Term %s from constraint %s is not a proper linear term." % (term, constraint))
                 index_array[i + 1] = var.index
                 value_array[i + 1] = coeff
         glp_set_mat_row(self.problem, index, num_vars,

@@ -110,18 +110,17 @@ class Variable(sympy.Symbol):
 
         if name == 'lb' and hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
             raise ValueError(
-                'The provided lower bound %g is larger than the upper bound %g of variable %s.', value, self.ub, self)
+                'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (value, self.ub, self))
 
         if name == 'ub' and hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
             raise ValueError(
-                'The provided upper bound %g is smaller than the lower bound %g of variable %s.', value, self.lb, self)
+                'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (value, self.lb, self))
 
         elif name == 'type':
             if value in ('continuous', 'integer', 'binary'):
                 super(Variable, self).__setattr__(name, value)
             else:
-                raise ValueError(
-                    "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
+                raise ValueError("'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
 
         else:
             super(Variable, self).__setattr__(name, value)
