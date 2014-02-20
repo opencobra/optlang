@@ -27,6 +27,10 @@ class SolverTestCase(unittest.TestCase):
         model = Model()
         self.assertEqual(glp_get_num_cols(model.problem), 0)
         self.assertEqual(glp_get_num_rows(model.problem), 0)
+        self.assertEqual(model.name, None)
+        self.assertEqual(glp_get_prob_name(model.problem), None)
+        model = Model(name="empty_problem")
+        self.assertEqual(glp_get_prob_name(model.problem), "empty_problem")
 
     def test_pickle_ability(self):
         self.model.optimize()

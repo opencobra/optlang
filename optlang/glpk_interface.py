@@ -251,6 +251,8 @@ class Model(interface.Model):
         if problem is None:
             self.problem = glp_create_prob()
             glp_create_index(self.problem)
+            if self.name is not None:
+                glp_set_prob_name(self.problem, self.name)
 
         elif isinstance(problem, glp_prob):
             self.problem = problem
