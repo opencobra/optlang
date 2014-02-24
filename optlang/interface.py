@@ -107,6 +107,8 @@ class Variable(sympy.Symbol):
         return self.__str__()
 
     def __setattr__(self, name, value):
+        #TODO: Should also catch float bound assignments to integer variables
+        #TODO: Should also catch float and integer assignments >1 and <0 for binary variables
 
         if name == 'lb' and hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
             raise ValueError(
@@ -258,7 +260,10 @@ class Objective(object):
 
     def __init__(self, expression, name=None, value=None, problem=None, direction='max', *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
-        self._expression = self._canonicalize(expression)
+        try:
+            self._expression = self._canonicalize(expression)
+        except TypeError:
+            self._expression = expression
         self.name = name
         self._value = value
         self._direction = direction
@@ -283,7 +288,10 @@ class Objective(object):
 
     @expression.setter
     def expression(self, value):
-        self._expression = self._canonicalize(value)
+        try:
+            self._expression = self._canonicalize(value)
+        except TypeError:
+            self._expression = value
 
     @property
     def direction(self):
@@ -297,16 +305,8 @@ class Objective(object):
 
 class Configuration(object):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         pass
-
-    @property
-    def presolve(self):
-        raise NotImplementedError
-
-    @presolve.setter
-    def presolve(self, value):
-        raise NotImplementedError
 
     @property
     def verbose(self):
@@ -316,23 +316,43 @@ class Configuration(object):
     def verbose(self, value):
         raise NotImplementedError
 
+class MathematicalProgrammingConfiguration(object):
+
+    def __init__(self, *args, **kwargs):
+        super(MathematicalProgrammingConfiguration, self).__init__(*args, **kwargs)
+
+    @property
+    def presolve(self):
+        raise NotImplementedError
+    @presolve.setter
+    def presolve(self, value):
+        raise NotImplementedError
+    
+
+class EvolutionaryOptimizationConfiguration(object):
+    """docstring for HeuristicOptimization"""
+    def __init__(self, *args, **kwargs):
+        super(EvolutionaryOptimizationConfiguration, self).__init__(*args, **kwargs)
+
 
 class Model(object):
 
     """docstring for Model"""
 
-    def __init__(self, objective=None, *args, **kwargs):
+    def __init__(self, objective=None, name=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
         self._objective = objective
         self.variables = collections.OrderedDict()
         self.constraints = collections.OrderedDict()
         self.status = None
         self._presolve = False
+        self.name = name
 
     @property
     def objective(self):
         return self._objective
 
+    # TODO: objective that include variables that are not already in the model should be auto added
     @objective.setter
     def objective(self, value):
         self._objective = value
@@ -348,6 +368,7 @@ class Model(object):
 
     def add(self, stuff):
         """Add variables, constraints, ..."""
+        # import pdb; pdb.set_trace();
         if isinstance(stuff, collections.Iterable):
             for elem in stuff:
                 self.add(elem)

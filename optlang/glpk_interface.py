@@ -169,7 +169,7 @@ class Objective(interface.Objective):
             super(Objective, self).__setattr__(name, value)
 
 
-class Configuration(interface.Configuration):
+class Configuration(interface.MathematicalProgrammingConfiguration):
 
     """docstring for Configuration"""
 
