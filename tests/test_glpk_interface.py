@@ -183,6 +183,15 @@ class SolverTestCase(unittest.TestCase):
         self.model.objective = Objective(v1 + v2)
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
 
+    def test_number_objective(self):
+        self.model.objective = Objective(0.)
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.0')
+        obj_coeff = list()
+        for i in xrange(1, glp_get_num_cols(self.model.problem) + 1):
+            obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
+        self.assertEqual(set(obj_coeff), set([0.]))
+
+
     def test_raise_on_non_linear_objective(self):
         """Test that an exception is raised when a non-linear objective is added to the model."""
         v1, v2 = self.model.variables.values()[0:2]

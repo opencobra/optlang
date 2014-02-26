@@ -6,6 +6,7 @@
 extended for individual solvers.
 """
 
+import types
 import logging
 log = logging.getLogger(__name__)
 import collections
@@ -356,6 +357,16 @@ class Model(object):
     @objective.setter
     def objective(self, value):
         self._objective = value
+        try:
+            vars_in_objective = self._objective.expression.atoms(sympy.Symbol)
+            vars_not_yet_in_model = vars_in_objective.difference(set(self.variables.values()))
+            for var in vars_not_yet_in_model:
+                self._add_variable(var)
+        except AttributeError, e:
+            if isinstance(self._objective.expression, types.FunctionType):
+                pass
+            else:
+                raise AttributeError(e)
 
     def __str__(self):
         return '\n'.join((
@@ -411,9 +422,6 @@ class Model(object):
         raise NotImplementedError(
             "You're using the high level interface to optlang. Problems cannot be optimized in this mode. Choose from one of the solver specific interfaces.")
 
-    def from_cplex(self, cplex_str):
-        raise NotImplementedError
-
     def _add_variable(self, variable):
         variable.problem = self
         self.variables[variable.name] = variable
@@ -440,28 +448,6 @@ class Model(object):
     def _remove_constraint(self, constraint):
         del self.constraints[constraint.__hash__]
         del constraint
-
-
-# class Solution(object):
-
-#     """docstring for Solution"""
-
-#     def __init__(self, status=None, objval=None, *args, **kwargs):
-#         super(Solution, self).__init__(*args, **kwargs)
-#         self.status = None
-#         self.objval = None
-#         self.variables = OrderedDict()
-#         self.constraints = OrderedDict()
-
-#     def populate(self):
-#         pass
-
-#     @property
-#     def variable(self):
-#         return self._variable
-#     @variable.setter
-#     def variable(self, value):
-#         self._variable = value
 
 
 if __name__ == '__main__':

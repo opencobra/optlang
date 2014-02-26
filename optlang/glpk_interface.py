@@ -8,6 +8,7 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 """
 
 import copy
+import types
 import logging
 log = logging.getLogger(__name__)
 import tempfile
@@ -374,25 +375,28 @@ class Model(interface.Model):
     def objective(self, value):
         self._objective = value
         for i in xrange(1, glp_get_num_cols(self.problem) + 1):
-            glp_set_obj_coef(self.problem, i, 0.)
+            glp_set_obj_coef(self.problem, i, 0)
         expression = self._objective.expression
-        if expression.is_Atom:
-            glp_set_obj_coef(self.problem, expression.index, 1.)
-        if expression.is_Mul:
-            coeff, var = expression.args
-            glp_set_obj_coef(self.problem, var.index, float(coeff))
-        elif expression.is_Add:
-            for term in expression.args:
-                coeff, var = term.args
-                glp_set_obj_coef(self.problem, var.index, float(coeff))
+        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType):
+            pass
         else:
-            raise ValueError(
-                "Provided objective %s doesn't seem to be appropriate." %
-                self._objective)
-        glp_set_obj_dir(
-            self.problem,
-            {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction]
-            )
+            if expression.is_Atom:
+                glp_set_obj_coef(self.problem, expression.index, 1.)
+            if expression.is_Mul:
+                coeff, var = expression.args
+                glp_set_obj_coef(self.problem, var.index, float(coeff))
+            elif expression.is_Add:
+                for term in expression.args:
+                    coeff, var = term.args
+                    glp_set_obj_coef(self.problem, var.index, float(coeff))
+            else:
+                raise ValueError(
+                    "Provided objective %s doesn't seem to be appropriate." %
+                    self._objective)
+            glp_set_obj_dir(
+                self.problem,
+                {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction]
+                )
         value.problem = self
 
     def __str__(self):
@@ -547,6 +551,16 @@ if __name__ == '__main__':
     z = Variable('z', lb=-100, ub=99.)
     constr = Constraint(0.3 * x + 0.4 * y + 66. * z,
                         lb=-100, ub=0., name='test')
+    solver = Model(name='Small test problem')
+    solver.add(constr)
+    solver.objective = Objective(z, direction='min')
+    print solver.__str__()
+    solver.optimize()
+    print "status:", solver.status
+    print "objective value:", solver.objective.value
+    for variable in solver.variables.values():
+        print variable.name, variable.primal
+    
 
     from glpk.glpkpi import glp_read_lp
     problem = glp_create_prob()
