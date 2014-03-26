@@ -33,7 +33,7 @@ setup(
     license='Apache License Version 2.0',
     url='https://github.com/biosustain/optlang',
     download_url='https://github.com/biosustain/optlang/tarball/v0.0.1',
-    # long_description='\n'.join(open('README.md').readlines()[3:]),
+    long_description=open('README.md').read(),
     keywords = ['optimization', 'sympy', 'mathematical programming', 'heuristic optimization'],
     classifiers=[
         'Development Status :: 3 - Alpha',
