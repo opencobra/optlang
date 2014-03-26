@@ -20,19 +20,18 @@ from optlang import __version__
 with open('requirements.txt') as fhandle:
     requirements = [line.strip() for line in fhandle]
 
-
 setup(
     name='optlang',
     version=__version__,
+    summary='optlang - sympy based optimization language',
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
     test_suite='nose.collector',
     author='Nikolaus Sonnenschein',
     author_email='niko.sonnenschein@gmail.com',
-    description='optlang - symbolic optimization language',
+    description='WARNING ... work in progress ... Formulate optimization problems using sympy expressions and solve them using interfaces to third-party optimization software (e.g. GLPK).',
     license='Apache License Version 2.0',
-    keywords='biology metabolism bioinformatics',
-    url='TBD',
+    url='https://github.com/biosustain/optlang',
     long_description=open('README.md').read(),
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -43,3 +42,4 @@ setup(
         'License :: OSI Approved :: Apache Software License',
     ],
 )
+
