@@ -22,7 +22,7 @@ try:
    import pypandoc
    description = pypandoc.convert('README.md', 'rst')
 except (IOError, ImportError):
-   description = open('README.md').read()
+   description = ''
 
 with open('requirements.txt') as fhandle:
     requirements = [line.strip() for line in fhandle]
@@ -30,7 +30,6 @@ with open('requirements.txt') as fhandle:
 setup(
     name='optlang',
     version=__version__,
-    summary='optlang - sympy based optimization language',
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
     test_suite='nose.collector',
