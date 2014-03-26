@@ -32,7 +32,9 @@ setup(
     description='WARNING ... work in progress ... Formulate optimization problems using sympy expressions and solve them using interfaces to third-party optimization software (e.g. GLPK).',
     license='Apache License Version 2.0',
     url='https://github.com/biosustain/optlang',
-    long_description=open('README.md').read(),
+    download_url='https://github.com/biosustain/mypackage/tarball/v0.0.1',
+    # long_description='\n'.join(open('README.md').readlines()[3:]),
+    keywords = ['optimization', 'sympy', 'mathematical programming', 'heuristic optimization'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Topic :: Utilities',
