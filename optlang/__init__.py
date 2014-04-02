@@ -16,6 +16,9 @@
 
 __version__ = '0.0.1'
 
+import logging
+log = logging.getLogger(__name__)
+
 from .util import list_available_solvers
 available_solvers = list_available_solvers()
 
@@ -26,6 +29,11 @@ elif available_solvers['GUROBI']:
 elif available_solvers['CPLEX']:
     from .cplex_interface import Model, Variable, Constraint, Objective
 else:
-    raise Warning('No solvers available.')
+    log.error('No solvers available.')
 
-__all__ = []
+# __all__ = (
+#     'Model',
+#     'Variable',
+#     'Constraint',
+#     'Objective',
+# )
