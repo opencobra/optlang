@@ -14,16 +14,20 @@
 # limitations under the License.
 
 
-from optlang import Model, Variable, Constraint
+from optlang import Model, Variable, Constraint, Objective
 
-model = Model()
-x = Variable('x', lb=0, ub=10)
-y = Variable('y', lb=0, ub=10)
-constr = Constraint(x + y, lb=3, name="constr1")
-obj = Objective(2 * x + y)
-
-model.add(constr)
-model.add(obj)
-model.optimization()
-for var in model.variables:
-	
+x1 = Variable('x1', lb=0)
+x2 = Variable('x2', lb=0)
+x3 = Variable('x3', lb=0)
+c1 = Constraint(x1 + x2 + x3, ub=100)
+c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
+c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
+obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
+model = Model(name='Simple model')
+model.objective = obj
+model.add([c1, c2, c3])
+status = model.optimize()
+print "status:", model.status
+print "objective value:", model.objective.value
+for var_name, var in model.variables.iteritems():
+      print var_name, "=", var.primal

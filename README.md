@@ -12,16 +12,45 @@ __optlang__ provides a common interface to a series of optimization solvers (lin
 
 The documentation for __optlang__ is provided at [readthedocs.org](http://optlang.readthedocs.org/en/latest/).
 
-### Version 0.1 roadmap
+### Example
 
-- [ ] Interfaces for GLPK (reference implementation) and [CPLEX][cplex_url] (basic support)
-- [ ] Use _logging_ to provide a common interface to solver log output
-- [ ] Reach >90% test coverage (for GLPK interface)
-- [ ] Documentation on [readthedocs.org](http://readthedocs.org)
+Formulating and solving the problem is straighforward (example taken from [GLPK documentation](http://www.gnu.org/software/glpk)):
 
+    from optlang import Model, Variable, Constraint, Objective
+ 
+    x1 = Variable('x1', lb=0)
+    x2 = Variable('x2', lb=0)
+    x3 = Variable('x3', lb=0)
+ 
+    c1 = Constraint(x1 + x2 + x3, ub=100)
+    c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
+    c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
+ 
+    obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
+ 
+    model = Model(name='Simple model')
+    model.objective = obj
+    model.add([c1, c2, c3])
+ 
+    status = model.optimize()
+ 
+    print "status:", model.status
+    print "objective value:", model.objective.value
+    for var_name, var in model.variables.iteritems():
+        print var_name, "=", var.primal
+ 
+ The example will produce the following output:
+ 
+    status: optimal
+    objective value: 733.333333333
+    x2 = 66.6666666667
+    x3 = 0.0
+    x1 = 33.3333333333
+    
 ### Future outlook
 
 * [Gurobi][gurobi_url] interface (very efficient MILP solver)
+* [CPLEX][cplex_url] interface (very efficient MILP solver)
 * [Mosek][mosek_url] interface (provides academic licenses)
 * [GAMS][gams_url] output (support non-linear problem formulation)
 * [DEAP][deap_url] (support for heuristic optimization)
@@ -32,21 +61,10 @@ The documentation for __optlang__ is provided at [readthedocs.org](http://optlan
 
 * Models should always be serializable to common problem formulation languages ([CPLEX][cplex_url], [GAMS][gams_url], etc.)
 * Models should be pickable
-* Common solver configuration interface (presover, MILP gap, etc.)
-
-### Notes
-
-Supporting heuristic optimization too? Only objectives and variables would be needed and constraints would be superfluous. Objectives would probably have to support non-mathematical evaluation functions.
-
-Objective and Constraint could probably inherit from a common base class.
-
-use `pyreverse -my -o pdf optlang` to generate a UML diagram
-
-Looks like it is [not ok](https://code.google.com/p/sympy/issues/detail?id=3680#c7) to change sympy Symbol's name attribute (doesn't raise an error though).
-Checkout [http://www.cuter.rl.ac.uk/](http://www.cuter.rl.ac.uk/)
-Should Variables be singletons?
+* Common solver configuration interface (presolver, MILP gap, etc.)
 
 [cplex_url]: http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/ "CPLEX"
+[inspyred_url]: https://pypi.python.org/pypi/inspyred
 [gurobi_url]: http://www.gurobi.com/  "GUROBI"
 [mosek_url]: http://www.mosek.com/ "MOSEK"
 [gams_url]: http://www.gams.com/ "GAMS"

@@ -13,7 +13,7 @@ Currently supported solvers are:
 
 * `GLPK <http://www.gnu.org/software/glpk/>`_ (via `Python-GLPK <http://www.dcc.fc.up.pt/~jpp/code/python-glpk/>`_)
 
-Support for `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`_, `GUROBI <http://www.gurobi.com/>`_, `MOSEK <http://www.mosek.com/>`_, and heuristic optiomization frameworks like `inspyred <https://pypi.python.org/pypi/inspyred>`_ are planned for future releases. **optlang** makes extensive use of the excellent symbolics library `SymPy <http://sympy.org>`_ to simplify problem formulation.
+Support for `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`_, `GUROBI <http://www.gurobi.com/>`_, `MOSEK <http://www.mosek.com/>`_, and heuristic optimization frameworks like `inspyred <https://pypi.python.org/pypi/inspyred>`_ are planned for future releases. **optlang** makes extensive use of the excellent symbolics library `SymPy <http://sympy.org>`_ to simplify problem formulation.
 
 
 Installation
@@ -34,7 +34,7 @@ You can run optlang's test suite like this::
 Quick start
 ===========
 
-Consider the following linear programming optimization problem (example taken from `GLPK documentation <http://www.gnu.org/software/glpk>`):
+Consider the following linear programming optimization problem (example taken from `GLPK documentation <http://www.gnu.org/software/glpk>`_):
 
 .. math::
     max\ 10 x_1 + 6 x_2 + 4 x_3
@@ -49,7 +49,7 @@ Consider the following linear programming optimization problem (example taken fr
 
     x_1 >= 0, x_2 >= 0, x_3 >= 0
 
-Forumulating and solving the problem is straighforward::
+Formulating and solving the problem is straightforward::
 
   from optlang import Model, Variable, Constraint, Objective
   x1 = Variable('x1', lb=0)
@@ -81,12 +81,12 @@ Table of content
 
 .. toctree::
 
-   problem_formulation
+   developers
    API
+   .. problem_formulation
    .. optimization_and_solution_retrieval
    .. solver_parameters
    .. logging
-   .. developers
 
 Indices and tables
 ==================
