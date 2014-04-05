@@ -46,3 +46,7 @@ class TestSolver(TestCase):
         self.model.remove(var.name)
         self.assertNotIn(var, self.model.variables.values())
         self.assertEqual(var.problem, None)
+
+    def test_number_objective(self):
+        self.model.objective = Objective(0.)
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.0')
