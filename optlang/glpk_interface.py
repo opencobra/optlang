@@ -562,10 +562,10 @@ if __name__ == '__main__':
 
     x1 = Variable('x1', lb=0)
     x2 = Variable('x2', lb=0)
-    x3 = Variable('x2', lb=0)
-    c1 = Constraint(x1 + x2 + x3, ub=100)
-    c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
-    c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
+    x3 = Variable('x3', lb=0)
+    c1 = Constraint(x1 + x2 + x3, ub=100, name='c1')
+    c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600, name='c2')
+    c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300, name='c3')
     obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
     model = Model(name='Simple model')
     model.objective = obj
@@ -575,7 +575,9 @@ if __name__ == '__main__':
     print "objective value:", model.objective.value
 
     for var_name, var in model.variables.iteritems():
-        print var_name, var.primal 
+        print var_name, "=", var.primal 
+
+    print model
 
     from glpk.glpkpi import glp_read_lp
     problem = glp_create_prob()

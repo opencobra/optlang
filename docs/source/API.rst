@@ -1,7 +1,9 @@
-API
-===
+API reference
+=============
 
 .. toctree::
 
-   interface
-   util
+   Model
+   Variable
+   Constraint
+   Objective
