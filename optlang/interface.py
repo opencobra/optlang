@@ -42,20 +42,14 @@ SOLUTION_LIMIT = 'solution_limit'
 INTERRUPTED = 'interrupted'
 NUMERIC = 'numeric'
 SUBOPTIMAL = 'suboptimal'
-INPROGRESS = 16
-
-# class Status(object):
-#     """docstring for Status"""
-#     def __init__(self, arg):
-#         super(Status, self).__init__()
-#         self.arg = arg
+INPROGRESS = 'in_progress'
 
 
 class Variable(sympy.Symbol):
 
-    """
-    Class to model optimization variables. Extends sympy Symbol
-    with optimization specific attributes and methods.
+    """Optimization variables.
+
+    Extends sympy Symbol with optimization specific attributes and methods.
 
     Attributes
     ----------
@@ -69,14 +63,11 @@ class Variable(sympy.Symbol):
         The variable type, 'continuous' or 'integer' or 'binary'.
     problem: Model or None, optional
         A reference to the optimization model the variable belongs to.
-    See Also
-    --------
-    Constraint, Objective, Model
 
     Examples
     --------
-    ...
-
+    >>> Variable('x', lb=-10, ub=10)
+    '-10 <= x <= 10'
     """
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
@@ -87,25 +78,19 @@ class Variable(sympy.Symbol):
         super(Variable, self).__init__(name, *args, **kwargs)
         self.lb = lb
         self.ub = ub
-        self.type = type  # TODO: binary is probably not a good idea ...
+        self.type = type
         self.problem = problem
         # self.primal = primal
         # self.dual = dual
 
     def __str__(self):
-        """Print a string representation.
+        """Print a string representation of variable.
 
-    #     Examples
-    #     --------
-    #     >>> str(Variable('x', lb=-10, ub=10))
-    #     '-10 <= x <= 10'
-
-    #     and
-
-    #     >>> str(Variable('x', lb=-10))
-    #     '-10 <= x'
-
-    #     """
+        Examples
+        --------
+        >>> Variable('x', lb=-10, ub=10)
+        '-10 <= x <= 10'
+        """
         if self.lb is not None:
             lb_str = str(self.lb) + " <= "
         else:
@@ -150,15 +135,14 @@ class Variable(sympy.Symbol):
 
 class Constraint(object):
 
-    """
-    Class to model optimization constraints. Wraps sympy expressions and extends
-    them with optimization specific attributes and methods.
+    """Optimization constraint.
 
+    Wraps sympy expressions and extends them with optimization specific attributes and methods.
 
     Attributes
     ----------
-
     expression: sympy
+        The mathematical expression defining the constraint.
     name: str, optional
         The constraint's name.
     lb: float or None, optional
@@ -167,7 +151,6 @@ class Constraint(object):
         The upper bound, if None then inf.
     problem: Model or None, optional
         A reference to the optimization model the variable belongs to.
-
     """
 
     def __init__(self, expression, name=None, lb=None, ub=None, problem=None, *args, **kwargs):
@@ -223,6 +206,7 @@ class Constraint(object):
 
     @property
     def is_Linear(self):
+        """Returns True if constraint is linear (read-only)."""
         try:
             poly = self.expression.as_poly(*self.variables)
         except sympy.PolynomialError:
@@ -234,6 +218,7 @@ class Constraint(object):
 
     @property
     def is_Quadratic(self):
+        """Returns True if constraint is quadratic (read-only)."""
         try:
             poly = self.expression.as_poly(*self.expression.free_symbols)
         except sympy.PolynomialError:
@@ -245,6 +230,7 @@ class Constraint(object):
 
     @property
     def variables(self):
+        """Variables in constraint."""
         return self.expression.free_symbols
 
     def __iadd__(self, other):
@@ -270,7 +256,22 @@ class Constraint(object):
 
 class Objective(object):
 
-    """docstring for Objective"""
+    """Objective function.
+
+    Attributes
+    ----------
+    expression: sympy
+        The mathematical expression defining the objective.
+    name: str, optional
+        The name of the constraint.
+    direction: 'max' or 'min'
+        The optimization direction.
+    value: float, read-only
+        The current objective value.
+    problem: solver
+        The low-level solver object.
+
+    """
 
     def __init__(self, expression, name=None, value=None, problem=None, direction='max', *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
@@ -292,12 +293,13 @@ class Objective(object):
         # return ' '.join((self.direction, str(self.expression)))
 
     def _canonicalize(self, expression):
-        """Change x + y to 1.*x + 1.*y"""
+        """For example, changes x + y to 1.*x + 1.*y"""
         expression = 1. * expression
         return expression
 
     @property
     def expression(self):
+        """The mathematical expression defining the objective."""
         return self._expression
 
     @expression.setter
@@ -309,6 +311,7 @@ class Objective(object):
 
     @property
     def direction(self):
+        """The direction of optimization. Either 'min' or 'max'."""
         return self._direction
 
     @direction.setter
@@ -318,12 +321,20 @@ class Objective(object):
 
 
 class Configuration(object):
+    """Optimization solver configuration."""
 
     def __init__(self, *args, **kwargs):
         pass
 
     @property
     def verbose(self):
+        """Verbosity level.
+
+        0: no output
+        1: error and warning messages only
+        2: normal output
+        4: full output
+        """
         raise NotImplementedError
 
     @verbose.setter
@@ -351,22 +362,45 @@ class EvolutionaryOptimizationConfiguration(object):
 
 class Model(object):
 
-    """docstring for Model"""
+    """Optimization problem.
 
-    def __init__(self, objective=None, name=None, *args, **kwargs):
+    Attributes
+    ----------
+    objective: str
+        The objective function.
+    name: str, optional
+        The name of the optimization problem.
+    variables: OrderedDict, read-only
+        Contains the variables of the optimization problem.
+        The keys are the variable names and values are the actual variables.
+    constraints: OrderedDict, read-only
+         Contains the variables of the optimization problem.
+         The keys are the constraint names and values are the actual constraints.
+    status: str, read-only
+        The status of the optimization problem.
+
+    Examples
+    --------
+
+
+    """
+
+    def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
         self._objective = objective
-        self.variables = collections.OrderedDict()
-        self.constraints = collections.OrderedDict()
-        self.status = None
-        self._presolve = False
+        self.variables = collections.OrderedDict() #TODO: make variables read-only
+        self.constraints = collections.OrderedDict() #TODO: make constraints read-only
+        self.status = None #TODO: make this a property.
         self.name = name
+        if variables is not None:
+            self.add(variables)
+        if constraints is not None:
+            self.add(constraints)
 
     @property
     def objective(self):
         return self._objective
 
-    # TODO: objective that include variables that are not already in the model should be auto added
     @objective.setter
     def objective(self, value):
         self._objective = value
@@ -391,7 +425,19 @@ class Model(object):
         ))
 
     def add(self, stuff):
-        """Add variables, constraints, ..."""
+        """Add variables and constraints.
+
+        Parameters
+        ----------
+        stuff : iterable, Variable, Constraint
+            Either an iterable containing variables and constraints or a single variable or constraint.
+
+        Returns
+        -------
+        None
+
+
+        """
         # import pdb; pdb.set_trace();
         if isinstance(stuff, collections.Iterable):
             for elem in stuff:
@@ -406,6 +452,17 @@ class Model(object):
             raise TypeError("Cannot add %s" % stuff)
 
     def remove(self, stuff):
+        """Remove variables and constraints.
+
+        Parameters
+        ----------
+        stuff : iterable, str, Variable, Constraint
+            Either an iterable containing variables and constraints to be removed from the model or a single variable or contstraint (or their names).
+
+        Returns
+        -------
+        None
+        """
         if isinstance(stuff, str):
             try:
                 variable = self.variables[stuff]
@@ -432,6 +489,13 @@ class Model(object):
                 "Cannot remove %s. It neither a variable or constraint." % stuff)
 
     def optimize(self):
+        """Solve the optimization problem.
+
+        Returns
+        -------
+        status: str
+            Solution status.
+        """
         raise NotImplementedError(
             "You're using the high level interface to optlang. Problems cannot be optimized in this mode. Choose from one of the solver specific interfaces.")
 
@@ -465,24 +529,25 @@ class Model(object):
 
 if __name__ == '__main__':
     # Example workflow
-    model = Model()
-    x = Variable('x', lb=0, ub=10)
-    y = Variable('y', lb=0, ub=10)
-    # constr = Constraint(x + y + z > 3, name="constr1")
-    constr = Constraint(x + y, lb=3, name="constr1")
-    obj = Objective(2 * x + y)
 
-    # model.add(x)
-    # model.add(y)
-    model.add(constr)
-    model.add(obj)
+    x1 = Variable('x1', lb=0)
+    x2 = Variable('x2', lb=0)
+    x3 = Variable('x2', lb=0)
+    c1 = Constraint(x1 + x2 + x3, ub=100)
+    c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
+    c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
+    obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
+    model = Model(name='Simple model')
+    model.objective = obj
+    model.add([c1, c2, c3])
 
     try:
         sol = model.optimize()
     except NotImplementedError, e:
         print e
 
+
     print model
     print model.variables
 
-    model.remove(x)
+    model.remove(x1)

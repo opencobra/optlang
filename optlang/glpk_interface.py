@@ -386,6 +386,7 @@ class Model(interface.Model):
 
     @objective.setter
     def objective(self, value):
+        super(Model, self.__class__).objective.fset(self, value)
         self._objective = value
         for i in xrange(1, glp_get_num_cols(self.problem) + 1):
             glp_set_obj_coef(self.problem, i, 0)
@@ -559,29 +560,28 @@ class Model(interface.Model):
 if __name__ == '__main__':
     import pickle
 
-    x = Variable('x', lb=0, ub=10)
-    y = Variable('y', lb=0, ub=10)
-    z = Variable('z', lb=-100, ub=99.)
-    constr = Constraint(0.3 * x + 0.4 * y + 66. * z,
-                        lb=-100, ub=0., name='test')
-    solver = Model(name='Small test problem')
-    solver.add(constr)
-    solver.objective = Objective(z, direction='min')
-    print solver.__str__()
-    solver.optimize()
-    print "status:", solver.status
-    print "objective value:", solver.objective.value
-    for variable in solver.variables.values():
-        print variable.name, variable.primal
-    
+    x1 = Variable('x1', lb=0)
+    x2 = Variable('x2', lb=0)
+    x3 = Variable('x2', lb=0)
+    c1 = Constraint(x1 + x2 + x3, ub=100)
+    c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
+    c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
+    obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
+    model = Model(name='Simple model')
+    model.objective = obj
+    model.add([c1, c2, c3])
+    status = model.optimize()
+    print "status:", model.status
+    print "objective value:", model.objective.value
+
+    for var_name, var in model.variables.iteritems():
+        print var_name, var.primal 
 
     from glpk.glpkpi import glp_read_lp
     problem = glp_create_prob()
     glp_read_lp(problem, None, "../tests/data/model.lp")
 
     solver = Model(problem=problem)
-    solver.add(z)
-    solver.add(constr)
     print solver.optimize()
     print solver.objective
 
