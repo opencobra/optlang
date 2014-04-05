@@ -410,7 +410,7 @@ class Model(object):
             for var in vars_not_yet_in_model:
                 self._add_variable(var)
         except AttributeError, e:
-            if isinstance(self._objective.expression, types.FunctionType):
+            if isinstance(self._objective.expression, types.FunctionType) or isinstance(self._objective.expression, types.FloatType):
                 pass
             else:
                 raise AttributeError(e)
