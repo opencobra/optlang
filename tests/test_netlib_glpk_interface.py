@@ -1,22 +1,22 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import os
 import pickle
 import tempfile
 import glob
 import tarfile
-import sympy
-import unittest
-import nose
-from nose import SkipTest
 from functools import partial
+
+import os
+import nose
 from glpk.glpkpi import *
-from optlang.glpk_interface import Variable, Constraint, Model
-from optlang.util import solve_with_glpsol
+
+from optlang.glpk_interface import Model
+
 
 with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl')) as fhandle:
     THE_FINAL_NETLIB_RESULTS = pickle.load(fhandle)
+
 
 def read_netlib_sif_glpk(fhandle):
     tmp_file = tempfile.mktemp(suffix='.mps')
@@ -28,6 +28,7 @@ def read_netlib_sif_glpk(fhandle):
     glp_read_mps(problem, GLP_MPS_DECK, None, tmp_file)
     # glp_read_mps(problem, GLP_MPS_FILE, None, tmp_file)
     return problem
+
 
 def check_dimensions(glpk_problem, model):
     """
@@ -49,8 +50,10 @@ def check_objval(glpk_problem, model_objval):
         glpk_problem_objval = glp_get_obj_val(glpk_problem)
     nose.tools.assert_almost_equal(glpk_problem_objval, model_objval, places=4)
 
+
 def check_objval_against_the_final_netlib_results(netlib_id, model_objval):
     nose.tools.assert_almost_equal(model_objval, float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue']), places=4)
+
 
 def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/netlib_lp_problems.tar.gz')):
     """
@@ -68,7 +71,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
             #     raise SkipTest('Skipping netlib problem %s ...' % netlib_id)
             # test_skip(netlib_id)
             # class TestWeirdNetlibProblems(unittest.TestCase):
-                
+
             #     @unittest.skip('Skipping netlib problem')
             #     def test_fail():
             #         pass
@@ -93,12 +96,15 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
                 raise Exception('No optimal solution found for netlib model %s' % netlib_id)
 
             func = partial(check_objval, glpk_problem, model_objval)
-            func.description = "test_netlib_check_objective_value_%s (%s)" % (netlib_id, os.path.basename(str(__file__)))
+            func.description = "test_netlib_check_objective_value_%s (%s)" % (
+            netlib_id, os.path.basename(str(__file__)))
             yield func
 
             func = partial(check_objval_against_the_final_netlib_results, netlib_id, model_objval)
-            func.description = "test_netlib_check_objective_value__against_the_final_netlib_results_%s (%s)" % (netlib_id, os.path.basename(str(__file__)))
+            func.description = "test_netlib_check_objective_value__against_the_final_netlib_results_%s (%s)" % (
+            netlib_id, os.path.basename(str(__file__)))
             yield func
+
 
 if __name__ == '__main__':
     # tar = tarfile.open('data/netlib_lp_problems.tar.gz')

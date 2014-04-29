@@ -25,6 +25,7 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 import copy
 import random
 import logging
+
 log = logging.getLogger(__name__)
 import tempfile
 import sympy
@@ -39,17 +40,13 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, n=len(model.reactions))
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-
-
-
-
 if __name__ == '__main__':
     # from optlang.interface import Objective, Variable
     import numpy
 
     x = Variable('x', lb=.8, ub=1.2)
     y = Variable('y', lb=.8, ub=1.2)
-    rosenbrock = Objective((1 - x)**2 + 100 * (y - y**2)**2, name="Rosenbrock function", direction='min')
+    rosenbrock = Objective((1 - x) ** 2 + 100 * (y - y ** 2) ** 2, name="Rosenbrock function", direction='min')
     print "The rosenbrock function:", rosenbrock
     print "The global minimum at (x,y) = (1,1) is", rosenbrock.expression.subs({x: 1, y: 1})
 

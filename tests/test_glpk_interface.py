@@ -1,15 +1,17 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import os
 import unittest
 import random
 import pickle
+
+import os
 import nose
-from nose.tools import nottest
 import re
-from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from glpk.glpkpi import *
+
+from optlang.glpk_interface import Variable, Constraint, Model, Objective
+
 
 random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
@@ -156,7 +158,6 @@ class SolverTestCase(unittest.TestCase):
         constraint = Constraint(0.3*x + 0.4*y**2 + 66.*z, lb=-100, ub=0., name='test')
         self.assertRaises(ValueError, self.model.add, constraint)
 
-    @nottest
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
         y = Variable('y', lb=-181133.3, ub=12000.)
@@ -165,12 +166,11 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
         self.assertIn(' test: + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-        constraint.expression += 77. * z
+        constraint += 77. * z
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
         print self.model
-        self.assertIn(' test: + 0.4 y + 0.3 x + 77. z >= -100', self.model.__str__().split("\n"))
+        self.assertIn(' test: + 77 z + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
 
-    @nottest
     def test_change_of_objective_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
         y = Variable('y', lb=-181133.3, ub=12000.)
@@ -179,11 +179,12 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
         self.assertIn(' obj: + 0.4 y + 0.3 x', self.model.__str__().split("\n"))
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-        objective.expression += 77. * z
+        # z.problem = self.model
+        objective += 77. * z
         print objective.expression
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
         print self.model
-        self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
+        self.assertIn(' obj: + 0.4 y + 0.3 x + 77 z', self.model.__str__().split("\n"))
 
         # self.assertTrue(False)
 

@@ -17,9 +17,11 @@
 __version__ = '0.0.2'
 
 import logging
+
 log = logging.getLogger(__name__)
 
 from .util import list_available_solvers
+
 available_solvers = list_available_solvers()
 
 if available_solvers['GLPK']:

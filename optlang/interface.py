@@ -345,6 +345,26 @@ class Objective(object):
         """Variables in constraint."""
         return self.expression.free_symbols
 
+    def __iadd__(self, other):
+        self.expression += other
+        return self
+
+    def __isub__(self, other):
+        self.expression -= other
+        return self
+
+    def __imul__(self, other):
+        self.expression *= other
+        return self
+
+    def __idiv__(self, other):
+        self.expression /= other
+        return self
+
+    def __itruediv__(self, other):
+        self.expression /= other
+        return self
+
 
 class Configuration(object):
     """Optimization solver configuration."""
@@ -544,7 +564,7 @@ class Model(object):
     def _add_constraint(self, constraint, sloppy=False):
         if sloppy is False:
             for var in constraint.variables:
-                if var not in self.variables.values():
+                if var.name not in self.variables:
                     self._add_variable(var)
         if constraint.name is None:
             self.constraints[constraint.__hash__()] = constraint

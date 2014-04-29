@@ -2,18 +2,17 @@
 # See LICENSE for details.
 
 from unittest import TestCase
+
 from optlang.interface import Model, Variable, Constraint, Objective
 
 
 class TestSolver(TestCase):
-
     def setUp(self):
-
         self.model = Model()
         x = Variable('x', lb=0, ub=10)
         y = Variable('y', lb=0, ub=10)
         constr = Constraint(x + y, lb=3, name="constr1")
-        obj = Objective(2*x + y)
+        obj = Objective(2 * x + y)
         self.model.add(x)
         self.model.add(y)
         self.model.add(obj)

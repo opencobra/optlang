@@ -23,12 +23,14 @@ http://www.zib.de/koch/perplex/data/netlib/txt/
 } 
 """
 
-import os
-import re
 import glob
 import gzip
 import pickle
 from fractions import Fraction
+
+import os
+import re
+
 
 OBJ_REGEX = re.compile('\* Objvalue : -?\d+/\d+')
 
@@ -40,7 +42,8 @@ for path in glob.glob("netlib_reference_results/*.txt.gz"):
         for line in fhandle.readlines():
             if OBJ_REGEX.match(line):
                 obj_value = Fraction(line.split(' : ')[1])
-                the_final_netlib_results[os.path.basename(path).replace('.txt.gz', '').upper()] = {"Objvalue": obj_value}
+                the_final_netlib_results[os.path.basename(path).replace('.txt.gz', '').upper()] = {
+                "Objvalue": obj_value}
                 break
 
 for key, value in the_final_netlib_results.iteritems():

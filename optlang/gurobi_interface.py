@@ -15,9 +15,11 @@
 
 
 from warnings import warn
+
 warn("Be careful! The GUROBI interface is still under construction ...")
 
 import logging
+
 log = logging.getLogger(__name__)
 import tempfile
 import interface
@@ -27,7 +29,6 @@ import gurobipy
 
 
 class Variable(interface.Variable):
-    
     def __init__(self, *args, **kwargs):
         super(Variable, self).__init__(*args, **kwargs)
         self._internal_var = None
@@ -38,7 +39,7 @@ class Variable(interface.Variable):
 
             # if name == 'problem':
             #     raise AttributeError("problem is read only")
-            
+
             if name == 'lb':
                 super(Variable, self).__setattr__(name, value)
                 self._internal_var.setAttr("lb", value)
@@ -50,23 +51,23 @@ class Variable(interface.Variable):
             elif name == 'type':
                 super(Variable, self).__setattr__(name, value)
                 self._internal_var.setAttr("vtype", value)
-        
+
         elif getattr(self, '_internal_var', None):
 
             if name == 'primal':
                 super(Variable, self).__setattr__(name, value)
                 return self._internal_var.setAttr('X', value)
-            
+
             elif name == 'dual':
                 super(Variable, self).__setattr__(name, value)
                 return self._internal_var.setAttr('RC', value)
-        
+
         else:
-            
+
             super(Variable, self).__setattr__(name, value)
 
     def __getattr__(self, name):
-        
+
         if hasattr(self, '_internal_var'):
             if name == 'primal':
                 primal = self._internal_var.getAttr('X')
@@ -76,7 +77,8 @@ class Variable(interface.Variable):
                 return self._internal_var.getAttr('RC')
         else:
             super(Variable, self).__getattr__(name)
-    
+
+
 # class Constraint(interface.Constraint):
 #     pass
 
@@ -84,10 +86,10 @@ class Variable(interface.Variable):
 #     pass
 
 class Model(interface.Model):
-
     """docstring for Model"""
-    _type2vtype = {'continuous': gurobipy.GRB.CONTINUOUS, 'integer': gurobipy.GRB.INTEGER, 'BINARY': gurobipy.GRB.BINARY}
-    _vtype2type = dict([(val, key)for key, val in _type2vtype.iteritems()])
+    _type2vtype = {'continuous': gurobipy.GRB.CONTINUOUS, 'integer': gurobipy.GRB.INTEGER,
+                   'BINARY': gurobipy.GRB.BINARY}
+    _vtype2type = dict([(val, key) for key, val in _type2vtype.iteritems()])
     _gurobi_status_to_status = {
         gurobipy.GRB.LOADED: interface.LOADED,
         gurobipy.GRB.OPTIMAL: interface.OPTIMAL,
@@ -113,27 +115,27 @@ class Model(interface.Model):
             self.problem = problem
             for gurobi_var in self.problem.getVars():
                 var = Variable(
-                            gurobi_var.getAttr("VarName"),
-                            lb=gurobi_var.getAttr("lb"),
-                            ub=gurobi_var.getAttr("ub"),
-                            problem=self,
-                            type=self._vtype2type[gurobi_var.getAttr("vType")]
-                        )
-               
+                    gurobi_var.getAttr("VarName"),
+                    lb=gurobi_var.getAttr("lb"),
+                    ub=gurobi_var.getAttr("ub"),
+                    problem=self,
+                    type=self._vtype2type[gurobi_var.getAttr("vType")]
+                )
+
                 var._internal_var = gurobi_var
                 super(Model, self)._add_variable(var)
             for constr in self.problem.getConstrs():
                 super(Model, self)._add_constraint(
-                        Constraint(
-                            sympy.Rel(
-                                sympy.var('x'),
-                                constr.getAttr("RHS"),
-                                self._gurobi_sense_to_sympy(constr.getAttr("Sense"))
-                                ),
-                            name=constr.getAttr("ConstrName"),
-                            problem=self
-                            )
+                    Constraint(
+                        sympy.Rel(
+                            sympy.var('x'),
+                            constr.getAttr("RHS"),
+                            self._gurobi_sense_to_sympy(constr.getAttr("Sense"))
+                        ),
+                        name=constr.getAttr("ConstrName"),
+                        problem=self
                     )
+                )
         else:
             raise Exception("Provided problem is not a valid Gurobi model.")
 
@@ -178,7 +180,8 @@ class Model(interface.Model):
                         var = arg.args[1]
                         if var.name not in self.variables:
                             self._add_variable(var)
-                            gurobi_var = self.problem.addVar(name=var.name, lb=var.lb, ub=var.ub, vtype=self._type2vtype[var.type])
+                            gurobi_var = self.problem.addVar(name=var.name, lb=var.lb, ub=var.ub,
+                                                             vtype=self._type2vtype[var.type])
                             var._internal_var = gurobi_var
                             self.problem.update()
                         else:
@@ -197,7 +200,7 @@ class Model(interface.Model):
             sense = '<'
         elif constraint.lb is not None and constraint.ub is not None:
             sense = '='
-            aux_var = self.problem.addVar(name=constraint.name+'_aux', lb=0, ub=constraint.ub - constraint.lb)
+            aux_var = self.problem.addVar(name=constraint.name + '_aux', lb=0, ub=constraint.ub - constraint.lb)
             self.problem.update()
             lhs -= aux_var
         if isinstance(lhs, gurobipy.LinExpr):
@@ -217,15 +220,17 @@ class Model(interface.Model):
             print ' '.join('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')
             print e
 
+
 if __name__ == '__main__':
     x = Variable('x', lb=0, ub=10)
     y = Variable('y', lb=0, ub=10)
     z = Variable('z', lb=-100, ub=99.)
-    constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
+    constr = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
 
     from gurobipy import read
+
     solver = Model(problem=read("tests/data/model.lp"))
-    
+
     solver.add(z)
     solver.add(constr)
     print solver

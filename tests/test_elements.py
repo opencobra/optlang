@@ -3,11 +3,11 @@
 
 import pickle
 import unittest
+
 from optlang.interface import Variable, Constraint, Objective, Model
 
 
 class VariableTestCase(unittest.TestCase):
-
     def setUp(self):
         self.var = Variable('x')
 
@@ -72,8 +72,8 @@ class VariableTestCase(unittest.TestCase):
         keys = var.__dict__.keys()
         self.assertEqual([getattr(var, k) for k in keys], [getattr(pickle_var, k) for k in keys])
 
-class ConstraintTestCase(unittest.TestCase):
 
+class ConstraintTestCase(unittest.TestCase):
     def setUp(self):
         self.x = Variable('x', lb=-83.3, ub=1324422., type='binary')
         self.y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
@@ -81,36 +81,38 @@ class ConstraintTestCase(unittest.TestCase):
 
     def test_is_Linear(self):
         constraint = Constraint(
-            0.3*self.x + 0.4*self.y + self.y + 66.*self.z, lb=-100, ub=0., name='linear_constraint')
+            0.3 * self.x + 0.4 * self.y + self.y + 66. * self.z, lb=-100, ub=0., name='linear_constraint')
         self.assertTrue(constraint.is_Linear)
         self.assertFalse(constraint.is_Quadratic)
 
     def test_is_Quadratic_pow(self):
         constraint = Constraint(
-            0.3*self.x + 0.4*self.y**2 + self.y + 66.*self.z, lb=-100, ub=0., name='quad_pow_constraint')
+            0.3 * self.x + 0.4 * self.y ** 2 + self.y + 66. * self.z, lb=-100, ub=0., name='quad_pow_constraint')
         self.assertFalse(constraint.is_Linear)
         self.assertTrue(constraint.is_Quadratic)
 
     def test_is_Quadratic_xy(self):
         constraint = Constraint(
-            0.3*self.x + 0.4*self.y*self.x + self.y + 66.*self.z, lb=-100, ub=0., name='quad_xy_constraint')
+            0.3 * self.x + 0.4 * self.y * self.x + self.y + 66. * self.z, lb=-100, ub=0., name='quad_xy_constraint')
         self.assertFalse(constraint.is_Linear)
         self.assertTrue(constraint.is_Quadratic)
         constraint = Constraint(
-            0.3*self.x**2 + 0.4*self.y + self.y + 66.*self.z, lb=-100, ub=0., name='quad_xy_constraint')
+            0.3 * self.x ** 2 + 0.4 * self.y + self.y + 66. * self.z, lb=-100, ub=0., name='quad_xy_constraint')
         self.assertFalse(constraint.is_Linear)
         self.assertTrue(constraint.is_Quadratic)
 
     def test_catching_nonlinear_expressions(self):
         constraint = Constraint(
-            0.3*self.x**3 + 0.4*self.y*self.x + self.y + 66.*self.z, lb=-100, ub=0., name='nonlinear_constraint')
+            0.3 * self.x ** 3 + 0.4 * self.y * self.x + self.y + 66. * self.z, lb=-100, ub=0.,
+            name='nonlinear_constraint')
         self.assertFalse(constraint.is_Linear)
         self.assertFalse(constraint.is_Quadratic)
         constraint = Constraint(
-            0.3*self.x**self.y + 0.4*self.y*self.x + self.y + 66.*self.z, lb=-100, ub=0., name='nonlinear_constraint')
+            0.3 * self.x ** self.y + 0.4 * self.y * self.x + self.y + 66. * self.z, lb=-100, ub=0.,
+            name='nonlinear_constraint')
         self.assertFalse(constraint.is_Linear)
         self.assertFalse(constraint.is_Quadratic)
-    
+
     def test_lonely_coefficient_and_no_bounds_raises(self):
         self.assertRaises(ValueError, Constraint, self.x + 0.3, name='lonely_coeff_constraint')
 
@@ -119,26 +121,28 @@ class ConstraintTestCase(unittest.TestCase):
         self.assertEqual(constraint.lb, -649)
         self.assertEqual(constraint.ub, None)
         self.assertEqual(constraint.expression, self.x)
-    
+
     def test_canonicalization_with_ub(self):
         constraint = Constraint(-20 + self.x + 3, ub=-666)
         self.assertEqual(constraint.ub, -649)
         self.assertEqual(constraint.lb, None)
         self.assertEqual(constraint.expression, self.x)
-        
+
     def test_canonicalization_with_lb_and_ub(self):
         constraint = Constraint(-20 + self.x + 3, ub=666, lb=-666)
         self.assertEqual(constraint.lb, -649)
         self.assertEqual(constraint.ub, 666)
         self.assertEqual(constraint.expression, self.x)
 
-    # def test_pickle_ability(self):
-    #     constraint = Constraint(
-    #         0.3*self.x**self.y + 0.4*self.y*self.x + self.y + 66.*self.z, lb=-100, ub=0., name='nonlinear_constraint')
-    #     pickle_constraint = pickle.loads(pickle.dumps(constraint))
-    #     keys = constraint.__dict__.keys()
-    #     self.assertEqual([getattr(constraint, k) for k in keys], [getattr(pickle_constraint, k) for k in keys])
+        # def test_pickle_ability(self):
+        #     constraint = Constraint(
+        #         0.3*self.x**self.y + 0.4*self.y*self.x + self.y + 66.*self.z, lb=-100, ub=0., name='nonlinear_constraint')
+        #     pickle_constraint = pickle.loads(pickle.dumps(constraint))
+        #     keys = constraint.__dict__.keys()
+        #     self.assertEqual([getattr(constraint, k) for k in keys], [getattr(pickle_constraint, k) for k in keys])
+
 
 if __name__ == '__main__':
     import nose
+
     nose.runmodule()

@@ -143,15 +143,43 @@ class Constraint(interface.Constraint):
         if getattr(self, 'problem', None):
 
             if name == 'name':
-                
+
                 self.problem._glpk_set_row_name(self)
 
             elif name == 'lb' or name == 'ub':
                 self.problem._glpk_set_row_bounds(self)
 
-            elif name == 'expression':
-                pass
-        
+    def __iadd__(self, other):
+        super(Constraint, self).__iadd__(other)
+        if self.problem is not None:
+            problem_reference = self.problem
+            self.problem._remove_constraint(self)
+            problem_reference._add_constraint(self, sloppy=False)
+        return self
+
+    def __isub__(self, other):
+        super(Constraint, self).__isub__(other)
+        if self.problem is not None:
+            problem_reference = self.problem
+            self.problem._remove_constraint(self)
+            problem_reference._add_constraint(self, sloppy=True)
+        return self
+
+    def __imul__(self, other):
+        super(Constraint, self).__imul__(other)
+        if self.problem is not None:
+            problem_reference = self.problem
+            self.problem._remove_constraint(self)
+            problem_reference._add_constraint(self, sloppy=True)
+        return self
+
+    def __idiv__(self, other):
+        super(Constraint, self).__idiv__(other)
+        if self.problem is not None:
+            problem_reference = self.problem
+            self.problem._remove_constraint(self)
+            problem_reference._add_constraint(self, sloppy=True)
+        return self
 
 
 class Objective(interface.Objective):
@@ -176,6 +204,30 @@ class Objective(interface.Objective):
             super(Objective, self).__setattr__(name, value)
         else:
             super(Objective, self).__setattr__(name, value)
+
+    def __iadd__(self, other):
+        super(Objective, self).__iadd__(other)
+        if self.problem is not None:
+            self.problem.objective = self
+        return self
+
+    def __isub__(self, other):
+        super(Objective, self).__isub__(other)
+        if self.problem is not None:
+            self.problem.objective = self
+        return self
+
+    def __imul__(self, other):
+        super(Objective, self).__imul__(other)
+        if self.problem is not None:
+            self.problem.objective = self
+        return self
+
+    def __idiv__(self, other):
+        super(Objective, self).__idiv__(other)
+        if self.problem is not None:
+            self.problem.objective = self
+        return self
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
@@ -556,7 +608,7 @@ class Model(interface.Model):
         num[1] = constraint.index
         glp_del_rows(self.problem, 1, num)
         super(Model, self)._remove_constraint(constraint)
-        
+
 
 if __name__ == '__main__':
     import pickle
@@ -576,7 +628,7 @@ if __name__ == '__main__':
     print "objective value:", model.objective.value
 
     for var_name, var in model.variables.iteritems():
-        print var_name, "=", var.primal 
+        print var_name, "=", var.primal
 
     print model
 

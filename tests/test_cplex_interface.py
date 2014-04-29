@@ -1,13 +1,14 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import os
 import unittest
 import random
-import nose
-import re
-from nose.tools import nottest
 import pickle
+
+import os
+import nose
+from nose.tools import nottest
+
 
 try:
     from optlang.cplex_interface import Variable, Constraint, Model, Objective
@@ -37,13 +38,16 @@ try:
             from_pickle = pickle.loads(pickle_string)
             from_pickle.optimize()
             self.assertAlmostEqual(value, from_pickle.objective.value)
-            self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in from_pickle.variables.values()], [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints.values()], [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints.values()])
+            self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in from_pickle.variables.values()],
+                             [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints.values()],
+                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints.values()])
 
         def test_init_from_existing_problem(self):
             inner_prob = self.model.problem
             self.assertEqual(len(self.model.variables), inner_prob.variables.get_num())
-            self.assertEqual(len(self.model.constraints), inner_prob.linear_constraints.get_num() + inner_prob.quadratic_constraints.get_num())
+            self.assertEqual(len(self.model.constraints),
+                             inner_prob.linear_constraints.get_num() + inner_prob.quadratic_constraints.get_num())
             self.assertEqual(self.model.variables.keys(), inner_prob.variables.get_names())
             self.assertEqual(self.model.constraints.keys(), inner_prob.linear_constraints.get_names())
 
@@ -73,7 +77,7 @@ try:
             var = Variable('12x!!@#5_3', lb=-666, ub=666)
             self.model.add(var)
             self.assertTrue(var in self.model.variables.values())
-            self.assertEqual(var.name, self.model.problem.variables.get_names(len(self.model.variables)-1))
+            self.assertEqual(var.name, self.model.problem.variables.get_names(len(self.model.variables) - 1))
             self.assertEqual(self.model.variables['12x!!@#5_3'].lb, -666)
             self.assertEqual(self.model.variables['12x!!@#5_3'].ub, 666)
             repickled = pickle.loads(pickle.dumps(self.model))
@@ -99,10 +103,10 @@ try:
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-            constr1 = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
+            constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
             # constr1 = Constraint(x + 2* y  + 3.333*z, lb=-10, name='hongo')
-            constr2 = Constraint(2.333*x + y + 3.333, ub=100.33, name='test2')
-            constr3 = Constraint(2.333*x + y + z, ub=100.33, lb=-300)
+            constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
+            constr3 = Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
             self.model.add(constr1)
             self.model.add(constr2)
             self.model.add(constr3)
@@ -113,12 +117,12 @@ try:
             self.assertIn('test:       66 z + 0.3 x + 0.4 y - Rgtest  = -100', cplex_lines)
             self.assertIn('test2:      2.333 x + y <= 96.997', cplex_lines)
             self.assertIn('Dummy_14:   z + 2.333 x + y - RgDummy_14  = -300', cplex_lines)
-        
+
         def test_remove_constraints(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-            constr1 = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
+            constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
             self.assertEqual(constr1.problem, None)
             self.model.add(constr1)
             self.assertEqual(constr1.problem, self.model)
@@ -131,14 +135,14 @@ try:
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-            constraint = Constraint(0.3*x + 0.4*y**x + 66.*z, lb=-100, ub=0., name='test')
+            constraint = Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
             self.assertRaises(ValueError, self.model.add, constraint)
 
         @nottest
         def test_change_of_constraint_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
             y = Variable('y', lb=-181133.3, ub=12000.)
-            constraint = Constraint(0.3*x + 0.4*y, lb=-100, name='test')
+            constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.model.add(constraint)
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
             self.assertIn(' test: + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
@@ -151,7 +155,7 @@ try:
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
             y = Variable('y', lb=-181133.3, ub=12000.)
-            objective = Objective(0.3*x + 0.4*y, name='test', direction='max')
+            objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
             self.model.objective = objective
             self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
             self.assertIn(' obj: + 0.4 y + 0.3 x', self.model.__str__().split("\n"))
@@ -161,7 +165,7 @@ try:
             self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
 
 except ImportError, e:
-    
+
     if e.message.find('cplex') >= 0:
         class TestMissingDependency(unittest.TestCase):
 

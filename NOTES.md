@@ -9,3 +9,5 @@ use `pyreverse -my -o pdf optlang` to generate a UML diagram
 Looks like it is [not ok](https://code.google.com/p/sympy/issues/detail?id=3680#c7) to change sympy Symbol's name attribute (doesn't raise an error though).
 Checkout [http://www.cuter.rl.ac.uk/](http://www.cuter.rl.ac.uk/)
 Should Variables be singletons?
+
+http://jamie.curle.io/blog/my-first-experience-adding-package-pypi/

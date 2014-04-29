@@ -24,11 +24,13 @@ import types
 import copy
 import random
 import logging
+
 log = logging.getLogger(__name__)
 import tempfile
 import sympy
 import interface
 import inspyred
+
 
 class Variable(interface.Variable):
     def __init__(self, *args, **kwargs):
@@ -36,7 +38,6 @@ class Variable(interface.Variable):
 
 
 class Objective(interface.Objective):
-
     """docstring for Objective"""
 
     def __init__(self, expression, *args, **kwargs):
@@ -51,7 +52,7 @@ class Objective(interface.Objective):
             return super(Objective, self).__str__()
         else:
             return self.expression.__str__()
-        # return ' '.join((self.direction, str(self.expression)))
+            # return ' '.join((self.direction, str(self.expression)))
 
     @property
     def expression(self):
@@ -60,7 +61,6 @@ class Objective(interface.Objective):
     @expression.setter
     def expression(self, value):
         self._expression = value
-
 
 
 class VariableBounder(object):
@@ -79,38 +79,38 @@ class VariableBounder(object):
             if variable.type == 'continuous':
                 bounded_candidate.append(max(min(c, variable.ub), variable.lb))
             elif variable.type == 'integer':
-                bounded_candidate.append(min(range(variable.lb, variable.ub + 1), key=lambda x: abs(x-c)))
+                bounded_candidate.append(min(range(variable.lb, variable.ub + 1), key=lambda x: abs(x - c)))
             elif variable.type == 'binary':
                 # print min([0, 1], key=lambda x: abs(x-c))
-                bounded_candidate.append(min([0, 1], key=lambda x: abs(x-c)))
+                bounded_candidate.append(min([0, 1], key=lambda x: abs(x - c)))
         return bounded_candidate
 
 
 class Configuration(interface.EvolutionaryOptimizationConfiguration):
-
     """docstring for Configuration"""
 
-    class SubConfiguration(object): pass
+    class SubConfiguration(object):
+        pass
 
     def __init__(self, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._algorithm = inspyred.ec.GA
         self._algorithm.terminator = [inspyred.ec.terminators.time_termination,
-            inspyred.ec.terminators.generation_termination,
-            inspyred.ec.terminators.evaluation_termination,
-            inspyred.ec.terminators.diversity_termination,
-            inspyred.ec.terminators.average_fitness_termination]
+                                      inspyred.ec.terminators.generation_termination,
+                                      inspyred.ec.terminators.evaluation_termination,
+                                      inspyred.ec.terminators.diversity_termination,
+                                      inspyred.ec.terminators.average_fitness_termination]
         self.pop_size = 100
         self.seeds = []
         self.max_generations = 1
         self.max_evaluations = None
         self.max_time = None
-        
+
         self.selector_config = self.SubConfiguration()
         self.selector_config.num_selected = None
         self.selector_config.tournament_size = 2
         self.selector_config.num_elites = 0
-        
+
         self.variator_config = self.SubConfiguration()
         self.variator_config.mutation_rate = .1
         self.variator_config.crossover_rate = 1.
@@ -127,6 +127,7 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
     @property
     def selector(self):
         return self._algorithm.selector
+
     @selector.setter
     def selector(self, value):
         self.algorithm.selector = value
@@ -134,20 +135,23 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
     @property
     def variator(self):
         return self._algorithm.variator
+
     @variator.setter
     def variator(self, value):
         self._algorithm.variator = value
-    
+
     @property
     def replacer(self):
         return self._algorithm.replacer
+
     @replacer.setter
     def replacer(self, value):
         self._algorithm.replacer = value
-    
+
     @property
     def migrator(self):
         return self._algorithm.migrator
+
     @migrator.setter
     def migrator(self, value):
         self._algorithm.migrator = value
@@ -155,13 +159,15 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
     @property
     def archiver(self):
         return self._algorithm.archiver
+
     @archiver.setter
     def archiver(self, value):
         self._algorithm.archiver = value
-    
+
     @property
     def observer(self):
         return self._algorithm.observer
+
     @observer.setter
     def observer(self, value):
         self._algorithm.observer = value
@@ -169,6 +175,7 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
     @property
     def terminator(self):
         return self._algorithm.terminator
+
     @terminator.setter
     def terminator(self, value):
         self._algorithm.terminator = value
@@ -176,6 +183,7 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
     @property
     def topology(self):
         return self._algorithm.topology
+
     @topology.setter
     def topology(self, value):
         if value == 'Ring':
@@ -190,6 +198,7 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
     @property
     def algorithm(self):
         return self._algorithm
+
     @algorithm.setter
     def algorithm(self, value):
         init = False
@@ -217,7 +226,7 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
         elif value == "DifferentialEvolutionaryAlgorithm" or value == "DEA":
             self._algorithm = inspyred.ec.DEA(random)
         elif value == "SimulatedAnnealing" or value == "SA":
-            self._algorithm = inspyred.ec.SA(random)         
+            self._algorithm = inspyred.ec.SA(random)
         elif value == "NSGA2":
             self._algorithm = inspyred.emo.NSGA2(random)
         elif value == "PAES":
@@ -225,7 +234,8 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
         elif value == "Pareto":
             self._algorithm = inspyred.emo.Pareto(random)
         else:
-            raise ValueError("%s is not a supported. Try one of the following instead: 'GeneticAlgorithm', 'ParticleSwarmOptimization', 'EvolutionaryStrategy'. TODO: be more specific here")
+            raise ValueError(
+                "%s is not a supported. Try one of the following instead: 'GeneticAlgorithm', 'ParticleSwarmOptimization', 'EvolutionaryStrategy'. TODO: be more specific here")
         # self._algorithm.terminator = self._default_terminator
         if init is False:
             self._algorithm.selector = previous_selector
@@ -235,11 +245,12 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
             previous_archiver = self._algorithm.archiver
             previous_observer = self._algorithm.observer
             previous_terminator = self._algorithm.terminator
-        # TODO: setting a new algorithm should recycle old variators, selectors etc.
+            # TODO: setting a new algorithm should recycle old variators, selectors etc.
 
     def _evolve_kwargs(self):
         """Filter None keyword arguments. Intended to be passed on to algorithm.evolve(...)"""
-        valid_evolve_kwargs = ('max_generations', 'max_evaluations', 'pop_size', 'neighborhood_size', 'tournament_size', 'mutation_rate')
+        valid_evolve_kwargs = (
+        'max_generations', 'max_evaluations', 'pop_size', 'neighborhood_size', 'tournament_size', 'mutation_rate')
         filtered_evolve_kwargs = dict()
         for key in valid_evolve_kwargs:
             attr_value = getattr(self, key)
@@ -247,6 +258,7 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
                 filtered_evolve_kwargs[key] = attr_value
         # return filtered_evolve_kwargs
         return {}
+
 
 class Model(interface.Model):
     """Interface"""
@@ -297,13 +309,13 @@ class Model(interface.Model):
             evaluator=self._evaluator,
             bounder=self._bounder,
             pop_size=self.configuration.pop_size,
-            maximize={'max':True, 'min':False}[self.objective.direction],
+            maximize={'max': True, 'min': False}[self.objective.direction],
             max_generations=self.configuration.max_generations,
             max_evaluations=self.configuration.max_evaluations,
             neighborhood_size=self.configuration.topology_config.neighborhood_size,
             mutation_rate=self.configuration.variator_config.mutation_rate,
             tournament_size=self.configuration.selector_config.tournament_size
-            )
+        )
         return final_population
 
 
@@ -314,7 +326,7 @@ if __name__ == '__main__':
 
     x = Variable('x', lb=0, ub=2)
     y = Variable('y', lb=0, ub=2)
-    rosenbrock_obj = Objective((1 - x)**2 + 100 * (y - x**2)**2, name="Rosenbrock function", direction='min')
+    rosenbrock_obj = Objective((1 - x) ** 2 + 100 * (y - x ** 2) ** 2, name="Rosenbrock function", direction='min')
     print "The rosenbrock function:", rosenbrock_obj
     print "The global minimum at (x,y) = (1,1) is", rosenbrock_obj.expression.subs({x: 1, y: 1})
 
@@ -325,9 +337,9 @@ if __name__ == '__main__':
 
     def my_observer(population, num_generations, num_evaluations, args):
         best = max(population)
-        print('{0:6} -- {1} : {2}'.format(num_generations, 
-                                      best.fitness, 
-                                      str(best.candidate)))
+        print('{0:6} -- {1} : {2}'.format(num_generations,
+                                          best.fitness,
+                                          str(best.candidate)))
 
     problem.configuration.max_generations = 100
     problem.configuration.terminator = inspyred.ec.terminators.generation_termination
