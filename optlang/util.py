@@ -20,7 +20,6 @@ import os
 import logging
 log = logging.getLogger(__name__)
 import tempfile
-from collections import OrderedDict
 from subprocess import check_output
 
 
@@ -124,6 +123,8 @@ def list_available_solvers():
 
 
 if __name__ == '__main__':
+    from glpk.glpkpi import glp_create_prob, glp_read_lp, glp_get_num_rows
+
     problem = glp_create_prob()
     glp_read_lp(problem, None, "../tests/data/model.lp")
     print "asdf", glp_get_num_rows(problem)
