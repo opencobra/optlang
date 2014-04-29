@@ -6,6 +6,7 @@ import unittest
 import random
 import pickle
 import nose
+from nose.tools import nottest
 import re
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from glpk.glpkpi import *
@@ -103,12 +104,15 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(glp_find_col(self.model.problem, var.name), 0)
         self.assertEqual(var.problem, None)
 
-    def test_add_constraint(self):
+    def test_add_constraint(self): # FIXME: not actually a test
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')
         y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
         constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
         self.model.add(constr)
+
+    def test_remove_constraint(self):
+        pass
 
     def test_add_constraints(self):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -131,12 +135,61 @@ class SolverTestCase(unittest.TestCase):
         matches = [line for line in cplex_lines if regex.match(line) is not None]
         self.assertNotEqual(matches, [])
 
+    def test_remove_constraints(self):
+        x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+        y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        constr1 = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
+        self.assertEqual(constr1.problem, None)
+        self.model.add(constr1)
+        self.assertEqual(constr1.problem, self.model)
+        self.assertIn(constr1, self.model.constraints.values())
+        print constr1.index
+        self.model.remove(constr1.name)
+        self.assertEqual(constr1.problem, None)
+        self.assertNotIn(constr1, self.model.constraints.values())
+
     def test_add_nonlinear_constraint_raises(self):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')
         y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
         constraint = Constraint(0.3*x + 0.4*y**2 + 66.*z, lb=-100, ub=0., name='test')
         self.assertRaises(ValueError, self.model.add, constraint)
+
+    @nottest
+    def test_change_of_constraint_is_reflected_in_low_level_solver(self):
+        x = Variable('x', lb=-83.3, ub=1324422.)
+        y = Variable('y', lb=-181133.3, ub=12000.)
+        constraint = Constraint(0.3*x + 0.4*y, lb=-100, name='test')
+        self.model.add(constraint)
+        self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
+        self.assertIn(' test: + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
+        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        constraint.expression += 77. * z
+        self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
+        print self.model
+        self.assertIn(' test: + 0.4 y + 0.3 x + 77. z >= -100', self.model.__str__().split("\n"))
+
+    @nottest
+    def test_change_of_objective_is_reflected_in_low_level_solver(self):
+        x = Variable('x', lb=-83.3, ub=1324422.)
+        y = Variable('y', lb=-181133.3, ub=12000.)
+        objective = Objective(0.3*x + 0.4*y, name='test', direction='max')
+        self.model.objective = objective
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
+        self.assertIn(' obj: + 0.4 y + 0.3 x', self.model.__str__().split("\n"))
+        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        objective.expression += 77. * z
+        print objective.expression
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
+        print self.model
+        self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
+
+        # self.assertTrue(False)
+
+    def test_absolute_value_objective(self):
+        # TODO: implement hack mentioned in http://www.aimms.com/aimms/download/manuals/aimms3om_linearprogrammingtricks.pdf
+        pass
 
     def test_change_variable_bounds(self):
         inner_prob = self.model.problem

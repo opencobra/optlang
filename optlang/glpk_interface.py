@@ -95,7 +95,7 @@ class Variable(interface.Variable):
 
             elif name == 'type':
                 try:
-                    glpk_kind = _VTYPE_TO_GLPK_VTYPE[self.type]
+                    glpk_kind = _VTYPE_TO_GLPK_VTYPE[value]  # FIXME: should this be [value]??
                 except KeyError:
                     raise Exception("GLPK cannot handle variables of type %s. \
                         The following variable types are available:\n" +
@@ -139,29 +139,24 @@ class Constraint(interface.Constraint):
 
     def __setattr__(self, name, value):
 
+        super(Constraint, self).__setattr__(name, value)
         if getattr(self, 'problem', None):
-        # if super(Constraint, self).__getattr__('problem'):
 
             if name == 'name':
-                super(Constraint, self).__setattr__(name, value)
+                
                 self.problem._glpk_set_row_name(self)
 
             elif name == 'lb' or name == 'ub':
-                super(Constraint, self).__setattr__(name, value)
                 self.problem._glpk_set_row_bounds(self)
 
-            else:
-                super(Constraint, self).__setattr__(name, value)
-        else:
-            super(Constraint, self).__setattr__(name, value)
+            elif name == 'expression':
+                pass
+        
 
 
 class Objective(interface.Objective):
 
-    """docstring for Objective"""
-
     def __init__(self, *args, **kwargs):
-        # import pdb; pdb.set_trace()
         super(Objective, self).__init__(*args, **kwargs)
 
     @property
@@ -178,7 +173,7 @@ class Objective(interface.Objective):
             if name == 'direction':
                 glp_set_obj_dir(self.problem.problem,
                                 {'min': GLP_MIN, 'max': GLP_MAX}[value])
-                super(Objective, self).__setattr__(name, value)
+            super(Objective, self).__setattr__(name, value)
         else:
             super(Objective, self).__setattr__(name, value)
 
@@ -556,6 +551,12 @@ class Model(interface.Model):
                 "Something is wrong with the provided bounds %f and %f in constraint %s" %
                 (constraint.lb, constraint.ub, constraint))
 
+    def _remove_constraint(self, constraint):
+        num = intArray(2)
+        num[1] = constraint.index
+        glp_del_rows(self.problem, 1, num)
+        super(Model, self)._remove_constraint(constraint)
+        
 
 if __name__ == '__main__':
     import pickle
@@ -563,7 +564,7 @@ if __name__ == '__main__':
     x1 = Variable('x1', lb=0)
     x2 = Variable('x2', lb=0)
     x3 = Variable('x3', lb=0)
-    c1 = Constraint(x1 + x2 + x3, ub=100, name='c1')
+    c1 = Constraint(x1 + x2 + x3, lb=-100, ub=100, name='c1')
     c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600, name='c2')
     c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300, name='c3')
     obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')

@@ -21,6 +21,7 @@ extended for individual solvers.
 
 import types
 import logging
+
 log = logging.getLogger(__name__)
 import collections
 import sympy
@@ -36,6 +37,7 @@ INFEASIBLE_OR_UNBOUNDED = 'infeasible_or_unbouned'
 LOADED = 'loaded'
 CUTOFF = 'cutoff'
 ITERATION_LIMIT = 'iteration_limit'
+MEMORY_LIMIT = 'memory_limit'
 NODE_LIMIT = 'node_limit'
 TIME_LIMIT = 'time_limit'
 SOLUTION_LIMIT = 'solution_limit'
@@ -43,10 +45,11 @@ INTERRUPTED = 'interrupted'
 NUMERIC = 'numeric'
 SUBOPTIMAL = 'suboptimal'
 INPROGRESS = 'in_progress'
+ABORTED = 'aborted'
+SPECIAL = 'check_original_solver_status'
 
 
 class Variable(sympy.Symbol):
-
     """Optimization variables.
 
     Extends sympy Symbol with optimization specific attributes and methods.
@@ -74,7 +77,8 @@ class Variable(sympy.Symbol):
         for char in name:
             if char.isspace():
                 raise ValueError(
-                    'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (name, char))
+                    'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
+                    name, char))
         super(Variable, self).__init__(name, *args, **kwargs)
         self.lb = lb
         self.ub = ub
@@ -111,17 +115,20 @@ class Variable(sympy.Symbol):
 
         if name == 'lb' and hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
             raise ValueError(
-                'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (value, self.ub, self))
+                'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (
+                value, self.ub, self))
 
         if name == 'ub' and hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
             raise ValueError(
-                'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (value, self.lb, self))
+                'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (
+                value, self.lb, self))
 
         elif name == 'type':
             if value in ('continuous', 'integer', 'binary'):
                 super(Variable, self).__setattr__(name, value)
             else:
-                raise ValueError("'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
+                raise ValueError(
+                    "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
 
         else:
             super(Variable, self).__setattr__(name, value)
@@ -133,8 +140,23 @@ class Variable(sympy.Symbol):
         self.__dict__ = state
 
 
-class Constraint(object):
+# class OptimizationExpression(object):
+#     """Abstract base class for Objective and Constraint."""
+#     def __init__(self, expression, name=None, problem=None, *args, **kwargs):
+#         super(OptimizationExpression, self).__init__(*args, **kwargs)
+#         if name is None:
+#             self.name = sympy.Dummy().name
+#         else:
+#             self.name = name
+#         self.expression = expression
 
+#     @property
+#     def variables(self):
+#         """Variables in constraint."""
+#         return self.expression.free_symbols
+
+
+class Constraint(object):
     """Optimization constraint.
 
     Wraps sympy expressions and extends them with optimization specific attributes and methods.
@@ -187,7 +209,7 @@ class Constraint(object):
             raise ValueError(
                 "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set."
                 % expression
-                )
+            )
         elif self.lb is not None:
             expression = expression - coeff
             self.lb = self.lb - coeff
@@ -255,7 +277,6 @@ class Constraint(object):
 
 
 class Objective(object):
-
     """Objective function.
 
     Attributes
@@ -319,6 +340,11 @@ class Objective(object):
         # TODO: implement direction parsing, e.g. 'Maximize' -> 'max'
         self._direction = value
 
+    @property
+    def variables(self):
+        """Variables in constraint."""
+        return self.expression.free_symbols
+
 
 class Configuration(object):
     """Optimization solver configuration."""
@@ -341,27 +367,28 @@ class Configuration(object):
     def verbose(self, value):
         raise NotImplementedError
 
-class MathematicalProgrammingConfiguration(object):
 
+class MathematicalProgrammingConfiguration(object):
     def __init__(self, *args, **kwargs):
         super(MathematicalProgrammingConfiguration, self).__init__(*args, **kwargs)
 
     @property
     def presolve(self):
         raise NotImplementedError
+
     @presolve.setter
     def presolve(self, value):
         raise NotImplementedError
-    
+
 
 class EvolutionaryOptimizationConfiguration(object):
     """docstring for HeuristicOptimization"""
+
     def __init__(self, *args, **kwargs):
         super(EvolutionaryOptimizationConfiguration, self).__init__(*args, **kwargs)
 
 
 class Model(object):
-
     """Optimization problem.
 
     Attributes
@@ -388,9 +415,9 @@ class Model(object):
     def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
         self._objective = objective
-        self.variables = collections.OrderedDict() #TODO: make variables read-only
-        self.constraints = collections.OrderedDict() #TODO: make constraints read-only
-        self.status = None #TODO: make this a property.
+        self.variables = collections.OrderedDict()  #TODO: make variables read-only
+        self.constraints = collections.OrderedDict()  #TODO: make constraints read-only
+        self.status = None  #TODO: make this a property.
         self.name = name
         if variables is not None:
             self.add(variables)
@@ -410,7 +437,8 @@ class Model(object):
             for var in vars_not_yet_in_model:
                 self._add_variable(var)
         except AttributeError, e:
-            if isinstance(self._objective.expression, types.FunctionType) or isinstance(self._objective.expression, types.FloatType):
+            if isinstance(self._objective.expression, types.FunctionType) or isinstance(self._objective.expression,
+                                                                                        types.FloatType):
                 pass
             else:
                 raise AttributeError(e)
@@ -506,11 +534,12 @@ class Model(object):
 
     def _remove_variable(self, variable):
         if isinstance(variable, Variable):
-            var = self.variables[variable.name]
+            try:
+                var = self.variables[variable.name]
+            except KeyError:
+                raise LookupError("Variable %s not in solver" % var)
             var.problem = None
             del self.variables[variable.name]
-        else:
-            raise LookupError("Variable %s not in solver" % s)
 
     def _add_constraint(self, constraint, sloppy=False):
         if sloppy is False:
@@ -523,8 +552,16 @@ class Model(object):
             self.constraints[constraint.name] = constraint
 
     def _remove_constraint(self, constraint):
-        del self.constraints[constraint.__hash__]
-        del constraint
+        if constraint.name is not None:
+            key = constraint.name
+        else:
+            key = constraint.__hash__
+        try:
+            constr = self.constraints[key]
+        except KeyError:
+            raise LookupError("Constraint %s not in solver" % constr)
+        constr.problem = None
+        del self.constraints[key]
 
 
 if __name__ == '__main__':
@@ -545,7 +582,6 @@ if __name__ == '__main__':
         sol = model.optimize()
     except NotImplementedError, e:
         print e
-
 
     print model
     print model.variables
