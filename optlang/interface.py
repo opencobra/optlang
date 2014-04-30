@@ -78,7 +78,7 @@ class Variable(sympy.Symbol):
             if char.isspace():
                 raise ValueError(
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
-                    name, char))
+                        name, char))
         super(Variable, self).__init__(name, *args, **kwargs)
         self.lb = lb
         self.ub = ub
@@ -116,12 +116,12 @@ class Variable(sympy.Symbol):
         if name == 'lb' and hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
             raise ValueError(
                 'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (
-                value, self.ub, self))
+                    value, self.ub, self))
 
         if name == 'ub' and hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
             raise ValueError(
                 'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (
-                value, self.lb, self))
+                    value, self.lb, self))
 
         elif name == 'type':
             if value in ('continuous', 'integer', 'binary'):

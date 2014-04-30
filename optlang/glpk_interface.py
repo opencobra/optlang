@@ -23,6 +23,7 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 import copy
 import types
 import logging
+
 log = logging.getLogger(__name__)
 import tempfile
 import sympy
@@ -49,11 +50,10 @@ _GLPK_VTYPE_TO_VTYPE = {
 
 _VTYPE_TO_GLPK_VTYPE = dict(
     [(val, key) for key, val in _GLPK_VTYPE_TO_VTYPE.iteritems()]
-    )
+)
 
 
 class Variable(interface.Variable):
-
     """..."""
 
     def __init__(self, name, index=None, *args, **kwargs):
@@ -111,7 +111,6 @@ class Variable(interface.Variable):
 
 
 class Constraint(interface.Constraint):
-
     """GLPK solver interface"""
 
     def __init__(self, expression, *args, **kwargs):
@@ -183,7 +182,6 @@ class Constraint(interface.Constraint):
 
 
 class Objective(interface.Objective):
-
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
 
@@ -231,7 +229,6 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
-
     """docstring for Configuration"""
 
     def __init__(self, presolve=False, verbosity=0, *args, **kwargs):
@@ -278,7 +275,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             raise Exception(
                 "%s is not a valid verbosity level ranging between 0 and 3."
                 % value
-                )
+            )
 
     @property
     def presolve(self):
@@ -300,7 +297,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 
 class Model(interface.Model):
-
     """GLPK solver interface"""
 
     def __init__(self, problem=None, *args, **kwargs):
@@ -338,7 +334,7 @@ class Model(interface.Model):
                 da = doubleArray(col_num + 1)
                 nnz = glp_get_mat_row(self.problem, j, ia, da)
                 lhs = _unevaluated_Add(*[da[i] * var[ia[i] - 1]
-                                       for i in range(1, nnz + 1)])
+                                         for i in range(1, nnz + 1)])
                 glpk_row_type = glp_get_row_type(self.problem, j)
                 if glpk_row_type == GLP_FX:
                     row_lb = glp_get_row_lb(self.problem, j)
@@ -359,7 +355,7 @@ class Model(interface.Model):
                     raise Exception(
                         "Currently, optlang does not support glpk row type %s"
                         % str(glpk_row_type)
-                        )
+                    )
                     log.exception()
                 if isinstance(lhs, int):
                     lhs = sympy.Integer(lhs)
@@ -375,12 +371,13 @@ class Model(interface.Model):
             term_generator = (
                 (glp_get_obj_coef(self.problem, index), var[index - 1])
                 for index in xrange(1, glp_get_num_cols(problem) + 1)
-                )
+            )
             self._objective = Objective(
-                _unevaluated_Add(*[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.]),
+                _unevaluated_Add(
+                    *[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.]),
                 problem=self,
                 direction={GLP_MIN: 'min', GLP_MAX:
-                           'max'}[glp_get_obj_dir(self.problem)]
+                    'max'}[glp_get_obj_dir(self.problem)]
             )
         else:
             raise Exception("Provided problem is not a valid GLPK model.")
@@ -457,7 +454,7 @@ class Model(interface.Model):
             glp_set_obj_dir(
                 self.problem,
                 {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction]
-                )
+            )
         value.problem = self
 
     def __str__(self):
@@ -633,6 +630,7 @@ if __name__ == '__main__':
     print model
 
     from glpk.glpkpi import glp_read_lp
+
     problem = glp_create_prob()
     glp_read_lp(problem, None, "../tests/data/model.lp")
 
@@ -641,6 +639,7 @@ if __name__ == '__main__':
     print solver.objective
 
     import time
+
     t1 = time.time()
     print "pickling"
     pickle_string = pickle.dumps(solver)

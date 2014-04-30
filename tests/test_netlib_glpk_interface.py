@@ -52,7 +52,10 @@ def check_objval(glpk_problem, model_objval):
 
 
 def check_objval_against_the_final_netlib_results(netlib_id, model_objval):
-    nose.tools.assert_almost_equal(model_objval, float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue']), places=4)
+    relative_error = abs(1 - (model_objval/float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue'])))
+    print relative_error
+    nose.tools.assert_true(relative_error < 0.01)
+    # nose.tools.assert_almost_equal(model_objval, float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue']), places=4)
 
 
 def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/netlib_lp_problems.tar.gz')):

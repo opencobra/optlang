@@ -250,7 +250,7 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
     def _evolve_kwargs(self):
         """Filter None keyword arguments. Intended to be passed on to algorithm.evolve(...)"""
         valid_evolve_kwargs = (
-        'max_generations', 'max_evaluations', 'pop_size', 'neighborhood_size', 'tournament_size', 'mutation_rate')
+            'max_generations', 'max_evaluations', 'pop_size', 'neighborhood_size', 'tournament_size', 'mutation_rate')
         filtered_evolve_kwargs = dict()
         for key in valid_evolve_kwargs:
             attr_value = getattr(self, key)

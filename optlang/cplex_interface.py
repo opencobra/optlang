@@ -252,6 +252,7 @@ class Model(interface.Model):
                                      self.problem.linear_constraints.get_rows(),
                                      self.problem.linear_constraints.get_senses(),
                                      self.problem.linear_constraints.get_rhs()
+
             )
             var = self.variables.values()
             for name, row, sense, rhs in zipped_constr_args:
@@ -267,7 +268,11 @@ class Model(interface.Model):
                 elif sense == 'L':
                     constr = Constraint(lhs, ub=rhs, name=name, problem=self)
                 elif sense == 'R':
-                    raise Exception, 'optlang does not provide support for CPLEX range constraints yet.'
+                    range_val = self.problem.linear_constraints.get_rhs(name)
+                    if range_val > 0:
+                        constr = Constraint(lhs, lb=rhs, ub=rhs + range_val, name=name, problem=self)
+                    else:
+                        constr = Constraint(lhs, lb=rhs + range_val, ub=rhs, name=name, problem=self)
                 else:
                     raise Exception, '%s is not a recognized constraint sense.' % sense
                 super(Model, self)._add_constraint(
@@ -407,40 +412,6 @@ class Model(interface.Model):
             self.problem.linear_constraints.add(
                 lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
                 range_values=[range_value], names=[constraint.name])
-
-
-
-            # if constraint.expression.is_Atom and constraint.expression.is_Symbol:
-            #     ind = constraint.expression.name
-            #     val = 1.
-            #     self.problem.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=[ind], val=[val])], senses='', rhs=[0], range_values=[], names=[constraint.name])
-            # elif constraint.expression.is_Mul:
-            #     args = constraint.expression.args
-            #     if len(args) > 2:
-            #         raise Exception("Term %s from constraint %s is not a proper linear term." % (term, constraint))
-            #     val = float(args[0])
-            #     ind = args[1].name
-            #     self.problem.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=[ind], val=[val])], senses='', rhs=[0], range_values=[], names=[constraint.name])
-            # else:
-            #     indices = list()
-            #     values = list()
-            #     for i, term in enumerate(constraint.expression.args):
-            #         args = term.args
-            #         if args == ():
-            #             assert term.is_Symbol
-            #             val = 1.
-            #             ind = term.name
-            #         elif len(args) == 2:
-            #             assert args[0].is_Number
-            #             assert args[1].is_Symbol
-            #             ind = args[1].name
-            #             val = float(args[0])
-            #         elif leng(args) > 2:
-            #             raise Exception("Term %s from constraint %s is not a proper linear term." % (term, constraint))
-            #         indices.append(ind)
-            #         values.append(val)
-            #     self.problem.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=indices,val=values)], senses=['E'], rhs=[0], range_values=[], names=[constraint.name])
-
         constraint.problem = self
         return constraint
 
