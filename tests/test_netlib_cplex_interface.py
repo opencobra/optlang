@@ -1,6 +1,7 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
+import unittest
 import pickle
 import tempfile
 import glob
