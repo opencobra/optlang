@@ -38,7 +38,7 @@ from glpk.glpkpi import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV
     glp_set_obj_coef, glp_simplex, LPX_LP, _glp_lpx_get_class, glp_intopt, glp_get_status, glp_add_cols, \
     glp_set_col_name, intArray, glp_del_cols, glp_add_rows, glp_set_row_name, doubleArray, glp_write_lp, glp_write_prob, \
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
-    glp_get_mat_row, \
+    glp_get_mat_row, glp_get_row_ub, \
     glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO
 
 import interface

@@ -450,18 +450,17 @@ class Model(object):
 
     @objective.setter
     def objective(self, value):
-        self._objective = value
         try:
-            vars_in_objective = self._objective.expression.atoms(sympy.Symbol)
-            vars_not_yet_in_model = vars_in_objective.difference(set(self.variables.values()))
-            for var in vars_not_yet_in_model:
-                self._add_variable(var)
+            for atom in value.expression.atoms(sympy.Symbol):
+                if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
+                    self._add_variable(atom)
         except AttributeError, e:
-            if isinstance(self._objective.expression, types.FunctionType) or isinstance(self._objective.expression,
+            if isinstance(value.expression, types.FunctionType) or isinstance(value.expression,
                                                                                         types.FloatType):
                 pass
             else:
                 raise AttributeError(e)
+        self._objective = value
 
     def __str__(self):
         return '\n'.join((
