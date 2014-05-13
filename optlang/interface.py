@@ -294,15 +294,12 @@ class Objective(object):
 
     """
 
-    def __init__(self, expression, name=None, value=None, problem=None, direction='max', sloppy=False, *args, **kwargs):
+    def __init__(self, expression, name=None, value=None, problem=None, direction='max', *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
-        if sloppy:
+        try:
+            self._expression = self._canonicalize(expression)
+        except TypeError:
             self._expression = expression
-        else:
-            try:
-                self._expression = self._canonicalize(expression)
-            except TypeError:
-                self._expression = expression
         self.name = name
         self._value = value
         self._direction = direction
@@ -340,6 +337,7 @@ class Objective(object):
 
     @direction.setter
     def direction(self, value):
+        # TODO: implement direction parsing, e.g. 'Maximize' -> 'max'
         self._direction = value
 
     @property
@@ -453,14 +451,9 @@ class Model(object):
     @objective.setter
     def objective(self, value):
         self._objective = value
-        vars_not_yet_in_model = list()
         try:
-            for arg in self._objective.expression.args:
-                try:
-                    if arg.name not in self.solver.variables:
-                        vars_not_yet_in_model.append(arg)
-                except AttributeError:
-                    pass
+            vars_in_objective = self._objective.expression.atoms(sympy.Symbol)
+            vars_not_yet_in_model = vars_in_objective.difference(set(self.variables.values()))
             for var in vars_not_yet_in_model:
                 self._add_variable(var)
         except AttributeError, e:
