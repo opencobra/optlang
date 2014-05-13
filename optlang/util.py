@@ -104,30 +104,30 @@ def list_available_solvers():
         import gurobipy
 
         solvers['GUROBI'] = True
-        log.info('Gurobi python bindings found at %s' % os.path.dirname(gurobipy.__file__))
+        log.debug('Gurobi python bindings found at %s' % os.path.dirname(gurobipy.__file__))
     except:
-        log.info('Gurobi python bindings not available.')
+        log.debug('Gurobi python bindings not available.')
     try:
         import glpk.glpkpi
 
         solvers['GLPK'] = True
-        log.info('GLPK python bindings found at %s' % os.path.dirname(glpk.glpkpi.__file__))
+        log.debug('GLPK python bindings found at %s' % os.path.dirname(glpk.glpkpi.__file__))
     except:
-        log.info('GLPK python bindings not available.')
+        log.debug('GLPK python bindings not available.')
     try:
         import mosek
 
         solvers['MOSEK'] = True
-        log.info('Mosek python bindings found at %s' % os.path.dirname(mosek.__file__))
+        log.debug('Mosek python bindings found at %s' % os.path.dirname(mosek.__file__))
     except:
-        log.info('Mosek python bindings not available.')
+        log.debug('Mosek python bindings not available.')
     try:
         import cplex
 
         solvers['CPLEX'] = True
-        log.info('CPLEX python bindings found at %s' % os.path.dirname(cplex.__file__))
+        log.debug('CPLEX python bindings found at %s' % os.path.dirname(cplex.__file__))
     except:
-        log.info('CPLEX python bindings not available.')
+        log.debug('CPLEX python bindings not available.')
     return solvers
 
 
