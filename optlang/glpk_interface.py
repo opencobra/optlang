@@ -20,8 +20,6 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
 
-import copy
-import types
 import logging
 
 log = logging.getLogger(__name__)
@@ -29,7 +27,19 @@ import tempfile
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
-from glpk.glpkpi import *
+
+from glpk.glpkpi import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GLP_IV, GLP_BV, GLP_UNDEF, GLP_FEAS, \
+    GLP_INFEAS, GLP_NOFEAS, GLP_OPT, GLP_UNBND, \
+    glp_set_col_kind, glp_find_row, glp_get_row_prim, glp_get_row_dual, glp_get_obj_val, glp_set_obj_dir, glp_init_smcp, \
+    glp_init_iocp, GLP_MIN, GLP_MAX, glp_iocp, glp_smcp, GLP_ON, GLP_OFF, GLP_MSG_OFF, GLP_MSG_ERR, GLP_MSG_ON, \
+    GLP_MSG_ALL, glp_term_out, glp_create_index, glp_create_prob, glp_get_num_rows, glp_get_num_cols, glp_get_col_name, \
+    glp_get_col_lb, glp_get_col_ub, glp_get_col_kind, glp_set_prob_name, glp_prob, glp_read_prob, glp_copy_prob, \
+    glp_set_obj_coef, glp_simplex, LPX_LP, _glp_lpx_get_class, glp_intopt, glp_get_status, glp_add_cols, \
+    glp_set_col_name, intArray, glp_del_cols, glp_add_rows, glp_set_row_name, doubleArray, glp_write_lp, glp_write_prob, \
+    glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
+    glp_get_mat_row, \
+    glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO
+
 import interface
 
 
@@ -430,7 +440,7 @@ class Model(interface.Model):
 
     @objective.setter
     def objective(self, value):
-        super(Model, self.__class__).objective.fset(self, value)
+        super(Model, self.__class__).objective.fset(self, value)  # TODO: This needs to be sped up
         self._objective = value
         for i in xrange(1, glp_get_num_cols(self.problem) + 1):
             glp_set_obj_coef(self.problem, i, 0)
@@ -470,7 +480,7 @@ class Model(interface.Model):
         return glpk_form
 
     def optimize(self):
-        if all([var.type == 'continuous' for var in self.variables.values()]):
+        if _glp_lpx_get_class(self.problem) == LPX_LP:
             glp_simplex(self.problem, self.configuration._smcp)
         else:
             glp_intopt(self.problem, self.configuration._iocp)
@@ -537,7 +547,7 @@ class Model(interface.Model):
                     assert args[1].is_Symbol
                     var = args[1]
                     coeff = float(args[0])
-                elif leng(args) > 2:
+                elif len(args) > 2:
                     raise Exception(
                         "Term %s from constraint %s is not a proper linear term." % (term, constraint))
                 index_array[i + 1] = var.index
