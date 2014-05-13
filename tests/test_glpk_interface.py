@@ -189,7 +189,7 @@ class SolverTestCase(unittest.TestCase):
         # self.assertTrue(False)
 
     def test_absolute_value_objective(self):
-        # TODO: implement hack mentioned in http://www.aimms.com/aimms/download/manuals/aimms3om_linearprogrammingtricks.pdf
+        # TODO: implement hack mentioned in AIMSS manual
         pass
 
     def test_change_variable_bounds(self):
