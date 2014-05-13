@@ -21,6 +21,7 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 """
 
 import logging
+import types
 
 log = logging.getLogger(__name__)
 import tempfile
