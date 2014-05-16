@@ -441,10 +441,11 @@ class Model(interface.Model):
 
     @objective.setter
     def objective(self, value):
+        if self._objective is not None:
+            for variable in self._objective.variables:
+                glp_set_obj_coef(self.problem, variable.index, 0.)
         super(Model, self.__class__).objective.fset(self, value)  # TODO: This needs to be sped up
         self._objective = value
-        for i in xrange(1, glp_get_num_cols(self.problem) + 1):
-            glp_set_obj_coef(self.problem, i, 0)
         expression = self._objective.expression
         if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType):
             pass
