@@ -179,11 +179,8 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
         self.assertIn(' obj: + 0.4 y + 0.3 x', self.model.__str__().split("\n"))
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-        # z.problem = self.model
-        objective += 77. * z
-        print objective.expression
+        self.model.objective += 77. * z
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-        print self.model
         self.assertIn(' obj: + 0.4 y + 0.3 x + 77 z', self.model.__str__().split("\n"))
 
         # self.assertTrue(False)

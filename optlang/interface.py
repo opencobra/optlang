@@ -294,12 +294,15 @@ class Objective(object):
 
     """
 
-    def __init__(self, expression, name=None, value=None, problem=None, direction='max', *args, **kwargs):
+    def __init__(self, expression, name=None, value=None, problem=None, direction='max', sloppy=False, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
-        try:
-            self._expression = self._canonicalize(expression)
-        except TypeError:
+        if sloppy:
             self._expression = expression
+        else:
+            try:
+                self._expression = self._canonicalize(expression)
+            except TypeError:
+                self._expression = expression
         self.name = name
         self._value = value
         self._direction = direction
