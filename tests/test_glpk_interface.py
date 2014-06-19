@@ -187,7 +187,10 @@ class SolverTestCase(unittest.TestCase):
 
     def test_absolute_value_objective(self):
         # TODO: implement hack mentioned in http://www.aimms.com/aimms/download/manuals/aimms3om_linearprogrammingtricks.pdf
-        pass
+
+        objective = Objective(sum(abs(variable) for variable in self.model.variables.itervalues()), name='test', direction='max')
+        print objective
+        self.assertTrue(False)
 
     def test_change_variable_bounds(self):
         inner_prob = self.model.problem

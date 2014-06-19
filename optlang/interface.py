@@ -140,23 +140,86 @@ class Variable(sympy.Symbol):
         self.__dict__ = state
 
 
-# class OptimizationExpression(object):
-#     """Abstract base class for Objective and Constraint."""
-#     def __init__(self, expression, name=None, problem=None, *args, **kwargs):
-#         super(OptimizationExpression, self).__init__(*args, **kwargs)
-#         if name is None:
-#             self.name = sympy.Dummy().name
-#         else:
-#             self.name = name
-#         self.expression = expression
+class OptimizationExpression(object):
+    """Abstract base class for Objective and Constraint."""
+    def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
+        super(OptimizationExpression, self).__init__(*args, **kwargs)
+        if sloppy:
+            self._expression = expression
+        else:
+            self._expression = self._canonicalize(expression)
+        if name is None:
+            self.name = sympy.Dummy().name
+        else:
+            self.name = name
+        self.problem = problem
 
-#     @property
-#     def variables(self):
-#         """Variables in constraint."""
-#         return self.expression.free_symbols
+    @property
+    def expression(self):
+        """The mathematical expression defining the objective/constraint."""
+        return self._expression
+
+    @expression.setter
+    def expression(self, value):
+        try:
+            self._expression = self._canonicalize(value)
+        except TypeError:
+            self._expression = value
+
+    @property
+    def variables(self):
+        """Variables in constraint."""
+        return self.expression.free_symbols
+
+    def _canonicalize(self, expression):
+        return expression
+
+    @property
+    def is_Linear(self):
+        """Returns True if constraint is linear (read-only)."""
+        try:
+            poly = self.expression.as_poly(*self.variables)
+        except sympy.PolynomialError:
+            poly = None
+        if poly is not None:
+            return poly.is_linear
+        else:
+            return False
+
+    @property
+    def is_Quadratic(self):
+        """Returns True if constraint is quadratic (read-only)."""
+        try:
+            poly = self.expression.as_poly(*self.expression.free_symbols)
+        except sympy.PolynomialError:
+            poly = None
+        if poly is not None and poly.is_quadratic and not poly.is_linear:
+            return True
+        else:
+            return False
+
+    def __iadd__(self, other):
+        self.expression += other
+        return self
+
+    def __isub__(self, other):
+        self.expression -= other
+        return self
+
+    def __imul__(self, other):
+        self.expression *= other
+        return self
+
+    def __idiv__(self, other):
+        self.expression /= other
+        return self
+
+    def __itruediv__(self, other):
+        self.expression /= other
+        return self
 
 
-class Constraint(object):
+class Constraint(OptimizationExpression):
     """Optimization constraint.
 
     Wraps sympy expressions and extends them with optimization specific attributes and methods.
@@ -175,16 +238,10 @@ class Constraint(object):
         A reference to the optimization model the variable belongs to.
     """
 
-    def __init__(self, expression, name=None, lb=None, ub=None, problem=None, *args, **kwargs):
-        super(Constraint, self).__init__(*args, **kwargs)
+    def __init__(self, expression, lb=None, ub=None, *args, **kwargs):
         self.lb = lb
         self.ub = ub
-        self._expression = self._canonicalize(expression)
-        if name is None:
-            self.name = sympy.Dummy().name
-        else:
-            self.name = name
-        self.problem = problem
+        super(Constraint, self).__init__(expression, *args, **kwargs)
 
     def __str__(self):
         if self.lb:
@@ -218,65 +275,8 @@ class Constraint(object):
             self.ub = self.ub - coeff
         return expression
 
-    @property
-    def expression(self):
-        return self._expression
 
-    @expression.setter
-    def expression(self, expression):
-        self._expression = self._canonicalize(expression)
-
-    @property
-    def is_Linear(self):
-        """Returns True if constraint is linear (read-only)."""
-        try:
-            poly = self.expression.as_poly(*self.variables)
-        except sympy.PolynomialError:
-            poly = None
-        if poly is not None:
-            return poly.is_linear
-        else:
-            return False
-
-    @property
-    def is_Quadratic(self):
-        """Returns True if constraint is quadratic (read-only)."""
-        try:
-            poly = self.expression.as_poly(*self.expression.free_symbols)
-        except sympy.PolynomialError:
-            poly = None
-        if poly is not None and poly.is_quadratic and not poly.is_linear:
-            return True
-        else:
-            return False
-
-    @property
-    def variables(self):
-        """Variables in constraint."""
-        return self.expression.free_symbols
-
-    def __iadd__(self, other):
-        self.expression += other
-        return self
-
-    def __isub__(self, other):
-        self.expression -= other
-        return self
-
-    def __imul__(self, other):
-        self.expression *= other
-        return self
-
-    def __idiv__(self, other):
-        self.expression /= other
-        return self
-
-    def __itruediv__(self, other):
-        self.expression /= other
-        return self
-
-
-class Objective(object):
+class Objective(OptimizationExpression):
     """Objective function.
 
     Attributes
@@ -294,19 +294,10 @@ class Objective(object):
 
     """
 
-    def __init__(self, expression, name=None, value=None, problem=None, direction='max', sloppy=False, *args, **kwargs):
-        super(Objective, self).__init__(*args, **kwargs)
-        if sloppy:
-            self._expression = expression
-        else:
-            try:
-                self._expression = self._canonicalize(expression)
-            except TypeError:
-                self._expression = expression
-        self.name = name
+    def __init__(self, expression, value=None, direction='max', *args, **kwargs):
         self._value = value
         self._direction = direction
-        self.problem = problem
+        super(Objective, self).__init__(expression, *args, **kwargs)
 
     @property
     def value(self):
@@ -322,51 +313,15 @@ class Objective(object):
         return expression
 
     @property
-    def expression(self):
-        """The mathematical expression defining the objective."""
-        return self._expression
-
-    @expression.setter
-    def expression(self, value):
-        try:
-            self._expression = self._canonicalize(value)
-        except TypeError:
-            self._expression = value
-
-    @property
     def direction(self):
         """The direction of optimization. Either 'min' or 'max'."""
         return self._direction
 
     @direction.setter
     def direction(self, value):
-        # TODO: implement direction parsing, e.g. 'Maximize' -> 'max'
+        if value != 'max' or value != 'min':
+            raise ValueError("Provided optimization direction %s is neither 'min' or 'max'." % value)
         self._direction = value
-
-    @property
-    def variables(self):
-        """Variables in constraint."""
-        return self.expression.free_symbols
-
-    def __iadd__(self, other):
-        self.expression += other
-        return self
-
-    def __isub__(self, other):
-        self.expression -= other
-        return self
-
-    def __imul__(self, other):
-        self.expression *= other
-        return self
-
-    def __idiv__(self, other):
-        self.expression /= other
-        return self
-
-    def __itruediv__(self, other):
-        self.expression /= other
-        return self
 
 
 class Configuration(object):
