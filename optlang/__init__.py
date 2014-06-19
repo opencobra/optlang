@@ -26,10 +26,10 @@ available_solvers = list_available_solvers()
 
 if available_solvers['GLPK']:
     from .glpk_interface import Model, Variable, Constraint, Objective
-elif available_solvers['GUROBI']:
-    from .gurobi_interface import Model, Variable, Constraint, Objective
 elif available_solvers['CPLEX']:
     from .cplex_interface import Model, Variable, Constraint, Objective
+elif available_solvers['GUROBI']:
+    from .gurobi_interface import Model, Variable, Constraint, Objective
 else:
     log.error('No solvers available.')
 
