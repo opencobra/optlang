@@ -443,18 +443,23 @@ class Model(object):
 
 
         """
-        # import pdb; pdb.set_trace();
         if isinstance(stuff, collections.Iterable):
             for elem in stuff:
                 self.add(elem)
         elif isinstance(stuff, Variable):
+            if stuff.__module__ != self.__module__:
+                raise TypeError("Cannot add Variable %s of interface type %s to model of type %s." % (stuff, stuff.__module__, self.__module__))
             self._add_variable(stuff)
         elif isinstance(stuff, Constraint):
+            if stuff.__module__ != self.__module__:
+                raise TypeError("Cannot add Constraint %s of interface type %s to model of type %s." % (stuff, stuff.__module__, self.__module__))
             self._add_constraint(stuff)
         elif isinstance(stuff, Objective):
+            if stuff.__module__ != self.__module__:
+                raise TypeError("Cannot set Objective %s of interface type %s to model of type %s." % (stuff, stuff.__module__, self.__module__))
             self.objective = stuff
         else:
-            raise TypeError("Cannot add %s" % stuff)
+            raise TypeError("Cannot add %s. It is neither a Variable, Constraint, or Objective." % stuff)
 
     def remove(self, stuff):
         """Remove variables and constraints.
