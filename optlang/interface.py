@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -80,12 +80,69 @@ class Variable(sympy.Symbol):
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
         super(Variable, self).__init__(name, *args, **kwargs)
-        self.lb = lb
-        self.ub = ub
-        self.type = type
+        self._lb = lb
+        self._ub = ub
+        self._type = type
         self.problem = problem
-        # self.primal = primal
-        # self.dual = dual
+
+    @property
+    def lb(self):
+        return self._lb
+
+    @lb.setter
+    def lb(self, value):
+        if hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
+            raise ValueError(
+                'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (
+                    value, self.ub, self))
+        elif self.type == 'integer' and value % 1 != 0.:
+            raise ValueError(
+                'The provided lower bound %g cannot be assigned to integer variable %s (%g mod 1 != 0).' % (
+                    value, self, value))
+        else:
+            self._lb = value
+
+    @property
+    def ub(self):
+        return self._ub
+
+    @ub.setter
+    def ub(self, value):
+        if hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
+            raise ValueError(
+                'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (
+                    value, self.lb, self))
+        else:
+            self._ub = value
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, value):
+        if value == 'continuous':
+            self._type = value
+        elif value == 'integer':
+            self._type = value
+            try:
+                self.lb = round(self.lb)
+            except TypeError:
+                pass
+            try:
+                self.ub = round(self.ub)
+            except TypeError:
+                pass
+        elif value == 'binary':
+            self._type = value
+            self._lb = 0
+            print self
+            self._ub = 1
+            print self
+        else:
+            raise ValueError(
+                "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
+
 
     def __str__(self):
         """Print a string representation of variable.
@@ -109,30 +166,6 @@ class Variable(sympy.Symbol):
         """Does exactly the same as __str__ for now."""
         return self.__str__()
 
-    def __setattr__(self, name, value):
-        #TODO: Should also catch float bound assignments to integer variables
-        #TODO: Should also catch float and integer assignments >1 and <0 for binary variables
-
-        if name == 'lb' and hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
-            raise ValueError(
-                'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (
-                    value, self.ub, self))
-
-        if name == 'ub' and hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
-            raise ValueError(
-                'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (
-                    value, self.lb, self))
-
-        elif name == 'type':
-            if value in ('continuous', 'integer', 'binary'):
-                super(Variable, self).__setattr__(name, value)
-            else:
-                raise ValueError(
-                    "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
-
-        else:
-            super(Variable, self).__setattr__(name, value)
-
     def __getstate__(self):
         return self.__dict__
 
@@ -142,6 +175,7 @@ class Variable(sympy.Symbol):
 
 class OptimizationExpression(object):
     """Abstract base class for Objective and Constraint."""
+
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
         super(OptimizationExpression, self).__init__(*args, **kwargs)
         if sloppy:
@@ -393,14 +427,15 @@ class Model(object):
     def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
         self._objective = objective
-        self.variables = collections.OrderedDict()  #TODO: make variables read-only
-        self.constraints = collections.OrderedDict()  #TODO: make constraints read-only
-        self.status = None  #TODO: make this a property.
+        self._variables = collections.OrderedDict()
+        self._constraints = collections.OrderedDict()
+        self._status = None
         self.name = name
         if variables is not None:
             self.add(variables)
         if constraints is not None:
             self.add(constraints)
+        self.interface = __name__
 
     @property
     def objective(self):
@@ -414,11 +449,23 @@ class Model(object):
                     self._add_variable(atom)
         except AttributeError, e:
             if isinstance(value.expression, types.FunctionType) or isinstance(value.expression,
-                                                                                        types.FloatType):
+                                                                              types.FloatType):
                 pass
             else:
                 raise AttributeError(e)
         self._objective = value
+
+    @property
+    def variables(self):
+        return self._variables
+
+    @property
+    def constraints(self):
+        return self._constraints
+
+    @property
+    def status(self):
+        return self._status
 
     def __str__(self):
         return '\n'.join((
@@ -448,15 +495,18 @@ class Model(object):
                 self.add(elem)
         elif isinstance(stuff, Variable):
             if stuff.__module__ != self.__module__:
-                raise TypeError("Cannot add Variable %s of interface type %s to model of type %s." % (stuff, stuff.__module__, self.__module__))
+                raise TypeError("Cannot add Variable %s of interface type %s to model of type %s." % (
+                    stuff, stuff.__module__, self.__module__))
             self._add_variable(stuff)
         elif isinstance(stuff, Constraint):
             if stuff.__module__ != self.__module__:
-                raise TypeError("Cannot add Constraint %s of interface type %s to model of type %s." % (stuff, stuff.__module__, self.__module__))
+                raise TypeError("Cannot add Constraint %s of interface type %s to model of type %s." % (
+                    stuff, stuff.__module__, self.__module__))
             self._add_constraint(stuff)
         elif isinstance(stuff, Objective):
             if stuff.__module__ != self.__module__:
-                raise TypeError("Cannot set Objective %s of interface type %s to model of type %s." % (stuff, stuff.__module__, self.__module__))
+                raise TypeError("Cannot set Objective %s of interface type %s to model of type %s." % (
+                    stuff, stuff.__module__, self.__module__))
             self.objective = stuff
         else:
             raise TypeError("Cannot add %s. It is neither a Variable, Constraint, or Objective." % stuff)

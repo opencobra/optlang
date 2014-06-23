@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -114,39 +114,36 @@ class Variable(interface.Variable):
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
 
+    @interface.Variable.lb.setter
+    def lb(self, value):
+        super(Variable, self.__class__).lb.fset(self, value)
+        self.problem.problem.variables.set_lower_bounds(self.name, value)
+
+    @interface.Variable.ub.setter
+    def ub(self, value):
+        super(Variable, self.__class__).ub.fset(self, value)
+        self.problem.problem.variables.set_upper_bounds(self.name, value)
+
+    @interface.Variable.type.setter
+    def type(self, value):
+        try:
+            cplex_kind = _VTYPE_TO_CPLEX_VTYPE[value]
+        except KeyError:
+            raise Exception("GLPK cannot handle variables of type %s. \
+                        The following variable types are available:\n" +
+                            " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
+        self.problem.problem.variables.set_types(self.name, cplex_kind)
+        super(Variable, self).__setattr__(name, value)
+
+
     @property
     def primal(self):
         return self.problem.problem.solution.get_values(self.name)
 
+
     @property
     def dual(self):
         return self.problem.problem.solution.get_reduced_costs(self.name)
-
-    def __setattr__(self, name, value):
-
-        if getattr(self, 'problem', None):
-
-            if name == 'lb':
-                super(Variable, self).__setattr__(name, value)
-                self.problem.problem.variables.set_lower_bounds(self.name, value)
-
-            elif name == 'ub':
-                super(Variable, self).__setattr__(name, value)
-                self.problem.problem.variables.set_upper_bounds(self.name, value)
-
-            elif name == 'type':
-                try:
-                    cplex_kind = _VTYPE_TO_CPLEX_VTYPE[value]  # FIXME: should this be [value]??
-                except KeyError:
-                    raise Exception("GLPK cannot handle variables of type %s. \
-                        The following variable types are available:\n" +
-                                    " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
-                self.problem.problem.variables.set_types(self.name, cplex_kind)
-                super(Variable, self).__setattr__(name, value)
-            else:
-                super(Variable, self).__setattr__(name, value)
-        else:
-            super(Variable, self).__setattr__(name, value)
 
 
 class Constraint(interface.Constraint):
@@ -350,7 +347,7 @@ class Model(interface.Model):
     def optimize(self):
         self.problem.solve()
         cplex_status = self.problem.solution.get_status()
-        self.status = _CPLEX_STATUS_TO_STATUS[cplex_status]
+        self._status = _CPLEX_STATUS_TO_STATUS[cplex_status]
         return self.status
 
     def _cplex_sense_to_sympy(self, sense, translation={'E': '==', 'L': '<', 'G': '>'}):

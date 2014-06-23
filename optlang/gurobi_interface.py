@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,7 +38,7 @@ class Variable(interface.Variable):
         if getattr(self, 'problem', None):
 
             # if name == 'problem':
-            #     raise AttributeError("problem is read only")
+            # raise AttributeError("problem is read only")
 
             if name == 'lb':
                 super(Variable, self).__setattr__(name, value)
@@ -80,7 +80,7 @@ class Variable(interface.Variable):
 
 
 # class Constraint(interface.Constraint):
-#     pass
+# pass
 
 # class Objective(interface.Objective):
 #     pass
@@ -148,7 +148,7 @@ class Model(interface.Model):
 
     def optimize(self):
         self.problem.optimize()
-        self.status = self._gurobi_status_to_status[self.problem.getAttr("Status")]
+        self._status = self._gurobi_status_to_status[self.problem.getAttr("Status")]
 
 
     def _add_variable(self, variable):

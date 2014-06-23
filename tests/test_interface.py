@@ -17,6 +17,11 @@ class TestSolver(TestCase):
         self.model.add(y)
         self.model.add(obj)
 
+    def test_read_only_attributes(self):
+        self.assertRaises(AttributeError, setattr, self.model, 'variables', 'Foo')
+        self.assertRaises(AttributeError, setattr, self.model, 'constraints', 'Foo')
+        self.assertRaises(AttributeError, setattr, self.model, 'status', 'Foo')
+
     def test_create_empty_model(self):
         model = Model()
         self.assertEqual(len(model.constraints), 0)
@@ -58,3 +63,16 @@ class TestSolver(TestCase):
         self.assertRaises(TypeError, self.model.add, x)
         self.assertRaises(TypeError, self.model.add, constraint)
         self.assertRaises(TypeError, self.model.add, objective)
+
+    def test_setting_binary_bounds(self):
+        self.model.variables['x'].type = 'binary'
+        self.assertEqual(self.model.variables['x'].lb, 0)
+        self.assertEqual(self.model.variables['x'].ub, 1)
+
+    def test_non_integer_bound_on_integer_variable_raises(self):
+        self.model.variables['x'].type = 'integer'
+        self.assertRaises(ValueError, setattr, self.model.variables['x'], 'lb', 3.3)
+
+    def test_non_0_or_1_bound_on_binary_variable_raises(self):
+        self.model.variables['x'].type = 'integer'
+        self.assertRaises(ValueError, setattr, self.model.variables['x'], 'lb', 3.3)

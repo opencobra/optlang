@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -82,43 +82,46 @@ class Variable(interface.Variable):
         except:
             return None
 
+    @interface.Variable.lb.setter
+    def lb(self, value):
+        super(Variable, self.__class__).lb.fset(self, value)
+        self.problem._glpk_set_col_bounds(self)
+
+    @interface.Variable.ub.setter
+    def ub(self, value):
+        super(Variable, self.__class__).ub.fset(self, value)
+        self.problem._glpk_set_col_bounds(self)
+
+    @interface.Variable.type.setter
+    def type(self, value):
+        try:
+            glpk_kind = _VTYPE_TO_GLPK_VTYPE[value]
+        except KeyError:
+            raise Exception("GLPK cannot handle variables of type %s. \
+                        The following variable types are available:\n" +
+                            " ".join(_VTYPE_TO_GLPK_VTYPE.keys()))
+        glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
+        super(Variable, self.__class__).type.fset(self, value)
+
     @property
     def primal(self):
-        return glp_get_col_prim(self.problem.problem, self.index)
+        if self.problem:
+            return glp_get_col_prim(self.problem.problem, self.index)
+        else:
+            return None
 
     @property
     def dual(self):
-        return glp_get_col_dual(self.problem.problem, self.index)
+        if self.problem:
+            return glp_get_col_dual(self.problem.problem, self.index)
+        else:
+            return None
 
     def __getstate__(self):
         return self.__dict__
 
     def __setstate__(self, state):
         self.__dict__ = state
-
-    def __setattr__(self, name, value):
-
-        if getattr(self, 'problem', None):
-
-            if name == 'lb' or name == 'ub':
-                super(Variable, self).__setattr__(name, value)
-                self.problem._glpk_set_col_bounds(self)
-
-            elif name == 'type':
-                try:
-                    glpk_kind = _VTYPE_TO_GLPK_VTYPE[value]  # FIXME: should this be [value]??
-                except KeyError:
-                    raise Exception("GLPK cannot handle variables of type %s. \
-                        The following variable types are available:\n" +
-                                    " ".join(_VTYPE_TO_GLPK_VTYPE.keys()))
-                glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
-                super(Variable, self).__setattr__(name, value)
-
-            else:
-                super(Variable, self).__setattr__(name, value)
-
-        else:
-            super(Variable, self).__setattr__(name, value)
 
 
 class Constraint(interface.Constraint):
@@ -409,8 +412,8 @@ class Model(interface.Model):
 
     # For some reason this is slower then the two methods above ...
     # def __getstate__(self):
-    #     state = dict()
-    #     for key, val in self.__dict__.iteritems():
+    # state = dict()
+    # for key, val in self.__dict__.iteritems():
     #         if key is not 'problem':
     #             state[key] = val
     #     state['glpk_repr'] = self.__repr__()
@@ -446,7 +449,7 @@ class Model(interface.Model):
             for variable in self.objective.variables:
                 if variable.index is not None:
                     glp_set_obj_coef(self.problem, variable.index, 0.)
-        super(Model, self.__class__).objective.fset(self, value)  # TODO: This needs to be sped up
+        super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective.expression
         if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType):
             pass
@@ -493,7 +496,7 @@ class Model(interface.Model):
                 glp_intopt(self.problem, self.configuration._iocp)
                 self.configuration.presolve = original_presolve_setting
         glpk_status = glp_get_status(self.problem)
-        self.status = _GLPK_STATUS_TO_STATUS[glpk_status]
+        self._status = _GLPK_STATUS_TO_STATUS[glpk_status]
         return self.status
 
     def _add_variable(self, variable):
