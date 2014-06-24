@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,14 +15,17 @@
 
 
 from setuptools import setup, find_packages
+
 from optlang import __version__
+
 
 # from https://coderwall.com/p/qawuyq
 try:
-   import pypandoc
-   description = pypandoc.convert('README.md', 'rst')
+    import pypandoc
+
+    description = pypandoc.convert('README.md', 'rst')
 except (IOError, ImportError):
-   description = ''
+    description = ''
 
 with open('requirements.txt') as fhandle:
     requirements = [line.strip() for line in fhandle]
@@ -40,7 +43,7 @@ setup(
     url='https://github.com/biosustain/optlang',
     download_url='https://github.com/biosustain/optlang/tarball/v0.0.2',
     long_description=description,
-    keywords = ['optimization', 'sympy', 'mathematical programming', 'heuristic optimization'],
+    keywords=['optimization', 'sympy', 'mathematical programming', 'heuristic optimization'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Topic :: Utilities',

@@ -18,6 +18,7 @@ with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results
     THE_FINAL_NETLIB_RESULTS = pickle.load(fhandle)
 
 
+# noinspection PyShadowingNames
 def read_netlib_sif_glpk(fhandle):
     tmp_file = tempfile.mktemp(suffix='.mps')
     with open(tmp_file, 'w') as tmp_handle:
@@ -48,11 +49,13 @@ def check_objval(glpk_problem, model_objval):
     status = glp_get_status(glpk_problem)
     if status == GLP_OPT:
         glpk_problem_objval = glp_get_obj_val(glpk_problem)
+    else:
+        glpk_problem_objval = None
     nose.tools.assert_almost_equal(glpk_problem_objval, model_objval, places=4)
 
 
 def check_objval_against_the_final_netlib_results(netlib_id, model_objval):
-    relative_error = abs(1 - (model_objval/float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue'])))
+    relative_error = abs(1 - (model_objval / float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue'])))
     print relative_error
     nose.tools.assert_true(relative_error < 0.01)
     # nose.tools.assert_almost_equal(model_objval, float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue']), places=4)
@@ -71,12 +74,12 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
         # E226 seems to be a MPS related problem, see http://lists.gnu.org/archive/html/bug-glpk/2003-01/msg00003.html
         if netlib_id in ('AGG', 'E226', 'SCSD6'):
             # def test_skip(netlib_id):
-            #     raise SkipTest('Skipping netlib problem %s ...' % netlib_id)
+            # raise SkipTest('Skipping netlib problem %s ...' % netlib_id)
             # test_skip(netlib_id)
             # class TestWeirdNetlibProblems(unittest.TestCase):
 
-            #     @unittest.skip('Skipping netlib problem')
-            #     def test_fail():
+            # @unittest.skip('Skipping netlib problem')
+            # def test_fail():
             #         pass
             continue
         # TODO: For now, test only models that are covered by the final netlib results
@@ -100,12 +103,12 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
 
             func = partial(check_objval, glpk_problem, model_objval)
             func.description = "test_netlib_check_objective_value_%s (%s)" % (
-            netlib_id, os.path.basename(str(__file__)))
+                netlib_id, os.path.basename(str(__file__)))
             yield func
 
             func = partial(check_objval_against_the_final_netlib_results, netlib_id, model_objval)
             func.description = "test_netlib_check_objective_value__against_the_final_netlib_results_%s (%s)" % (
-            netlib_id, os.path.basename(str(__file__)))
+                netlib_id, os.path.basename(str(__file__)))
             yield func
 
 

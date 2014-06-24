@@ -306,7 +306,6 @@ class Model(interface.Model):
     @objective.setter
     def objective(self, value):
         super(Model, self.__class__).objective.fset(self, value)
-        self._objective = value
         for i in xrange(len(self.problem.objective.get_linear())):
             self.problem.objective.set_linear(i, 0.)
         expression = self._objective.expression
@@ -314,7 +313,7 @@ class Model(interface.Model):
             pass
         else:
             if expression.is_Atom:
-                self.problem.objective.set_linear(var.name, float(coeff))
+                self.problem.objective.set_linear(expression.name, 1.)
             if expression.is_Mul:
                 coeff, var = expression.args
                 self.problem.objective.set_linear(var.name, float(coeff))
@@ -350,20 +349,22 @@ class Model(interface.Model):
         self._status = _CPLEX_STATUS_TO_STATUS[cplex_status]
         return self.status
 
-    def _cplex_sense_to_sympy(self, sense, translation={'E': '==', 'L': '<', 'G': '>'}):
+    @staticmethod
+    def _cplex_sense_to_sympy(sense, translation=None):
+        if not translation: translation = {'E': '==', 'L': '<', 'G': '>'}
         try:
             return translation[sense]
         except KeyError, e:
-            print ' '.join('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')
+            print ' '.join(('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.'))
             print e
 
     def _add_variable(self, variable):
         super(Model, self)._add_variable(variable)
-        if variable.lb == None:
+        if variable.lb is None:
             lb = -cplex.infinity
         else:
             lb = variable.lb
-        if variable.ub == None:
+        if variable.ub is None:
             ub = cplex.infinity
         else:
             ub = variable.ub

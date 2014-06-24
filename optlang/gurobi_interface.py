@@ -23,7 +23,7 @@ import logging
 log = logging.getLogger(__name__)
 import tempfile
 import interface
-from interface import Constraint, Objective
+from interface import Constraint
 import sympy
 import gurobipy
 
@@ -168,7 +168,7 @@ class Model(interface.Model):
         elif isinstance(variable, str):
             self.problem.remove(self.problem.getVarByName(variable))
 
-    def _add_constraint(self, constraint):
+    def _add_constraint(self, constraint, sloppy=False):
 
         if constraint.expression.is_Add:
             lhs = gurobipy.LinExpr()
@@ -189,7 +189,7 @@ class Model(interface.Model):
                         lhs_terms.append(coeff * gurobi_var)
             lhs = gurobipy.quicksum(lhs_terms)
         else:
-            raise Exception(' '.join(str(lhs), 'is not a sum of either linear or quadratic terms'))
+            raise Exception(' '.join((str(lhs), 'is not a sum of either linear or quadratic terms')))
             log.exception()
 
         if constraint.lb is constraint.ub:
@@ -213,11 +213,12 @@ class Model(interface.Model):
         if constraint.is_Relational:
             pass
 
-    def _gurobi_sense_to_sympy(self, sense, translation={'=': '==', '<': '<', '>': '>'}):
+    def _gurobi_sense_to_sympy(self, sense, translation=None):
+        if not translation: translation = {'=': '==', '<': '<', '>': '>'}
         try:
             return translation[sense]
         except KeyError, e:
-            print ' '.join('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')
+            print ' '.join(('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.'))
             print e
 
 

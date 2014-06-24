@@ -13,6 +13,7 @@ from optlang.util import solve_with_glpsol, \
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 
 
+@nose.tools.nottest
 def test_solve_with_glpsol():
     problem = glp_create_prob()
     glp_read_lp(problem, None, TESTMODELPATH)

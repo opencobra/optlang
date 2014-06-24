@@ -19,8 +19,10 @@
 extended for individual solvers.
 """
 
-import types
 import logging
+
+import types
+
 
 log = logging.getLogger(__name__)
 import collections
@@ -49,6 +51,7 @@ ABORTED = 'aborted'
 SPECIAL = 'check_original_solver_status'
 
 
+# noinspection PyShadowingBuiltins
 class Variable(sympy.Symbol):
     """Optimization variables.
 
@@ -173,6 +176,7 @@ class Variable(sympy.Symbol):
         self.__dict__ = state
 
 
+# noinspection PyPep8Naming
 class OptimizationExpression(object):
     """Abstract base class for Objective and Constraint."""
 
@@ -292,7 +296,7 @@ class Constraint(OptimizationExpression):
         if expression.is_Atom or expression.is_Mul:
             return expression
         lonely_coeffs = [arg for arg in expression.args if arg.is_Number]
-        if lonely_coeffs == []:
+        if not lonely_coeffs:
             return expression
         assert len(lonely_coeffs) == 1
         coeff = lonely_coeffs[0]
@@ -343,7 +347,7 @@ class Objective(OptimizationExpression):
 
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
-        expression = 1. * expression
+        expression *= 1.
         return expression
 
     @property

@@ -21,7 +21,9 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 """
 
 import logging
+
 import types
+
 
 log = logging.getLogger(__name__)
 import tempfile
@@ -77,19 +79,19 @@ class Variable(interface.Variable):
             if i != 0:
                 return i
             else:
-                raise Exception(
+                raise IndexError(
                     "Could not determine row index for variable %s" % self)
         except:
             return None
 
     @interface.Variable.lb.setter
     def lb(self, value):
-        super(Variable, self.__class__).lb.fset(self, value)
+        interface.Variable.lb.fset(self, value)
         self.problem._glpk_set_col_bounds(self)
 
     @interface.Variable.ub.setter
     def ub(self, value):
-        super(Variable, self.__class__).ub.fset(self, value)
+        interface.Variable.ub.fset(self, value)
         self.problem._glpk_set_col_bounds(self)
 
     @interface.Variable.type.setter
@@ -101,7 +103,7 @@ class Variable(interface.Variable):
                         The following variable types are available:\n" +
                             " ".join(_VTYPE_TO_GLPK_VTYPE.keys()))
         glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
-        super(Variable, self.__class__).type.fset(self, value)
+        interface.Variable.type.fset(self, value)
 
     @property
     def primal(self):
@@ -137,7 +139,7 @@ class Constraint(interface.Constraint):
             if i != 0:
                 return i
             else:
-                raise Exception(
+                raise IndexError(
                     "Could not determine row index for variable %s" % self)
         except:
             return None
@@ -536,7 +538,7 @@ class Model(interface.Model):
             args = constraint.expression.args
             if len(args) > 2:
                 raise Exception(
-                    "Term %s from constraint %s is not a proper linear term." % (term, constraint))
+                    "Term(s) %s from constraint %s is not a proper linear term." % (args, constraint))
             coeff = float(args[0])
             var = args[1]
             index_array[1] = var.index

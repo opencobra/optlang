@@ -43,7 +43,7 @@ for path in glob.glob("netlib_reference_results/*.txt.gz"):
             if OBJ_REGEX.match(line):
                 obj_value = Fraction(line.split(' : ')[1])
                 the_final_netlib_results[os.path.basename(path).replace('.txt.gz', '').upper()] = {
-                "Objvalue": obj_value}
+                    "Objvalue": obj_value}
                 break
 
 for key, value in the_final_netlib_results.iteritems():

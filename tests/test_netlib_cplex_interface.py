@@ -11,6 +11,7 @@ from functools import partial
 import os
 import nose
 
+
 try:
     import cplex
 
@@ -29,6 +30,7 @@ try:
             self.arg = arg
 
 
+    # noinspection PyShadowingNames
     def read_netlib_sif_cplex(fhandle):
         tmp_file = tempfile.mktemp(suffix='.sif')
         with open(tmp_file, 'w') as tmp_handle:
@@ -55,11 +57,13 @@ try:
         """
         if problem.solution.get_status() == cplex.Cplex.solution.status.optimal:
             problem_objval = problem.solution.get_objective_value()
+        else:
+            problem_objval = None
         nose.tools.assert_almost_equal(problem_objval, model_objval, places=4)
 
 
     def check_objval_against_the_final_netlib_results(netlib_id, model_objval):
-        relative_error = abs(1 - (model_objval/float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue'])))
+        relative_error = abs(1 - (model_objval / float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue'])))
         print relative_error
         nose.tools.assert_true(relative_error < 0.01)
         # nose.tools.assert_almost_equal(model_objval, float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue']), places=4)
@@ -77,15 +81,15 @@ try:
             netlib_id = os.path.basename(model_path_in_tar).replace('.SIF', '')
             # TODO: get the following problems to work
             # E226 seems to be a MPS related problem, see http://lists.gnu.org/archive/html/bug-glpk/2003-01/msg00003.html
-            if netlib_id in ('AGG', 'E226', 'SCSD6','BLEND', 'DFL001','FORPLAN', 'GFRD-PNC', 'SIERRA'):
+            if netlib_id in ('AGG', 'E226', 'SCSD6', 'BLEND', 'DFL001', 'FORPLAN', 'GFRD-PNC', 'SIERRA'):
                 # def test_skip(netlib_id):
-                #     raise SkipTest('Skipping netlib problem %s ...' % netlib_id)
+                # raise SkipTest('Skipping netlib problem %s ...' % netlib_id)
                 # test_skip(netlib_id)
                 # class TestWeirdNetlibProblems(unittest.TestCase):
 
-                #     @unittest.skip('Skipping netlib problem')
-                #     def test_fail():
-                #         pass
+                # @unittest.skip('Skipping netlib problem')
+                # def test_fail():
+                # pass
                 continue
             # TODO: For now, test only models that are covered by the final netlib results
             else:
@@ -122,7 +126,7 @@ except ImportError, e:
         class TestMissingDependency(unittest.TestCase):
 
             @unittest.skip('Missing dependency - ' + e.message)
-            def test_fail():
+            def test_fail(self):
                 pass
     else:
         raise
@@ -131,16 +135,16 @@ if __name__ == '__main__':
     # tar = tarfile.open('data/netlib_lp_problems.tar.gz')
     # model_paths_in_tar = glob.fnmatch.filter(tar.getnames(), '*.SIF')
     # for model_path_in_tar in model_paths_in_tar:
-    #     try:
+    # try:
     #
-    #         fhandle = tar.extractfile(model_path_in_tar)
-    #         problem = read_netlib_sif_cplex(fhandle)
+    # fhandle = tar.extractfile(model_path_in_tar)
+    # problem = read_netlib_sif_cplex(fhandle)
     #
-    #     except cplex.exceptions.CplexSolverError, e:
-    #         print model_path_in_tar
-    #         print problem
-    #         print problem.get_problem_name()
-    #         print e
+    # except cplex.exceptions.CplexSolverError, e:
+    # print model_path_in_tar
+    # print problem
+    # print problem.get_problem_name()
+    # print e
     # fhandle = tar.extractfile('./netlib/ADLITTLE.SIF')
     # glpk_problem = read_netlib_sif_glpk(fhandle)
     # glp_simplex(glpk_problem, None)

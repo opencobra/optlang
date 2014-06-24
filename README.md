@@ -14,7 +14,7 @@ The documentation for __optlang__ is provided at [readthedocs.org](http://optlan
 
 ### Example
 
-Formulating and solving the problem is straighforward (example taken from [GLPK documentation](http://www.gnu.org/software/glpk)):
+Formulating and solving the problem is straightforward (example taken from [GLPK documentation](http://www.gnu.org/software/glpk)):
 
     from optlang import Model, Variable, Constraint, Objective
  

@@ -4,7 +4,7 @@
 import pickle
 import unittest
 
-from optlang.interface import Variable, Constraint, Objective, Model
+from optlang.interface import Variable, Constraint, Model
 
 
 class VariableTestCase(unittest.TestCase):
@@ -73,6 +73,7 @@ class VariableTestCase(unittest.TestCase):
         self.assertEqual([getattr(var, k) for k in keys], [getattr(pickle_var, k) for k in keys])
 
 
+# noinspection PyPep8Naming
 class ConstraintTestCase(unittest.TestCase):
     def setUp(self):
         self.x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -135,7 +136,7 @@ class ConstraintTestCase(unittest.TestCase):
         self.assertEqual(constraint.expression, self.x)
 
         # def test_pickle_ability(self):
-        #     constraint = Constraint(
+        # constraint = Constraint(
         #         0.3*self.x**self.y + 0.4*self.y*self.x + self.y + 66.*self.z, lb=-100, ub=0., name='nonlinear_constraint')
         #     pickle_constraint = pickle.loads(pickle.dumps(constraint))
         #     keys = constraint.__dict__.keys()

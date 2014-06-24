@@ -93,7 +93,7 @@ try:
             self.assertEqual(var.problem, None)
 
         # def test_add_constraint(self):
-        #     x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+        # x = Variable('x', lb=-83.3, ub=1324422., type='binary')
         #     y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
         #     z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
         #     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
@@ -170,7 +170,7 @@ except ImportError, e:
         class TestMissingDependency(unittest.TestCase):
 
             @unittest.skip('Missing dependency - ' + e.message)
-            def test_fail():
+            def test_fail(self):
                 pass
     else:
         raise

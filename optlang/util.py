@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,10 @@
 
 """Utility functions for optlang."""
 
-import os
 import logging
+
+import os
+
 
 log = logging.getLogger(__name__)
 import tempfile
@@ -25,7 +27,7 @@ from subprocess import check_output
 
 
 def solve_with_glpsol(glp_prob):
-    '''Solve glpk problem with glpsol commandline solver. Mainly for testing purposes.
+    """Solve glpk problem with glpsol commandline solver. Mainly for testing purposes.
 
     # Examples
     # --------
@@ -43,7 +45,7 @@ def solve_with_glpsol(glp_prob):
     # dict
     #     A dictionary containing the objective value (key ='objval')
     #     and variable primals.
-    '''
+    """
     from glpk.glpkpi import glp_get_row_name, glp_get_col_name, glp_write_lp, glp_get_num_rows, glp_get_num_cols
 
     row_ids = [glp_get_row_name(glp_prob, i) for i in xrange(1, glp_get_num_rows(glp_prob) + 1)]
@@ -54,7 +56,7 @@ def solve_with_glpsol(glp_prob):
     # glp_write_mps(glp_prob, GLP_MPS_DECK, None, tmp_file)
     glp_write_lp(glp_prob, None, tmp_file)
     # with open(tmp_file, 'w') as tmp_handle:
-    #     tmp_handle.write(mps_string)
+    # tmp_handle.write(mps_string)
     cmd = ['glpsol', '--lp', tmp_file, '-w', tmp_file + '.sol', '--log', '/dev/null']
     term = check_output(cmd)
     log.info(term)
@@ -72,7 +74,7 @@ def solve_with_glpsol(glp_prob):
             else:
                 print i
                 print line
-                raise "Argggh!"
+                raise Exception("Argggh!")
     return solution
 
 
@@ -91,6 +93,7 @@ def glpk_read_cplex(path):
     return problem
 
 
+# noinspection PyBroadException
 def list_available_solvers():
     """Determine available solver interfaces (with python bindings).
 
