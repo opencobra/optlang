@@ -28,6 +28,7 @@ import types
 
 log = logging.getLogger(__name__)
 import sympy
+import inspyred
 import interface
 
 
