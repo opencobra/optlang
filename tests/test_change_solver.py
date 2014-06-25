@@ -20,16 +20,15 @@ import nose
 
 import optlang
 from optlang.util import glpk_read_cplex
+
 import optlang.glpk_interface as glpk
-import optlang.cplex_interface as cplex
 from optlang import interface
 
 
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 
 try:
-    from optlang.cplex_interface import Variable, Constraint, Model, Objective
-    import cplex
+    import optlang.cplex_interface as cplex
 
     class ChangeSolverTestCase(unittest.TestCase):
         def setUp(self):
