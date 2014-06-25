@@ -374,7 +374,7 @@ class Objective(OptimizationExpression):
 
     @direction.setter
     def direction(self, value):
-        if value != 'max' or value != 'min':
+        if value not in ['max', 'min']:
             raise ValueError("Provided optimization direction %s is neither 'min' or 'max'." % value)
         self._direction = value
 

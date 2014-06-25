@@ -76,3 +76,6 @@ class TestSolver(TestCase):
     def test_non_0_or_1_bound_on_binary_variable_raises(self):
         self.model.variables['x'].type = 'integer'
         self.assertRaises(ValueError, setattr, self.model.variables['x'], 'lb', 3.3)
+
+    def test_false_objective_direction_raises(self):
+        self.assertRaises(ValueError, setattr, self.model.objective, 'direction', 'neither_min_nor_max')
