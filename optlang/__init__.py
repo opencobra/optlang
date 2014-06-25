@@ -25,10 +25,13 @@ from .util import list_available_solvers
 available_solvers = list_available_solvers()
 
 if available_solvers['GLPK']:
-    import glpk_interface
     from .glpk_interface import Model, Variable, Constraint, Objective
 elif available_solvers['CPLEX']:
-    import cplex_interface
     from .cplex_interface import Model, Variable, Constraint, Objective
 else:
     log.error('No solvers available.')
+
+if available_solvers['GLPK']:
+    import glpk_interface
+eif available_solvers['CPLEX']:
+    import cplex_interface
