@@ -403,6 +403,10 @@ class Model(interface.Model):
                 sense = 'G'
                 rhs = float(constraint.lb)
                 range_value = 0.
+            elif constraint.lb == constraint.ub:
+                sense = 'E'
+                rhs = float(constraint.lb)
+                range_value = 0.
             else:
                 sense = 'R'
                 rhs = float(constraint.lb)
