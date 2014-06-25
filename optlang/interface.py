@@ -144,9 +144,7 @@ class Variable(sympy.Symbol):
         elif value == 'binary':
             self._type = value
             self._lb = 0
-            print self
             self._ub = 1
-            print self
         else:
             raise ValueError(
                 "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
@@ -500,16 +498,7 @@ class Model(object):
 
     @property
     def interface(self):
-        return self.__class__
-
-    @interface.setter
-    def interface(self, interface):
-        new_model = self.clone(interface)
-        print id(new_model)
-        print id(self)
-        self = new_model
-        print id(self)
-        print type(self)
+        return sys.modules[self.__module__]
 
     def clone(self, interface):
         new_model = interface.Model()
