@@ -33,5 +33,5 @@ else:
 
 if available_solvers['GLPK']:
     import glpk_interface
-eif available_solvers['CPLEX']:
+if available_solvers['CPLEX']:
     import cplex_interface
