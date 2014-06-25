@@ -116,7 +116,8 @@ try:
             cplex_lines = [line.strip() for line in str(self.model).split('\n')]
             self.assertIn('test:       66 z + 0.3 x + 0.4 y - Rgtest  = -100', cplex_lines)
             self.assertIn('test2:      2.333 x + y <= 96.997', cplex_lines)
-            self.assertIn('Dummy_14:   z + 2.333 x + y - RgDummy_14  = -300', cplex_lines)
+            self.assertRegexpMatches(str(self.model), '\s*Dummy_\d+:\s+z \+ 2\.333 x \+ y \- .*  = -300')
+            print self.model
 
         def test_remove_constraints(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -145,11 +146,12 @@ try:
             constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.model.add(constraint)
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
-            self.assertIn(' test: + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
+            self.assertIn(' test:       0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
             constraint.expression += 77. * z
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
             self.assertIn(' test: + 0.4 y + 0.3 x + 77. z >= -100', self.model.__str__().split("\n"))
+            print self.model
 
         @nottest
         def test_change_of_objective_is_reflected_in_low_level_solver(self):

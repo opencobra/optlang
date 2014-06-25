@@ -23,6 +23,7 @@ import logging
 
 import types
 
+import sys
 
 log = logging.getLogger(__name__)
 import collections
@@ -75,6 +76,10 @@ class Variable(sympy.Symbol):
     >>> Variable('x', lb=-10, ub=10)
     '-10 <= x <= 10'
     """
+
+    @classmethod
+    def clone(cls, variable, **kwargs):
+        return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
         for char in name:
@@ -276,6 +281,13 @@ class Constraint(OptimizationExpression):
         A reference to the optimization model the variable belongs to.
     """
 
+    @classmethod
+    def clone(cls, constraint, **kwargs):
+        interface = sys.modules[cls.__module__]
+        variable_substitutions = dict(((variable, interface.Variable.clone(variable)) for variable in constraint.variables))
+        adjusted_expression = constraint.expression.subs(variable_substitutions)
+        return cls(adjusted_expression, lb=constraint.lb, ub=constraint.ub, name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
+
     def __init__(self, expression, lb=None, ub=None, *args, **kwargs):
         self.lb = lb
         self.ub = ub
@@ -331,6 +343,13 @@ class Objective(OptimizationExpression):
         The low-level solver object.
 
     """
+
+    @classmethod
+    def clone(cls, objective, **kwargs):
+        interface = sys.modules[cls.__module__]
+        variable_substitutions = dict(((variable, interface.Variable.clone(variable)) for variable in objective.variables))
+        adjusted_expression = objective.expression.subs(variable_substitutions)
+        return cls(adjusted_expression, name=objective.name, problem=objective.problem, direction=objective.direction, sloppy=True, **kwargs)
 
     def __init__(self, expression, value=None, direction='max', *args, **kwargs):
         self._value = value
@@ -439,7 +458,6 @@ class Model(object):
             self.add(variables)
         if constraints is not None:
             self.add(constraints)
-        self.interface = __name__
 
     @property
     def objective(self):
@@ -479,6 +497,27 @@ class Model(object):
             'Bounds',
             '\n'.join([str(var) for var in self.variables.values()])
         ))
+
+    @property
+    def interface(self):
+        return self.__class__
+
+    @interface.setter
+    def interface(self, interface):
+        new_model = self.clone(interface)
+        print id(new_model)
+        print id(self)
+        self = new_model
+        print id(self)
+        print type(self)
+
+    def clone(self, interface):
+        new_model = interface.Model()
+        for constraint in self.constraints.values():
+            new_constraint = interface.Constraint.clone(constraint)
+            new_model.add(new_constraint)
+        new_model.objective = interface.Objective.clone(self.objective)
+        return new_model
 
     def add(self, stuff):
         """Add variables and constraints.
@@ -605,7 +644,7 @@ if __name__ == '__main__':
 
     x1 = Variable('x1', lb=0)
     x2 = Variable('x2', lb=0)
-    x3 = Variable('x2', lb=0)
+    x3 = Variable('x3', lb=0)
     c1 = Constraint(x1 + x2 + x3, ub=100)
     c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
     c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
@@ -622,4 +661,7 @@ if __name__ == '__main__':
     print model
     print model.variables
 
-    model.remove(x1)
+    # model.remove(x1)
+
+    import optlang
+    model.interface = optlang.glpk_interface
