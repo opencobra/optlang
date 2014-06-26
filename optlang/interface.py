@@ -183,6 +183,26 @@ class Variable(sympy.Symbol):
 class OptimizationExpression(object):
     """Abstract base class for Objective and Constraint."""
 
+    @classmethod
+    def _substitute_variables(cls, expression, model=None, **kwargs):
+        """Substitutes variables in (optimization)expression (constraint/objective) with variables of the appropriate interface type.
+        Attributes
+        ----------
+        expression: Constraint, Objective
+            An optimization expression.
+        problem: Model or None, optional
+            A reference to an optimization model that should be searched for appropriate variables first.
+        """
+        interface = sys.modules[cls.__module__]
+        variable_substitutions = dict()
+        for variable in expression.variables:
+            if model is not None and variable.name in model.variables:
+                variable_substitutions[variable] = model.variables[variable.name]
+            else:
+                variable_substitutions[variable] = interface.Variable.clone(variable)
+        adjusted_expression = expression.expression.subs(variable_substitutions)
+        return adjusted_expression
+
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
         super(OptimizationExpression, self).__init__(*args, **kwargs)
         if sloppy:
@@ -280,11 +300,9 @@ class Constraint(OptimizationExpression):
     """
 
     @classmethod
-    def clone(cls, constraint, **kwargs):
-        interface = sys.modules[cls.__module__]
-        variable_substitutions = dict(((variable, interface.Variable.clone(variable)) for variable in constraint.variables))
-        adjusted_expression = constraint.expression.subs(variable_substitutions)
-        return cls(adjusted_expression, lb=constraint.lb, ub=constraint.ub, name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
+    def clone(cls, constraint, model=None, **kwargs):
+        return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
+                   name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, *args, **kwargs):
         self.lb = lb
@@ -343,11 +361,9 @@ class Objective(OptimizationExpression):
     """
 
     @classmethod
-    def clone(cls, objective, **kwargs):
-        interface = sys.modules[cls.__module__]
-        variable_substitutions = dict(((variable, interface.Variable.clone(variable)) for variable in objective.variables))
-        adjusted_expression = objective.expression.subs(variable_substitutions)
-        return cls(adjusted_expression, name=objective.name, problem=objective.problem, direction=objective.direction, sloppy=True, **kwargs)
+    def clone(cls, objective, model=None, **kwargs):
+        return cls(cls._substitute_variables(objective, model=model), name=objective.name, problem=objective.problem,
+                   direction=objective.direction, sloppy=True, **kwargs)
 
     def __init__(self, expression, value=None, direction='max', *args, **kwargs):
         self._value = value
@@ -500,12 +516,15 @@ class Model(object):
     def interface(self):
         return sys.modules[self.__module__]
 
+    # TODO: clone should be a class method like for Variable, etc.
+    # TODO: configureation needs to be cloned too
     def clone(self, interface):
         new_model = interface.Model()
         for constraint in self.constraints.values():
-            new_constraint = interface.Constraint.clone(constraint)
+            new_constraint = interface.Constraint.clone(constraint, model=new_model)
             new_model.add(new_constraint)
-        new_model.objective = interface.Objective.clone(self.objective)
+        if self.objective is not None:
+            new_model.objective = interface.Objective.clone(self.objective, model=new_model)
         return new_model
 
     def add(self, stuff):
@@ -653,4 +672,5 @@ if __name__ == '__main__':
     # model.remove(x1)
 
     import optlang
+
     model.interface = optlang.glpk_interface

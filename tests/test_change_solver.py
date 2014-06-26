@@ -74,6 +74,14 @@ try:
             for constraint in cplex_model.constraints.values():
                 self.assertIs(constraint.__class__, cplex.Constraint)
 
+        def test_clone_to_glpk(self):
+            glpk_model = self.model.clone(glpk)
+            self.assertEqual(glpk_model.__class__, glpk.Model)
+            for variable in glpk_model.variables.values():
+                self.assertIs(variable.__class__, glpk.Variable)
+            for constraint in glpk_model.constraints.values():
+                self.assertIs(constraint.__class__, glpk.Constraint)
+
 except ImportError, e:
 
     if e.message.find('cplex') >= 0:
