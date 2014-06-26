@@ -21,8 +21,6 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 
 from warnings import warn
 
-warn("Be careful! The CPLEX interface is still under construction ...")
-
 import logging
 
 log = logging.getLogger(__name__)
