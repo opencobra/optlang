@@ -20,6 +20,7 @@ extended for individual solvers.
 """
 
 import logging
+import time
 
 import types
 
@@ -200,7 +201,7 @@ class OptimizationExpression(object):
                 variable_substitutions[variable] = model.variables[variable.name]
             else:
                 variable_substitutions[variable] = interface.Variable.clone(variable)
-        adjusted_expression = expression.expression.subs(variable_substitutions)
+        adjusted_expression = expression.expression.xreplace(variable_substitutions)
         return adjusted_expression
 
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
@@ -238,14 +239,7 @@ class OptimizationExpression(object):
     @property
     def is_Linear(self):
         """Returns True if constraint is linear (read-only)."""
-        try:
-            poly = self.expression.as_poly(*self.variables)
-        except sympy.PolynomialError:
-            poly = None
-        if poly is not None:
-            return poly.is_linear
-        else:
-            return False
+        return all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in self.expression.as_coefficients_dict().keys()))
 
     @property
     def is_Quadratic(self):
@@ -468,7 +462,7 @@ class Model(object):
         new_model = cls()
         for constraint in model.constraints.values():
             new_constraint = interface.Constraint.clone(constraint, model=new_model)
-            new_model.add(new_constraint)
+            new_model._add_constraint(new_constraint)
         if model.objective is not None:
             new_model.objective = interface.Objective.clone(model.objective, model=new_model)
         return new_model
