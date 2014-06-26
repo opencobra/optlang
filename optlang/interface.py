@@ -461,6 +461,18 @@ class Model(object):
 
     """
 
+    # TODO: configureation needs to be cloned too
+    @classmethod
+    def clone(cls, model):
+        interface = sys.modules[cls.__module__]
+        new_model = cls()
+        for constraint in model.constraints.values():
+            new_constraint = interface.Constraint.clone(constraint, model=new_model)
+            new_model.add(new_constraint)
+        if model.objective is not None:
+            new_model.objective = interface.Objective.clone(model.objective, model=new_model)
+        return new_model
+
     def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
         self._objective = objective
@@ -515,17 +527,6 @@ class Model(object):
     @property
     def interface(self):
         return sys.modules[self.__module__]
-
-    # TODO: clone should be a class method like for Variable, etc.
-    # TODO: configureation needs to be cloned too
-    def clone(self, interface):
-        new_model = interface.Model()
-        for constraint in self.constraints.values():
-            new_constraint = interface.Constraint.clone(constraint, model=new_model)
-            new_model.add(new_constraint)
-        if self.objective is not None:
-            new_model.objective = interface.Objective.clone(self.objective, model=new_model)
-        return new_model
 
     def add(self, stuff):
         """Add variables and constraints.

@@ -67,7 +67,7 @@ try:
                 self.assertIs(variable.__class__, cplex.Variable)
 
         def test_clone_to_cplex(self):
-            cplex_model = self.model.clone(cplex)
+            cplex_model = cplex.Model.clone(self.model)
             self.assertEqual(cplex_model.__class__, cplex.Model)
             for variable in cplex_model.variables.values():
                 self.assertIs(variable.__class__, cplex.Variable)
@@ -75,7 +75,7 @@ try:
                 self.assertIs(constraint.__class__, cplex.Constraint)
 
         def test_clone_to_glpk(self):
-            glpk_model = self.model.clone(glpk)
+            glpk_model = glpk.Model.clone(self.model)
             self.assertEqual(glpk_model.__class__, glpk.Model)
             for variable in glpk_model.variables.values():
                 self.assertIs(variable.__class__, glpk.Variable)
