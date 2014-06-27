@@ -382,14 +382,21 @@ class Model(interface.Model):
                     "CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
         super(Model, self)._add_constraint(constraint, sloppy=sloppy)
 
-        for var in constraint.variables:
-            if var.name not in self.variables:
-                self._add_variable(var)
-
         if constraint.is_Linear:
-            coeff_dict = constraint.expression.as_coefficients_dict()
-            indices = [var.name for var in coeff_dict.keys()]
-            values = [float(val) for val in coeff_dict.values()]
+            if constraint.expression.is_Add:
+                coeff_dict = constraint.expression.as_coefficients_dict()
+                indices = [var.name for var in coeff_dict.keys()]
+                values = [float(val) for val in coeff_dict.values()]
+            elif constraint.expression.is_Mul:
+                variable = list(constraint.expression.free_symbols)[0]
+                indices = [variable.name]
+                values = [float(constraint.expression.coeff(variable))]
+            elif constraint.expression.is_Atom:
+                indices = [constraint.expression.name]
+                values = [1.]
+            else:
+                raise ValueError('Something is fishy with constraint %s' % constraint)
+
             if constraint.lb is None and constraint.ub is None:
                 # FIXME: use cplex.infinity
                 raise Exception("Free constraint ... %s" % constraint)
