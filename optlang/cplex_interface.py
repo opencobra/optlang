@@ -95,7 +95,8 @@ _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.optimal_tolerance: interface.SPECIAL,
     cplex.Cplex.solution.status.populate_solution_limit: interface.SPECIAL,
     cplex.Cplex.solution.status.solution_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.unbounded: interface.UNBOUNDED
+    cplex.Cplex.solution.status.unbounded: interface.UNBOUNDED,
+    102: interface.OPTIMAL # CPXMIP_OPTIMAL_TOL not covered by python bindings???
 }
 
 _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
@@ -233,6 +234,7 @@ class Model(interface.Model):
 
         if problem is None:
             self.problem = cplex.Cplex()
+            self.problem.set_results_stream(None)
 
         elif isinstance(problem, cplex.Cplex):
             self.problem = problem
@@ -353,8 +355,7 @@ class Model(interface.Model):
         try:
             return translation[sense]
         except KeyError, e:
-            print ' '.join(('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.'))
-            print e
+            raise Exception(' '.join(('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')))
 
     def _add_variable(self, variable):
         super(Model, self)._add_variable(variable)
@@ -367,7 +368,10 @@ class Model(interface.Model):
         else:
             ub = variable.ub
         vtype = _VTYPE_TO_CPLEX_VTYPE[variable.type]
-        self.problem.variables.add([0.], lb=[lb], ub=[ub], types=[vtype], names=[variable.name])
+        if vtype == 'C':  # this is needed because CPLEX will automatically set the problem_type to MILP if types are specified
+            self.problem.variables.add([0.], lb=[lb], ub=[ub], names=[variable.name])
+        else:
+            self.problem.variables.add([0.], lb=[lb], ub=[ub], types=[vtype], names=[variable.name])
         variable.problem = self
         return variable
 
