@@ -257,7 +257,7 @@ class Model(interface.Model):
                 if isinstance(lhs, int):
                     lhs = sympy.Integer(lhs)
                 elif isinstance(lhs, float):
-                    lhs = sympy.Real(lhs)
+                    lhs = sympy.RealNumber(lhs)
                 if sense == 'E':
                     constr = Constraint(lhs, lb=rhs, ub=rhs, name=name, problem=self)
                 elif sense == 'G':
@@ -277,7 +277,7 @@ class Model(interface.Model):
                     sloppy=True
                 )
             self._objective = Objective(
-                _unevaluated_Add(*[_unevaluated_Mul(sympy.Real(coeff), var[index]) for index, coeff in
+                _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), var[index]) for index, coeff in
                                    enumerate(self.problem.objective.get_linear()) if coeff != 0.]),
                 problem=self,
                 direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[

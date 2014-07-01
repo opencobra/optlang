@@ -376,7 +376,7 @@ class Model(interface.Model):
                 if isinstance(lhs, int):
                     lhs = sympy.Integer(lhs)
                 elif isinstance(lhs, float):
-                    lhs = sympy.Real(lhs)
+                    lhs = sympy.RealNumber(lhs)
                 super(Model, self)._add_constraint(
                     Constraint(lhs, lb=row_lb, ub=row_ub,
                                name=glp_get_row_name(
@@ -390,7 +390,7 @@ class Model(interface.Model):
             )
             self._objective = Objective(
                 _unevaluated_Add(
-                    *[_unevaluated_Mul(sympy.Real(term[0]), term[1]) for term in term_generator if term[0] != 0.]),
+                    *[_unevaluated_Mul(sympy.RealNumber(term[0]), term[1]) for term in term_generator if term[0] != 0.]),
                 problem=self,
                 direction={GLP_MIN: 'min', GLP_MAX:
                     'max'}[glp_get_obj_dir(self.problem)]
@@ -624,6 +624,9 @@ class Model(interface.Model):
         glp_del_rows(self.problem, 1, num)
         super(Model, self)._remove_constraint(constraint)
 
+    def _set_linear_objective_term(self, variable, coefficient):
+        super(Model, self)._set_linear_objective_term(variable, coefficient)
+        glp_set_obj_coef(self.problem, variable.index, coefficient)
 
 if __name__ == '__main__':
     import pickle

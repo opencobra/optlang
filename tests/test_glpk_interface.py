@@ -125,8 +125,9 @@ class SolverTestCase(unittest.TestCase):
         self.assertIn(constr3, self.model.constraints.values())
         cplex_lines = [line.strip() for line in str(self.model).split('\n')]
         self.assertIn('test: + 0.3 x + 66 z + 0.4 y - ~r_73 = -100', cplex_lines)
-        self.assertIn('test2: + 2.333 x + y <= 96.997', cplex_lines)
-        regex = re.compile("Dummy_\d+\: \+ 2\.333 x \+ y \+ z - \~r_75 = -300")
+        self.assertIn('test2: + y + 2.333 x <= 96.997', cplex_lines)
+        # Dummy_14: + z + y + 2.333 x - ~r_75 = -300
+        regex = re.compile("Dummy_\d+\: \+ z \+ y \+ 2\.333 x - \~r_75 = -300")
         matches = [line for line in cplex_lines if regex.match(line) is not None]
         self.assertNotEqual(matches, [])
 
@@ -162,7 +163,7 @@ class SolverTestCase(unittest.TestCase):
         constraint += 77. * z
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
         print self.model
-        self.assertIn(' test: + 77 z + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
+        self.assertIn(' test: + 0.4 y + 0.3 x + 77 z >= -100', self.model.__str__().split("\n"))
 
     def test_change_of_objective_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
@@ -170,11 +171,11 @@ class SolverTestCase(unittest.TestCase):
         objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
         self.model.objective = objective
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-        self.assertIn(' obj: + 0.4 y + 0.3 x', self.model.__str__().split("\n"))
+        self.assertIn(' obj: + 0.3 x + 0.4 y', self.model.__str__().split("\n"))
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
         self.model.objective += 77. * z
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-        self.assertIn(' obj: + 0.4 y + 0.3 x + 77 z', self.model.__str__().split("\n"))
+        self.assertIn(' obj: + 0.3 x + 0.4 y + 77 z', self.model.__str__().split("\n"))
 
         # self.assertTrue(False)
 
@@ -244,11 +245,39 @@ class SolverTestCase(unittest.TestCase):
             obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
         self.assertEqual(set(obj_coeff), {0.})
 
-
     def test_raise_on_non_linear_objective(self):
         """Test that an exception is raised when a non-linear objective is added to the model."""
         v1, v2 = self.model.variables.values()[0:2]
         self.assertRaises(Exception, setattr, self.model, 'objective', Objective(v1 * v2))
+
+    def test_iadd_objective(self):
+        v2, v3 = self.model.variables.values()[1:3]
+        self.model.objective += 2. * v2 - 3. * v3
+        obj_coeff = list()
+        for i in xrange(len(self.model.variables)):
+            obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
+        self.assertEqual(obj_coeff,
+                         [0.0, 1.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0]
+        )
+
+    def test_imul_objective(self):
+        self.model.objective *= 2.
+        obj_coeff = list()
+        for i in xrange(len(self.model.variables)):
+            obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
+        self.assertEqual(obj_coeff,
+                         [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0]
+        )
 
 
 if __name__ == '__main__':

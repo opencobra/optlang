@@ -641,6 +641,19 @@ class Model(object):
         constr.problem = None
         del self.constraints[key]
 
+    def _set_linear_objective_term(self, variable, coefficient):
+        # if  variable.name in [var.name for var in self.objective.expression.free_symbols]:
+        # if variable in self.objective.expression:
+        if False:
+            a = sympy.Wild('a', exclude=[variable])
+            # (new_expression, map) = self.objective.expression.replace(a*variable, coefficient*variable, map=True)
+            (new_expression, map) = self.objective.expression.replace(lambda expr: expr.match(a*variable), lambda expr: coefficient*variable, simultaneous=False, map=True)
+            self.objective.expression = new_expression
+        else:
+            blub = time.time()
+            # self.objective.expression = sympy.Add._from_args((self.objective.expression, sympy.Mul._from_args((sympy.RealNumber(coefficient), variable))))
+            self.objective.expression = sympy.Add._from_args((self.objective.expression, sympy.Mul._from_args((sympy.RealNumber(coefficient), sympy.Dummy()))))
+            print time.time() - blub
 
 if __name__ == '__main__':
     # Example workflow

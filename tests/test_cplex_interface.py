@@ -114,9 +114,10 @@ try:
             self.assertIn(constr2, self.model.constraints.values())
             self.assertIn(constr3, self.model.constraints.values())
             cplex_lines = [line.strip() for line in str(self.model).split('\n')]
-            self.assertIn('test:       66 z + 0.3 x + 0.4 y - Rgtest  = -100', cplex_lines)
-            self.assertIn('test2:      2.333 x + y <= 96.997', cplex_lines)
-            self.assertRegexpMatches(str(self.model), '\s*Dummy_\d+:\s+z \+ 2\.333 x \+ y \- .*  = -300')
+            self.assertIn('test:       0.4 y + 66 z + 0.3 x - Rgtest  = -100', cplex_lines)
+            self.assertIn('test2:      y + 2.333 x <= 96.997', cplex_lines)
+            # Dummy_21:   y + z + 2.333 x - RgDummy_21  = -300
+            self.assertRegexpMatches(str(self.model), '\s*Dummy_\d+:\s*y \+ z \+ 2\.333 x - .*  = -300')
             print self.model
 
         def test_remove_constraints(self):
