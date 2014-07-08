@@ -99,7 +99,7 @@ try:
         #     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
         #     self.model.add(constr)
 
-        def test_add_constraints(self):
+        def test_add_linear_constraints(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
@@ -107,6 +107,27 @@ try:
             # constr1 = Constraint(x + 2* y  + 3.333*z, lb=-10, name='hongo')
             constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
             constr3 = Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
+            self.model.add(constr1)
+            self.model.add(constr2)
+            self.model.add(constr3)
+            self.assertIn(constr1, self.model.constraints.values())
+            self.assertIn(constr2, self.model.constraints.values())
+            self.assertIn(constr3, self.model.constraints.values())
+            cplex_lines = [line.strip() for line in str(self.model).split('\n')]
+            self.assertIn('test:       0.4 y + 66 z + 0.3 x - Rgtest  = -100', cplex_lines)
+            self.assertIn('test2:      y + 2.333 x <= 96.997', cplex_lines)
+            # Dummy_21:   y + z + 2.333 x - RgDummy_21  = -300
+            self.assertRegexpMatches(str(self.model), '\s*Dummy_\d+:\s*y \+ z \+ 2\.333 x - .*  = -300')
+            print self.model
+
+        @unittest.skip
+        def test_add_quadratic_constraints(self):
+            x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+            y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
+            z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+            constr1 = Constraint(0.3 * x * y + 0.4 * y**2 + 66. * z, lb=-100, ub=0., name='test')
+            constr2 = Constraint(2.333 * x * x + y + 3.333, ub=100.33, name='test2')
+            constr3 = Constraint(2.333 * x + y**2 + z + 33, ub=100.33, lb=-300)
             self.model.add(constr1)
             self.model.add(constr2)
             self.model.add(constr3)
@@ -140,18 +161,18 @@ try:
             constraint = Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
             self.assertRaises(ValueError, self.model.add, constraint)
 
-        @nottest
         def test_change_of_constraint_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
             y = Variable('y', lb=-181133.3, ub=12000.)
             constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.model.add(constraint)
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
-            self.assertIn(' test:       0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
+            print
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y')]), [0.3, 0.4])
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-            constraint.expression += 77. * z
+            constraint += 77. * z
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y'), ('test', 'z')]), [0.3, 0.4, 77.])
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
-            self.assertIn(' test: + 0.4 y + 0.3 x + 77. z >= -100', self.model.__str__().split("\n"))
             print self.model
 
         @nottest

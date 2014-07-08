@@ -255,6 +255,7 @@ class OptimizationExpression(object):
 
     def __iadd__(self, other):
         self.expression += other
+        # self.expression = sympy.Add._from_args((self.expression, other))
         return self
 
     def __isub__(self, other):

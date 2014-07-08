@@ -16,8 +16,6 @@
 
 from setuptools import setup, find_packages
 
-from optlang import __version__
-
 
 # from https://coderwall.com/p/qawuyq
 try:
@@ -32,7 +30,7 @@ with open('requirements.txt') as fhandle:
 
 setup(
     name='optlang',
-    version=__version__,
+    version='0.0.2',
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
     test_suite='nose.collector',

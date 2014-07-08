@@ -107,6 +107,29 @@ _VTYPE_TO_CPLEX_VTYPE = dict(
 )
 
 
+def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
+    """Helper function used by Constraint and Model"""
+    if lb is None and ub is None:
+        # FIXME: use cplex.infinity
+        raise Exception("Free constraint ... %s" % constraint)
+    elif lb is None:
+        sense = 'L'
+        rhs = float(ub)
+        range_value = 0.
+    elif ub is None:
+        sense = 'G'
+        rhs = float(lb)
+        range_value = 0.
+    elif lb == ub:
+        sense = 'E'
+        rhs = float(lb)
+        range_value = 0.
+    else:
+        sense = 'R'
+        rhs = float(lb)
+        range_value = float(ub - lb)
+    return sense, rhs, range_value
+
 class Variable(interface.Variable):
     """CPLEX variable interface."""
 
@@ -116,12 +139,14 @@ class Variable(interface.Variable):
     @interface.Variable.lb.setter
     def lb(self, value):
         super(Variable, self.__class__).lb.fset(self, value)
-        self.problem.problem.variables.set_lower_bounds(self.name, value)
+        if self.problem.problem is not None:
+            self.problem.problem.variables.set_lower_bounds(self.name, value)
 
     @interface.Variable.ub.setter
     def ub(self, value):
         super(Variable, self.__class__).ub.fset(self, value)
-        self.problem.problem.variables.set_upper_bounds(self.name, value)
+        if self.problem.problem is not None:
+            self.problem.problem.variables.set_upper_bounds(self.name, value)
 
     @interface.Variable.type.setter
     def type(self, value):
@@ -146,7 +171,7 @@ class Variable(interface.Variable):
 
 
 class Constraint(interface.Constraint):
-    """GLPK solver interface"""
+    """CPLEX solver interface"""
 
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
@@ -159,6 +184,7 @@ class Constraint(interface.Constraint):
     def dual(self):
         return self.problem.problem.solution.get_activity_levels(self.name)
 
+    # TODO: Refactor to use properties
     def __setattr__(self, name, value):
 
         super(Constraint, self).__setattr__(name, value)
@@ -166,13 +192,31 @@ class Constraint(interface.Constraint):
 
             if name == 'name':
 
-                self.problem._glpk_set_row_name(self)
+                if self.expression.is_Linear:
+                    self.problem.problem.linear_constraints.set_names(self.name, value)
 
             elif name == 'lb' or name == 'ub':
-                self.problem._glpk_set_row_bounds(self)
+                if name == 'lb':
+                    sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(value, self.ub)
+                elif name == 'ub':
+                    sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(self.lb, value)
+                if self.is_Linear:
+                    self.problem.linear_constraints.set_rhs(self.name, rhs)
+                    self.problem.linear_constraints.set_senses(self.name, sense)
+                    self.problem.linear_constraints.set_range_values(self.name, range_value)
 
             elif name == 'expression':
                 pass
+
+    def __iadd__(self, other):
+        # if self.problem is not None:
+        #     self.problem._add_to_constraint(self.index, other)
+        super(Constraint, self).__iadd__(other)
+        if self.problem is not None:
+            problem_reference = self.problem
+            self.problem._remove_constraint(self)
+            problem_reference._add_constraint(self, sloppy=False)
+        return self
 
 
 class Objective(interface.Objective):
@@ -229,7 +273,6 @@ class Model(interface.Model):
     def __init__(self, problem=None, *args, **kwargs):
 
         super(Model, self).__init__(*args, **kwargs)
-
         self.configuration = Configuration()
 
         if problem is None:
@@ -401,28 +444,33 @@ class Model(interface.Model):
             else:
                 raise ValueError('Something is fishy with constraint %s' % constraint)
 
-            if constraint.lb is None and constraint.ub is None:
-                # FIXME: use cplex.infinity
-                raise Exception("Free constraint ... %s" % constraint)
-            elif constraint.lb is None:
-                sense = 'L'
-                rhs = float(constraint.ub)
-                range_value = 0.
-            elif constraint.ub is None:
-                sense = 'G'
-                rhs = float(constraint.lb)
-                range_value = 0.
-            elif constraint.lb == constraint.ub:
-                sense = 'E'
-                rhs = float(constraint.lb)
-                range_value = 0.
-            else:
-                sense = 'R'
-                rhs = float(constraint.lb)
-                range_value = float(constraint.ub - constraint.lb)
+            sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(constraint.lb, constraint.ub)
+
+            # if constraint.lb is None and constraint.ub is None:
+            #     # FIXME: use cplex.infinity
+            #     raise Exception("Free constraint ... %s" % constraint)
+            # elif constraint.lb is None:
+            #     sense = 'L'
+            #     rhs = float(constraint.ub)
+            #     range_value = 0.
+            # elif constraint.ub is None:
+            #     sense = 'G'
+            #     rhs = float(constraint.lb)
+            #     range_value = 0.
+            # elif constraint.lb == constraint.ub:
+            #     sense = 'E'
+            #     rhs = float(constraint.lb)
+            #     range_value = 0.
+            # else:
+            #     sense = 'R'
+            #     rhs = float(constraint.lb)
+            #     range_value = float(constraint.ub - constraint.lb)
             self.problem.linear_constraints.add(
                 lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
                 range_values=[range_value], names=[constraint.name])
+        # TODO: Implement quadratic constraints
+        elif constraint.is_Quadratic:
+            pass
         constraint.problem = self
         return constraint
 

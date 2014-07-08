@@ -156,14 +156,19 @@ class SolverTestCase(unittest.TestCase):
         x = Variable('x', lb=-83.3, ub=1324422.)
         y = Variable('y', lb=-181133.3, ub=12000.)
         constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
+        self.assertEqual(constraint.index, None)
         self.model.add(constraint)
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
-        self.assertIn(' test: + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
+        self.assertEqual(constraint.index, 73)
+        # self.assertIn(' test: + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        self.assertEqual(z.index, None)
         constraint += 77. * z
+        self.assertEqual(z.index, 98)
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
         print self.model
-        self.assertIn(' test: + 0.4 y + 0.3 x + 77 z >= -100', self.model.__str__().split("\n"))
+        self.assertEqual(constraint.index, 73)
+        # self.assertIn(' test: + 77 z + 0.3 x + 0.4 y >= -100', self.model.__str__().split("\n"))
 
     def test_change_of_objective_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)

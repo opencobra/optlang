@@ -165,7 +165,10 @@ class Constraint(interface.Constraint):
                 self.problem._glpk_set_row_bounds(self)
 
     def __iadd__(self, other):
+        # if self.problem is not None:
+        #     self.problem._add_to_constraint(self.index, other)
         super(Constraint, self).__iadd__(other)
+
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
@@ -177,7 +180,7 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
-            problem_reference._add_constraint(self, sloppy=True)
+            problem_reference._add_constraint(self, sloppy=False)
         return self
 
     def __imul__(self, other):
@@ -185,7 +188,7 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
-            problem_reference._add_constraint(self, sloppy=True)
+            problem_reference._add_constraint(self, sloppy=False)
         return self
 
     def __idiv__(self, other):
@@ -193,7 +196,7 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
-            problem_reference._add_constraint(self, sloppy=True)
+            problem_reference._add_constraint(self, sloppy=False)
         return self
 
 
@@ -516,6 +519,71 @@ class Model(interface.Model):
         num[1] = variable.index
         glp_del_cols(self.problem, 1, num)
         super(Model, self)._remove_variable(variable)
+
+    def _add_to_constraint(self, constraint_index, expression):
+        expression_variables = expression.free_symbols
+        new_variables = list()
+        for var in expression_variables:
+            if var.index is None:
+                new_variables.append(var)
+                self._add_variable(var)
+        num_vars = len(expression_variables)
+        index_array = intArray(num_vars + 1)
+        value_array = doubleArray(num_vars + 1)
+        num_vars_in_row = glp_get_mat_row(self.problem, constraint_index, index_array, value_array)
+        index_coeff_dict = dict()
+        for i in range(1, num_vars_in_row+1):
+            index_coeff_dict[index_array[i]] = (value_array[i], i)
+
+        if expression.is_Atom and expression.is_Symbol:
+            var = expression
+            try:
+                (value, pos) = index_coeff_dict[var.index]
+            except KeyError:
+                index_array[num_vars_in_row+1] = var.index
+                value_array[num_vars_in_row+1] = 1
+            else:
+                index_array[pos] = var.index
+                value_array[pos] = value + 1
+        elif expression.is_Mul:
+            args = expression.args
+            if len(args) > 2:
+                raise Exception(
+                    "Term(s) %s from constraint %s is not a proper linear term." % (args, constraint))
+            coeff = float(args[0])
+            var = args[1]
+            try:
+                (value, pos) = index_coeff_dict[var.index]
+            except KeyError:
+                index_array[num_vars_in_row+1] = var.index
+                value_array[num_vars_in_row+1] = coeff
+            else:
+                index_array[pos] = var.index
+                value_array[pos] = value + coeff
+        else:
+            for i, term in enumerate(expression.args):
+                args = term.args
+                if args == ():
+                    assert term.is_Symbol
+                    coeff = 1
+                    var = term
+                elif len(args) == 2:
+                    assert args[0].is_Number
+                    assert args[1].is_Symbol
+                    var = args[1]
+                    coeff = float(args[0])
+                elif len(args) > 2:
+                    raise Exception(
+                        "Term %s from constraint %s is not a proper linear term." % (term, constraint))
+                try:
+                    (value, pos) = index_coeff_dict[var.index]
+                except KeyError:
+                    index_array[num_vars_in_row+i+1] = var.index
+                    value_array[num_vars_in_row+i+1] = coeff
+                else:
+                    index_array[pos] = var.index
+                    value_array[pos] = value + coeff
+        glp_set_mat_row(self.problem, constraint_index, num_vars_in_row + len(new_variables), index_array, value_array)
 
     def _add_constraint(self, constraint, sloppy=False):
         if sloppy is False:
