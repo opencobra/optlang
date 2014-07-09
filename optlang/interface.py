@@ -612,13 +612,16 @@ class Model(object):
         return variable
 
     def _remove_variable(self, variable):
-        if isinstance(variable, Variable):
-            try:
-                var = self.variables[variable.name]
-            except KeyError:
-                raise LookupError("Variable %s not in solver" % var)
-            var.problem = None
-            del self.variables[variable.name]
+        try:
+            var = self.variables[variable.name]
+        except KeyError:
+            raise LookupError("Variable %s not in solver" % var)
+        for constraint in self.constraints.values():
+            constraint.expression = constraint.expression.xreplace({var: 0})
+        self.objective.expression = self.objective.expression.xreplace({var: 0})
+        var.problem = None
+
+        del self.variables[variable.name]
 
     def _add_constraint(self, constraint, sloppy=False):
         if sloppy is False:
