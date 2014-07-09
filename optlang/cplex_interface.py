@@ -157,7 +157,7 @@ class Variable(interface.Variable):
                         The following variable types are available:\n" +
                             " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
         self.problem.problem.variables.set_types(self.name, cplex_kind)
-        super(Variable, self).__setattr__(name, value)
+        super(Variable, self).__setattr__('type', value)
 
 
     @property
@@ -294,9 +294,10 @@ class Model(interface.Model):
                                      self.problem.linear_constraints.get_rhs()
 
             )
-            var = self.variables.values()
+            variables = self.variables.values()
             for name, row, sense, rhs in zipped_constr_args:
-                lhs = _unevaluated_Add(*[val * var[i - 1] for i, val in zip(row.ind, row.val)])
+                constraint_variables = [variables[i - 1] for i in row.ind]
+                lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])
                 if isinstance(lhs, int):
                     lhs = sympy.Integer(lhs)
                 elif isinstance(lhs, float):
@@ -315,12 +316,19 @@ class Model(interface.Model):
                         constr = Constraint(lhs, lb=rhs + range_val, ub=rhs, name=name, problem=self)
                 else:
                     raise Exception, '%s is not a recognized constraint sense.' % sense
+
+                for variable in constraint_variables:
+                    try:
+                        self._variables_to_constraints_mapping[variable.name].add(name)
+                    except KeyError:
+                        self._variables_to_constraints_mapping[variable.name] = set([name])
+
                 super(Model, self)._add_constraint(
                     constr,
                     sloppy=True
                 )
             self._objective = Objective(
-                _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), var[index]) for index, coeff in
+                _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
                                    enumerate(self.problem.objective.get_linear()) if coeff != 0.]),
                 problem=self,
                 direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
@@ -418,9 +426,13 @@ class Model(interface.Model):
         variable.problem = self
         return variable
 
-    def _remove_variable(self, variable):
-        super(Model, self)._remove_variable(variable)
-        self.problem.variables.delete(variable.name)
+    def _remove_variables(self, variables):
+        super(Model, self)._remove_variables(variables)
+        self.problem.variables.delete([variable.name for variable in variables])
+
+    # def _remove_variable(self, variable):
+    #     super(Model, self)._remove_variable(variable)
+    #     self.problem.variables.delete(variable.name)
 
     def _add_constraint(self, constraint, sloppy=False):
         if sloppy is False:

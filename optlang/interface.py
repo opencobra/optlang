@@ -473,6 +473,7 @@ class Model(object):
         self._objective = objective
         self._variables = collections.OrderedDict()
         self._constraints = collections.OrderedDict()
+        self._variables_to_constraints_mapping = dict()
         self._status = None
         self.name = name
         if variables is not None:
@@ -570,15 +571,14 @@ class Model(object):
         -------
         None
         """
-        # TODO: refactor to _remove_constraints, _remove_variables
         if isinstance(stuff, str):
             try:
                 variable = self.variables[stuff]
-                self._remove_variables([variable])
+                self._remove_variable(variable)
             except KeyError:
                 try:
                     constraint = self.constraints[stuff]
-                    self._remove_constraints([constraint])
+                    self._remove_constraint(constraint)
                 except KeyError:
                     raise LookupError(
                         "%s is neither a variable nor a constraint in the current solver instance." % stuff)
@@ -587,8 +587,15 @@ class Model(object):
         elif isinstance(stuff, Constraint):
             self._remove_constraint(stuff)
         elif isinstance(stuff, collections.Iterable):
-            if len(set((elem.__class__ for elem in stuff))) == 1:
-                if
+            element_types = len(set((elem.__class__ for elem in stuff)))
+            if len(element_types) == 1:
+                element_type = element_types.pop()
+                if element_type == Variable:
+                    self._remove_variables(stuff)
+                elif element_type == Constraint:
+                    self._remove_constraints(stuff)
+                else:
+                    raise TypeError("Cannot remove %s. It neither a variable or constraint." % stuff)
             else:
                 for elem in stuff:
                     self.remove(elem)
@@ -616,44 +623,60 @@ class Model(object):
         return variable
 
     def _remove_variables(self, variables):
-        raise NotImplementedError
+
+        for variable in variables:
+            try:
+                var = self.variables[variable.name]
+            except KeyError:
+                raise LookupError("Variable %s not in solver" % var)
+
+        constraint_ids = set()
+        for variable in variables:
+            constraint_ids.update(self._variables_to_constraints_mapping[variable.name])
+            del self._variables_to_constraints_mapping[variable.name]
+            variable.problem = None
+            del self.variables[variable.name]
+
+        replacements = dict([(variable, 0) for variable in variables])
+        for constraint_id in constraint_ids:
+            constraint = self.constraints[constraint_id]
+            constraint.expression = constraint.expression.xreplace(replacements)
+
+        self.objective.expression = self.objective.expression.xreplace(replacements)
 
     def _remove_variable(self, variable):
-        try:
-            var = self.variables[variable.name]
-        except KeyError:
-            raise LookupError("Variable %s not in solver" % var)
-        for constraint in self.constraints.values():
-            constraint.expression = constraint.expression.xreplace({var: 0})
-        self.objective.expression = self.objective.expression.xreplace({var: 0})
-        var.problem = None
-
-        del self.variables[variable.name]
+        self._remove_variables([variable])
 
     def _add_constraint(self, constraint, sloppy=False):
+        if constraint.name is None:
+            constraint_id = constraint.__hash__()
+        else:
+            constraint_id = constraint.name
         if sloppy is False:
             for var in constraint.variables:
                 if var.name not in self.variables:
                     self._add_variable(var)
-        if constraint.name is None:
-            self.constraints[constraint.__hash__()] = constraint
-        else:
-            self.constraints[constraint.name] = constraint
+                try:
+                    self._variables_to_constraints_mapping[var.name].add(constraint_id)
+                except KeyError:
+                    self._variables_to_constraints_mapping[var.name] = set([constraint_id])
+        self.constraints[constraint_id] = constraint
 
     def _remove_constraints(self, constraints):
-        raise NotImplementedError
+        for constraint in constraints:
+            if constraint.name is not None:
+                key = constraint.name
+            else:
+                key = constraint.__hash__
+            try:
+                constr = self.constraints[key]
+            except KeyError:
+                raise LookupError("Constraint %s not in solver" % constr)
+            constr.problem = None
+            del self.constraints[key]
 
     def _remove_constraint(self, constraint):
-        if constraint.name is not None:
-            key = constraint.name
-        else:
-            key = constraint.__hash__
-        try:
-            constr = self.constraints[key]
-        except KeyError:
-            raise LookupError("Constraint %s not in solver" % constr)
-        constr.problem = None
-        del self.constraints[key]
+        self._remove_constraints([constraint])
 
     def _set_linear_objective_term(self, variable, coefficient):
         # if  variable.name in [var.name for var in self.objective.expression.free_symbols]:
