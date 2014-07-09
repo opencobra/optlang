@@ -570,24 +570,28 @@ class Model(object):
         -------
         None
         """
+        # TODO: refactor to _remove_constraints, _remove_variables
         if isinstance(stuff, str):
             try:
                 variable = self.variables[stuff]
-                self._remove_variable(variable)
+                self._remove_variables([variable])
             except KeyError:
                 try:
                     constraint = self.constraints[stuff]
-                    self._remove_constraint(constraint)
+                    self._remove_constraints([constraint])
                 except KeyError:
                     raise LookupError(
                         "%s is neither a variable nor a constraint in the current solver instance." % stuff)
-        elif isinstance(stuff, collections.Iterable):
-            for elem in stuff:
-                self.remove(elem)
         elif isinstance(stuff, Variable):
             self._remove_variable(stuff)
         elif isinstance(stuff, Constraint):
             self._remove_constraint(stuff)
+        elif isinstance(stuff, collections.Iterable):
+            if len(set((elem.__class__ for elem in stuff))) == 1:
+                if
+            else:
+                for elem in stuff:
+                    self.remove(elem)
         elif isinstance(stuff, Objective):
             raise TypeError(
                 "Cannot remove objective %s. Use model.objective = Objective(...) to change the current objective." % stuff)
@@ -611,6 +615,9 @@ class Model(object):
         self.variables[variable.name] = variable
         return variable
 
+    def _remove_variables(self, variables):
+        raise NotImplementedError
+
     def _remove_variable(self, variable):
         try:
             var = self.variables[variable.name]
@@ -632,6 +639,9 @@ class Model(object):
             self.constraints[constraint.__hash__()] = constraint
         else:
             self.constraints[constraint.name] = constraint
+
+    def _remove_constraints(self, constraints):
+        raise NotImplementedError
 
     def _remove_constraint(self, constraint):
         if constraint.name is not None:
