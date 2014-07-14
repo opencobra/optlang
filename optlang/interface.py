@@ -216,17 +216,23 @@ class OptimizationExpression(object):
             self.name = name
         self.problem = problem
 
-    @property
-    def expression(self):
-        """The mathematical expression defining the objective/constraint."""
+    def _get_expression(self):
         return self._expression
 
-    @expression.setter
-    def expression(self, value):
+    def _set_expression(self, value):
         try:
             self._expression = self._canonicalize(value)
         except TypeError:
             self._expression = value
+
+    @property
+    def expression(self):
+        """The mathematical expression defining the objective/constraint."""
+        return self._get_expression()
+
+    @expression.setter
+    def expression(self, value):
+        self._set_expression(value)
 
     @property
     def variables(self):
@@ -254,24 +260,24 @@ class OptimizationExpression(object):
             return False
 
     def __iadd__(self, other):
-        self.expression += other
+        self._expression += other
         # self.expression = sympy.Add._from_args((self.expression, other))
         return self
 
     def __isub__(self, other):
-        self.expression -= other
+        self._expression -= other
         return self
 
     def __imul__(self, other):
-        self.expression *= other
+        self._expression *= other
         return self
 
     def __idiv__(self, other):
-        self.expression /= other
+        self._expression /= other
         return self
 
     def __itruediv__(self, other):
-        self.expression /= other
+        self._expression /= other
         return self
 
 

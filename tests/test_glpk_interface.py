@@ -248,7 +248,7 @@ class SolverTestCase(unittest.TestCase):
 
     def test_number_objective(self):
         self.model.objective = Objective(0.)
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.0')
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
         obj_coeff = list()
         for i in xrange(1, glp_get_num_cols(self.model.problem) + 1):
             obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
