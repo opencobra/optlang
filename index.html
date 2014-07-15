@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Optlang by biosustain</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Optlang</h1>
+        <p>optlang - sympy based mathematical programming language</p>
+
+        <p class="view"><a href="https://github.com/biosustain/optlang">View the Project on GitHub <small>biosustain/optlang</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/biosustain/optlang/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/biosustain/optlang/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/biosustain/optlang">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p><a href="https://travis-ci.org/biosustain/optlang"><img src="https://travis-ci.org/biosustain/optlang.png?branch=master" alt="Build Status"></a>
+<a href="https://coveralls.io/r/biosustain/optlang?branch=master"><img src="https://coveralls.io/repos/biosustain/optlang/badge.png?branch=master" alt="Coverage Status"></a>
+<a href="http://badge.fury.io/py/optlang"><img src="https://badge.fury.io/py/optlang.svg" alt="PyPI version"></a></p>
+
+<h1>
+<a name="optlang" class="anchor" href="#optlang"><span class="octicon octicon-link"></span></a>optlang</h1>
+
+<h3>
+<a name="vision" class="anchor" href="#vision"><span class="octicon octicon-link"></span></a>Vision</h3>
+
+<p><strong>optlang</strong> provides a common interface to a series of optimization solvers (linear &amp; non-linear) and relies on <a href="http://sympy.org/en/index.html">sympy</a> for problem formulation (constraints, objectives, variables, etc.). Adding new solvers is easy: just sub-class the high-level interface and implement the necessary solver specific routines.</p>
+
+<h3>
+<a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h3>
+
+<p>The documentation for <strong>optlang</strong> is provided at <a href="http://optlang.readthedocs.org/en/latest/">readthedocs.org</a>.</p>
+
+<h3>
+<a name="example" class="anchor" href="#example"><span class="octicon octicon-link"></span></a>Example</h3>
+
+<p>Formulating and solving the problem is straightforward (example taken from <a href="http://www.gnu.org/software/glpk">GLPK documentation</a>):</p>
+
+<pre><code>from optlang import Model, Variable, Constraint, Objective
+
+x1 = Variable('x1', lb=0)
+x2 = Variable('x2', lb=0)
+x3 = Variable('x3', lb=0)
+
+c1 = Constraint(x1 + x2 + x3, ub=100)
+c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
+c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
+
+obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
+
+model = Model(name='Simple model')
+model.objective = obj
+model.add([c1, c2, c3])
+
+status = model.optimize()
+
+print "status:", model.status
+print "objective value:", model.objective.value
+for var_name, var in model.variables.iteritems():
+    print var_name, "=", var.primal
+</code></pre>
+
+<p>The example will produce the following output:</p>
+
+<pre><code>status: optimal
+objective value: 733.333333333
+x2 = 66.6666666667
+x3 = 0.0
+x1 = 33.3333333333
+</code></pre>
+
+<h3>
+<a name="future-outlook" class="anchor" href="#future-outlook"><span class="octicon octicon-link"></span></a>Future outlook</h3>
+
+<ul>
+<li>
+<a href="http://www.gurobi.com/" title="GUROBI">Gurobi</a> interface (very efficient MILP solver)</li>
+<li>
+<a href="http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/" title="CPLEX">CPLEX</a> interface (very efficient MILP solver)</li>
+<li>
+<a href="http://www.mosek.com/" title="MOSEK">Mosek</a> interface (provides academic licenses)</li>
+<li>
+<a href="http://www.gams.com/" title="GAMS">GAMS</a> output (support non-linear problem formulation)</li>
+<li>
+<a href="https://code.google.com/p/deap/" title="DEAP">DEAP</a> (support for heuristic optimization)</li>
+<li>Interface to <a href="http://www.neos-server.org/neos/" title="NEOS">NEOS</a> optimization server (for testing purposes and solver evaluation)</li>
+<li>Automatically handle fractional and absolute value problems when dealing with LP/MILP/QP solvers (like GLPK, <a href="http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/" title="CPLEX">CPLEX</a> etc.)</li>
+</ul><h3>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h3>
+
+<ul>
+<li>Models should always be serializable to common problem formulation languages (<a href="http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/" title="CPLEX">CPLEX</a>, <a href="http://www.gams.com/" title="GAMS">GAMS</a>, etc.)</li>
+<li>Models should be pickable</li>
+<li>Common solver configuration interface (presolver, MILP gap, etc.)</li>
+</ul>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/biosustain">biosustain</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
