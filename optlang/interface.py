@@ -646,8 +646,8 @@ class Model(object):
         del self.constraints[key]
 
     def _set_linear_objective_term(self, variable, coefficient):
-        # TODO: the first option (True) is extremely slow for objectives with many terms
-        if True:
+        # TODO: the is extremely slow for objectives with many terms
+        if variable in self.objective.expression.free_symbols:
             a = sympy.Wild('a', exclude=[variable])
             (new_expression, map) = self.objective.expression.replace(lambda expr: expr.match(a*variable), lambda expr: coefficient*variable, simultaneous=False, map=True)
             self.objective.expression = new_expression
