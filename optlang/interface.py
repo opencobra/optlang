@@ -504,6 +504,7 @@ class Model(object):
             else:
                 raise AttributeError(e)
         self._objective = value
+        self._objective.problem = self
 
     @property
     def variables(self):

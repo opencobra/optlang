@@ -1,5 +1,6 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
+import copy
 
 import unittest
 import random
@@ -186,8 +187,6 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
         self.assertIn(' obj: + 0.3 x + 0.4 y + 77 z', self.model.__str__().split("\n"))
 
-        # self.assertTrue(False)
-
     @unittest.skip('Skipping for now')
     def test_absolute_value_objective(self):
         # TODO: implement hack mentioned in http://www.aimms.com/aimms/download/manuals/aimms3om_linearprogrammingtricks.pdf
@@ -288,6 +287,10 @@ class SolverTestCase(unittest.TestCase):
                           0.0]
         )
 
+    def test_set_copied_objective(self):
+        obj_copy = copy.copy(self.model.objective)
+        self.model.objective = obj_copy
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_Biomass_Ecoli_core_w_GAM')
 
 if __name__ == '__main__':
     nose.runmodule()
