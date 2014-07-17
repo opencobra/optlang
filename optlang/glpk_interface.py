@@ -131,6 +131,9 @@ class Constraint(interface.Constraint):
 
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
+        if not self.is_Linear:
+            raise ValueError(
+                "GLPK only supports linear constraints. %s is not linear." % self)
 
     @property
     def index(self):
@@ -203,6 +206,9 @@ class Constraint(interface.Constraint):
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
+        if not self.is_Linear:
+            raise ValueError(
+                "GLPK only supports linear objectives. %s is not linear." % self)
 
     @property
     def value(self):
@@ -586,10 +592,6 @@ class Model(interface.Model):
         glp_set_mat_row(self.problem, constraint_index, num_vars_in_row + len(new_variables), index_array, value_array)
 
     def _add_constraint(self, constraint, sloppy=False):
-        if sloppy is False:
-            if not constraint.is_Linear:
-                raise ValueError(
-                    "GLPK only supports linear constraints. %s is not linear." % constraint)
         super(Model, self)._add_constraint(constraint, sloppy=sloppy)
         constraint.problem = self
         glp_add_rows(self.problem, 1)
