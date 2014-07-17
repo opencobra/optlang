@@ -462,10 +462,10 @@ class Model(interface.Model):
                     glp_set_obj_coef(self.problem, variable.index, 0.)
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective.expression
-        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType):
+        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType) or expression.is_Number:
             pass
         else:
-            if expression.is_Atom:
+            if expression.is_Symbol:
                 glp_set_obj_coef(self.problem, expression.index, 1.)
             if expression.is_Mul:
                 coeff, var = expression.args

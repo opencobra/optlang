@@ -352,10 +352,10 @@ class Model(interface.Model):
         for i in xrange(len(self.problem.objective.get_linear())):
             self.problem.objective.set_linear(i, 0.)
         expression = self._objective.expression
-        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType):
+        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType) or expression.is_Number:
             pass
         else:
-            if expression.is_Atom:
+            if expression.is_Symbol:
                 self.problem.objective.set_linear(expression.name, 1.)
             if expression.is_Mul:
                 coeff, var = expression.args

@@ -234,7 +234,12 @@ class OptimizationExpression(object):
         return self.expression.free_symbols
 
     def _canonicalize(self, expression):
-        return expression
+        if isinstance(expression, types.FloatType):
+            return sympy.RealNumber(expression)
+        elif isinstance(expression, types.IntType):
+            return sympy.Integer(expression)
+        else:
+            return expression
 
     @property
     def is_Linear(self):
@@ -316,6 +321,7 @@ class Constraint(OptimizationExpression):
         return str(self.name) + ": " + lhs + self.expression.__str__() + rhs
 
     def _canonicalize(self, expression):
+        expression = super(Constraint, self)._canonicalize(expression)
         if expression.is_Atom or expression.is_Mul:
             return expression
         lonely_coeffs = [arg for arg in expression.args if arg.is_Number]
@@ -375,6 +381,7 @@ class Objective(OptimizationExpression):
 
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
+        expression = super(Objective, self)._canonicalize(expression)
         expression *= 1.
         return expression
 

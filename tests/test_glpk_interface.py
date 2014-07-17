@@ -154,8 +154,7 @@ class SolverTestCase(unittest.TestCase):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')
         y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-        constraint = Constraint(0.3 * x + 0.4 * y ** 2 + 66. * z, lb=-100, ub=0., name='test')
-        self.assertRaises(ValueError, self.model.add, constraint)
+        self.assertRaises(ValueError, Constraint, 0.3 * x + 0.4 * y ** 2 + 66. * z, lb=-100, ub=0., name='test')
 
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
@@ -165,7 +164,6 @@ class SolverTestCase(unittest.TestCase):
         self.model.add(constraint)
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
         self.assertEqual(constraint.index, 73)
-        # self.assertIn(' test: + 0.4 y + 0.3 x >= -100', self.model.__str__().split("\n"))
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
         self.assertEqual(z.index, None)
         constraint += 77. * z
@@ -173,7 +171,6 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
         print self.model
         self.assertEqual(constraint.index, 73)
-        # self.assertIn(' test: + 77 z + 0.3 x + 0.4 y >= -100', self.model.__str__().split("\n"))
 
     def test_change_of_objective_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
@@ -249,7 +246,7 @@ class SolverTestCase(unittest.TestCase):
 
     def test_number_objective(self):
         self.model.objective = Objective(0.)
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.0')
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
         obj_coeff = list()
         for i in xrange(1, glp_get_num_cols(self.model.problem) + 1):
             obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
@@ -258,7 +255,7 @@ class SolverTestCase(unittest.TestCase):
     def test_raise_on_non_linear_objective(self):
         """Test that an exception is raised when a non-linear objective is added to the model."""
         v1, v2 = self.model.variables.values()[0:2]
-        self.assertRaises(Exception, setattr, self.model, 'objective', Objective(v1 * v2))
+        self.assertRaises(ValueError, Objective, v1*v2)
 
     def test_iadd_objective(self):
         v2, v3 = self.model.variables.values()[1:3]

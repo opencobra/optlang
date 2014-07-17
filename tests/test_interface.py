@@ -59,7 +59,7 @@ class TestSolver(TestCase):
 
     def test_number_objective(self):
         self.model.objective = Objective(0.)
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.0')
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
 
     def test_add_differing_interface_type_raises(self):
         from optlang import glpk_interface as glpk
