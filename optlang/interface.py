@@ -28,7 +28,11 @@ import sys
 
 log = logging.getLogger(__name__)
 import collections
-import sympy
+try:
+    import csympy as sympy
+except ImportError:
+    print "csympy not available"
+    import sympy
 
 
 OPTIMAL = 'optimal'
@@ -677,7 +681,3 @@ if __name__ == '__main__':
     print model.variables
 
     # model.remove(x1)
-
-    import optlang
-
-    model.interface = optlang.glpk_interface
