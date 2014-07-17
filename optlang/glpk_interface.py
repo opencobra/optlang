@@ -135,6 +135,19 @@ class Constraint(interface.Constraint):
             raise ValueError(
                 "GLPK only supports linear constraints. %s is not linear." % self)
 
+    def _get_expression(self):
+        if self.problem is not None:
+            col_num = glp_get_num_cols(self.problem.problem)
+            ia = intArray(col_num + 1)
+            da = doubleArray(col_num + 1)
+            nnz = glp_get_mat_row(self.problem.problem, self.index, ia, da)
+            variables = self.problem.variables.values()
+            constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
+            # print [(sympy.RealNumber(da[i]), constraint_variables[i - 1]) for i in range(1, nnz + 1)]
+            expression = sympy.Add._from_args([sympy.Mul._from_args((sympy.RealNumber(da[i]), constraint_variables[i - 1])) for i in range(1, nnz + 1)])
+            self._expression = expression
+        return self._expression
+
     @property
     def index(self):
         try:
@@ -169,7 +182,7 @@ class Constraint(interface.Constraint):
 
     def __iadd__(self, other):
         # if self.problem is not None:
-        #     self.problem._add_to_constraint(self.index, other)
+        # self.problem._add_to_constraint(self.index, other)
         super(Constraint, self).__iadd__(other)
 
         if self.problem is not None:
@@ -210,6 +223,17 @@ class Objective(interface.Objective):
             raise ValueError(
                 "GLPK only supports linear objectives. %s is not linear." % self)
 
+    def _get_expression(self):
+        if self.problem is not None:
+            variables = self.problem.variables.values()
+            term_generator = (
+                (sympy.RealNumber(glp_get_obj_coef(self.problem.problem, index)), variables[index - 1])
+                for index in xrange(1, glp_get_num_cols(self.problem.problem) + 1)
+            )
+            expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator if term[0] != 0.])
+            self._expression = expression
+        return self._expression
+
     @property
     def value(self):
         return glp_get_obj_val(self.problem.problem)
@@ -229,24 +253,28 @@ class Objective(interface.Objective):
             super(Objective, self).__setattr__(name, value)
 
     def __iadd__(self, other):
+        self.problem = None
         super(Objective, self).__iadd__(other)
         if self.problem is not None:
             self.problem.objective = self
         return self
 
     def __isub__(self, other):
+        self.problem = None
         super(Objective, self).__isub__(other)
         if self.problem is not None:
             self.problem.objective = self
         return self
 
     def __imul__(self, other):
+        self.problem = None
         super(Objective, self).__imul__(other)
         if self.problem is not None:
             self.problem.objective = self
         return self
 
     def __idiv__(self, other):
+        self.problem = None
         super(Objective, self).__idiv__(other)
         if self.problem is not None:
             self.problem.objective = self
@@ -352,13 +380,14 @@ class Model(interface.Model):
                 )
                 # This avoids adding the variable to the glpk problem
                 super(Model, self)._add_variable(var)
-            var = self.variables.values()
+            variables = self.variables.values()
 
             for j in xrange(1, row_num + 1):
                 ia = intArray(col_num + 1)
                 da = doubleArray(col_num + 1)
                 nnz = glp_get_mat_row(self.problem, j, ia, da)
-                lhs = _unevaluated_Add(*[da[i] * var[ia[i] - 1]
+                constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
+                lhs = _unevaluated_Add(*[da[i] * constraint_variables[i - 1]
                                          for i in range(1, nnz + 1)])
                 glpk_row_type = glp_get_row_type(self.problem, j)
                 if glpk_row_type == GLP_FX:
@@ -386,20 +415,24 @@ class Model(interface.Model):
                     lhs = sympy.Integer(lhs)
                 elif isinstance(lhs, float):
                     lhs = sympy.RealNumber(lhs)
+                constraint_id = glp_get_row_name(self.problem, j)
+                for variable in constraint_variables:
+                    try:
+                        self._variables_to_constraints_mapping[variable.name].add(constraint_id)
+                    except KeyError:
+                        self._variables_to_constraints_mapping[variable.name] = set([constraint_id])
+
                 super(Model, self)._add_constraint(
-                    Constraint(lhs, lb=row_lb, ub=row_ub,
-                               name=glp_get_row_name(
-                                   self.problem, j), problem=self),
-                    sloppy=True
-                )
+                    Constraint(lhs, lb=row_lb, ub=row_ub, name=constraint_id, problem=self), sloppy=True)
 
             term_generator = (
-                (glp_get_obj_coef(self.problem, index), var[index - 1])
+                (glp_get_obj_coef(self.problem, index), variables[index - 1])
                 for index in xrange(1, glp_get_num_cols(problem) + 1)
             )
             self._objective = Objective(
                 _unevaluated_Add(
-                    *[_unevaluated_Mul(sympy.RealNumber(term[0]), term[1]) for term in term_generator if term[0] != 0.]),
+                    *[_unevaluated_Mul(sympy.RealNumber(term[0]), term[1]) for term in term_generator if
+                      term[0] != 0.]),
                 problem=self,
                 direction={GLP_MIN: 'min', GLP_MAX:
                     'max'}[glp_get_obj_dir(self.problem)]
@@ -409,7 +442,7 @@ class Model(interface.Model):
         glp_scale_prob(self.problem, GLP_SF_AUTO)
 
     def __getstate__(self):
-        glpk_repr = self.__repr__()
+        glpk_repr = self._glpk_representation()
         repr_dict = {'glpk_repr': glpk_repr}
         return repr_dict
 
@@ -420,29 +453,6 @@ class Model(interface.Model):
         # print glp_get_obj_coef(problem, 0)
         glp_read_prob(problem, 0, tmp_file)
         self.__init__(problem=problem)
-
-    # For some reason this is slower then the two methods above ...
-    # def __getstate__(self):
-    # state = dict()
-    # for key, val in self.__dict__.iteritems():
-    #         if key is not 'problem':
-    #             state[key] = val
-    #     state['glpk_repr'] = self.__repr__()
-    #     return state
-
-    # def __setstate__(self, state):
-    #     tmp_file = tempfile.mktemp(suffix=".lp")
-    #     open(tmp_file, 'w').write(state.pop('glpk_repr'))
-    #     problem = glp_create_prob()
-    #     glp_read_prob(problem, 0, tmp_file)
-    #     glp_create_index(problem)
-    #     state['problem'] = problem
-    #     self.__init__()
-    #     self.__dict__ = state
-    #     for var in self.variables.values():
-    #         var.problem = self
-    #     for constr in self.constraints.values():
-    #         constr.problem = self
 
     def __deepcopy__(self, memo):
         copy_problem = glp_create_prob()
@@ -455,18 +465,21 @@ class Model(interface.Model):
 
     @objective.setter
     def objective(self, value):
-
+        value.problem = None  # TODO: temporary fix to allow for objectives that already have a problem set
         if self._objective is not None:
             for variable in self.objective.variables:
                 if variable.index is not None:
                     glp_set_obj_coef(self.problem, variable.index, 0.)
         super(Model, self.__class__).objective.fset(self, value)
-        expression = self._objective.expression
+        expression = self._objective._expression
         if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType) or expression.is_Number:
             pass
         else:
             if expression.is_Symbol:
-                glp_set_obj_coef(self.problem, expression.index, 1.)
+                try:
+                    glp_set_obj_coef(self.problem, expression.index, 1.)
+                except:
+                    print expression
             if expression.is_Mul:
                 coeff, var = expression.args
                 glp_set_obj_coef(self.problem, var.index, float(coeff))
@@ -490,7 +503,7 @@ class Model(interface.Model):
         cplex_form = open(tmp_file).read()
         return cplex_form
 
-    def __repr__(self):
+    def _glpk_representation(self):
         tmp_file = tempfile.mktemp(suffix=".glpk")
         glp_write_prob(self.problem, 0, tmp_file)
         glpk_form = open(tmp_file).read()
@@ -520,11 +533,22 @@ class Model(interface.Model):
         glp_set_col_kind(self.problem, variable.index, _VTYPE_TO_GLPK_VTYPE[variable.type])
         return variable
 
-    def _remove_variable(self, variable):
-        num = intArray(2)
-        num[1] = variable.index
-        glp_del_cols(self.problem, 1, num)
-        super(Model, self)._remove_variable(variable)
+    def _remove_variables(self, variables):
+        for variable in variables:
+            try:
+                var = self.variables[variable.name]
+            except KeyError:
+                raise LookupError("Variable %s not in solver" % var)
+
+        for i, variable in enumerate(variables):
+            num = intArray(len(variables) + 1)
+            num[i + 1] = variable.index
+            glp_del_cols(self.problem, len(variables), num)
+
+        for variable in variables:
+            del self._variables_to_constraints_mapping[variable.name]
+            variable.problem = None
+            del self.variables[variable.name]
 
     def _add_to_constraint(self, constraint_index, expression):
         expression_variables = expression.free_symbols
@@ -538,7 +562,7 @@ class Model(interface.Model):
         value_array = doubleArray(num_vars + 1)
         num_vars_in_row = glp_get_mat_row(self.problem, constraint_index, index_array, value_array)
         index_coeff_dict = dict()
-        for i in range(1, num_vars_in_row+1):
+        for i in range(1, num_vars_in_row + 1):
             index_coeff_dict[index_array[i]] = (value_array[i], i)
 
         if expression.is_Atom and expression.is_Symbol:
@@ -546,8 +570,8 @@ class Model(interface.Model):
             try:
                 (value, pos) = index_coeff_dict[var.index]
             except KeyError:
-                index_array[num_vars_in_row+1] = var.index
-                value_array[num_vars_in_row+1] = 1
+                index_array[num_vars_in_row + 1] = var.index
+                value_array[num_vars_in_row + 1] = 1
             else:
                 index_array[pos] = var.index
                 value_array[pos] = value + 1
@@ -561,8 +585,8 @@ class Model(interface.Model):
             try:
                 (value, pos) = index_coeff_dict[var.index]
             except KeyError:
-                index_array[num_vars_in_row+1] = var.index
-                value_array[num_vars_in_row+1] = coeff
+                index_array[num_vars_in_row + 1] = var.index
+                value_array[num_vars_in_row + 1] = coeff
             else:
                 index_array[pos] = var.index
                 value_array[pos] = value + coeff
@@ -584,16 +608,19 @@ class Model(interface.Model):
                 try:
                     (value, pos) = index_coeff_dict[var.index]
                 except KeyError:
-                    index_array[num_vars_in_row+i+1] = var.index
-                    value_array[num_vars_in_row+i+1] = coeff
+                    index_array[num_vars_in_row + i + 1] = var.index
+                    value_array[num_vars_in_row + i + 1] = coeff
                 else:
                     index_array[pos] = var.index
                     value_array[pos] = value + coeff
         glp_set_mat_row(self.problem, constraint_index, num_vars_in_row + len(new_variables), index_array, value_array)
 
     def _add_constraint(self, constraint, sloppy=False):
+        if sloppy is False:
+            if not constraint.is_Linear:
+                raise ValueError(
+                    "GLPK only supports linear constraints. %s is not linear." % constraint)
         super(Model, self)._add_constraint(constraint, sloppy=sloppy)
-        constraint.problem = self
         glp_add_rows(self.problem, 1)
         index = glp_get_num_rows(self.problem)
         glp_set_row_name(self.problem, index, constraint.name)
@@ -632,6 +659,7 @@ class Model(interface.Model):
                 value_array[i + 1] = coeff
         glp_set_mat_row(self.problem, index, num_vars,
                         index_array, value_array)
+        constraint.problem = self
         self._glpk_set_row_bounds(constraint)
 
     def _glpk_set_col_bounds(self, variable):
@@ -688,15 +716,17 @@ class Model(interface.Model):
                 "Something is wrong with the provided bounds %f and %f in constraint %s" %
                 (constraint.lb, constraint.ub, constraint))
 
-    def _remove_constraint(self, constraint):
-        num = intArray(2)
-        num[1] = constraint.index
-        glp_del_rows(self.problem, 1, num)
-        super(Model, self)._remove_constraint(constraint)
+    def _remove_constraints(self, constraints):
+        num = intArray(len(constraints) + 1)
+        for i, constraint in enumerate(constraints):
+            num[i + 1] = constraint.index
+        glp_del_rows(self.problem, len(constraints), num)
+        super(Model, self)._remove_constraints(constraints)
 
     def _set_linear_objective_term(self, variable, coefficient):
         super(Model, self)._set_linear_objective_term(variable, coefficient)
         glp_set_obj_coef(self.problem, variable.index, coefficient)
+
 
 if __name__ == '__main__':
     import pickle

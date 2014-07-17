@@ -1,5 +1,6 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
+import copy
 
 import unittest
 import random
@@ -98,7 +99,6 @@ class SolverTestCase(unittest.TestCase):
         var = self.model.variables.values()[0]
         self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
                          'M_atp_c: -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 59.81*R_Biomass_Ecoli_core_w_GAM - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM')
-        print self.model.constraints['M_atp_c']
         self.assertEqual(var.problem, self.model)
         self.model.remove(var)
         self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
@@ -183,8 +183,6 @@ class SolverTestCase(unittest.TestCase):
         self.model.objective += 77. * z
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
         self.assertIn(' obj: + 0.3 x + 0.4 y + 77 z', self.model.__str__().split("\n"))
-
-        # self.assertTrue(False)
 
     @unittest.skip('Skipping for now')
     def test_absolute_value_objective(self):
@@ -286,6 +284,10 @@ class SolverTestCase(unittest.TestCase):
                           0.0]
         )
 
+    def test_set_copied_objective(self):
+        obj_copy = copy.copy(self.model.objective)
+        self.model.objective = obj_copy
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_Biomass_Ecoli_core_w_GAM')
 
 if __name__ == '__main__':
     nose.runmodule()
