@@ -436,7 +436,7 @@ class Model(interface.Model):
         glp_scale_prob(self.problem, GLP_SF_AUTO)
 
     def __getstate__(self):
-        glpk_repr = self.__repr__()
+        glpk_repr = self._glpk_representation()
         repr_dict = {'glpk_repr': glpk_repr}
         return repr_dict
 
@@ -447,29 +447,6 @@ class Model(interface.Model):
         # print glp_get_obj_coef(problem, 0)
         glp_read_prob(problem, 0, tmp_file)
         self.__init__(problem=problem)
-
-    # For some reason this is slower then the two methods above ...
-    # def __getstate__(self):
-    # state = dict()
-    # for key, val in self.__dict__.iteritems():
-    # if key is not 'problem':
-    # state[key] = val
-    #     state['glpk_repr'] = self.__repr__()
-    #     return state
-
-    # def __setstate__(self, state):
-    #     tmp_file = tempfile.mktemp(suffix=".lp")
-    #     open(tmp_file, 'w').write(state.pop('glpk_repr'))
-    #     problem = glp_create_prob()
-    #     glp_read_prob(problem, 0, tmp_file)
-    #     glp_create_index(problem)
-    #     state['problem'] = problem
-    #     self.__init__()
-    #     self.__dict__ = state
-    #     for var in self.variables.values():
-    #         var.problem = self
-    #     for constr in self.constraints.values():
-    #         constr.problem = self
 
     def __deepcopy__(self, memo):
         copy_problem = glp_create_prob()
@@ -489,11 +466,14 @@ class Model(interface.Model):
                     glp_set_obj_coef(self.problem, variable.index, 0.)
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective._expression
-        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType):
+        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType) or expression.is_Number:
             pass
         else:
-            if expression.is_Atom:
-                glp_set_obj_coef(self.problem, expression.index, 1.)
+            if expression.is_Symbol:
+                try:
+                    glp_set_obj_coef(self.problem, expression.index, 1.)
+                except:
+                    print expression
             if expression.is_Mul:
                 coeff, var = expression.args
                 glp_set_obj_coef(self.problem, var.index, float(coeff))
@@ -517,7 +497,7 @@ class Model(interface.Model):
         cplex_form = open(tmp_file).read()
         return cplex_form
 
-    def __repr__(self):
+    def _glpk_representation(self):
         tmp_file = tempfile.mktemp(suffix=".glpk")
         glp_write_prob(self.problem, 0, tmp_file)
         glpk_form = open(tmp_file).read()
