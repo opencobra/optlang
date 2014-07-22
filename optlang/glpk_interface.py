@@ -141,8 +141,9 @@ class Constraint(interface.Constraint):
             ia = intArray(col_num + 1)
             da = doubleArray(col_num + 1)
             nnz = glp_get_mat_row(self.problem.problem, self.index, ia, da)
-            variables = self.problem.variables.values()
-            constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
+            # variables = self.problem.variables.values()
+            # constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
+            constraint_variables = [self.problem.variables[glp_get_col_name(self.problem.problem, ia[i])] for i in range(1, nnz + 1)]
             expression = sympy.Add._from_args([sympy.Mul._from_args((sympy.RealNumber(da[i]), constraint_variables[i - 1])) for i in range(1, nnz + 1)])
             self._expression = expression
         return self._expression
@@ -564,7 +565,7 @@ class Model(interface.Model):
             del self.variables[variable.name]
 
     def _add_to_constraint(self, constraint_index, expression):
-        expression_variables = expression.free_symbols
+        expression_variables = expression.atoms(sympy.Symbol)
         new_variables = list()
         for var in expression_variables:
             if var.index is None:

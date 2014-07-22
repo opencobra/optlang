@@ -467,7 +467,7 @@ class Model(interface.Model):
                 indices = [var.name for var in coeff_dict.keys()]
                 values = [float(val) for val in coeff_dict.values()]
             elif constraint.expression.is_Mul:
-                variable = list(constraint.expression.free_symbols)[0]
+                variable = list(constraint.expression.atoms(sympy.Symbol))[0]
                 indices = [variable.name]
                 values = [float(constraint.expression.coeff(variable))]
             elif constraint.expression.is_Atom:
