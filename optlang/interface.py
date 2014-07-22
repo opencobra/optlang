@@ -214,25 +214,23 @@ class OptimizationExpression(object):
             self.name = sympy.Dummy().name
         else:
             self.name = name
-        self.problem = problem
+        self._problem = problem
+
+    @property
+    def problem(self):
+        return self._problem
+
+    @problem.setter
+    def problem(self, value):
+        self._problem = value
 
     def _get_expression(self):
         return self._expression
-
-    def _set_expression(self, value):
-        try:
-            self._expression = self._canonicalize(value)
-        except TypeError:
-            self._expression = value
 
     @property
     def expression(self):
         """The mathematical expression defining the objective/constraint."""
         return self._get_expression()
-
-    @expression.setter
-    def expression(self, value):
-        self._set_expression(value)
 
     @property
     def variables(self):
@@ -305,10 +303,15 @@ class Constraint(OptimizationExpression):
         A reference to the optimization model the variable belongs to.
     """
 
+    # @classmethod
+    # def clone(cls, constraint, model=None, **kwargs):
+    #     return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
+    #                name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
+
     @classmethod
     def clone(cls, constraint, model=None, **kwargs):
         return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
-                   name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
+                   name=constraint.name, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, *args, **kwargs):
         self.lb = lb
@@ -654,9 +657,9 @@ class Model(object):
         replacements = dict([(variable, 0) for variable in variables])
         for constraint_id in constraint_ids:
             constraint = self.constraints[constraint_id]
-            constraint.expression = constraint.expression.xreplace(replacements)
+            constraint._expression = constraint.expression.xreplace(replacements)
 
-        self.objective.expression = self.objective.expression.xreplace(replacements)
+        self.objective._expression = self.objective.expression.xreplace(replacements)
 
     def _remove_variable(self, variable):
         self._remove_variables([variable])

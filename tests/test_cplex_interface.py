@@ -1,5 +1,6 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
+import copy
 
 import unittest
 import random
@@ -30,6 +31,11 @@ try:
             self.assertEqual(len(model.constraints), 0)
             self.assertEqual(len(model.variables), 0)
             self.assertEqual(model.objective, None)
+
+        def test_copy(self):
+            model_copy = copy.copy(self.model)
+            self.assertNotEqual(id(self.model), id(model_copy))
+            self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
 
         def test_pickle_ability(self):
             self.model.optimize()
@@ -167,7 +173,6 @@ try:
             constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.model.add(constraint)
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
-            print
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y')]), [0.3, 0.4])
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
             constraint += 77. * z

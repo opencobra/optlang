@@ -176,6 +176,29 @@ class Constraint(interface.Constraint):
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
 
+    # TODO: get expression from solver structure
+    def _get_expression(self):
+        if self.problem is not None:
+            cplex_problem = self.problem.problem
+            cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
+            variables = self.problem.variables.values()
+            expression = sympy.Add._from_args([sympy.Mul._from_args((sympy.RealNumber(cplex_row.val[i]), variables[ind])) for i, ind in enumerate(cplex_row.ind)])
+            self._expression = expression
+        return self._expression
+
+    @property
+    def problem(self):
+        return self._problem
+
+    @problem.setter
+    def problem(self, value):
+        if value is None:
+            # Update expression from solver instance one last time
+            self._get_expression()
+            self._problem = None
+        else:
+            self._problem = value
+
     @property
     def primal(self):
         return self.problem.problem.solution.get_dual_values(self.name)
@@ -211,11 +234,13 @@ class Constraint(interface.Constraint):
     def __iadd__(self, other):
         # if self.problem is not None:
         #     self.problem._add_to_constraint(self.index, other)
-        super(Constraint, self).__iadd__(other)
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
+            super(Constraint, self).__iadd__(other)
             problem_reference._add_constraint(self, sloppy=False)
+        else:
+            super(Constraint, self).__iadd__(other)
         return self
 
 
@@ -427,20 +452,15 @@ class Model(interface.Model):
         return variable
 
     def _remove_variables(self, variables):
-        super(Model, self)._remove_variables(variables)
+        # Not calling parent method to avoid expensive variable removal from sympy expressions
         self.problem.variables.delete([variable.name for variable in variables])
-
-    # def _remove_variable(self, variable):
-    #     super(Model, self)._remove_variable(variable)
-    #     self.problem.variables.delete(variable.name)
+        for variable in variables:
+            del self._variables_to_constraints_mapping[variable.name]
+            variable.problem = None
+            del self.variables[variable.name]
 
     def _add_constraint(self, constraint, sloppy=False):
-        if sloppy is False:
-            if not (constraint.is_Linear or constraint.is_Quadratic):
-                raise ValueError(
-                    "CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
         super(Model, self)._add_constraint(constraint, sloppy=sloppy)
-
         if constraint.is_Linear:
             if constraint.expression.is_Add:
                 coeff_dict = constraint.expression.as_coefficients_dict()
@@ -458,40 +478,24 @@ class Model(interface.Model):
 
             sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(constraint.lb, constraint.ub)
 
-            # if constraint.lb is None and constraint.ub is None:
-            #     # FIXME: use cplex.infinity
-            #     raise Exception("Free constraint ... %s" % constraint)
-            # elif constraint.lb is None:
-            #     sense = 'L'
-            #     rhs = float(constraint.ub)
-            #     range_value = 0.
-            # elif constraint.ub is None:
-            #     sense = 'G'
-            #     rhs = float(constraint.lb)
-            #     range_value = 0.
-            # elif constraint.lb == constraint.ub:
-            #     sense = 'E'
-            #     rhs = float(constraint.lb)
-            #     range_value = 0.
-            # else:
-            #     sense = 'R'
-            #     rhs = float(constraint.lb)
-            #     range_value = float(constraint.ub - constraint.lb)
             self.problem.linear_constraints.add(
                 lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
                 range_values=[range_value], names=[constraint.name])
         # TODO: Implement quadratic constraints
         elif constraint.is_Quadratic:
             pass
+        else:
+            raise ValueError("CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
         constraint.problem = self
         return constraint
 
-    def _remove_constraint(self, constraint):
-        super(Model, self)._remove_constraint(constraint)
-        if constraint.is_Linear:
-            self.problem.linear_constraints.delete(constraint.name)
-        elif constraint.is_Quadratic:
-            self.problem.quadratic_constraints.delete(constraint.name)
+    def _remove_constraints(self, constraints):
+        super(Model, self)._remove_constraints(constraints)
+        for constraint in constraints:
+            if constraint.is_Linear:
+                self.problem.linear_constraints.delete(constraint.name)
+            elif constraint.is_Quadratic:
+                self.problem.quadratic_constraints.delete(constraint.name)
 
 
 if __name__ == '__main__':

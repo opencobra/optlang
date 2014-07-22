@@ -143,10 +143,22 @@ class Constraint(interface.Constraint):
             nnz = glp_get_mat_row(self.problem.problem, self.index, ia, da)
             variables = self.problem.variables.values()
             constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
-            # print [(sympy.RealNumber(da[i]), constraint_variables[i - 1]) for i in range(1, nnz + 1)]
             expression = sympy.Add._from_args([sympy.Mul._from_args((sympy.RealNumber(da[i]), constraint_variables[i - 1])) for i in range(1, nnz + 1)])
             self._expression = expression
         return self._expression
+
+    @property
+    def problem(self):
+        return self._problem
+
+    @problem.setter
+    def problem(self, value):
+        if value is None:
+            # Update expression from solver instance one last time
+            self._get_expression()
+            self._problem = None
+        else:
+            self._problem = value
 
     @property
     def index(self):
@@ -183,12 +195,13 @@ class Constraint(interface.Constraint):
     def __iadd__(self, other):
         # if self.problem is not None:
         # self.problem._add_to_constraint(self.index, other)
-        super(Constraint, self).__iadd__(other)
-
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
+            super(Constraint, self).__iadd__(other)
             problem_reference._add_constraint(self, sloppy=False)
+        else:
+            super(Constraint, self).__iadd__(other)
         return self
 
     def __isub__(self, other):
@@ -717,11 +730,12 @@ class Model(interface.Model):
                 (constraint.lb, constraint.ub, constraint))
 
     def _remove_constraints(self, constraints):
-        num = intArray(len(constraints) + 1)
-        for i, constraint in enumerate(constraints):
-            num[i + 1] = constraint.index
-        glp_del_rows(self.problem, len(constraints), num)
+        constraint_indices = [constraint.index for constraint in constraints]
         super(Model, self)._remove_constraints(constraints)
+        num = intArray(len(constraints) + 1)
+        for i, constraint_index in enumerate(constraint_indices):
+            num[i + 1] = constraint_index
+        glp_del_rows(self.problem, len(constraints), num)
 
     def _set_linear_objective_term(self, variable, coefficient):
         super(Model, self)._set_linear_objective_term(variable, coefficient)

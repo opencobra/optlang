@@ -47,6 +47,11 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints.values()],
                          [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints.values()])
 
+    def test_copy(self):
+        model_copy = copy.copy(self.model)
+        self.assertNotEqual(id(self.model), id(model_copy))
+        self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+
     def test_init_from_existing_problem(self):
         inner_prob = self.model.problem
         self.assertEqual(len(self.model.variables), glp_get_num_cols(inner_prob))
