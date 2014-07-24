@@ -198,6 +198,7 @@ class OptimizationExpression(object):
         variable_substitutions = dict()
         for variable in expression.variables:
             if model is not None and variable.name in model.variables:
+                # print variable.name, id(variable.problem)
                 variable_substitutions[variable] = model.variables[variable.name]
             else:
                 variable_substitutions[variable] = interface.Variable.clone(variable)
@@ -635,6 +636,8 @@ class Model(object):
             "You're using the high level interface to optlang. Problems cannot be optimized in this mode. Choose from one of the solver specific interfaces.")
 
     def _add_variable(self, variable):
+        if self.variables.has_key(variable.name):
+            raise Exception('Model already contains a variable with name %s' % variable.name)
         variable.problem = self
         self.variables[variable.name] = variable
         return variable
@@ -678,6 +681,7 @@ class Model(object):
                 except KeyError:
                     self._variables_to_constraints_mapping[var.name] = set([constraint_id])
         self.constraints[constraint_id] = constraint
+        constraint.problem = self
 
     def _remove_constraints(self, constraints):
         for constraint in constraints:

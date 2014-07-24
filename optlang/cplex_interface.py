@@ -461,6 +461,7 @@ class Model(interface.Model):
 
     def _add_constraint(self, constraint, sloppy=False):
         super(Model, self)._add_constraint(constraint, sloppy=sloppy)
+        constraint._problem = None
         if constraint.is_Linear:
             if constraint.expression.is_Add:
                 coeff_dict = constraint.expression.as_coefficients_dict()

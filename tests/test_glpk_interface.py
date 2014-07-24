@@ -66,6 +66,7 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(var.index, None)
         self.model.add(var)
         self.assertTrue(var in self.model.variables.values())
+        self.assertEqual(self.model.variables.values().count(var), 1)
         self.assertEqual(var.index, glp_get_num_cols(self.model.problem))
         self.assertEqual(var.name, glp_get_col_name(self.model.problem, var.index))
         self.assertEqual(self.model.variables['x'].problem, var.problem)
@@ -79,6 +80,14 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.variables['x'].ub, None)
         self.assertEqual(self.model.variables['y'].lb, -13)
         self.assertEqual(self.model.variables['x'].ub, None)
+        var = Variable('x_with_ridiculously_long_variable_name_asdffffffffasdfasdfasdfasdfasdfasdfasdf')
+        self.model.add(var)
+        self.assertTrue(var in self.model.variables.values())
+        self.assertEqual(self.model.variables.values().count(var), 1)
+        var = Variable('x_with_ridiculously_long_variable_name_asdffffffffasdfasdfasdfasdfasdfasdfasdf')
+        self.assertRaises(Exception, self.model.add, var)
+        self.assertEqual(self.model.variables.values().count(var), 1)
+        self.assertEqual(len(self.model.variables), glp_get_num_cols(self.model.problem))
 
     def test_add_integer_var(self):
         var = Variable('int_var', lb=-13, ub=499.4, type='integer')
