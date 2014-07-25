@@ -373,7 +373,7 @@ class Objective(OptimizationExpression):
 
     @classmethod
     def clone(cls, objective, model=None, **kwargs):
-        return cls(cls._substitute_variables(objective, model=model), name=objective.name, problem=model,
+        return cls(cls._substitute_variables(objective, model=model), name=objective.name,  # TODO: problem=model, (it's breaking cameo for some reason)
                    direction=objective.direction, sloppy=True, **kwargs)
 
     def __init__(self, expression, value=None, direction='max', *args, **kwargs):
