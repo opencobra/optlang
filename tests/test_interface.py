@@ -93,3 +93,13 @@ class TestSolver(TestCase):
         for constraint in self.model.constraints.values():
             self.assertEqual(constraint.problem, self.model)
         self.assertEqual(self.model.objective.problem, self.model)
+
+    def test_variable_independence(self):
+        model = Model()
+        x = Variable('x', lb=0, ub=10)
+        y = Variable('y', lb=0, ub=10)
+        constr = Constraint(1.*x + y, lb=3, name="constr1")
+        model.add(constr)
+        self.assertNotEqual(self.model.variables['x'].problem, model)
+        x.lb = -10
+        self.assertNotEqual(self.model.variables['x'].lb, model.variables['x'].lb)
