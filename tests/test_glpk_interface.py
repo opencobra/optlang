@@ -144,8 +144,10 @@ class SolverTestCase(unittest.TestCase):
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
         nnz = glp_get_mat_row(self.model.problem, constr1.index, ia, da)
-        self.assertEqual(sorted([ia[i] for i in range(1, nnz+1)]), [96, 97, 98])
-        self.assertEqual(sorted([da[i] for i in range(1, nnz+1)]), [0.3, 0.4, 66.])
+        coeff_dict = dict()
+        for i in range(1, nnz+1):
+            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
+        self.assertDictEqual(coeff_dict, {'x': 0.3, 'y': 0.4, 'z': 66.})
         self.assertEqual(glp_get_row_type(self.model.problem, constr1.index), GLP_DB)
         self.assertEqual(glp_get_row_lb(self.model.problem, constr1.index), -100)
         self.assertEqual(glp_get_row_ub(self.model.problem, constr1.index), 0)
@@ -153,8 +155,10 @@ class SolverTestCase(unittest.TestCase):
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
         nnz = glp_get_mat_row(self.model.problem, constr2.index, ia, da)
-        self.assertEqual(sorted([ia[i] for i in range(1, nnz+1)]), [96, 97])
-        self.assertEqual(sorted([da[i] for i in range(1, nnz+1)]), [1., 2.333])
+        coeff_dict = dict()
+        for i in range(1, nnz+1):
+            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
+        self.assertDictEqual(coeff_dict, {'x': 2.333, 'y': 1.})
         self.assertEqual(glp_get_row_type(self.model.problem, constr2.index), GLP_UP)
         self.assertEqual(glp_get_row_lb(self.model.problem, constr2.index), -1.7976931348623157e+308)
         self.assertEqual(glp_get_row_ub(self.model.problem, constr2.index), 96.997)
@@ -162,8 +166,10 @@ class SolverTestCase(unittest.TestCase):
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
         nnz = glp_get_mat_row(self.model.problem, constr3.index, ia, da)
-        self.assertEqual(sorted([ia[i] for i in range(1, nnz+1)]), [96, 97, 98])
-        self.assertEqual(sorted([da[i] for i in range(1, nnz+1)]), [1., 1., 2.333])
+        coeff_dict = dict()
+        for i in range(1, nnz+1):
+            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
+        self.assertDictEqual(coeff_dict, {'x': 2.333, 'y': 1., 'z': 1.})
         self.assertEqual(glp_get_row_type(self.model.problem, constr3.index), GLP_LO)
         self.assertEqual(glp_get_row_lb(self.model.problem, constr3.index), -300)
         self.assertEqual(glp_get_row_ub(self.model.problem, constr3.index), 1.7976931348623157e+308)
@@ -210,11 +216,20 @@ class SolverTestCase(unittest.TestCase):
         objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
         self.model.objective = objective
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-        self.assertIn(' obj: + 0.3 x + 0.4 y', self.model.__str__().split("\n"))
+        self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, y.index), 0.4)
+        for i in range(1, glp_get_num_cols(self.model.problem) + 1):
+            if i != x.index and i != y.index:
+                self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
         self.model.objective += 77. * z
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-        self.assertIn(' obj: + 0.3 x + 0.4 y + 77 z', self.model.__str__().split("\n"))
+        self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, y.index), 0.4)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, z.index), 77.)
+        for i in range(1, glp_get_num_cols(self.model.problem) + 1):
+            if i != x.index and i != y.index and i != z.index:
+                self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
 
     @unittest.skip('Skipping for now')
     def test_absolute_value_objective(self):
