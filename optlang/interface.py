@@ -20,7 +20,7 @@ extended for individual solvers.
 """
 
 import logging
-import time
+import uuid
 
 import types
 
@@ -28,7 +28,11 @@ import sys
 
 log = logging.getLogger(__name__)
 import collections
+
 import sympy
+from sympy.core.singleton import S
+from sympy.core.logic import fuzzy_bool
+
 
 
 OPTIMAL = 'optimal'
@@ -81,6 +85,19 @@ class Variable(sympy.Symbol):
     @classmethod
     def clone(cls, variable, **kwargs):
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
+
+    def __new__(cls, name, **assumptions):
+
+        if assumptions.get('zero', False):
+            return S.Zero
+        is_commutative = fuzzy_bool(assumptions.get('commutative', True))
+        if is_commutative is None:
+            raise ValueError(
+                '''Symbol commutativity must be True or False.''')
+        assumptions['commutative'] = is_commutative
+        for key in assumptions.keys():
+            assumptions[key] = bool(assumptions[key])
+        return sympy.Symbol.__xnew__(cls, name, uuid=uuid.uuid1(), **assumptions)
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
         for char in name:

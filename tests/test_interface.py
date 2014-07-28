@@ -96,10 +96,14 @@ class TestSolver(TestCase):
 
     def test_variable_independence(self):
         model = Model()
-        x = Variable('x', lb=0, ub=10)
+        x = Variable('x', lb=0, ub=20)
+        self.assertNotEqual(id(x), id(self.model.variables['x']))
         y = Variable('y', lb=0, ub=10)
         constr = Constraint(1.*x + y, lb=3, name="constr1")
         model.add(constr)
+        self.assertNotEqual(id(self.model.variables['x']), id(model.variables['x']))
+        self.assertNotEqual(id(self.model.variables['y']), id(model.variables['y']))
+        self.assertNotEqual(self.model.variables['y'].problem, model)
         self.assertNotEqual(self.model.variables['x'].problem, model)
         x.lb = -10
         self.assertNotEqual(self.model.variables['x'].lb, model.variables['x'].lb)

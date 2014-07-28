@@ -86,7 +86,6 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.variables.values().count(var), 1)
         var = Variable('x_with_ridiculously_long_variable_name_asdffffffffasdfasdfasdfasdfasdfasdfasdf')
         self.assertRaises(Exception, self.model.add, var)
-        self.assertEqual(self.model.variables.values().count(var), 1)
         self.assertEqual(len(self.model.variables), glp_get_num_cols(self.model.problem))
 
     def test_add_integer_var(self):
@@ -133,22 +132,41 @@ class SolverTestCase(unittest.TestCase):
         y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
         z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
         constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-        # constr1 = Constraint(x + 2* y  + 3.333*z, lb=-10, name='hongo')
         constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
-        constr3 = Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
+        constr3 = Constraint(2.333 * x + y + z, lb=-300)
         self.model.add(constr1)
         self.model.add(constr2)
         self.model.add(constr3)
         self.assertIn(constr1, self.model.constraints.values())
         self.assertIn(constr2, self.model.constraints.values())
         self.assertIn(constr3, self.model.constraints.values())
-        cplex_lines = [line.strip() for line in str(self.model).split('\n')]
-        self.assertIn('test: + 0.3 x + 66 z + 0.4 y - ~r_73 = -100', cplex_lines)
-        self.assertIn('test2: + y + 2.333 x <= 96.997', cplex_lines)
-        # Dummy_14: + z + y + 2.333 x - ~r_75 = -300
-        regex = re.compile("Dummy_\d+\: \+ z \+ y \+ 2\.333 x - \~r_75 = -300")
-        matches = [line for line in cplex_lines if regex.match(line) is not None]
-        self.assertNotEqual(matches, [])
+        # constr1
+        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
+        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
+        nnz = glp_get_mat_row(self.model.problem, constr1.index, ia, da)
+        self.assertEqual(sorted([ia[i] for i in range(1, nnz+1)]), [96, 97, 98])
+        self.assertEqual(sorted([da[i] for i in range(1, nnz+1)]), [0.3, 0.4, 66.])
+        self.assertEqual(glp_get_row_type(self.model.problem, constr1.index), GLP_DB)
+        self.assertEqual(glp_get_row_lb(self.model.problem, constr1.index), -100)
+        self.assertEqual(glp_get_row_ub(self.model.problem, constr1.index), 0)
+        # constr2
+        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
+        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
+        nnz = glp_get_mat_row(self.model.problem, constr2.index, ia, da)
+        self.assertEqual(sorted([ia[i] for i in range(1, nnz+1)]), [96, 97])
+        self.assertEqual(sorted([da[i] for i in range(1, nnz+1)]), [1., 2.333])
+        self.assertEqual(glp_get_row_type(self.model.problem, constr2.index), GLP_UP)
+        self.assertEqual(glp_get_row_lb(self.model.problem, constr2.index), -1.7976931348623157e+308)
+        self.assertEqual(glp_get_row_ub(self.model.problem, constr2.index), 96.997)
+        # constr3
+        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
+        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
+        nnz = glp_get_mat_row(self.model.problem, constr3.index, ia, da)
+        self.assertEqual(sorted([ia[i] for i in range(1, nnz+1)]), [96, 97, 98])
+        self.assertEqual(sorted([da[i] for i in range(1, nnz+1)]), [1., 1., 2.333])
+        self.assertEqual(glp_get_row_type(self.model.problem, constr3.index), GLP_LO)
+        self.assertEqual(glp_get_row_lb(self.model.problem, constr3.index), -300)
+        self.assertEqual(glp_get_row_ub(self.model.problem, constr3.index), 1.7976931348623157e+308)
 
     def test_remove_constraints(self):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')

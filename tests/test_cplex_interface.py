@@ -98,19 +98,11 @@ try:
             self.assertNotIn(var, self.model.variables.values())
             self.assertEqual(var.problem, None)
 
-        # def test_add_constraint(self):
-        # x = Variable('x', lb=-83.3, ub=1324422., type='binary')
-        #     y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        #     z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-        #     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
-        #     self.model.add(constr)
-
         def test_add_linear_constraints(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
             constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-            # constr1 = Constraint(x + 2* y  + 3.333*z, lb=-10, name='hongo')
             constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
             constr3 = Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
             self.model.add(constr1)
@@ -119,12 +111,9 @@ try:
             self.assertIn(constr1, self.model.constraints.values())
             self.assertIn(constr2, self.model.constraints.values())
             self.assertIn(constr3, self.model.constraints.values())
-            cplex_lines = [line.strip() for line in str(self.model).split('\n')]
-            self.assertIn('test:       0.4 y + 66 z + 0.3 x - Rgtest  = -100', cplex_lines)
-            self.assertIn('test2:      y + 2.333 x <= 96.997', cplex_lines)
-            # Dummy_21:   y + z + 2.333 x - RgDummy_21  = -300
-            self.assertRegexpMatches(str(self.model), '\s*Dummy_\d+:\s*y \+ z \+ 2\.333 x - .*  = -300')
-            print self.model
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test', 'y'), ('test', 'z'), ('test', 'x'))), [0.4, 66, 0.3])
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test2', 'y'), ('test2', 'x'))), [1., 2.333])
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients(((74, 'y'), (74, 'z'), (74, 'x'))), [1., 1., 2.333])
 
         @unittest.skip
         def test_add_quadratic_constraints(self):
