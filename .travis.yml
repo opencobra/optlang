@@ -12,6 +12,7 @@ before_install:
   - cd python-glpk-0.4.45/src/
   - sudo make install
   - cd $TRAVIS_BUILD_DIR
+  - export SYMPY_USE_CACHE=no
 install:
   - pip install coveralls nose nose-progressive rednose coverage docutils inspyred
   - pip install -r requirements.txt
