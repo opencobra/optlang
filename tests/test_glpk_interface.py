@@ -9,7 +9,7 @@ import pickle
 import os
 import nose
 import re
-from glpk.glpkpi import *
+from swiglpk import *
 
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 

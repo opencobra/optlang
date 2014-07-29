@@ -770,7 +770,7 @@ if __name__ == '__main__':
 
     print model
 
-    from glpk.glpkpi import glp_read_lp
+    from swiglpk import glp_read_lp
 
     problem = glp_create_prob()
     glp_read_lp(problem, None, "../tests/data/model.lp")
