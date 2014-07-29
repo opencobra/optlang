@@ -5,18 +5,11 @@ virtualenv:
   system_site_packages: true
 before_install:
   - sudo apt-get install libglpk-dev swig python-numpy glpk-utils
-  - pip install ply
-  - cd /home/travis
-  - wget http://www.dcc.fc.up.pt/~jpp/code/python-glpk/python-glpk_0.4.45.orig.tar.gz
-  - tar xzf python-glpk_0.4.45.orig.tar.gz
-  - cd python-glpk-0.4.45/src/
-  - sudo make install
-  - cd $TRAVIS_BUILD_DIR
   - export SYMPY_USE_CACHE=no
 install:
   - pip install coveralls nose nose-progressive rednose coverage docutils inspyred
   - pip install -r requirements.txt
 # # command to run tests
-script: coverage run --omit=optlang/cplex_interface.py,optlang/gurobi_interface.py,optlang/__init__.py --source=optlang setup.py nosetests
+script: nosetests
 after_success:
   - coveralls
