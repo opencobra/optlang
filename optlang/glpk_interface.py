@@ -31,17 +31,17 @@ import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
-from glpk.glpkpi import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GLP_IV, GLP_BV, GLP_UNDEF, GLP_FEAS, \
+from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GLP_IV, GLP_BV, GLP_UNDEF, GLP_FEAS, \
     GLP_INFEAS, GLP_NOFEAS, GLP_OPT, GLP_UNBND, \
     glp_set_col_kind, glp_find_row, glp_get_row_prim, glp_get_row_dual, glp_get_obj_val, glp_set_obj_dir, glp_init_smcp, \
     glp_init_iocp, GLP_MIN, GLP_MAX, glp_iocp, glp_smcp, GLP_ON, GLP_OFF, GLP_MSG_OFF, GLP_MSG_ERR, GLP_MSG_ON, \
     GLP_MSG_ALL, glp_term_out, glp_create_index, glp_create_prob, glp_get_num_rows, glp_get_num_cols, glp_get_col_name, \
-    glp_get_col_lb, glp_get_col_ub, glp_get_col_kind, glp_set_prob_name, glp_prob, glp_read_prob, glp_copy_prob, \
-    glp_set_obj_coef, glp_simplex, LPX_LP, _glp_lpx_get_class, glp_intopt, glp_get_status, glp_add_cols, \
+    glp_get_col_lb, glp_get_col_ub, glp_get_col_kind, glp_set_prob_name, glp_read_prob, glp_copy_prob, \
+    glp_set_obj_coef, glp_simplex, glp_intopt, glp_get_status, glp_add_cols, \
     glp_set_col_name, intArray, glp_del_cols, glp_add_rows, glp_set_row_name, doubleArray, glp_write_lp, glp_write_prob, \
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
-    glp_get_mat_row, glp_get_row_ub, \
-    glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO
+    glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
+    glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin
 
 import interface
 
@@ -143,8 +143,11 @@ class Constraint(interface.Constraint):
             nnz = glp_get_mat_row(self.problem.problem, self.index, ia, da)
             # variables = self.problem.variables.values()
             # constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
-            constraint_variables = [self.problem.variables[glp_get_col_name(self.problem.problem, ia[i])] for i in range(1, nnz + 1)]
-            expression = sympy.Add._from_args([sympy.Mul._from_args((sympy.RealNumber(da[i]), constraint_variables[i - 1])) for i in range(1, nnz + 1)])
+            constraint_variables = [self.problem.variables[glp_get_col_name(self.problem.problem, ia[i])] for i in
+                                    range(1, nnz + 1)]
+            expression = sympy.Add._from_args(
+                [sympy.Mul._from_args((sympy.RealNumber(da[i]), constraint_variables[i - 1])) for i in
+                 range(1, nnz + 1)])
             self._expression = expression
         return self._expression
 
@@ -378,9 +381,12 @@ class Model(interface.Model):
             if self.name is not None:
                 glp_set_prob_name(self.problem, self.name)
 
-        elif isinstance(problem, glp_prob):
-            self.problem = problem
-            glp_create_index(self.problem)
+        else:
+            try:
+                self.problem = problem
+                glp_create_index(self.problem)
+            except TypeError:
+                raise TypeError("Provided problem is not a valid GLPK model.")
             row_num = glp_get_num_rows(self.problem)
             col_num = glp_get_num_cols(self.problem)
             for i in xrange(1, col_num + 1):
@@ -451,8 +457,6 @@ class Model(interface.Model):
                 direction={GLP_MIN: 'min', GLP_MAX:
                     'max'}[glp_get_obj_dir(self.problem)]
             )
-        else:
-            raise Exception("Provided problem is not a valid GLPK model.")
         glp_scale_prob(self.problem, GLP_SF_AUTO)
 
     def __getstate__(self):
@@ -524,7 +528,7 @@ class Model(interface.Model):
         return glpk_form
 
     def optimize(self):
-        if _glp_lpx_get_class(self.problem) == LPX_LP:
+        if (glp_get_num_int(self.problem) + glp_get_num_bin(self.problem)) == 0:
             glp_simplex(self.problem, self.configuration._smcp)
         else:
             glp_intopt(self.problem, self.configuration._iocp)
@@ -766,7 +770,7 @@ if __name__ == '__main__':
 
     print model
 
-    from glpk.glpkpi import glp_read_lp
+    from swiglpk import glp_read_lp
 
     problem = glp_create_prob()
     glp_read_lp(problem, None, "../tests/data/model.lp")
