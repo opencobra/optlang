@@ -162,8 +162,19 @@ class Variable(interface.Variable):
 
     @property
     def primal(self):
-        return self.problem.problem.solution.get_values(self.name)
-
+        if self.problem:
+            primal_from_solver = self.problem.problem.solution.get_values(self.name)
+            if primal_from_solver >= self.lb and primal_from_solver <= self.ub:
+                return primal_from_solver
+            else:
+                if (self.lb - primal_from_solver) <= 1e-6:
+                    return self.lb
+                elif (self.ub - primal_from_solver) >= -1e-6:
+                    return self.ub
+                else:
+                    raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal_from_solver, self.name, self.lb, self.ub))
+        else:
+            return None
 
     @property
     def dual(self):
