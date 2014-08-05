@@ -21,14 +21,15 @@ class Container(object):
         try:
             self._dict = dict(((elem.name, elem) for elem in iterable))
             self._name_list = [elem.name for elem in iterable]
-        except AttributeError:
-            raise AttributeError('Object %s does not have a "name" attribute and cannot not be stored in %s' % (elem, self))
+        except AttributeError as e:
+            print "Only objects with containing a 'name' attribute can be stored in a Container."
+            raise e
         self._object_list = list(iterable)
 
     @staticmethod
     def _check_for_name_attribute(value):
         if not hasattr(value, 'name'):
-            raise AttributeError('Object %s does not have a "name" attribute and cannot not be stored in %s' % (value, self))
+            raise AttributeError('Object %s does not have a "name" attribute and cannot not be stored.' % value)
 
     def __len__(self):
         return len(self._object_list)
@@ -87,12 +88,12 @@ class Container(object):
             yield elem.name, elem
 
     def fromkeys(self, keys):
-        return self.__class__((self.__getitem__(key) for key in keys))
+        return self.__class__([self.__getitem__(key) for key in keys])
 
-    def get(self, key, default):
+    def get(self, key, default=None):
         try:
             return self.__getitem__(key)
-        except (KeyError, IndexError):
+        except (KeyError, IndexError) as e:
             return default
 
     def clear(self):
@@ -113,18 +114,20 @@ class Container(object):
         self._name_list.append(name)
         self._dict[value.name] = value
 
+    def extend(self, values):
+        for value in values:
+            self._check_for_name_attribute(value)
+            if self._dict.has_key(value.name):
+                raise Exception("Container '%s' already contains an object with name '%s'." % (self, value.name))
+        self._object_list.extend(values)
+        self._name_list.extend([value.name for value in values])
+        self._dict.update(dict([(value.name, value) for value in values]))
+
     def __getattr__(self, name):
-        print name
         try:
-            return getattr(self._object_list, name)
-        except AttributeError:
-            try:
-                return self.__getitem__(name)
-            except KeyError:
-                try:
-                    return getattr(self._dict, name)
-                except AttributeError:
-                    raise AttributeError("'%s' object has no attribute %s" % (self, name))
+            return self.__getitem__(name)
+        except KeyError:
+            raise AttributeError("'%s' object has no attribute %s" % (self, name))
 
     def __dir__(self):
         attributes = self.__class__.__dict__.keys()
