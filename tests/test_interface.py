@@ -49,7 +49,7 @@ class TestSolver(TestCase):
 
     def test_remove_constraint(self):
         self.model.remove('constr1')
-        self.assertEqual(self.model.constraints.values(), [])
+        self.assertEqual(list(self.model.constraints), [])
 
     def test_remove_variable_str(self):
         var = self.model.variables['y']
@@ -90,7 +90,7 @@ class TestSolver(TestCase):
     def test_all_entities_point_to_correct_model(self):
         for variable in self.model.variables.values():
             self.assertEqual(variable.problem, self.model)
-        for constraint in self.model.constraints.values():
+        for constraint in self.model.constraints:
             self.assertEqual(constraint.problem, self.model)
         self.assertEqual(self.model.objective.problem, self.model)
 

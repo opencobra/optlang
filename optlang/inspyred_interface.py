@@ -73,7 +73,7 @@ class VariableBounder(object):
         self.model = model
 
     def __call__(self, candidate, args):
-        variables = self.model.variables.values()
+        variables = self.model.variables
         bounded_candidate = list()
         for c, variable in zip(candidate, variables):
             if variable.type == 'continuous':
@@ -276,7 +276,7 @@ class Model(interface.Model):
 
     def _generator(self, random, args):
         individual = list()
-        for variable in self.variables.values():
+        for variable in self.variables:
             if variable.type == 'continuous':
                 individual.append(random.uniform(variable.lb, variable.ub))
             else:
@@ -286,7 +286,7 @@ class Model(interface.Model):
     def _evaluator(self, candidates, args):
         fitness = list()
         for candidate in candidates:
-            substitution_dict = dict(zip(self.variables.values(), candidate))
+            substitution_dict = dict(zip(self.variables, candidate))
             if isinstance(self.objective.expression, sympy.Basic):
                 fitness.append(self.objective.expression.subs(substitution_dict))
             else:

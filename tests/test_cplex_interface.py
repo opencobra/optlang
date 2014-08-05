@@ -46,8 +46,8 @@ try:
             self.assertAlmostEqual(value, from_pickle.objective.value)
             self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in from_pickle.variables.values()],
                              [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints.values()],
-                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints.values()])
+            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
+                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
         def test_init_from_existing_problem(self):
             inner_prob = self.model.problem
@@ -108,9 +108,9 @@ try:
             self.model.add(constr1)
             self.model.add(constr2)
             self.model.add(constr3)
-            self.assertIn(constr1, self.model.constraints.values())
-            self.assertIn(constr2, self.model.constraints.values())
-            self.assertIn(constr3, self.model.constraints.values())
+            self.assertIn(constr1.name, self.model.constraints)
+            self.assertIn(constr2.name, self.model.constraints)
+            self.assertIn(constr3.name, self.model.constraints)
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test', 'y'), ('test', 'z'), ('test', 'x'))), [0.4, 66, 0.3])
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test2', 'y'), ('test2', 'x'))), [1., 2.333])
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients(((74, 'y'), (74, 'z'), (74, 'x'))), [1., 1., 2.333])
@@ -126,9 +126,9 @@ try:
             self.model.add(constr1)
             self.model.add(constr2)
             self.model.add(constr3)
-            self.assertIn(constr1, self.model.constraints.values())
-            self.assertIn(constr2, self.model.constraints.values())
-            self.assertIn(constr3, self.model.constraints.values())
+            self.assertIn(constr1, self.model.constraints)
+            self.assertIn(constr2, self.model.constraints)
+            self.assertIn(constr3, self.model.constraints)
             cplex_lines = [line.strip() for line in str(self.model).split('\n')]
             self.assertIn('test:       0.4 y + 66 z + 0.3 x - Rgtest  = -100', cplex_lines)
             self.assertIn('test2:      y + 2.333 x <= 96.997', cplex_lines)
@@ -144,10 +144,10 @@ try:
             self.assertEqual(constr1.problem, None)
             self.model.add(constr1)
             self.assertEqual(constr1.problem, self.model)
-            self.assertIn(constr1, self.model.constraints.values())
+            self.assertIn(constr1, self.model.constraints)
             self.model.remove(constr1.name)
             self.assertEqual(constr1.problem, None)
-            self.assertNotIn(constr1, self.model.constraints.values())
+            self.assertNotIn(constr1, self.model.constraints)
 
         def test_add_nonlinear_constraint_raises(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')

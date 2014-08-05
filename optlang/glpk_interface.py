@@ -150,7 +150,7 @@ class Constraint(interface.Constraint):
             ia = intArray(col_num + 1)
             da = doubleArray(col_num + 1)
             nnz = glp_get_mat_row(self.problem.problem, self.index, ia, da)
-            # variables = self.problem.variables.values()
+            # variables = self.problem.variables
             # constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
             constraint_variables = [self.problem.variables[glp_get_col_name(self.problem.problem, ia[i])] for i in
                                     range(1, nnz + 1)]
@@ -251,7 +251,7 @@ class Objective(interface.Objective):
 
     def _get_expression(self):
         if self.problem is not None:
-            variables = self.problem.variables.values()
+            variables = self.problem.variables
             term_generator = (
                 (sympy.RealNumber(glp_get_obj_coef(self.problem.problem, index)), variables[index - 1])
                 for index in xrange(1, glp_get_num_cols(self.problem.problem) + 1)
@@ -409,7 +409,7 @@ class Model(interface.Model):
                 )
                 # This avoids adding the variable to the glpk problem
                 super(Model, self)._add_variable(var)
-            variables = self.variables.values()
+            variables = self.variables
 
             for j in xrange(1, row_num + 1):
                 ia = intArray(col_num + 1)
@@ -570,7 +570,7 @@ class Model(interface.Model):
         for i, variable in enumerate(variables):
             num = intArray(len(variables) + 1)
             num[i + 1] = variable.index
-            glp_del_cols(self.problem, len(variables), num)
+        glp_del_cols(self.problem, len(variables), num)
 
         for variable in variables:
             del self._variables_to_constraints_mapping[variable.name]

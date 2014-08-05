@@ -44,8 +44,8 @@ class SolverTestCase(unittest.TestCase):
         self.assertAlmostEqual(value, from_pickle.objective.value)
         self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in from_pickle.variables.values()],
                          [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-        self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints.values()],
-                         [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints.values()])
+        self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
+                         [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
     def test_copy(self):
         model_copy = copy.copy(self.model)
@@ -137,9 +137,9 @@ class SolverTestCase(unittest.TestCase):
         self.model.add(constr1)
         self.model.add(constr2)
         self.model.add(constr3)
-        self.assertIn(constr1, self.model.constraints.values())
-        self.assertIn(constr2, self.model.constraints.values())
-        self.assertIn(constr3, self.model.constraints.values())
+        self.assertIn(constr1.name, self.model.constraints)
+        self.assertIn(constr2.name, self.model.constraints)
+        self.assertIn(constr3.name, self.model.constraints)
         # constr1
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
@@ -182,11 +182,11 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(constr1.problem, None)
         self.model.add(constr1)
         self.assertEqual(constr1.problem, self.model)
-        self.assertIn(constr1, self.model.constraints.values())
+        self.assertIn(constr1.name, self.model.constraints)
         print constr1.index
         self.model.remove(constr1.name)
         self.assertEqual(constr1.problem, None)
-        self.assertNotIn(constr1, self.model.constraints.values())
+        self.assertNotIn(constr1, self.model.constraints)
 
     def test_add_nonlinear_constraint_raises(self):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -256,18 +256,24 @@ class SolverTestCase(unittest.TestCase):
         self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
         self.assertEqual(bounds_new, inner_problem_bounds_new)
 
+    def test_change_variable_type(self):
+        for variable in self.model.variables:
+            variable.type = 'integer'
+        for i in range(1, glp_get_num_cols(self.model.problem) + 1):
+            self.assertEqual(glp_get_col_kind(self.model.problem, i), GLP_IV)
+
     def test_change_constraint_bounds(self):
         inner_prob = self.model.problem
         inner_problem_bounds = [(glp_get_row_lb(inner_prob, i), glp_get_row_ub(inner_prob, i)) for i in
                                 range(1, glp_get_num_rows(inner_prob) + 1)]
-        bounds = [(constr.lb, constr.ub) for constr in self.model.constraints.values()]
+        bounds = [(constr.lb, constr.ub) for constr in self.model.constraints]
         self.assertEqual(bounds, inner_problem_bounds)
-        for constr in self.model.constraints.values():
+        for constr in self.model.constraints:
             constr.lb = random.uniform(-1000, constr.ub)
             constr.ub = random.uniform(constr.lb, 1000)
         inner_problem_bounds_new = [(glp_get_row_lb(inner_prob, i), glp_get_row_ub(inner_prob, i)) for i in
                                     range(1, glp_get_num_rows(inner_prob) + 1)]
-        bounds_new = [(constr.lb, constr.ub) for constr in self.model.constraints.values()]
+        bounds_new = [(constr.lb, constr.ub) for constr in self.model.constraints]
         self.assertNotEqual(bounds, bounds_new)
         self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
         self.assertEqual(bounds_new, inner_problem_bounds_new)

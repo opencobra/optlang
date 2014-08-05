@@ -23,17 +23,17 @@ import logging
 import uuid
 
 import types
+import collections
 
 import sys
 
 log = logging.getLogger(__name__)
-import collections
 
 import sympy
 from sympy.core.singleton import S
 from sympy.core.logic import fuzzy_bool
 
-
+from .container import Container
 
 OPTIMAL = 'optimal'
 UNDEFINED = 'undefined'
@@ -55,6 +55,7 @@ SUBOPTIMAL = 'suboptimal'
 INPROGRESS = 'in_progress'
 ABORTED = 'aborted'
 SPECIAL = 'check_original_solver_status'
+
 
 
 # noinspection PyShadowingBuiltins
@@ -475,10 +476,10 @@ class Model(object):
         The objective function.
     name: str, optional
         The name of the optimization problem.
-    variables: OrderedDict, read-only
+    variables: Container, read-only
         Contains the variables of the optimization problem.
         The keys are the variable names and values are the actual variables.
-    constraints: OrderedDict, read-only
+    constraints: Container, read-only
          Contains the variables of the optimization problem.
          The keys are the constraint names and values are the actual constraints.
     status: str, read-only
@@ -495,7 +496,7 @@ class Model(object):
     def clone(cls, model):
         interface = sys.modules[cls.__module__]
         new_model = cls()
-        for constraint in model.constraints.values():
+        for constraint in model.constraints:
             new_constraint = interface.Constraint.clone(constraint, model=new_model)
             new_model._add_constraint(new_constraint)
         if model.objective is not None:
@@ -505,8 +506,8 @@ class Model(object):
     def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
         self._objective = objective
-        self._variables = collections.OrderedDict()
-        self._constraints = collections.OrderedDict()
+        self._variables = Container()
+        self._constraints = Container()
         self._variables_to_constraints_mapping = dict()
         self._status = None
         self.name = name
@@ -550,9 +551,9 @@ class Model(object):
         return '\n'.join((
             str(self.objective),
             "subject to",
-            '\n'.join([str(constr) for constr in self.constraints.values()]),
+            '\n'.join([str(constr) for constr in self.constraints]),
             'Bounds',
-            '\n'.join([str(var) for var in self.variables.values()])
+            '\n'.join([str(var) for var in self.variables])
         ))
 
     @property
@@ -656,7 +657,7 @@ class Model(object):
         if self.variables.has_key(variable.name):
             raise Exception('Model already contains a variable with name %s' % variable.name)
         variable.problem = self
-        self.variables[variable.name] = variable
+        self.variables.append(variable)
         return variable
 
     def _remove_variables(self, variables):
@@ -697,7 +698,7 @@ class Model(object):
                     self._variables_to_constraints_mapping[var.name].add(constraint_id)
                 except KeyError:
                     self._variables_to_constraints_mapping[var.name] = set([constraint_id])
-        self.constraints[constraint_id] = constraint
+        self.constraints.append(constraint)
         constraint.problem = self
 
     def _remove_constraints(self, constraints):
