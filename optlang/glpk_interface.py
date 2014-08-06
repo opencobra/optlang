@@ -729,7 +729,7 @@ class Model(interface.Model):
             # 0. is ignored
             glp_set_row_bnds(self.problem, constraint.index,
                              GLP_LO, float(constraint.lb), 0.)
-        elif constraint.lb is constraint.ub:
+        elif constraint.lb == constraint.ub:
             glp_set_row_bnds(self.problem, constraint.index,
                              GLP_FX, float(constraint.lb), float(constraint.lb))
         elif constraint.lb < constraint.ub:
