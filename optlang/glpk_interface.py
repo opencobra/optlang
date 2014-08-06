@@ -128,6 +128,7 @@ class Variable(interface.Variable):
         else:
             return None
 
+    # TODO: this is not really necessary?
     def __getstate__(self):
         return self.__dict__
 
@@ -175,35 +176,76 @@ class Constraint(interface.Constraint):
 
     @property
     def index(self):
-        try:
+        if self.problem is not None:
             i = glp_find_row(self.problem.problem, self.name)
-            if i != 0:
+            print 'glp_find_row_output', i
+            if i > 0:
                 return i
             else:
                 raise IndexError(
-                    "Could not determine row index for variable %s" % self)
-        except:
+                    "Could not determine row index for variable %s" % self.name)
+        else:
             return None
 
     @property
     def primal(self):
-        return glp_get_row_prim(self.problem.problem, self.index)
+        if self.problem is not None:
+            return glp_get_row_prim(self.problem.problem, self.index)
+        else:
+            return None
 
     @property
     def dual(self):
-        return glp_get_row_dual(self.problem.problem, self.index)
+        if self.problem is not None:
+            return glp_get_row_dual(self.problem.problem, self.index)
+        else:
+            return None
 
-    def __setattr__(self, name, value):
+    @property
+    def name(self):
+        return self._name
 
-        super(Constraint, self).__setattr__(name, value)
-        if getattr(self, 'problem', None):
+    @name.setter
+    def name(self, value):
+        if self.problem is not None:
+            glp_set_col_name(self.problem.problem, self.index, value)
+        self._name = value
 
-            if name == 'name':
+    @property
+    def lb(self):
+        # if self.problem is not None:
+        #     self._lb = glp_get_col_lb(self.problem.problem, self.index)
+        return self._lb
 
-                self.problem._glpk_set_row_name(self)
+    @lb.setter
+    def lb(self, value):
+        self._lb = value
+        if self.problem is not None:
+            self.problem._glpk_set_row_bounds(self)
 
-            elif name == 'lb' or name == 'ub':
-                self.problem._glpk_set_row_bounds(self)
+    @property
+    def ub(self):
+        # if self.problem is not None:
+        #     self._ub = glp_get_col_ub(self.problem.problem, self.index)
+        return self._ub
+
+    @ub.setter
+    def ub(self, value):
+        self._ub = value
+        if self.problem is not None:
+            self.problem._glpk_set_row_bounds(self)
+
+    # def __setattr__(self, name, value):
+    #
+    #     super(Constraint, self).__setattr__(name, value)
+    #     if getattr(self, 'problem', None):
+    #
+    #         if name == 'name':
+    #
+    #             self.problem._glpk_set_row_name(self, value)
+    #             print 'fdsa', self.index, type(self)
+    #         elif name == 'lb' or name == 'ub':
+    #             self.problem._glpk_set_row_bounds(self)
 
     def __iadd__(self, other):
         # if self.problem is not None:
@@ -577,71 +619,6 @@ class Model(interface.Model):
             variable.problem = None
             del self.variables[variable.name]
 
-    def _add_to_constraint(self, constraint_index, expression):
-        expression_variables = expression.atoms(sympy.Symbol)
-        new_variables = list()
-        for var in expression_variables:
-            if var.index is None:
-                new_variables.append(var)
-                self._add_variable(var)
-        num_vars = len(expression_variables)
-        index_array = intArray(num_vars + 1)
-        value_array = doubleArray(num_vars + 1)
-        num_vars_in_row = glp_get_mat_row(self.problem, constraint_index, index_array, value_array)
-        index_coeff_dict = dict()
-        for i in range(1, num_vars_in_row + 1):
-            index_coeff_dict[index_array[i]] = (value_array[i], i)
-
-        if expression.is_Atom and expression.is_Symbol:
-            var = expression
-            try:
-                (value, pos) = index_coeff_dict[var.index]
-            except KeyError:
-                index_array[num_vars_in_row + 1] = var.index
-                value_array[num_vars_in_row + 1] = 1
-            else:
-                index_array[pos] = var.index
-                value_array[pos] = value + 1
-        elif expression.is_Mul:
-            args = expression.args
-            if len(args) > 2:
-                raise Exception(
-                    "Term(s) %s from constraint %s is not a proper linear term." % (args, constraint))
-            coeff = float(args[0])
-            var = args[1]
-            try:
-                (value, pos) = index_coeff_dict[var.index]
-            except KeyError:
-                index_array[num_vars_in_row + 1] = var.index
-                value_array[num_vars_in_row + 1] = coeff
-            else:
-                index_array[pos] = var.index
-                value_array[pos] = value + coeff
-        else:
-            for i, term in enumerate(expression.args):
-                args = term.args
-                if args == ():
-                    assert term.is_Symbol
-                    coeff = 1
-                    var = term
-                elif len(args) == 2:
-                    assert args[0].is_Number
-                    assert args[1].is_Symbol
-                    var = args[1]
-                    coeff = float(args[0])
-                elif len(args) > 2:
-                    raise Exception(
-                        "Term %s from constraint %s is not a proper linear term." % (term, constraint))
-                try:
-                    (value, pos) = index_coeff_dict[var.index]
-                except KeyError:
-                    index_array[num_vars_in_row + i + 1] = var.index
-                    value_array[num_vars_in_row + i + 1] = coeff
-                else:
-                    index_array[pos] = var.index
-                    value_array[pos] = value + coeff
-        glp_set_mat_row(self.problem, constraint_index, num_vars_in_row + len(new_variables), index_array, value_array)
-
     def _add_constraint(self, constraint, sloppy=False):
         if sloppy is False:
             if not constraint.is_Linear:
@@ -743,6 +720,10 @@ class Model(interface.Model):
             raise Exception(
                 "Something is wrong with the provided bounds %f and %f in constraint %s" %
                 (constraint.lb, constraint.ub, constraint))
+
+    def _glpk_set_row_name(self, constraint, name):
+        print constraint.index
+        glp_set_col_name(self.problem, constraint.index, name)
 
     def _remove_constraints(self, constraints):
         constraint_indices = [constraint.index for constraint in constraints]

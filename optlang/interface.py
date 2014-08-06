@@ -230,10 +230,14 @@ class OptimizationExpression(object):
         else:
             self._expression = self._canonicalize(expression)
         if name is None:
-            self.name = sympy.Dummy().name
+            self._name = sympy.Dummy().name
         else:
-            self.name = name
+            self._name = name
         self._problem = problem
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def problem(self):
@@ -333,8 +337,8 @@ class Constraint(OptimizationExpression):
                    name=constraint.name, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, *args, **kwargs):
-        self.lb = lb
-        self.ub = ub
+        self._lb = lb
+        self._ub = ub
         super(Constraint, self).__init__(expression, *args, **kwargs)
 
     def __str__(self):
