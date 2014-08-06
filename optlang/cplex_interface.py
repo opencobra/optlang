@@ -162,8 +162,19 @@ class Variable(interface.Variable):
 
     @property
     def primal(self):
-        return self.problem.problem.solution.get_values(self.name)
-
+        if self.problem:
+            primal_from_solver = self.problem.problem.solution.get_values(self.name)
+            if primal_from_solver >= self.lb and primal_from_solver <= self.ub:
+                return primal_from_solver
+            else:
+                if (self.lb - primal_from_solver) <= 1e-6:
+                    return self.lb
+                elif (self.ub - primal_from_solver) >= -1e-6:
+                    return self.ub
+                else:
+                    raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal_from_solver, self.name, self.lb, self.ub))
+        else:
+            return None
 
     @property
     def dual(self):
@@ -181,7 +192,7 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             cplex_problem = self.problem.problem
             cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
-            variables = self.problem.variables.values()
+            variables = self.problem.variables
             expression = sympy.Add._from_args([sympy.Mul._from_args((sympy.RealNumber(cplex_row.val[i]), variables[ind])) for i, ind in enumerate(cplex_row.ind)])
             self._expression = expression
         return self._expression
@@ -319,7 +330,7 @@ class Model(interface.Model):
                                      self.problem.linear_constraints.get_rhs()
 
             )
-            variables = self.variables.values()
+            variables = self.variables
             for name, row, sense, rhs in zipped_constr_args:
                 constraint_variables = [variables[i - 1] for i in row.ind]
                 lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])

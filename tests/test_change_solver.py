@@ -71,7 +71,7 @@ try:
             self.assertEqual(cplex_model.__class__, cplex.Model)
             for variable in cplex_model.variables.values():
                 self.assertIs(variable.__class__, cplex.Variable)
-            for constraint in cplex_model.constraints.values():
+            for constraint in cplex_model.constraints:
                 self.assertIs(constraint.__class__, cplex.Constraint)
 
         def test_clone_to_glpk(self):
@@ -79,7 +79,7 @@ try:
             self.assertEqual(glpk_model.__class__, glpk.Model)
             for variable in glpk_model.variables.values():
                 self.assertIs(variable.__class__, glpk.Variable)
-            for constraint in glpk_model.constraints.values():
+            for constraint in glpk_model.constraints:
                 self.assertIs(constraint.__class__, glpk.Constraint)
 
 except ImportError, e:
