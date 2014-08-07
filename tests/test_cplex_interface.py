@@ -192,6 +192,11 @@ try:
             self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
             self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
 
+        def test_timeout(self):
+            self.model.configuration.timeout = 0
+            status = self.model.optimize()
+            self.assertEqual(status, 'time_limit')
+
 except ImportError, e:
 
     if e.message.find('cplex') >= 0:

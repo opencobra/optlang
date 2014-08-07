@@ -21,6 +21,7 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 """
 
 import logging
+import sys
 
 import types
 
@@ -310,7 +311,7 @@ class Objective(interface.Objective):
 class Configuration(interface.MathematicalProgrammingConfiguration):
     """docstring for Configuration"""
 
-    def __init__(self, presolve=False, verbosity=0, *args, **kwargs):
+    def __init__(self, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._smcp = glp_smcp()
         self._iocp = glp_iocp()
@@ -320,9 +321,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._presolve = presolve
         self._set_verbosity(verbosity)
         self._verbosity = verbosity
+        self._timeout = None
 
     def __getstate__(self):
-        return {'presolve': self.presolve, 'verbosity': self.verbosity}
+        return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
 
     def __setstate__(self, state):
         self.__init__()
@@ -374,6 +376,18 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._set_verbosity(value)
         self._verbosity = value
 
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value):
+        if value is None:
+            self._smcp.tm_lim = sys.maxint
+            self._iocp.tm_lim = sys.maxint
+        else:
+            self._smcp.tm_lim = value * 1000  # milliseconds to seconds
+            self._iocp.tm_lim = value * 1000
 
 class Model(interface.Model):
     """GLPK solver interface"""
