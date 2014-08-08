@@ -573,6 +573,7 @@ class Model(interface.Model):
         return variable
 
     def _remove_variables(self, variables):
+        num = intArray(len(variables) + 1)
         for i, variable in enumerate(variables):
             num[i + 1] = variable.index
         glp_del_cols(self.problem, len(variables), num)
