@@ -573,10 +573,11 @@ class Model(interface.Model):
         return variable
 
     def _remove_variables(self, variables):
-        num = intArray(len(variables) + 1)
-        for i, variable in enumerate(variables):
-            num[i + 1] = variable.index
-        glp_del_cols(self.problem, len(variables), num)
+        if len(variables) > 0:
+            num = intArray(len(variables) + 1)
+            for i, variable in enumerate(variables):
+                num[i + 1] = variable.index
+            glp_del_cols(self.problem, len(variables), num)
 
         if len(variables) > 350:
             keys = [variable.name for variable in variables]
@@ -698,12 +699,13 @@ class Model(interface.Model):
                 (constraint.lb, constraint.ub, constraint))
 
     def _remove_constraints(self, constraints):
-        constraint_indices = [constraint.index for constraint in constraints]
-        super(Model, self)._remove_constraints(constraints)
-        num = intArray(len(constraints) + 1)
-        for i, constraint_index in enumerate(constraint_indices):
-            num[i + 1] = constraint_index
-        glp_del_rows(self.problem, len(constraints), num)
+        if len(constraints) > 0:
+            constraint_indices = [constraint.index for constraint in constraints]
+            super(Model, self)._remove_constraints(constraints)
+            num = intArray(len(constraints) + 1)
+            for i, constraint_index in enumerate(constraint_indices):
+                num[i + 1] = constraint_index
+            glp_del_rows(self.problem, len(constraints), num)
 
     def _set_linear_objective_term(self, variable, coefficient):
         glp_set_obj_coef(self.problem, variable.index, coefficient)

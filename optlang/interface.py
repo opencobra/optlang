@@ -665,6 +665,7 @@ class Model(object):
     def _add_variable(self, variable):
         if self.variables.has_key(variable.name):
             raise Exception('Model already contains a variable with name %s' % variable.name)
+        self._variables_to_constraints_mapping[variable.name] = set([])
         variable.problem = self
         self.variables.append(variable)
         return variable
