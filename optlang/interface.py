@@ -447,6 +447,14 @@ class Configuration(object):
     def verbose(self, value):
         raise NotImplementedError
 
+    @property
+    def timeout(self):
+        raise NotImplementedError
+
+    @timeout.setter
+    def timeout(self):
+        raise NotImplementedError
+
 
 class MathematicalProgrammingConfiguration(object):
     def __init__(self, *args, **kwargs):
