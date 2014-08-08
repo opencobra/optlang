@@ -276,7 +276,7 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, problem=None, presolve=False, verbosity=0, timeout=0, *args, **kwargs):
+    def __init__(self, problem=None, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.problem = problem
         self.presolve = presolve
