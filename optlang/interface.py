@@ -20,6 +20,7 @@ extended for individual solvers.
 """
 
 import logging
+import random
 import uuid
 
 import types
@@ -98,7 +99,7 @@ class Variable(sympy.Symbol):
         assumptions['commutative'] = is_commutative
         for key in assumptions.keys():
             assumptions[key] = bool(assumptions[key])
-        return sympy.Symbol.__xnew__(cls, name, uuid=uuid.uuid1(), **assumptions)
+        return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
         for char in name:
@@ -230,7 +231,7 @@ class OptimizationExpression(object):
         else:
             self._expression = self._canonicalize(expression)
         if name is None:
-            self.name = sympy.Dummy().name
+            self.name = str(uuid.uuid1())
         else:
             self.name = name
         self._problem = problem
@@ -694,10 +695,7 @@ class Model(object):
         self._remove_variables([variable])
 
     def _add_constraint(self, constraint, sloppy=False):
-        if constraint.name is None:
-            constraint_id = constraint.__hash__()
-        else:
-            constraint_id = constraint.name
+        constraint_id = constraint.name
         if sloppy is False:
             for var in constraint.variables:
                 if var.name not in self.variables:
@@ -707,20 +705,20 @@ class Model(object):
                 except KeyError:
                     self._variables_to_constraints_mapping[var.name] = set([constraint_id])
         self.constraints.append(constraint)
-        constraint.problem = self
+        constraint._problem = self
 
     def _remove_constraints(self, constraints):
-        for constraint in constraints:
-            if constraint.name is not None:
-                key = constraint.name
-            else:
-                key = constraint.__hash__
-            try:
-                constr = self.constraints[key]
-            except KeyError:
-                raise LookupError("Constraint %s not in solver" % constr)
-            constr.problem = None
-            del self.constraints[key]
+        keys = [constraint.name for constraint in constraints]
+        if len(constraints) > 350:  # Need to figure out a good threshold here
+            self._constraints = self.constraints.fromkeys(set(self.constraints.keys()).difference(set(keys)))
+        else:
+            for constraint in constraints:
+                try:
+                    del self.constraints[constraint.name]
+                except KeyError:
+                    raise LookupError("Constraint %s not in solver" % constr)
+                else:
+                    constraint.problem = None
 
     def _remove_constraint(self, constraint):
         self._remove_constraints([constraint])
