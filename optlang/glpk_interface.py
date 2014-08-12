@@ -162,6 +162,25 @@ class Constraint(interface.Constraint):
             self._expression = expression
         return self._expression
 
+    def _set_coefficients_low_level(self, variables_coefficients_dict):
+        if self.problem is not None:
+            problem = self.problem.problem
+            indices_coefficients_dict = dict([(variable.index, coefficient) for variable, coefficient in variables_coefficients_dict.iteritems()])
+            num_cols = glp_get_num_cols(problem)
+            ia = intArray(num_cols + 1)
+            da = doubleArray(num_cols + 1)
+            index = self.index
+            num = glp_get_mat_row(self.problem.problem, index, ia, da)
+            for i in range(1, num +1):
+                print ia[i], da[i], glp_get_col_name(self.problem.problem, ia[i])
+                try:
+                    da[i] = indices_coefficients_dict[ia[i]]
+                except KeyError:
+                    pass
+            print glp_set_mat_row(self.problem.problem, index, num, ia, da)
+        else:
+            raise Exception('_set_coefficients_low_level works only if a constraint is associated with a solver instance.')
+
     @property
     def problem(self):
         return self._problem

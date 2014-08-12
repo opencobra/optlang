@@ -198,6 +198,9 @@ class Constraint(interface.Constraint):
             self._expression = expression
         return self._expression
 
+    def _set_coefficients_low_level(self, variables_coefficients_dict):
+        raise NotImplementedError
+
     @property
     def problem(self):
         return self._problem
