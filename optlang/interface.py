@@ -717,7 +717,7 @@ class Model(object):
                 try:
                     del self.constraints[constraint.name]
                 except KeyError:
-                    raise LookupError("Constraint %s not in solver" % constr)
+                    raise LookupError("Constraint %s not in solver" % constraint)
                 else:
                     constraint.problem = None
 
