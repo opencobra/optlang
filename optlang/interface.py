@@ -233,12 +233,8 @@ class OptimizationExpression(object):
         if name is None:
             self.name = str(uuid.uuid1())
         else:
-            self._name = name
+            self.name = name
         self._problem = problem
-
-    @property
-    def name(self):
-        return self._name
 
     @property
     def problem(self):
@@ -338,8 +334,8 @@ class Constraint(OptimizationExpression):
                    name=constraint.name, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, *args, **kwargs):
-        self._lb = lb
-        self._ub = ub
+        self.lb = lb
+        self.ub = ub
         super(Constraint, self).__init__(expression, *args, **kwargs)
 
     def __str__(self):

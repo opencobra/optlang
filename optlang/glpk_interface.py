@@ -129,7 +129,6 @@ class Variable(interface.Variable):
         else:
             return None
 
-    # TODO: this is not really necessary?
     def __getstate__(self):
         return self.__dict__
 
@@ -197,76 +196,35 @@ class Constraint(interface.Constraint):
 
     @property
     def index(self):
-        if self.problem is not None:
+        try:
             i = glp_find_row(self.problem.problem, self.name)
-            print 'glp_find_row_output', i
-            if i > 0:
+            if i != 0:
                 return i
             else:
                 raise IndexError(
-                    "Could not determine row index for variable %s" % self.name)
-        else:
+                    "Could not determine row index for variable %s" % self)
+        except:
             return None
 
     @property
     def primal(self):
-        if self.problem is not None:
-            return glp_get_row_prim(self.problem.problem, self.index)
-        else:
-            return None
+        return glp_get_row_prim(self.problem.problem, self.index)
 
     @property
     def dual(self):
-        if self.problem is not None:
-            return glp_get_row_dual(self.problem.problem, self.index)
-        else:
-            return None
+        return glp_get_row_dual(self.problem.problem, self.index)
 
-    @property
-    def name(self):
-        return self._name
+    def __setattr__(self, name, value):
 
-    @name.setter
-    def name(self, value):
-        if self.problem is not None:
-            glp_set_col_name(self.problem.problem, self.index, value)
-        self._name = value
+        super(Constraint, self).__setattr__(name, value)
+        if getattr(self, 'problem', None):
 
-    @property
-    def lb(self):
-        # if self.problem is not None:
-        #     self._lb = glp_get_col_lb(self.problem.problem, self.index)
-        return self._lb
+            if name == 'name':
 
-    @lb.setter
-    def lb(self, value):
-        self._lb = value
-        if self.problem is not None:
-            self.problem._glpk_set_row_bounds(self)
+                self.problem._glpk_set_row_name(self)
 
-    @property
-    def ub(self):
-        # if self.problem is not None:
-        #     self._ub = glp_get_col_ub(self.problem.problem, self.index)
-        return self._ub
-
-    @ub.setter
-    def ub(self, value):
-        self._ub = value
-        if self.problem is not None:
-            self.problem._glpk_set_row_bounds(self)
-
-    # def __setattr__(self, name, value):
-    #
-    #     super(Constraint, self).__setattr__(name, value)
-    #     if getattr(self, 'problem', None):
-    #
-    #         if name == 'name':
-    #
-    #             self.problem._glpk_set_row_name(self, value)
-    #             print 'fdsa', self.index, type(self)
-    #         elif name == 'lb' or name == 'ub':
-    #             self.problem._glpk_set_row_bounds(self)
+            elif name == 'lb' or name == 'ub':
+                self.problem._glpk_set_row_bounds(self)
 
     def __iadd__(self, other):
         # if self.problem is not None:
@@ -758,10 +716,6 @@ class Model(interface.Model):
             raise Exception(
                 "Something is wrong with the provided bounds %f and %f in constraint %s" %
                 (constraint.lb, constraint.ub, constraint))
-
-    def _glpk_set_row_name(self, constraint, name):
-        print constraint.index
-        glp_set_col_name(self.problem, constraint.index, name)
 
     def _remove_constraints(self, constraints):
         if len(constraints) > 0:
