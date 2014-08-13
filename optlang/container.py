@@ -50,10 +50,21 @@ class Container(object):
                 raise KeyError("%s does not contain an object with name %s" % (self, key))
 
     def __setitem__(self, key, value):
-        self._check_for_name_attribute(value)
-        self._object_list.__setitem__(key, value)
-        self._name_list.__setitem__(key, value.name)
-        self._dict[value.name] = value
+        try:
+            self._check_for_name_attribute(value)
+            self._object_list.__setitem__(key, value)
+            self._name_list.__setitem__(key, value.name)
+            self._dict[value.name] = value
+        except TypeError:
+            try:
+                item = self._dict.__getitem__(key)
+                index = self._name_list.index(item.name)
+                self._dict[key] = value
+                self._object_list.__setitem__(index, value)
+                self._name_list.__setitem__(index, value.name)
+            except KeyError:
+                raise KeyError("%s does not contain an object with name %s" % (self, key))
+
 
     def __delitem__(self, key):
         try:

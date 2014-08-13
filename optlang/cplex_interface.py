@@ -18,6 +18,7 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
+import sys
 
 from warnings import warn
 
@@ -197,6 +198,9 @@ class Constraint(interface.Constraint):
             self._expression = expression
         return self._expression
 
+    def _set_coefficients_low_level(self, variables_coefficients_dict):
+        raise NotImplementedError
+
     @property
     def problem(self):
         return self._problem
@@ -275,10 +279,13 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, presolve=False, verbosity=0, *args, **kwargs):
+    def __init__(self, problem=None, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
-        self._presolve = presolve
-        self._verbosity = verbosity
+        self.problem = problem
+        self.presolve = presolve
+        self.verbosity = verbosity
+        self.timeout = timeout
+
 
     def __getstate__(self):
         return {'presolve': self.presolve, 'verbosity': self.verbosity}
@@ -294,6 +301,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @presolve.setter
     def presolve(self, value):
+        if self.problem is not None:
+            presolve = self.problem.problem.parameters.preprocessing.presolve
+            if value == True:
+                presolve.set(presolve.values.on)
+            elif value == False:
+                presolve.set(presolve.values.off)
+            else:
+                raise ValueError('%s is not boolean argument for presolve property.')
         self._presolve = value
 
     @property
@@ -302,18 +317,56 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @verbosity.setter
     def verbosity(self, value):
+        if self.problem is not None:
+            problem = self.problem.problem
+            if value == 0:
+                problem.set_error_stream(None)
+                problem.set_warning_stream(None)
+                problem.set_log_stream(None)
+                problem.set_results_stream(None)
+            elif value == 1:
+                problem.set_error_stream(sys.stderr)
+                problem.set_warning_stream(None)
+                problem.set_log_stream(None)
+                problem.set_results_stream(None)
+            elif value == 2:
+                problem.set_error_stream(sys.stderr)
+                problem.set_warning_stream(sys.stderr)
+                problem.set_log_stream(None)
+                problem.set_results_stream(None)
+            elif value == 3:
+                problem.set_error_stream(sys.stderr)
+                problem.set_warning_stream(sys.stderr)
+                problem.set_log_stream(sys.stdout)
+                problem.set_results_stream(sys.stdout)
+            else:
+                raise Exception(
+                    "%s is not a valid verbosity level ranging between 0 and 3."
+                    % value
+                )
         self._verbosity = value
+
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value):
+        if self.problem is not None:
+            if value is None:
+                self.problem.problem.parameters.timelimit.reset()
+            else:
+                self.problem.problem.parameters.timelimit.set(value)
+        self._timeout = value
 
 
 class Model(interface.Model):
     def __init__(self, problem=None, *args, **kwargs):
 
         super(Model, self).__init__(*args, **kwargs)
-        self.configuration = Configuration()
 
         if problem is None:
             self.problem = cplex.Cplex()
-            self.problem.set_results_stream(None)
 
         elif isinstance(problem, cplex.Cplex):
             self.problem = problem
@@ -373,6 +426,7 @@ class Model(interface.Model):
             )
         else:
             raise Exception, "Provided problem is not a valid CPLEX model."
+        self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
         cplex_repr = self.__repr__()

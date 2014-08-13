@@ -40,9 +40,6 @@ class ContainerTestCase(unittest.TestCase):
         self.assertEqual(self.container['blub'], var)
         self.assertEqual(self.container[0], var)
 
-    def test_set_item_like_dict_raise(self):
-        self.assertRaises(TypeError, self.container.__setitem__, 'key', Variable('key'))
-
     def test_dir(self):
         var = Variable('blub')
         self.container.append(var)

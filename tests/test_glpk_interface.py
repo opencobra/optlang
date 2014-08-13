@@ -397,5 +397,10 @@ class SolverTestCase(unittest.TestCase):
         self.model.objective = obj_copy
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_Biomass_Ecoli_core_w_GAM')
 
+    def test_timeout(self):
+        self.model.configuration.timeout = 0
+        status = self.model.optimize()
+        self.assertEqual(status, 'infeasible')
+
 if __name__ == '__main__':
     nose.runmodule()
