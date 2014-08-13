@@ -18,6 +18,7 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
+import sys
 
 from warnings import warn
 
@@ -157,13 +158,24 @@ class Variable(interface.Variable):
                         The following variable types are available:\n" +
                             " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
         self.problem.problem.variables.set_types(self.name, cplex_kind)
-        super(Variable, self).__setattr__(name, value)
+        super(Variable, self).__setattr__('type', value)
 
 
     @property
     def primal(self):
-        return self.problem.problem.solution.get_values(self.name)
-
+        if self.problem:
+            primal_from_solver = self.problem.problem.solution.get_values(self.name)
+            if primal_from_solver >= self.lb and primal_from_solver <= self.ub:
+                return primal_from_solver
+            else:
+                if (self.lb - primal_from_solver) <= 1e-6:
+                    return self.lb
+                elif (self.ub - primal_from_solver) >= -1e-6:
+                    return self.ub
+                else:
+                    raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal_from_solver, self.name, self.lb, self.ub))
+        else:
+            return None
 
     @property
     def dual(self):
@@ -175,6 +187,32 @@ class Constraint(interface.Constraint):
 
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
+
+    # TODO: get expression from solver structure
+    def _get_expression(self):
+        if self.problem is not None:
+            cplex_problem = self.problem.problem
+            cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
+            variables = self.problem.variables
+            expression = sympy.Add._from_args([sympy.Mul._from_args((sympy.RealNumber(cplex_row.val[i]), variables[ind])) for i, ind in enumerate(cplex_row.ind)])
+            self._expression = expression
+        return self._expression
+
+    def _set_coefficients_low_level(self, variables_coefficients_dict):
+        raise NotImplementedError
+
+    @property
+    def problem(self):
+        return self._problem
+
+    @problem.setter
+    def problem(self, value):
+        if value is None:
+            # Update expression from solver instance one last time
+            self._get_expression()
+            self._problem = None
+        else:
+            self._problem = value
 
     @property
     def primal(self):
@@ -211,11 +249,13 @@ class Constraint(interface.Constraint):
     def __iadd__(self, other):
         # if self.problem is not None:
         #     self.problem._add_to_constraint(self.index, other)
-        super(Constraint, self).__iadd__(other)
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
+            super(Constraint, self).__iadd__(other)
             problem_reference._add_constraint(self, sloppy=False)
+        else:
+            super(Constraint, self).__iadd__(other)
         return self
 
 
@@ -239,10 +279,13 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, presolve=False, verbosity=0, *args, **kwargs):
+    def __init__(self, problem=None, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
-        self._presolve = presolve
-        self._verbosity = verbosity
+        self.problem = problem
+        self.presolve = presolve
+        self.verbosity = verbosity
+        self.timeout = timeout
+
 
     def __getstate__(self):
         return {'presolve': self.presolve, 'verbosity': self.verbosity}
@@ -258,6 +301,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @presolve.setter
     def presolve(self, value):
+        if self.problem is not None:
+            presolve = self.problem.problem.parameters.preprocessing.presolve
+            if value == True:
+                presolve.set(presolve.values.on)
+            elif value == False:
+                presolve.set(presolve.values.off)
+            else:
+                raise ValueError('%s is not boolean argument for presolve property.')
         self._presolve = value
 
     @property
@@ -266,18 +317,56 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @verbosity.setter
     def verbosity(self, value):
+        if self.problem is not None:
+            problem = self.problem.problem
+            if value == 0:
+                problem.set_error_stream(None)
+                problem.set_warning_stream(None)
+                problem.set_log_stream(None)
+                problem.set_results_stream(None)
+            elif value == 1:
+                problem.set_error_stream(sys.stderr)
+                problem.set_warning_stream(None)
+                problem.set_log_stream(None)
+                problem.set_results_stream(None)
+            elif value == 2:
+                problem.set_error_stream(sys.stderr)
+                problem.set_warning_stream(sys.stderr)
+                problem.set_log_stream(None)
+                problem.set_results_stream(None)
+            elif value == 3:
+                problem.set_error_stream(sys.stderr)
+                problem.set_warning_stream(sys.stderr)
+                problem.set_log_stream(sys.stdout)
+                problem.set_results_stream(sys.stdout)
+            else:
+                raise Exception(
+                    "%s is not a valid verbosity level ranging between 0 and 3."
+                    % value
+                )
         self._verbosity = value
+
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value):
+        if self.problem is not None:
+            if value is None:
+                self.problem.problem.parameters.timelimit.reset()
+            else:
+                self.problem.problem.parameters.timelimit.set(value)
+        self._timeout = value
 
 
 class Model(interface.Model):
     def __init__(self, problem=None, *args, **kwargs):
 
         super(Model, self).__init__(*args, **kwargs)
-        self.configuration = Configuration()
 
         if problem is None:
             self.problem = cplex.Cplex()
-            self.problem.set_results_stream(None)
 
         elif isinstance(problem, cplex.Cplex):
             self.problem = problem
@@ -294,9 +383,10 @@ class Model(interface.Model):
                                      self.problem.linear_constraints.get_rhs()
 
             )
-            var = self.variables.values()
+            variables = self.variables
             for name, row, sense, rhs in zipped_constr_args:
-                lhs = _unevaluated_Add(*[val * var[i - 1] for i, val in zip(row.ind, row.val)])
+                constraint_variables = [variables[i - 1] for i in row.ind]
+                lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])
                 if isinstance(lhs, int):
                     lhs = sympy.Integer(lhs)
                 elif isinstance(lhs, float):
@@ -315,12 +405,19 @@ class Model(interface.Model):
                         constr = Constraint(lhs, lb=rhs + range_val, ub=rhs, name=name, problem=self)
                 else:
                     raise Exception, '%s is not a recognized constraint sense.' % sense
+
+                for variable in constraint_variables:
+                    try:
+                        self._variables_to_constraints_mapping[variable.name].add(name)
+                    except KeyError:
+                        self._variables_to_constraints_mapping[variable.name] = set([name])
+
                 super(Model, self)._add_constraint(
                     constr,
                     sloppy=True
                 )
             self._objective = Objective(
-                _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), var[index]) for index, coeff in
+                _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
                                    enumerate(self.problem.objective.get_linear()) if coeff != 0.]),
                 problem=self,
                 direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
@@ -329,6 +426,7 @@ class Model(interface.Model):
             )
         else:
             raise Exception, "Provided problem is not a valid CPLEX model."
+        self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
         cplex_repr = self.__repr__()
@@ -352,10 +450,10 @@ class Model(interface.Model):
         for i in xrange(len(self.problem.objective.get_linear())):
             self.problem.objective.set_linear(i, 0.)
         expression = self._objective.expression
-        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType):
+        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType) or expression.is_Number:
             pass
         else:
-            if expression.is_Atom:
+            if expression.is_Symbol:
                 self.problem.objective.set_linear(expression.name, 1.)
             if expression.is_Mul:
                 coeff, var = expression.args
@@ -418,24 +516,24 @@ class Model(interface.Model):
         variable.problem = self
         return variable
 
-    def _remove_variable(self, variable):
-        super(Model, self)._remove_variable(variable)
-        self.problem.variables.delete(variable.name)
+    def _remove_variables(self, variables):
+        # Not calling parent method to avoid expensive variable removal from sympy expressions
+        self.problem.variables.delete([variable.name for variable in variables])
+        for variable in variables:
+            del self._variables_to_constraints_mapping[variable.name]
+            variable.problem = None
+            del self.variables[variable.name]
 
     def _add_constraint(self, constraint, sloppy=False):
-        if sloppy is False:
-            if not (constraint.is_Linear or constraint.is_Quadratic):
-                raise ValueError(
-                    "CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
         super(Model, self)._add_constraint(constraint, sloppy=sloppy)
-
+        constraint._problem = None
         if constraint.is_Linear:
             if constraint.expression.is_Add:
                 coeff_dict = constraint.expression.as_coefficients_dict()
                 indices = [var.name for var in coeff_dict.keys()]
                 values = [float(val) for val in coeff_dict.values()]
             elif constraint.expression.is_Mul:
-                variable = list(constraint.expression.free_symbols)[0]
+                variable = list(constraint.expression.atoms(sympy.Symbol))[0]
                 indices = [variable.name]
                 values = [float(constraint.expression.coeff(variable))]
             elif constraint.expression.is_Atom:
@@ -446,40 +544,24 @@ class Model(interface.Model):
 
             sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(constraint.lb, constraint.ub)
 
-            # if constraint.lb is None and constraint.ub is None:
-            #     # FIXME: use cplex.infinity
-            #     raise Exception("Free constraint ... %s" % constraint)
-            # elif constraint.lb is None:
-            #     sense = 'L'
-            #     rhs = float(constraint.ub)
-            #     range_value = 0.
-            # elif constraint.ub is None:
-            #     sense = 'G'
-            #     rhs = float(constraint.lb)
-            #     range_value = 0.
-            # elif constraint.lb == constraint.ub:
-            #     sense = 'E'
-            #     rhs = float(constraint.lb)
-            #     range_value = 0.
-            # else:
-            #     sense = 'R'
-            #     rhs = float(constraint.lb)
-            #     range_value = float(constraint.ub - constraint.lb)
             self.problem.linear_constraints.add(
                 lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
                 range_values=[range_value], names=[constraint.name])
         # TODO: Implement quadratic constraints
         elif constraint.is_Quadratic:
             pass
+        else:
+            raise ValueError("CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
         constraint.problem = self
         return constraint
 
-    def _remove_constraint(self, constraint):
-        super(Model, self)._remove_constraint(constraint)
-        if constraint.is_Linear:
-            self.problem.linear_constraints.delete(constraint.name)
-        elif constraint.is_Quadratic:
-            self.problem.quadratic_constraints.delete(constraint.name)
+    def _remove_constraints(self, constraints):
+        super(Model, self)._remove_constraints(constraints)
+        for constraint in constraints:
+            if constraint.is_Linear:
+                self.problem.linear_constraints.delete(constraint.name)
+            elif constraint.is_Quadratic:
+                self.problem.quadratic_constraints.delete(constraint.name)
 
 
 if __name__ == '__main__':

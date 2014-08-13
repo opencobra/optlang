@@ -20,9 +20,11 @@ extended for individual solvers.
 """
 
 import logging
-import time
+import random
+import uuid
 
 import types
+import collections
 
 import sys
 
@@ -34,6 +36,10 @@ except ImportError:
     print "csympy not available"
     import sympy
 
+from sympy.core.singleton import S
+from sympy.core.logic import fuzzy_bool
+
+from .container import Container
 
 OPTIMAL = 'optimal'
 UNDEFINED = 'undefined'
@@ -55,6 +61,7 @@ SUBOPTIMAL = 'suboptimal'
 INPROGRESS = 'in_progress'
 ABORTED = 'aborted'
 SPECIAL = 'check_original_solver_status'
+
 
 
 # noinspection PyShadowingBuiltins
@@ -85,6 +92,19 @@ class Variable(sympy.Symbol):
     @classmethod
     def clone(cls, variable, **kwargs):
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
+
+    def __new__(cls, name, **assumptions):
+
+        if assumptions.get('zero', False):
+            return S.Zero
+        is_commutative = fuzzy_bool(assumptions.get('commutative', True))
+        if is_commutative is None:
+            raise ValueError(
+                '''Symbol commutativity must be True or False.''')
+        assumptions['commutative'] = is_commutative
+        for key in assumptions.keys():
+            assumptions[key] = bool(assumptions[key])
+        return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
         for char in name:
@@ -202,6 +222,7 @@ class OptimizationExpression(object):
         variable_substitutions = dict()
         for variable in expression.variables:
             if model is not None and variable.name in model.variables:
+                # print variable.name, id(variable.problem)
                 variable_substitutions[variable] = model.variables[variable.name]
             else:
                 variable_substitutions[variable] = interface.Variable.clone(variable)
@@ -215,30 +236,39 @@ class OptimizationExpression(object):
         else:
             self._expression = self._canonicalize(expression)
         if name is None:
-            self.name = sympy.Dummy().name
+            self.name = str(uuid.uuid1())
         else:
             self.name = name
-        self.problem = problem
+        self._problem = problem
+
+    @property
+    def problem(self):
+        return self._problem
+
+    @problem.setter
+    def problem(self, value):
+        self._problem = value
+
+    def _get_expression(self):
+        return self._expression
 
     @property
     def expression(self):
         """The mathematical expression defining the objective/constraint."""
-        return self._expression
-
-    @expression.setter
-    def expression(self, value):
-        try:
-            self._expression = self._canonicalize(value)
-        except TypeError:
-            self._expression = value
+        return self._get_expression()
 
     @property
     def variables(self):
         """Variables in constraint."""
-        return self.expression.free_symbols
+        return self.expression.atoms(sympy.Symbol)
 
     def _canonicalize(self, expression):
-        return expression
+        if isinstance(expression, types.FloatType):
+            return sympy.RealNumber(expression)
+        elif isinstance(expression, types.IntType):
+            return sympy.Integer(expression)
+        else:
+            return expression
 
     @property
     def is_Linear(self):
@@ -249,7 +279,7 @@ class OptimizationExpression(object):
     def is_Quadratic(self):
         """Returns True if constraint is quadratic (read-only)."""
         try:
-            poly = self.expression.as_poly(*self.expression.free_symbols)
+            poly = self.expression.as_poly(*self.expression.atoms(sympy.Symbol))
         except sympy.PolynomialError:
             poly = None
         if poly is not None and poly.is_quadratic and not poly.is_linear:
@@ -258,24 +288,24 @@ class OptimizationExpression(object):
             return False
 
     def __iadd__(self, other):
-        self.expression += other
+        self._expression += other
         # self.expression = sympy.Add._from_args((self.expression, other))
         return self
 
     def __isub__(self, other):
-        self.expression -= other
+        self._expression -= other
         return self
 
     def __imul__(self, other):
-        self.expression *= other
+        self._expression *= other
         return self
 
     def __idiv__(self, other):
-        self.expression /= other
+        self._expression /= other
         return self
 
     def __itruediv__(self, other):
-        self.expression /= other
+        self._expression /= other
         return self
 
 
@@ -298,10 +328,15 @@ class Constraint(OptimizationExpression):
         A reference to the optimization model the variable belongs to.
     """
 
+    # @classmethod
+    # def clone(cls, constraint, model=None, **kwargs):
+    #     return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
+    #                name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
+
     @classmethod
     def clone(cls, constraint, model=None, **kwargs):
         return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
-                   name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
+                   name=constraint.name, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, *args, **kwargs):
         self.lb = lb
@@ -320,6 +355,7 @@ class Constraint(OptimizationExpression):
         return str(self.name) + ": " + lhs + self.expression.__str__() + rhs
 
     def _canonicalize(self, expression):
+        expression = super(Constraint, self)._canonicalize(expression)
         if expression.is_Atom or expression.is_Mul:
             return expression
         lonely_coeffs = [arg for arg in expression.args if arg.is_Number]
@@ -361,7 +397,7 @@ class Objective(OptimizationExpression):
 
     @classmethod
     def clone(cls, objective, model=None, **kwargs):
-        return cls(cls._substitute_variables(objective, model=model), name=objective.name, problem=objective.problem,
+        return cls(cls._substitute_variables(objective, model=model), name=objective.name,  # TODO: problem=model, (it's breaking cameo for some reason)
                    direction=objective.direction, sloppy=True, **kwargs)
 
     def __init__(self, expression, value=None, direction='max', *args, **kwargs):
@@ -379,6 +415,7 @@ class Objective(OptimizationExpression):
 
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
+        expression = super(Objective, self)._canonicalize(expression)
         expression *= 1.
         return expression
 
@@ -415,6 +452,14 @@ class Configuration(object):
     def verbose(self, value):
         raise NotImplementedError
 
+    @property
+    def timeout(self):
+        raise NotImplementedError
+
+    @timeout.setter
+    def timeout(self):
+        raise NotImplementedError
+
 
 class MathematicalProgrammingConfiguration(object):
     def __init__(self, *args, **kwargs):
@@ -445,10 +490,10 @@ class Model(object):
         The objective function.
     name: str, optional
         The name of the optimization problem.
-    variables: OrderedDict, read-only
+    variables: Container, read-only
         Contains the variables of the optimization problem.
         The keys are the variable names and values are the actual variables.
-    constraints: OrderedDict, read-only
+    constraints: Container, read-only
          Contains the variables of the optimization problem.
          The keys are the constraint names and values are the actual constraints.
     status: str, read-only
@@ -465,7 +510,7 @@ class Model(object):
     def clone(cls, model):
         interface = sys.modules[cls.__module__]
         new_model = cls()
-        for constraint in model.constraints.values():
+        for constraint in model.constraints:
             new_constraint = interface.Constraint.clone(constraint, model=new_model)
             new_model._add_constraint(new_constraint)
         if model.objective is not None:
@@ -475,8 +520,9 @@ class Model(object):
     def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
         self._objective = objective
-        self._variables = collections.OrderedDict()
-        self._constraints = collections.OrderedDict()
+        self._variables = Container()
+        self._constraints = Container()
+        self._variables_to_constraints_mapping = dict()
         self._status = None
         self.name = name
         if variables is not None:
@@ -501,6 +547,7 @@ class Model(object):
             else:
                 raise AttributeError(e)
         self._objective = value
+        self._objective.problem = self
 
     @property
     def variables(self):
@@ -518,9 +565,9 @@ class Model(object):
         return '\n'.join((
             str(self.objective),
             "subject to",
-            '\n'.join([str(constr) for constr in self.constraints.values()]),
+            '\n'.join([str(constr) for constr in self.constraints]),
             'Bounds',
-            '\n'.join([str(var) for var in self.variables.values()])
+            '\n'.join([str(var) for var in self.variables])
         ))
 
     @property
@@ -585,13 +632,23 @@ class Model(object):
                 except KeyError:
                     raise LookupError(
                         "%s is neither a variable nor a constraint in the current solver instance." % stuff)
-        elif isinstance(stuff, collections.Iterable):
-            for elem in stuff:
-                self.remove(elem)
         elif isinstance(stuff, Variable):
             self._remove_variable(stuff)
         elif isinstance(stuff, Constraint):
             self._remove_constraint(stuff)
+        elif isinstance(stuff, collections.Iterable):
+            element_types = len(set((elem.__class__ for elem in stuff)))
+            if len(element_types) == 1:
+                element_type = element_types.pop()
+                if element_type == Variable:
+                    self._remove_variables(stuff)
+                elif element_type == Constraint:
+                    self._remove_constraints(stuff)
+                else:
+                    raise TypeError("Cannot remove %s. It neither a variable or constraint." % stuff)
+            else:
+                for elem in stuff:
+                    self.remove(elem)
         elif isinstance(stuff, Objective):
             raise TypeError(
                 "Cannot remove objective %s. Use model.objective = Objective(...) to change the current objective." % stuff)
@@ -611,47 +668,70 @@ class Model(object):
             "You're using the high level interface to optlang. Problems cannot be optimized in this mode. Choose from one of the solver specific interfaces.")
 
     def _add_variable(self, variable):
+        if self.variables.has_key(variable.name):
+            raise Exception('Model already contains a variable with name %s' % variable.name)
+        self._variables_to_constraints_mapping[variable.name] = set([])
         variable.problem = self
-        self.variables[variable.name] = variable
+        self.variables.append(variable)
         return variable
 
-    def _remove_variable(self, variable):
-        try:
-            var = self.variables[variable.name]
-        except KeyError:
-            raise LookupError("Variable %s not in solver" % var)
-        for constraint in self.constraints.values():
-            constraint.expression = constraint.expression.xreplace({var: 0})
-        self.objective.expression = self.objective.expression.xreplace({var: 0})
-        var.problem = None
+    def _remove_variables(self, variables):
 
-        del self.variables[variable.name]
+        for variable in variables:
+            try:
+                var = self.variables[variable.name]
+            except KeyError:
+                raise LookupError("Variable %s not in solver" % var)
+
+        constraint_ids = set()
+        for variable in variables:
+            constraint_ids.update(self._variables_to_constraints_mapping[variable.name])
+            del self._variables_to_constraints_mapping[variable.name]
+            variable.problem = None
+            del self.variables[variable.name]
+
+        replacements = dict([(variable, 0) for variable in variables])
+        for constraint_id in constraint_ids:
+            constraint = self.constraints[constraint_id]
+            constraint._expression = constraint.expression.xreplace(replacements)
+
+        self.objective._expression = self.objective.expression.xreplace(replacements)
+
+    def _remove_variable(self, variable):
+        self._remove_variables([variable])
 
     def _add_constraint(self, constraint, sloppy=False):
+        constraint_id = constraint.name
         if sloppy is False:
             for var in constraint.variables:
                 if var.name not in self.variables:
                     self._add_variable(var)
-        if constraint.name is None:
-            self.constraints[constraint.__hash__()] = constraint
+                try:
+                    self._variables_to_constraints_mapping[var.name].add(constraint_id)
+                except KeyError:
+                    self._variables_to_constraints_mapping[var.name] = set([constraint_id])
+        self.constraints.append(constraint)
+        constraint._problem = self
+
+    def _remove_constraints(self, constraints):
+        keys = [constraint.name for constraint in constraints]
+        if len(constraints) > 350:  # Need to figure out a good threshold here
+            self._constraints = self.constraints.fromkeys(set(self.constraints.keys()).difference(set(keys)))
         else:
-            self.constraints[constraint.name] = constraint
+            for constraint in constraints:
+                try:
+                    del self.constraints[constraint.name]
+                except KeyError:
+                    raise LookupError("Constraint %s not in solver" % constraint)
+                else:
+                    constraint.problem = None
 
     def _remove_constraint(self, constraint):
-        if constraint.name is not None:
-            key = constraint.name
-        else:
-            key = constraint.__hash__
-        try:
-            constr = self.constraints[key]
-        except KeyError:
-            raise LookupError("Constraint %s not in solver" % constr)
-        constr.problem = None
-        del self.constraints[key]
+        self._remove_constraints([constraint])
 
     def _set_linear_objective_term(self, variable, coefficient):
         # TODO: the is extremely slow for objectives with many terms
-        if variable in self.objective.expression.free_symbols:
+        if variable in self.objective.expression.atoms(sympy.Symbol):
             a = sympy.Wild('a', exclude=[variable])
             (new_expression, map) = self.objective.expression.replace(lambda expr: expr.match(a*variable), lambda expr: coefficient*variable, simultaneous=False, map=True)
             self.objective.expression = new_expression

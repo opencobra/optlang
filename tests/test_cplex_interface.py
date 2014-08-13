@@ -1,5 +1,6 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
+import copy
 
 import unittest
 import random
@@ -31,6 +32,11 @@ try:
             self.assertEqual(len(model.variables), 0)
             self.assertEqual(model.objective, None)
 
+        def test_copy(self):
+            model_copy = copy.copy(self.model)
+            self.assertNotEqual(id(self.model), id(model_copy))
+            self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+
         def test_pickle_ability(self):
             self.model.optimize()
             value = self.model.objective.value
@@ -40,8 +46,8 @@ try:
             self.assertAlmostEqual(value, from_pickle.objective.value)
             self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in from_pickle.variables.values()],
                              [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints.values()],
-                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints.values()])
+            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
+                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
         def test_init_from_existing_problem(self):
             inner_prob = self.model.problem
@@ -92,33 +98,22 @@ try:
             self.assertNotIn(var, self.model.variables.values())
             self.assertEqual(var.problem, None)
 
-        # def test_add_constraint(self):
-        # x = Variable('x', lb=-83.3, ub=1324422., type='binary')
-        #     y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        #     z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-        #     constr = Constraint(0.3*x + 0.4*y + 66.*z, lb=-100, ub=0., name='test')
-        #     self.model.add(constr)
-
         def test_add_linear_constraints(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
             constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-            # constr1 = Constraint(x + 2* y  + 3.333*z, lb=-10, name='hongo')
             constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
             constr3 = Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
             self.model.add(constr1)
             self.model.add(constr2)
             self.model.add(constr3)
-            self.assertIn(constr1, self.model.constraints.values())
-            self.assertIn(constr2, self.model.constraints.values())
-            self.assertIn(constr3, self.model.constraints.values())
-            cplex_lines = [line.strip() for line in str(self.model).split('\n')]
-            self.assertIn('test:       0.4 y + 66 z + 0.3 x - Rgtest  = -100', cplex_lines)
-            self.assertIn('test2:      y + 2.333 x <= 96.997', cplex_lines)
-            # Dummy_21:   y + z + 2.333 x - RgDummy_21  = -300
-            self.assertRegexpMatches(str(self.model), '\s*Dummy_\d+:\s*y \+ z \+ 2\.333 x - .*  = -300')
-            print self.model
+            self.assertIn(constr1.name, self.model.constraints)
+            self.assertIn(constr2.name, self.model.constraints)
+            self.assertIn(constr3.name, self.model.constraints)
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test', 'y'), ('test', 'z'), ('test', 'x'))), [0.4, 66, 0.3])
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test2', 'y'), ('test2', 'x'))), [1., 2.333])
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients(((74, 'y'), (74, 'z'), (74, 'x'))), [1., 1., 2.333])
 
         @unittest.skip
         def test_add_quadratic_constraints(self):
@@ -131,9 +126,9 @@ try:
             self.model.add(constr1)
             self.model.add(constr2)
             self.model.add(constr3)
-            self.assertIn(constr1, self.model.constraints.values())
-            self.assertIn(constr2, self.model.constraints.values())
-            self.assertIn(constr3, self.model.constraints.values())
+            self.assertIn(constr1, self.model.constraints)
+            self.assertIn(constr2, self.model.constraints)
+            self.assertIn(constr3, self.model.constraints)
             cplex_lines = [line.strip() for line in str(self.model).split('\n')]
             self.assertIn('test:       0.4 y + 66 z + 0.3 x - Rgtest  = -100', cplex_lines)
             self.assertIn('test2:      y + 2.333 x <= 96.997', cplex_lines)
@@ -149,10 +144,10 @@ try:
             self.assertEqual(constr1.problem, None)
             self.model.add(constr1)
             self.assertEqual(constr1.problem, self.model)
-            self.assertIn(constr1, self.model.constraints.values())
+            self.assertIn(constr1, self.model.constraints)
             self.model.remove(constr1.name)
             self.assertEqual(constr1.problem, None)
-            self.assertNotIn(constr1, self.model.constraints.values())
+            self.assertNotIn(constr1, self.model.constraints)
 
         def test_add_nonlinear_constraint_raises(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -167,13 +162,22 @@ try:
             constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.model.add(constraint)
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
-            print
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y')]), [0.3, 0.4])
             z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
             constraint += 77. * z
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y'), ('test', 'z')]), [0.3, 0.4, 77.])
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
             print self.model
+
+        def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
+            x = Variable('x', lb=-83.3, ub=1324422.)
+            y = Variable('y', lb=-181133.3, ub=12000.)
+            constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
+            self.model.add(constraint)
+            z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+            constraint += 77. * z
+            self.model.remove(constraint)
+            self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
 
         @nottest
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
@@ -187,6 +191,11 @@ try:
             objective.expression += 77. * z
             self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
             self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
+
+        def test_timeout(self):
+            self.model.configuration.timeout = 0
+            status = self.model.optimize()
+            self.assertEqual(status, 'time_limit')
 
 except ImportError, e:
 

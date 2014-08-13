@@ -46,7 +46,7 @@ def solve_with_glpsol(glp_prob):
     #     A dictionary containing the objective value (key ='objval')
     #     and variable primals.
     """
-    from glpk.glpkpi import glp_get_row_name, glp_get_col_name, glp_write_lp, glp_get_num_rows, glp_get_num_cols
+    from swiglpk import glp_get_row_name, glp_get_col_name, glp_write_lp, glp_get_num_rows, glp_get_num_cols
 
     row_ids = [glp_get_row_name(glp_prob, i) for i in xrange(1, glp_get_num_rows(glp_prob) + 1)]
 
@@ -86,7 +86,7 @@ def glpk_read_cplex(path):
     glp_prob
         A glpk problems (same type as returned by glp_create_prob)
     """
-    from glpk.glpkpi import glp_create_prob, glp_read_lp
+    from swiglpk import glp_create_prob, glp_read_lp
 
     problem = glp_create_prob()
     glp_read_lp(problem, None, path)
@@ -111,10 +111,10 @@ def list_available_solvers():
     except:
         log.debug('Gurobi python bindings not available.')
     try:
-        import glpk.glpkpi
+        import swiglpk
 
         solvers['GLPK'] = True
-        log.debug('GLPK python bindings found at %s' % os.path.dirname(glpk.glpkpi.__file__))
+        log.debug('GLPK python bindings found at %s' % os.path.dirname(swiglpk.__file__))
     except:
         log.debug('GLPK python bindings not available.')
     try:
@@ -135,7 +135,7 @@ def list_available_solvers():
 
 
 if __name__ == '__main__':
-    from glpk.glpkpi import glp_create_prob, glp_read_lp, glp_get_num_rows
+    from swiglpk import glp_create_prob, glp_read_lp, glp_get_num_rows
 
     problem = glp_create_prob()
     glp_read_lp(problem, None, "../tests/data/model.lp")

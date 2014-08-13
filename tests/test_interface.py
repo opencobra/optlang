@@ -30,25 +30,26 @@ class TestSolver(TestCase):
         self.assertEqual(model.objective, None)
 
     def test_add_variable(self):
-        self.assertEqual(self.model.variables['x'].lb, 0)
-        self.assertEqual(self.model.variables['x'].ub, 10)
-        self.assertEqual(self.model.variables['y'].lb, 0)
-        self.assertEqual(self.model.variables['y'].ub, 10)
+        var = Variable('z')
+        self.model.add(var)
+        self.assertTrue(var in self.model.variables.values())
+        self.assertEqual(self.model.variables.values().count(var), 1)
+        self.assertEqual(self.model.variables['z'].problem, var.problem)
+        var = Variable('asdfasdflkjasdflkjasdlkjsadflkjasdflkjasdlfkjasdlfkjasdlkfjasdf', lb=-13)
+        self.model.add(var)
+        self.assertTrue(var in self.model.variables.values())
+        self.assertEqual(self.model.variables['z'].lb, None)
+        self.assertEqual(self.model.variables['z'].ub, None)
+        self.assertEqual(self.model.variables['asdfasdflkjasdflkjasdlkjsadflkjasdflkjasdlfkjasdlfkjasdlkfjasdf'].lb, -13)
+        self.assertEqual(self.model.variables['asdfasdflkjasdflkjasdlkjsadflkjasdflkjasdlfkjasdlfkjasdlkfjasdf'].ub, None)
+
+    def test_add_variable_twice_raises(self):
         var = Variable('x')
-        self.model.add(var)
-        self.assertTrue(var in self.model.variables.values())
-        self.assertEqual(self.model.variables['x'].problem, var.problem)
-        var = Variable('y', lb=-13)
-        self.model.add(var)
-        self.assertTrue(var in self.model.variables.values())
-        self.assertEqual(self.model.variables['x'].lb, None)
-        self.assertEqual(self.model.variables['x'].ub, None)
-        self.assertEqual(self.model.variables['y'].lb, -13)
-        self.assertEqual(self.model.variables['x'].ub, None)
+        self.assertRaises(Exception, self.model.add, var)
 
     def test_remove_constraint(self):
         self.model.remove('constr1')
-        self.assertEqual(self.model.constraints.values(), [])
+        self.assertEqual(list(self.model.constraints), [])
 
     def test_remove_variable_str(self):
         var = self.model.variables['y']
@@ -59,7 +60,7 @@ class TestSolver(TestCase):
 
     def test_number_objective(self):
         self.model.objective = Objective(0.)
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.0')
+        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
 
     def test_add_differing_interface_type_raises(self):
         from optlang import glpk_interface as glpk
@@ -85,3 +86,24 @@ class TestSolver(TestCase):
 
     def test_false_objective_direction_raises(self):
         self.assertRaises(ValueError, setattr, self.model.objective, 'direction', 'neither_min_nor_max')
+
+    def test_all_entities_point_to_correct_model(self):
+        for variable in self.model.variables.values():
+            self.assertEqual(variable.problem, self.model)
+        for constraint in self.model.constraints:
+            self.assertEqual(constraint.problem, self.model)
+        self.assertEqual(self.model.objective.problem, self.model)
+
+    def test_variable_independence(self):
+        model = Model()
+        x = Variable('x', lb=0, ub=20)
+        self.assertNotEqual(id(x), id(self.model.variables['x']))
+        y = Variable('y', lb=0, ub=10)
+        constr = Constraint(1.*x + y, lb=3, name="constr1")
+        model.add(constr)
+        self.assertNotEqual(id(self.model.variables['x']), id(model.variables['x']))
+        self.assertNotEqual(id(self.model.variables['y']), id(model.variables['y']))
+        self.assertNotEqual(self.model.variables['y'].problem, model)
+        self.assertNotEqual(self.model.variables['x'].problem, model)
+        x.lb = -10
+        self.assertNotEqual(self.model.variables['x'].lb, model.variables['x'].lb)

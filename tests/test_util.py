@@ -3,7 +3,7 @@
 
 import os
 import nose
-from glpk.glpkpi import glp_create_prob, \
+from swiglpk import glp_create_prob, \
     glp_read_lp, glp_create_index, glp_get_num_cols, glp_get_num_rows
 
 from optlang.util import solve_with_glpsol, \

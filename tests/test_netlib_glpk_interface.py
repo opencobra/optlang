@@ -9,7 +9,7 @@ from functools import partial
 
 import os
 import nose
-from glpk.glpkpi import *
+from swiglpk import *
 
 from optlang.glpk_interface import Model
 
