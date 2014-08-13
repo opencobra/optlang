@@ -129,12 +129,6 @@ class Variable(interface.Variable):
         else:
             return None
 
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-
 
 class Constraint(interface.Constraint):
     """GLPK solver interface"""
@@ -574,9 +568,8 @@ class Model(interface.Model):
         return glpk_form
 
     def optimize(self):
+        glp_simplex(self.problem, self.configuration._smcp)
         if (glp_get_num_int(self.problem) + glp_get_num_bin(self.problem)) == 0:
-            glp_simplex(self.problem, self.configuration._smcp)
-        else:
             glp_intopt(self.problem, self.configuration._iocp)
             if _GLPK_STATUS_TO_STATUS[glp_get_status(self.problem)] == 'undefined':
                 original_presolve_setting = self.configuration.presolve

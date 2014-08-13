@@ -9,6 +9,7 @@ import pickle
 import os
 import nose
 from swiglpk import *
+import sys
 
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from optlang.util import glpk_read_cplex
@@ -16,6 +17,7 @@ from optlang.util import glpk_read_cplex
 
 random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
+TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp')
 
 class VariableTestCase(unittest.TestCase):
     def setUp(self):
@@ -40,6 +42,14 @@ class VariableTestCase(unittest.TestCase):
         model.optimize()
         for i, j in zip([var.dual for var in model.variables], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.022916186593776235, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, -0.007638728864592075, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.005092485909728057, 0.0, 0.0, 0.0, 0.0, -0.005092485909728046, 0.0, 0.0, -0.005092485909728045, 0.0, 0.0, 0.0, -0.0611098309167366, -0.005092485909728045, 0.0, -0.003819364432296033, -0.00509248590972805, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03946676580039239, 0.0, 0.0, -0.005092485909728042, -0.0, -0.0012731214774320113, 0.0, -0.0916647463751049, 0.0, 0.0, 0.0, -0.0, -0.04583237318755246, 0.0, 0.0, -0.0916647463751049, -0.005092485909728045, -0.07002168125876067, 0.0, -0.06874855978132867, -0.0012731214774320113, 0.0, 0.0, 0.0, -0.001273121477432006, -0.0038193644322960392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.040739887277824405, -0.04583237318755245, -0.0012731214774320163, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, 0.0, -0.04837861614241648]):
             self.assertAlmostEqual(i, j)
+
+    def test_setting_lower_bound_higher_than_upper_bound_raises(self):
+        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        self.assertRaises(ValueError, setattr, model.variables[0], 'lb', 10000000000.)
+
+    def test_setting_nonnumerical_bounds_raises(self):
+        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
 
 
 class ConstraintTestCase(unittest.TestCase):
@@ -76,6 +86,14 @@ class ConstraintTestCase(unittest.TestCase):
         for i, constraint in enumerate(self.model.constraints):
             constraint.name = 'c'+ str(i)
         self.assertEqual([constraint.name for constraint in self.model.constraints], ['c' + str(i) for i in range(0, len(self.model.constraints))])
+
+    def test_setting_lower_bound_higher_than_upper_bound_raises(self):
+        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
+
+    def test_setting_nonnumerical_bounds_raises(self):
+        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
 class SolverTestCase(unittest.TestCase):
     def setUp(self):
@@ -190,12 +208,17 @@ class SolverTestCase(unittest.TestCase):
         constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
         constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
         constr3 = Constraint(2.333 * x + y + z, lb=-300)
+        constr4 = Constraint(x, lb=-300, ub=-300)
+        constr5 = Constraint(3*x)
         self.model.add(constr1)
         self.model.add(constr2)
         self.model.add(constr3)
+        self.model.add([constr4, constr5])
         self.assertIn(constr1.name, self.model.constraints)
         self.assertIn(constr2.name, self.model.constraints)
         self.assertIn(constr3.name, self.model.constraints)
+        self.assertIn(constr4.name, self.model.constraints)
+        self.assertIn(constr5.name, self.model.constraints)
         # constr1
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
@@ -229,6 +252,29 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(glp_get_row_type(self.model.problem, constr3.index), GLP_LO)
         self.assertEqual(glp_get_row_lb(self.model.problem, constr3.index), -300)
         self.assertEqual(glp_get_row_ub(self.model.problem, constr3.index), 1.7976931348623157e+308)
+        # constr4
+        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
+        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
+        nnz = glp_get_mat_row(self.model.problem, constr4.index, ia, da)
+        coeff_dict = dict()
+        for i in range(1, nnz+1):
+            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
+        self.assertDictEqual(coeff_dict, {'x': 1})
+        self.assertEqual(glp_get_row_type(self.model.problem, constr4.index), GLP_FX)
+        self.assertEqual(glp_get_row_lb(self.model.problem, constr4.index), -300)
+        self.assertEqual(glp_get_row_ub(self.model.problem, constr4.index), -300)
+
+        # constr5
+        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
+        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
+        nnz = glp_get_mat_row(self.model.problem, constr5.index, ia, da)
+        coeff_dict = dict()
+        for i in range(1, nnz+1):
+            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
+        self.assertDictEqual(coeff_dict, {'x': 3})
+        self.assertEqual(glp_get_row_type(self.model.problem, constr5.index), GLP_FR)
+        self.assertLess(glp_get_row_lb(self.model.problem, constr5.index), -1e30)
+        self.assertGreater(glp_get_row_ub(self.model.problem, constr5.index), 1e30)
 
     def test_remove_constraints(self):
         x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -342,6 +388,13 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.status, 'optimal')
         self.assertAlmostEqual(self.model.objective.value, 0.8739215069684303)
 
+    def test_optimize_milp(self):
+        problem = glpk_read_cplex(TESTMILPMODELPATH)
+        milp_model = Model(problem=problem)
+        print milp_model.optimize()
+        self.assertEqual(milp_model.status, 'optimal')
+        self.assertAlmostEqual(milp_model.objective.value, 125.20833333333333)
+
     def test_change_objective(self):
         """Test that all different kinds of linear objective specification work."""
         print self.model.variables.values()[0:2]
@@ -402,6 +455,13 @@ class SolverTestCase(unittest.TestCase):
         self.model.configuration.timeout = 0
         status = self.model.optimize()
         self.assertEqual(status, 'infeasible')
+
+    def test_set_linear_objective_term(self):
+        self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)
+        glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index)
+
+    def test_instantiating_model_with_non_glpk_problem_raises(self):
+        self.assertRaises(TypeError, Model, problem='Chicken soup')
 
 if __name__ == '__main__':
     nose.runmodule()
