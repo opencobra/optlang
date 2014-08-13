@@ -166,7 +166,6 @@ class Constraint(interface.Constraint):
             index = self.index
             num = glp_get_mat_row(self.problem.problem, index, ia, da)
             for i in range(1, num +1):
-                print ia[i], da[i], glp_get_col_name(self.problem.problem, ia[i])
                 try:
                     da[i] = indices_coefficients_dict[ia[i]]
                 except KeyError:

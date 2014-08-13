@@ -199,7 +199,12 @@ class Constraint(interface.Constraint):
         return self._expression
 
     def _set_coefficients_low_level(self, variables_coefficients_dict):
-        raise NotImplementedError
+        self_name = self.name
+        if self.is_Linear:
+            cplex_format = [(self_name, variable.name, coefficient) for variable, coefficient in variables_coefficients_dict.iteritems()]
+            self.problem.problem.linear_constraints.set_coefficients(cplex_format)
+        else:
+            raise Exception('_set_coefficients_low_level works only with linear constraints in the cplex interface.')
 
     @property
     def problem(self):

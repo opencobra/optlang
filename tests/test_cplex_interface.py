@@ -197,6 +197,14 @@ try:
             status = self.model.optimize()
             self.assertEqual(status, 'time_limit')
 
+        def test__set_coefficients_low_level(self):
+            constraint = self.model.constraints.M_atp_c
+            coeff_dict = constraint.expression.as_coefficients_dict()
+            self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], -59.8100000000000)
+            constraint._set_coefficients_low_level({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
+            coeff_dict = constraint.expression.as_coefficients_dict()
+            self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], 666.)
+
 except ImportError, e:
 
     if e.message.find('cplex') >= 0:

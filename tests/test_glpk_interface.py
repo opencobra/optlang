@@ -463,5 +463,18 @@ class SolverTestCase(unittest.TestCase):
     def test_instantiating_model_with_non_glpk_problem_raises(self):
         self.assertRaises(TypeError, Model, problem='Chicken soup')
 
+    def test__set_coefficients_low_level(self):
+        constraint = self.model.constraints.M_atp_c
+        constraint._set_coefficients_low_level({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
+        num_cols = glp_get_num_cols(self.model.problem)
+        ia = intArray(num_cols + 1)
+        da = doubleArray(num_cols + 1)
+        index = constraint.index
+        num = glp_get_mat_row(self.model.problem, index, ia, da)
+        for i in range(1, num +1):
+            col_name = glp_get_col_name(self.model.problem, ia[i])
+            if col_name == 'R_Biomass_Ecoli_core_w_GAM':
+                self.assertEqual(da[i], 666.)
+
 if __name__ == '__main__':
     nose.runmodule()
