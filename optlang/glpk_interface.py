@@ -208,21 +208,27 @@ class Constraint(interface.Constraint):
 
     @property
     def primal(self):
-        return glp_get_row_prim(self.problem.problem, self.index)
+        if self.problem is not None:
+            return glp_get_row_prim(self.problem.problem, self.index)
+        else:
+            return None
 
     @property
     def dual(self):
-        return glp_get_row_dual(self.problem.problem, self.index)
+        if self.problem is not None:
+            return glp_get_row_dual(self.problem.problem, self.index)
+        else:
+            return None
 
     def __setattr__(self, name, value):
-
+        try:
+            old_name = self.name  # TODO: This is a hack
+        except AttributeError:
+            pass
         super(Constraint, self).__setattr__(name, value)
         if getattr(self, 'problem', None):
-
             if name == 'name':
-
-                self.problem._glpk_set_row_name(self)
-
+                glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), value)
             elif name == 'lb' or name == 'ub':
                 self.problem._glpk_set_row_bounds(self)
 
