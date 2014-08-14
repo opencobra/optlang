@@ -30,7 +30,7 @@ with open('requirements.txt') as fhandle:
 
 setup(
     name='optlang',
-    version='0.0.2',
+    version='0.0.3',
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
     test_suite='nose.collector',
