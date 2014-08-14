@@ -292,6 +292,7 @@ class Objective(interface.Objective):
                         yield (sympy.RealNumber(coeff), variables[index - 1])
             expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
             self._expression = expression
+            print "self._expression", self._expression
         return self._expression
 
     @property
