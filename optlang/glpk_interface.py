@@ -213,6 +213,19 @@ class Constraint(interface.Constraint):
         else:
             return None
 
+    @property
+    def problem(self):
+        return self._problem
+
+    @problem.setter
+    def problem(self, value):
+        if value is None:
+            # Update expression from solver instance one last time
+            self._get_expression()
+            self._problem = None
+        else:
+            self._problem = value
+
     def __setattr__(self, name, value):
         try:
             old_name = self.name  # TODO: This is a hack
@@ -272,11 +285,12 @@ class Objective(interface.Objective):
     def _get_expression(self):
         if self.problem is not None:
             variables = self.problem.variables
-            term_generator = (
-                (sympy.RealNumber(glp_get_obj_coef(self.problem.problem, index)), variables[index - 1])
-                for index in xrange(1, glp_get_num_cols(self.problem.problem) + 1)
-            )
-            expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator if term[0] != 0.])
+            def term_generator():
+                for index in xrange(1, glp_get_num_cols(self.problem.problem) + 1):
+                    coeff = glp_get_obj_coef(self.problem.problem, index)
+                    if coeff != 0.:
+                        yield (sympy.RealNumber(coeff), variables[index - 1])
+            expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
             self._expression = expression
         return self._expression
 
@@ -591,19 +605,23 @@ class Model(interface.Model):
 
     def _remove_variables(self, variables):
         if len(variables) > 0:
+
+            if len(variables) > 350:
+                delete_indices = [variable.index - 1 for variable in variables]
+                keep_indices = [i for i in xrange(0, len(self.variables)) if i not in delete_indices]
+                self._variables = self.variables.fromkeys(keep_indices)
+            else:
+                for variable in variables:
+                    del self.variables[variable.name]
+
             num = intArray(len(variables) + 1)
             for i, variable in enumerate(variables):
                 num[i + 1] = variable.index
             glp_del_cols(self.problem, len(variables), num)
 
-        if len(variables) > 350:
-            keys = [variable.name for variable in variables]
-            self._variables = self.variables.fromkeys(set(self.variables.keys()).difference(set(keys)))
-        else:
             for variable in variables:
                 del self._variables_to_constraints_mapping[variable.name]
                 variable.problem = None
-                del self.variables[variable.name]
 
     # def _add_constraints_low_level(self, variable_ids, coefficients, lb=None, ub=None):
     #     glp_add_rows(self.problem, len(variable_ids))
