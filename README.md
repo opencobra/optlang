@@ -1,6 +1,8 @@
 [![Build Status](https://travis-ci.org/biosustain/optlang.png?branch=master)](https://travis-ci.org/biosustain/optlang)
 [![Coverage Status](https://coveralls.io/repos/biosustain/optlang/badge.png?branch=master)](https://coveralls.io/r/biosustain/optlang?branch=master)
 [![PyPI version](https://badge.fury.io/py/optlang.svg)](http://badge.fury.io/py/optlang)
+[![Documentation Status](https://readthedocs.org/projects/optlang/badge/?version=latest)](https://readthedocs.org/projects/optlang/?badge=latest)
+
 
 optlang
 =======
