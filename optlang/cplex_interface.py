@@ -179,7 +179,10 @@ class Variable(interface.Variable):
 
     @property
     def dual(self):
-        return self.problem.problem.solution.get_reduced_costs(self.name)
+        if self.problem is not None:
+            return self.problem.problem.solution.get_reduced_costs(self.name)
+        else:
+            return None
 
 
 class Constraint(interface.Constraint):
@@ -221,22 +224,30 @@ class Constraint(interface.Constraint):
 
     @property
     def primal(self):
-        return self.problem.problem.solution.get_dual_values(self.name)
+        if self.problem is not None:
+            return self.problem.problem.solution.get_activity_levels(self.name)
+        else:
+            return None
 
     @property
     def dual(self):
-        return self.problem.problem.solution.get_activity_levels(self.name)
+        if self.problem is not None:
+            return self.problem.problem.solution.get_dual_values(self.name)
+        else:
+            return None
 
     # TODO: Refactor to use properties
     def __setattr__(self, name, value):
-
+        try:
+            old_name = self.name  # TODO: This is a hack
+        except AttributeError:
+            pass
         super(Constraint, self).__setattr__(name, value)
         if getattr(self, 'problem', None):
 
             if name == 'name':
-
-                if self.expression.is_Linear:
-                    self.problem.problem.linear_constraints.set_names(self.name, value)
+                # TODO: the following needs to deal with quadratic constraints
+                self.problem.problem.linear_constraints.set_names(old_name, value)
 
             elif name == 'lb' or name == 'ub':
                 if name == 'lb':
@@ -244,9 +255,9 @@ class Constraint(interface.Constraint):
                 elif name == 'ub':
                     sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(self.lb, value)
                 if self.is_Linear:
-                    self.problem.linear_constraints.set_rhs(self.name, rhs)
-                    self.problem.linear_constraints.set_senses(self.name, sense)
-                    self.problem.linear_constraints.set_range_values(self.name, range_value)
+                    self.problem.problem.linear_constraints.set_rhs(self.name, rhs)
+                    self.problem.problem.linear_constraints.set_senses(self.name, sense)
+                    self.problem.problem.linear_constraints.set_range_values(self.name, range_value)
 
             elif name == 'expression':
                 pass
@@ -277,7 +288,7 @@ class Objective(interface.Objective):
         if getattr(self, 'problem', None):
             if name == 'direction':
                 self.problem.problem.objective.set_sense(
-                    {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize})
+                    {'min': self.problem.problem.objective.sense.minimize, 'max': self.problem.problem.objective.sense.maximize}[value])
             super(Objective, self).__setattr__(name, value)
         else:
             super(Objective, self).__setattr__(name, value)
