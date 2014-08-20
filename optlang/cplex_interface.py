@@ -18,6 +18,7 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
+import copy
 import sys
 
 from warnings import warn
@@ -452,8 +453,7 @@ class Model(interface.Model):
     def __setstate__(self, repr_dict):
         tmp_file = tempfile.mktemp(suffix=".sav")
         open(tmp_file, 'w').write(repr_dict['cplex_repr'])
-        problem = cplex.Cplex()
-        problem.read(tmp_file)
+        problem = cplex.Cplex(tmp_file)
         self.__init__(problem=problem)
 
     @property
@@ -485,7 +485,7 @@ class Model(interface.Model):
             self.problem.objective.set_sense(
                 {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
                     value.direction])
-
+        self.problem.objective.set_name(value.name)
         value.problem = self
 
     def __str__(self):
