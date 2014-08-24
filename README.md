@@ -16,6 +16,12 @@ __optlang__ provides a common interface to a series of optimization solvers (lin
 
 The documentation for __optlang__ is provided at [readthedocs.org](http://optlang.readthedocs.org/en/latest/).
 
+### Dependencies
+
+* [sympy >= 0.7.5](http://sympy.org/en/index.html)
+* [swiglpk >= 0.1.0](https://pypi.python.org/pypi/swiglpk)
+* [glpk >= 4.45](https://www.gnu.org/software/glpk/)
+
 ### Example
 
 Formulating and solving the problem is straightforward (example taken from [GLPK documentation](http://www.gnu.org/software/glpk)):
