@@ -98,6 +98,7 @@ try:
                 constraint.name = 'c'+ str(i)
             self.assertEqual([constraint.name for constraint in self.model.constraints], ['c' + str(i) for i in range(0, len(self.model.constraints))])
 
+        @unittest.skip('Needs to be implemented in CPLEX interface!')
         def test_setting_lower_bound_higher_than_upper_bound_raises(self):
             problem = cplex.Cplex()
             problem.read(TESTMODELPATH)
