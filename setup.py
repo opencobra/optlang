@@ -39,7 +39,6 @@ setup(
     description='Formulate optimization problems using sympy expressions and solve them using interfaces to third-party optimization software (e.g. GLPK).',
     license='Apache License Version 2.0',
     url='https://github.com/biosustain/optlang',
-    download_url='https://github.com/biosustain/optlang/tarball/v0.0.2',
     long_description=description,
     keywords=['optimization', 'sympy', 'mathematical programming', 'heuristic optimization'],
     classifiers=[
