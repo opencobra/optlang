@@ -521,12 +521,14 @@ class Model(interface.Model):
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        tmp_file = tempfile.mktemp(suffix=".lp")
+        tmp_file = tempfile.mktemp(suffix=".glpk")
         open(tmp_file, 'w').write(repr_dict['glpk_repr'])
         problem = glp_create_prob()
-        # print glp_get_obj_coef(problem, 0)
         glp_read_prob(problem, 0, tmp_file)
         self.__init__(problem=problem)
+
+    def __copy__(self):
+        return Model(problem=self.problem)
 
     def __deepcopy__(self, memo):
         copy_problem = glp_create_prob()
@@ -582,14 +584,18 @@ class Model(interface.Model):
 
     def optimize(self):
         glp_simplex(self.problem, self.configuration._smcp)
-        if _GLPK_STATUS_TO_STATUS[glp_get_status(self.problem)] == 'undefined':
+        status = _GLPK_STATUS_TO_STATUS[glp_get_status(self.problem)]
+        if status == 'undefined' or status == 'infeasible':
+            glp_scale_prob(self.problem, GLP_SF_AUTO)
             original_presolve_setting = self.configuration.presolve
             self.configuration.presolve = True
             glp_simplex(self.problem, self.configuration._smcp)
             self.configuration.presolve = original_presolve_setting
         if (glp_get_num_int(self.problem) + glp_get_num_bin(self.problem)) > 0:
             glp_intopt(self.problem, self.configuration._iocp)
-            if _GLPK_STATUS_TO_STATUS[glp_get_status(self.problem)] == 'undefined':
+            status = _GLPK_STATUS_TO_STATUS[glp_get_status(self.problem)]
+            if status == 'undefined' or status == 'infeasible':
+                glp_scale_prob(self.problem, GLP_SF_AUTO)
                 original_presolve_setting = self.configuration.presolve
                 self.configuration.presolve = True
                 glp_intopt(self.problem, self.configuration._iocp)
