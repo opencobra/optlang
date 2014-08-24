@@ -17,6 +17,12 @@ __optlang__ provides a common interface to a series of optimization solvers (lin
 Install using pip
     
     pip install optlang
+
+or
+
+     pip install -e git+https://github.com/biosustain/optlang.git@master#egg=optlang
+
+if you want to work with the latest stable version.
     
 Local installations like
     
