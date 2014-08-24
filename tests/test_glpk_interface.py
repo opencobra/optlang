@@ -124,6 +124,11 @@ class SolverTestCase(unittest.TestCase):
     def test_copy(self):
         model_copy = copy.copy(self.model)
         self.assertNotEqual(id(self.model), id(model_copy))
+        self.assertEqual(id(self.model.problem), id(model_copy.problem))
+
+    def test_deepcopy(self):
+        model_copy = copy.deepcopy(self.model)
+        self.assertNotEqual(id(self.model), id(model_copy))
         self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
 
     def test_init_from_existing_problem(self):

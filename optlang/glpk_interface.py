@@ -110,7 +110,7 @@ class Variable(interface.Variable):
     def primal(self):
         if self.problem:
             primal_from_solver = glp_get_col_prim(self.problem.problem, self.index)
-            if primal_from_solver >= self.lb and primal_from_solver <= self.ub:
+            if (primal_from_solver >= self.lb or self.lb is None)  and (primal_from_solver <= self.ub or self.ub is None):
                 return primal_from_solver
             else:
                 if (self.lb - primal_from_solver) <= 1e-6:
