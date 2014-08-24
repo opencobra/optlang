@@ -12,6 +12,22 @@ optlang
 ### Vision
 __optlang__ provides a common interface to a series of optimization solvers (linear & non-linear) and relies on [sympy](http://sympy.org/en/index.html) for problem formulation (constraints, objectives, variables, etc.). Adding new solvers is easy: just sub-class the high-level interface and implement the necessary solver specific routines.
 
+### Installation
+
+Install using pip
+    
+    pip install optlang
+    
+Local installations like
+    
+    python setup.py install
+     
+might fail installing the dependencies (unresolved issue with `easy_install`). Running
+ 
+    pip install -r requirements.txt
+
+beforehand should fix this issue.
+
 ### Documentation
 
 The documentation for __optlang__ is provided at [readthedocs.org](http://optlang.readthedocs.org/en/latest/).
