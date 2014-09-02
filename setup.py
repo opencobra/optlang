@@ -25,8 +25,12 @@ try:
 except (IOError, ImportError):
     description = ''
 
-with open('requirements.txt') as fhandle:
-    requirements = [line.strip() for line in fhandle]
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+if on_rtd:
+    requirements = []
+else:
+    with open('requirements.txt') as fhandle:
+        requirements = [line.strip() for line in fhandle]
 
 setup(
     name='optlang',
