@@ -43,7 +43,8 @@ class ContainerTestCase(unittest.TestCase):
     def test_dir(self):
         var = Variable('blub')
         self.container.append(var)
-        self.assertEqual(dir(self.container), ['__contains__', '__delitem__', '__dict__', '__dir__', '__doc__', '__getattr__', '__getitem__', '__init__', '__iter__', '__len__', '__module__', '__setitem__', '__weakref__', '_check_for_name_attribute', 'append', 'blub', 'clear', 'extend', 'fromkeys', 'get', 'has_key', 'iteritems', 'iterkeys', 'itervalues', 'keys', 'values'])
+        print dir(self.container)
+        self.assertEqual(dir(self.container), ['__contains__', '__delitem__', '__dict__', '__dir__', '__doc__', '__getattr__', '__getitem__', '__init__', '__iter__', '__len__', '__module__', '__setitem__', '__weakref__', '_check_for_name_attribute', '_name_list', '_reindex', 'append', 'blub', 'clear', 'extend', 'fromkeys', 'get', 'has_key', 'iteritems', 'iterkeys', 'itervalues', 'keys', 'values'])
 
     def test_del_by_index(self):
         variables_iterable = [Variable("v"+str(i), lb=10, ub=100) for i in range(10000)]
@@ -157,3 +158,10 @@ class ContainerTestCase(unittest.TestCase):
         var2 = Variable('blib')
         self.container[0] = var2
         self.assertEqual(self.container[0], var2)
+
+    def test_change_object_name(self):
+        var = Variable('blub')
+        self.container.append(var)
+        var.name = 'blurg'
+        self.assertEqual(self.container.keys(), ['blurg'])
+        self.assertEqual(self.container['blurg'], var)
