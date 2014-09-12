@@ -62,8 +62,7 @@ class Container(object):
                 self._reindex()
                 try:
                     return self._dict[key]
-                except KeyError as e:
-                    print e
+                except KeyError:
                     raise KeyError("%s does not contain an object with name %s" % (self, key))
 
     def __setitem__(self, key, value):
