@@ -302,7 +302,7 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        if (glp_get_num_int(self.problem) + glp_get_num_bin(self.problem)) > 0:
+        if (glp_get_num_int(self.problem.problem) + glp_get_num_bin(self.problem.problem)) > 0:
             return glp_mip_obj_val(self.problem.problem)
         else:
             return glp_get_obj_val(self.problem.problem)
