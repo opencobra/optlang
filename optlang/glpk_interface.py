@@ -43,7 +43,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_version, glp_mip_col_val, \
-    glp_mip_obj_val
+    glp_mip_obj_val, glp_delete_prob
 
 import interface
 
@@ -760,6 +760,9 @@ class Model(interface.Model):
 
     def _set_linear_objective_term(self, variable, coefficient):
         glp_set_obj_coef(self.problem, variable.index, coefficient)
+
+    def __del__(self):
+        glp_delete_prob(self.problem)
 
 
 if __name__ == '__main__':
