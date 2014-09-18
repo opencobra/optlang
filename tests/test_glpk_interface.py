@@ -51,6 +51,13 @@ class VariableTestCase(unittest.TestCase):
         model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
 
+    def test_changing_variable_names_is_reflected_in_the_solver(self):
+        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        for i, variable in enumerate(model.variables):
+            variable.name = "var"+str(i)
+            self.assertEqual(variable.name, "var"+str(i))
+            self.assertEqual(glp_get_col_name(model.problem, variable.index), "var"+str(i))
+
 
 class ConstraintTestCase(unittest.TestCase):
     def setUp(self):
