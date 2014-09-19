@@ -403,9 +403,12 @@ class SolverTestCase(unittest.TestCase):
     def test_optimize_milp(self):
         problem = glpk_read_cplex(TESTMILPMODELPATH)
         milp_model = Model(problem=problem)
-        print milp_model.optimize()
+        milp_model.optimize()
         self.assertEqual(milp_model.status, 'optimal')
-        self.assertAlmostEqual(milp_model.objective.value, 125.20833333333333)
+        self.assertAlmostEqual(milp_model.objective.value, 122.5)
+        for variable in milp_model.variables:
+            if variable.type == 'integer':
+                self.assertEqual(variable.primal % 1, 0)
 
     def test_change_objective(self):
         """Test that all different kinds of linear objective specification work."""
