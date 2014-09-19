@@ -135,6 +135,16 @@ class Variable(interface.Variable):
         else:
             return None
 
+    def __setattr__(self, name, value):
+        try:
+            old_name = self.name  # TODO: This is a hack
+        except AttributeError:
+            pass
+        super(Variable, self).__setattr__(name, value)
+        if getattr(self, 'problem', None):
+            if name == 'name':
+                glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), value)
+
 
 class Constraint(interface.Constraint):
     """GLPK solver interface"""
