@@ -339,11 +339,11 @@ class Constraint(OptimizationExpression):
         super(Constraint, self).__init__(expression, *args, **kwargs)
 
     def __str__(self):
-        if self.lb:
+        if self.lb is not None:
             lhs = str(self.lb) + ' <= '
         else:
             lhs = ''
-        if self.ub:
+        if self.ub is not None:
             rhs = ' <= ' + str(self.ub)
         else:
             rhs = ''
