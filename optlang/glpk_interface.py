@@ -42,7 +42,8 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_col_name, intArray, glp_del_cols, glp_add_rows, glp_set_row_name, doubleArray, glp_write_lp, glp_write_prob, \
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
-    glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_version
+    glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_version, glp_mip_col_val, \
+    glp_mip_obj_val
 
 import interface
 
@@ -109,8 +110,13 @@ class Variable(interface.Variable):
     @property
     def primal(self):
         if self.problem:
-            primal_from_solver = glp_get_col_prim(self.problem.problem, self.index)
-            if (primal_from_solver >= self.lb or self.lb is None)  and (primal_from_solver <= self.ub or self.ub is None):
+            if self.type == "continuous":
+                primal_from_solver = glp_get_col_prim(self.problem.problem, self.index)
+            elif self.type in ["binary", "integer"]:
+                primal_from_solver = glp_mip_col_val(self.problem.problem, self.index)
+            else:
+                raise TypeError("Unknown variable type")
+            if (primal_from_solver >= self.lb or self.lb is None) and (primal_from_solver <= self.ub or self.ub is None):
                 return primal_from_solver
             else:
                 if (self.lb - primal_from_solver) <= 1e-6:
@@ -128,6 +134,16 @@ class Variable(interface.Variable):
             return glp_get_col_dual(self.problem.problem, self.index)
         else:
             return None
+
+    def __setattr__(self, name, value):
+        try:
+            old_name = self.name  # TODO: This is a hack
+        except AttributeError:
+            pass
+        super(Variable, self).__setattr__(name, value)
+        if getattr(self, 'problem', None):
+            if name == 'name':
+                glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), value)
 
 
 class Constraint(interface.Constraint):
@@ -296,11 +312,10 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        return glp_get_obj_val(self.problem.problem)
-
-    @property
-    def value(self):
-        return glp_get_obj_val(self.problem.problem)
+        if (glp_get_num_int(self.problem.problem) + glp_get_num_bin(self.problem.problem)) > 0:
+            return glp_mip_obj_val(self.problem.problem)
+        else:
+            return glp_get_obj_val(self.problem.problem)
 
     def __setattr__(self, name, value):
 

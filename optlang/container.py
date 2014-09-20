@@ -20,22 +20,34 @@ class Container(object):
     def __init__(self, iterable=[]):
         try:
             self._dict = dict(((elem.name, elem) for elem in iterable))
-            self._name_list = [elem.name for elem in iterable]
         except AttributeError as e:
             print "Only objects with containing a 'name' attribute can be stored in a Container."
             raise e
         self._object_list = list(iterable)
+
+    @property
+    def _name_list(self):
+        return [elem.name for elem in self._object_list]
 
     @staticmethod
     def _check_for_name_attribute(value):
         if not hasattr(value, 'name'):
             raise AttributeError('Object %s does not have a "name" attribute and cannot not be stored.' % value)
 
+    def _reindex(self):
+        self._dict = dict(((elem.name, elem) for elem in self._object_list))
+
     def __len__(self):
         return len(self._object_list)
 
     def __contains__(self, key):
-        return self._dict.has_key(key) or key in self._object_list
+        if self._dict.has_key(key):
+            return True
+        elif key in self._object_list:
+            return True
+        else:
+            self._reindex()
+            return self._dict.has_key(key)
 
     def __iter__(self):
         return self._object_list.__iter__()
@@ -47,40 +59,47 @@ class Container(object):
             try:
                 return self._dict[key]
             except KeyError:
-                raise KeyError("%s does not contain an object with name %s" % (self, key))
+                self._reindex()
+                try:
+                    return self._dict[key]
+                except KeyError:
+                    raise KeyError("%s does not contain an object with name %s" % (self, key))
 
     def __setitem__(self, key, value):
         try:
             self._check_for_name_attribute(value)
             self._object_list.__setitem__(key, value)
-            self._name_list.__setitem__(key, value.name)
             self._dict[value.name] = value
         except TypeError:
             try:
                 item = self._dict.__getitem__(key)
                 index = self._name_list.index(item.name)
                 self._dict[key] = value
-                self._object_list.__setitem__(index, value)
-                self._name_list.__setitem__(index, value.name)
             except KeyError:
-                raise KeyError("%s does not contain an object with name %s" % (self, key))
-
+                self._reindex()
+                try:
+                    self._dict[key] = value
+                except KeyError:
+                    raise KeyError("%s does not contain an object with name %s" % (self, key))
+            self._object_list.__setitem__(index, value)
 
     def __delitem__(self, key):
         try:
             item = self._object_list.__getitem__(key)
             self._object_list.__delitem__(key)
-            self._name_list.__delitem__(key)
             self._dict.__delitem__(item.name)
         except TypeError:
             try:
                 item = self._dict.__getitem__(key)
                 index = self._name_list.index(item.name)
                 self._dict.__delitem__(key)
-                self._object_list.__delitem__(index)
-                self._name_list.__delitem__(index)
             except KeyError:
-                raise KeyError("%s does not contain an object with name %s" % (self, key))
+                self._reindex()
+                try:
+                    self._dict.__delitem__(key)
+                except KeyError:
+                    raise KeyError("%s does not contain an object with name %s" % (self, key))
+            self._object_list.__delitem__(index)
 
     def iterkeys(self):
         return self._name_list.__iter__()
@@ -105,11 +124,14 @@ class Container(object):
         try:
             return self.__getitem__(key)
         except (KeyError, IndexError) as e:
-            return default
+            self._reindex()
+            try:
+                return self.__getitem__(key)
+            except (KeyError, IndexError) as e:
+                return default
 
     def clear(self):
         self._object_list = list()
-        self._name_list = list()
         self._dict = dict()
 
     def has_key(self, key):
@@ -122,7 +144,6 @@ class Container(object):
         if self._dict.has_key(name):
             raise Exception("Container '%s' already contains an object with name '%s'." % (self, value.name))
         self._object_list.append(value)
-        self._name_list.append(name)
         self._dict[value.name] = value
 
     def extend(self, values):
@@ -131,7 +152,6 @@ class Container(object):
             if self._dict.has_key(value.name):
                 raise Exception("Container '%s' already contains an object with name '%s'." % (self, value.name))
         self._object_list.extend(values)
-        self._name_list.extend([value.name for value in values])
         self._dict.update(dict([(value.name, value) for value in values]))
 
     def __getattr__(self, name):
@@ -142,5 +162,5 @@ class Container(object):
 
     def __dir__(self):
         attributes = self.__class__.__dict__.keys()
-        attributes.extend(self._dict.keys())
+        attributes.extend(self._name_list)
         return attributes
