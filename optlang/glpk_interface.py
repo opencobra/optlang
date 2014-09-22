@@ -762,7 +762,8 @@ class Model(interface.Model):
         glp_set_obj_coef(self.problem, variable.index, coefficient)
 
     def __del__(self):
-        glp_delete_prob(self.problem)
+        if not self.problem is None:
+            glp_delete_prob(self.problem)
 
 
 if __name__ == '__main__':
