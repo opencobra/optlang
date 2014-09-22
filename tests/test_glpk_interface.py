@@ -398,7 +398,7 @@ class SolverTestCase(unittest.TestCase):
         milp_model = Model(problem=problem)
         print milp_model.optimize()
         self.assertEqual(milp_model.status, 'optimal')
-        self.assertAlmostEqual(milp_model.objective.value, 125.20833333333333)
+        self.assertAlmostEqual(milp_model.objective.value, 122.5)
 
     def test_change_objective(self):
         """Test that all different kinds of linear objective specification work."""
