@@ -56,8 +56,7 @@ def load_problem(mps_file,):
     glp_read_mps(problem, GLP_MPS_FILE, None, prob_tmp_file)
     model = Model(problem=problem)
     model.configuration.presolve = True
-    model.configuration.verbosity = 3
-    model.configuration.timeout = 60 * 7
+    model.configuration.timeout = 60 * 10
     model.configuration._iocp.br_tech = GLP_BR_PCH
     return problem, model
 
