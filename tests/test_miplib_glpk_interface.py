@@ -21,7 +21,7 @@ import tempfile
 import urllib2
 import nose
 from optlang.glpk_interface import Model
-from swiglpk import glp_read_mps, GLP_MPS_FILE, glp_create_prob, glp_get_num_cols, GLP_BR_PCH, glp_read_sol
+from swiglpk import glp_read_mps, GLP_MPS_FILE, glp_create_prob, glp_get_num_cols
 
 #problems from http://miplib.zib.de/miplib2003/miplib2003.php
 
@@ -57,7 +57,6 @@ def load_problem(mps_file,):
     model = Model(problem=problem)
     model.configuration.presolve = True
     model.configuration.timeout = 60 * 10
-    model.configuration._iocp.br_tech = GLP_BR_PCH
     return problem, model
 
 
@@ -77,7 +76,7 @@ def check_optimization(model, expected_solution):
             #     nose.tools.assert_almost_equal(expected_solution.solution[v.name], v.primal, places=4)
 
 
-class MockupSolution():
+class MockSolution(object):
     def __init__(self, name, sol_type, f, problem_dir):
         self.name = name
         self.sol_type = sol_type
@@ -104,19 +103,20 @@ class MockupSolution():
 
 
 def test_miplib(solutions=SOLUTION, problem_dir=PROBLEMS_DIR):
-    with open(solutions, "rU") as fhandler:
-        for line in fhandler:
+    with open(solutions, "rU") as file_handler:
+        for line in file_handler:
             data = MULTISPACE_RE.split(line)
             sol_type, name, f = data[0], data[1], float(data[2])
             sol_type = SOLUTION_MAPPING[sol_type]
-            expected_solution = MockupSolution(name, sol_type, f, problem_dir)
+            expected_solution = MockSolution(name, sol_type, f, problem_dir)
             problem_file = os.path.join(problem_dir, "%s.mps.gz" % name)
             try:
                 if not os.path.exists(problem_file):
                     download_file("%s.mps.gz" % name, problem_dir)
 
             except Exception as e:
-                raise e
+                print e
+                continue
 
             glpk_problem, model = load_problem(problem_file)
             func = partial(check_dimensions, model, glpk_problem)
