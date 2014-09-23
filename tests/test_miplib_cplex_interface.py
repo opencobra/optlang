@@ -59,7 +59,7 @@ try:
         problem.read(prob_tmp_file)
         model = Model(problem=problem)
         model.configuration.presolve = True
-        model.configuration.timeout = 60 * 10
+        model.configuration.timeout = 60 * 9
         return problem, model
 
     def check_dimensions(model, cplex_problem):
