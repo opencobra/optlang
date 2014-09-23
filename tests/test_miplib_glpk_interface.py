@@ -88,16 +88,17 @@ class MockSolution(object):
     def solution(self):
         if self._solution is None:
             self._solution = {}
-            solution_file = os.path.join(self.problem_dir, "%s.sol.gz" % self.name)
-            try:
-                if not os.path.exists(solution_file):
-                    download_file("%s.sol.gz" % self.name, self.problem_dir)
-                f = gzip.open(solution_file, 'rb')
-                for line in f:
-                    data = MULTISPACE_RE.split(line)
-                    self._solution[data[1]] = float(data[2])
-            except Exception as e:
-                raise e
+            #TODO: implement a parser for expected solutions.
+            # solution_file = os.path.join(self.problem_dir, "%s.sol.gz" % self.name)
+            # try:
+            #     if not os.path.exists(solution_file):
+            #         download_file("%s.sol.gz" % self.name, self.problem_dir)
+            #     f = gzip.open(solution_file, 'rb')
+            #     for line in f:
+            #         data = MULTISPACE_RE.split(line)
+            #         self._solution[data[1]] = float(data[2])
+            # except Exception as e:
+            #     raise e
 
         return self._solution
 
