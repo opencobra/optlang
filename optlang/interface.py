@@ -169,7 +169,6 @@ class Variable(sympy.Symbol):
             raise ValueError(
                 "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
 
-
     def __str__(self):
         """Print a string representation of variable.
 
@@ -197,6 +196,17 @@ class Variable(sympy.Symbol):
 
     def __setstate__(self, state):
         self.__dict__ = state
+
+    def __round_primal_to_bounds(self, primal, tolerance=1e-6):
+        if (primal >= self.lb or self.lb is None) and (primal <= self.ub or self.ub is None):
+                return primal
+        else:
+            if (self.lb - primal) <= tolerance:
+                return self.lb
+            elif (self.ub - primal) >= -tolerance:
+                return self.ub
+            else:
+                raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal, self.name, self.lb, self.ub))
 
 
 # noinspection PyPep8Naming

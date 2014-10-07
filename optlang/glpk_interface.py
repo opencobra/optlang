@@ -116,15 +116,7 @@ class Variable(interface.Variable):
                 primal_from_solver = glp_mip_col_val(self.problem.problem, self.index)
             else:
                 raise TypeError("Unknown variable type")
-            if (primal_from_solver >= self.lb or self.lb is None) and (primal_from_solver <= self.ub or self.ub is None):
-                return primal_from_solver
-            else:
-                if (self.lb - primal_from_solver) <= 1e-6:
-                    return self.lb
-                elif (self.ub - primal_from_solver) >= -1e-6:
-                    return self.ub
-                else:
-                    raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal_from_solver, self.name, self.lb, self.ub))
+            return self.__round_primal_to_bounds(primal_from_solver)
         else:
             return None
 
