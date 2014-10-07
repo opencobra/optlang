@@ -203,7 +203,7 @@ class Variable(sympy.Symbol):
         else:
             if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
                 return self.lb
-            elif (primal >= self.ub) and ((self.ub - primal) >= tolerance):
+            elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
                 return self.ub
             else:
                 raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal, self.name, self.lb, self.ub))
