@@ -709,7 +709,7 @@ class Model(object):
         constraint_id = constraint.name
         if sloppy is False:
             for var in constraint.variables:
-                if var.name not in self.variables:
+                if var.problem is not self:
                     self._add_variable(var)
                 try:
                     self._variables_to_constraints_mapping[var.name].add(constraint_id)
