@@ -357,11 +357,13 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._iocp = glp_iocp()
         glp_init_smcp(self._smcp)
         glp_init_iocp(self._iocp)
+        self._max_time = min(self._smcp.tm_lim, self._iocp.tm_lim)
         self._set_presolve(presolve)
         self._presolve = presolve
         self._set_verbosity(verbosity)
         self._verbosity = verbosity
-        self._timeout = None
+        self._set_timeout(timeout)
+        self._timeout = timeout
 
     def __getstate__(self):
         return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
@@ -398,6 +400,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 % value
             )
 
+    def _set_timeout(self, value):
+        if value is None:
+            self._smcp.tm_lim = self._max_time
+            self._iocp.tm_lim = self._max_time
+        else:
+            self._smcp.tm_lim = value * 1000  # milliseconds to seconds
+            self._iocp.tm_lim = value * 1000
+
     @property
     def presolve(self):
         return self._presolve
@@ -422,12 +432,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @timeout.setter
     def timeout(self, value):
-        if value is None:
-            self._smcp.tm_lim = sys.maxint
-            self._iocp.tm_lim = sys.maxint
-        else:
-            self._smcp.tm_lim = value * 1000  # milliseconds to seconds
-            self._iocp.tm_lim = value * 1000
+        self._set_timeout(value)
+        self._timeout = value
 
 class Model(interface.Model):
     """GLPK solver interface"""
