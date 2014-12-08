@@ -469,11 +469,7 @@ class SolverTestCase(unittest.TestCase):
     def test_timeout(self):
         self.model.configuration.timeout = 0
         status = self.model.optimize()
-
-        if glp_version() == '4.45':
-            self.assertEqual(status, 'undefined')
-        else:
-            self.assertEqual(status, 'infeasible')
+        self.assertEqual(status, 'time_limit')
 
     def test_set_linear_objective_term(self):
         self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)

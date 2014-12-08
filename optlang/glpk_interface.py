@@ -43,7 +43,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_version, glp_mip_col_val, \
-    glp_mip_obj_val, glp_mip_status
+    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM
 
 import interface
 
@@ -595,29 +595,49 @@ class Model(interface.Model):
         glpk_form = open(tmp_file).read()
         return glpk_form
 
+    def _run_glp_simplex(self):
+        return_value = glp_simplex(self.problem, self.configuration._smcp)
+        if return_value == 0:
+            glpk_status = glp_get_status(self.problem)
+            status = _GLPK_STATUS_TO_STATUS[glpk_status]
+        elif return_value == GLP_ETMLIM:
+            status = interface.TIME_LIMIT
+        else:
+            status = return_value
+        return status
+
+    def _run_glp_mip(self):
+        return_value = glp_intopt(self.problem, self.configuration._iocp)
+        if return_value == 0:
+            glpk_status = glp_mip_status(self.problem)
+            status = _GLPK_STATUS_TO_STATUS[glpk_status]
+        elif return_value == GLP_ETMLIM:
+            status = interface.TIME_LIMIT
+        else:
+            status = return_value
+        return status
+
     def optimize(self):
-        glp_simplex(self.problem, self.configuration._smcp)
-        glpk_status = glp_get_status(self.problem)
-        status = _GLPK_STATUS_TO_STATUS[glpk_status]
-        if status == 'undefined' or status == 'infeasible':
+        status = self._run_glp_simplex()
+
+        if status == interface.UNDEFINED or status == interface.INFEASIBLE:
+            # Let's see if the presolver and some scaling can fix this issue
             glp_scale_prob(self.problem, GLP_SF_AUTO)
             original_presolve_setting = self.configuration.presolve
             self.configuration.presolve = True
-            glp_simplex(self.problem, self.configuration._smcp)
+            status = self._run_glp_simplex()
             self.configuration.presolve = original_presolve_setting
-            glpk_status = glp_get_status(self.problem)
         if (glp_get_num_int(self.problem) + glp_get_num_bin(self.problem)) > 0:
-            glp_intopt(self.problem, self.configuration._iocp)
-            status = _GLPK_STATUS_TO_STATUS[glp_get_status(self.problem)]
+            status = self._run_glp_mip()
             if status == 'undefined' or status == 'infeasible':
+                # Let's see if the presolver and some scaling can fix this issue
                 glp_scale_prob(self.problem, GLP_SF_AUTO)
                 original_presolve_setting = self.configuration.presolve
                 self.configuration.presolve = True
-                glp_intopt(self.problem, self.configuration._iocp)
+                status = self._run_glp_mip()
                 self.configuration.presolve = original_presolve_setting
-            glpk_status = glp_mip_status(self.problem)
-        self._status = _GLPK_STATUS_TO_STATUS[glpk_status]
-        return self.status
+        self._status = status
+        return status
 
     def _add_variable(self, variable):
         super(Model, self)._add_variable(variable)
