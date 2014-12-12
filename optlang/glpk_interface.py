@@ -597,24 +597,28 @@ class Model(interface.Model):
 
     def _run_glp_simplex(self):
         return_value = glp_simplex(self.problem, self.configuration._smcp)
+        glpk_status = glp_get_status(self.problem)
         if return_value == 0:
-            glpk_status = glp_get_status(self.problem)
             status = _GLPK_STATUS_TO_STATUS[glpk_status]
         elif return_value == GLP_ETMLIM:
             status = interface.TIME_LIMIT
         else:
-            status = return_value
+            status = _GLPK_STATUS_TO_STATUS[glpk_status]
+            if status == interface.UNDEFINED:
+                log.debug("Status undefined. GLPK status code returned by glp_simplex was %d" % return_value)
         return status
 
     def _run_glp_mip(self):
         return_value = glp_intopt(self.problem, self.configuration._iocp)
+        glpk_status = glp_mip_status(self.problem)
         if return_value == 0:
-            glpk_status = glp_mip_status(self.problem)
             status = _GLPK_STATUS_TO_STATUS[glpk_status]
         elif return_value == GLP_ETMLIM:
             status = interface.TIME_LIMIT
         else:
-            status = return_value
+            status = _GLPK_STATUS_TO_STATUS[glpk_status]
+            if status == interface.UNDEFINED:
+                log.debug("Status undefined. GLPK status code returned by glp_intopt was %d" % return_value)
         return status
 
     def optimize(self):
