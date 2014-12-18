@@ -165,3 +165,11 @@ class ContainerTestCase(unittest.TestCase):
         var.name = 'blurg'
         self.assertEqual(self.container.keys(), ['blurg'])
         self.assertEqual(self.container['blurg'], var)
+
+    def test_iter_container_len_change_raises(self):
+        def _(container):
+            for item in container:
+                del container[item.name]
+        variables_iterable = [Variable("v"+str(i), lb=10, ub=100) for i in range(10)]
+        container = Container(variables_iterable)
+        self.assertRaises(RuntimeError, _, container)

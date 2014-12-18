@@ -50,7 +50,11 @@ class Container(object):
             return self._dict.has_key(key)
 
     def __iter__(self):
-        return self._object_list.__iter__()
+        original_length = len(self._object_list)
+        for item in self._object_list.__iter__():
+            if original_length != len(self._object_list):
+                raise RuntimeError("container changed size during iteration")
+            yield item
 
     def __getitem__(self, key):
         try:
