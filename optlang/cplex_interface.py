@@ -486,12 +486,6 @@ class Model(interface.Model):
         cplex_form = open(tmp_file).read()
         return cplex_form
 
-    def __repr__(self):
-        tmp_file = tempfile.mktemp(suffix=".sav")
-        self.problem.write(tmp_file)
-        cplex_form = open(tmp_file).read()
-        return cplex_form
-
     def optimize(self):
         self.problem.solve()
         cplex_status = self.problem.solution.get_status()
