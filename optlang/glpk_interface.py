@@ -77,7 +77,7 @@ class Variable(interface.Variable):
     @property
     def index(self):
         try:
-            i = glp_find_col(self.problem.problem, self.name)
+            i = glp_find_col(self.problem.problem, str(self.name))
             if i != 0:
                 return i
             else:
@@ -135,7 +135,7 @@ class Variable(interface.Variable):
         super(Variable, self).__setattr__(name, value)
         if getattr(self, 'problem', None):
             if name == 'name':
-                glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), value)
+                glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
 
 
 class Constraint(interface.Constraint):
@@ -198,7 +198,7 @@ class Constraint(interface.Constraint):
     @property
     def index(self):
         try:
-            i = glp_find_row(self.problem.problem, self.name)
+            i = glp_find_row(self.problem.problem, str(self.name))
             if i != 0:
                 return i
             else:
@@ -242,7 +242,7 @@ class Constraint(interface.Constraint):
         super(Constraint, self).__setattr__(name, value)
         if getattr(self, 'problem', None):
             if name == 'name':
-                glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), value)
+                glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
             elif name == 'lb' or name == 'ub':
                 self.problem._glpk_set_row_bounds(self)
 
@@ -448,7 +448,7 @@ class Model(interface.Model):
             self.problem = glp_create_prob()
             glp_create_index(self.problem)
             if self.name is not None:
-                glp_set_prob_name(self.problem, self.name)
+                glp_set_prob_name(self.problem, str(self.name))
 
         else:
             try:
@@ -647,7 +647,7 @@ class Model(interface.Model):
         super(Model, self)._add_variable(variable)
         glp_add_cols(self.problem, 1)
         index = glp_get_num_cols(self.problem)
-        glp_set_col_name(self.problem, index, variable.name)
+        glp_set_col_name(self.problem, index, str(variable.name))
         variable.problem = self
         self._glpk_set_col_bounds(variable)
         glp_set_col_kind(self.problem, variable.index, _VTYPE_TO_GLPK_VTYPE[variable.type])
@@ -686,7 +686,7 @@ class Model(interface.Model):
         constraint._problem = None  # This needs to be dones in order to not trigger constraint._get_expression()
         glp_add_rows(self.problem, 1)
         index = glp_get_num_rows(self.problem)
-        glp_set_row_name(self.problem, index, constraint.name)
+        glp_set_row_name(self.problem, index, str(constraint.name))
         num_cols = glp_get_num_cols(self.problem)
         index_array = intArray(num_cols + 1)
         value_array = doubleArray(num_cols + 1)
