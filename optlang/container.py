@@ -164,6 +164,12 @@ class Container(object):
         except KeyError:
             raise AttributeError("'%s' object has no attribute %s" % (self, name))
 
+    def __getstate__(self):
+        return self._object_list
+
+    def __setstate__(self, obj_list):
+        self.__init__(obj_list)
+
     def __dir__(self):
         attributes = self.__class__.__dict__.keys()
         attributes.extend(self._name_list)

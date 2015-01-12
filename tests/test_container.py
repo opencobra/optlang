@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import pickle
 
 import unittest
 from optlang.container import Container
@@ -173,3 +174,9 @@ class ContainerTestCase(unittest.TestCase):
         variables_iterable = [Variable("v"+str(i), lb=10, ub=100) for i in range(10)]
         container = Container(variables_iterable)
         self.assertRaises(RuntimeError, _, container)
+
+    def test_pickle(self):
+        variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(100)]
+        self.container.extend(variables)
+        unpickled = pickle.loads(pickle.dumps(self.container))
+        self.assertEquals(unpickled[0].name, variables[0].name)
