@@ -471,8 +471,10 @@ class Model(interface.Model):
         self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
-        cplex_repr = self.__repr__()
-        repr_dict = {'cplex_repr': cplex_repr}
+        tmp_file = tempfile.mktemp(suffix=".sav")
+        self.problem.write(tmp_file)
+        cplex_binary = open(tmp_file).read()
+        repr_dict = {'cplex_repr': cplex_binary}
         return repr_dict
 
     def __setstate__(self, repr_dict):
