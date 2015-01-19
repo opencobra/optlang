@@ -530,7 +530,7 @@ class Model(interface.Model):
 
     def __getstate__(self):
         glpk_repr = self._glpk_representation()
-        repr_dict = {'glpk_repr': glpk_repr}
+        repr_dict = {'glpk_repr': glpk_repr, 'glpk_status': self.status}
         return repr_dict
 
     def __setstate__(self, repr_dict):
@@ -539,6 +539,8 @@ class Model(interface.Model):
         problem = glp_create_prob()
         glp_read_prob(problem, 0, tmp_file)
         self.__init__(problem=problem)
+        if repr_dict['glpk_status'] == 'optimal':
+            self.optimize()  # since the start is an optimal solution, nothing will happen here
 
     def __copy__(self):
         return Model(problem=self.problem)

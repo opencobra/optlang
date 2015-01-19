@@ -474,13 +474,15 @@ class Model(interface.Model):
         tmp_file = tempfile.mktemp(suffix=".sav")
         self.problem.write(tmp_file)
         cplex_binary = open(tmp_file).read()
-        repr_dict = {'cplex_repr': cplex_binary}
+        repr_dict = {'cplex_binary': cplex_binary, 'status': self.status}
         return repr_dict
 
     def __setstate__(self, repr_dict):
         tmp_file = tempfile.mktemp(suffix=".sav")
-        open(tmp_file, 'w').write(repr_dict['cplex_repr'])
+        open(tmp_file, 'w').write(repr_dict['cplex_binary'])
         problem = cplex.Cplex(tmp_file)
+        if repr_dict['status'] == 'optimal':
+            problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
 
     @property
