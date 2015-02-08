@@ -34,7 +34,7 @@ else:
 
 setup(
     name='optlang',
-    version='0.0.4',
+    version='0.1.0',
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
     test_suite='nose.collector',
