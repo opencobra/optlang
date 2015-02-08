@@ -22,6 +22,7 @@ extended for individual solvers.
 import logging
 import random
 import uuid
+import six
 
 import types
 import collections
@@ -107,7 +108,7 @@ class Variable(sympy.Symbol):
                 raise ValueError(
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
-        super(Variable, self).__init__(name, *args, **kwargs)
+        sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
         self._lb = lb
         self._ub = ub
         self._type = type
@@ -268,9 +269,9 @@ class OptimizationExpression(object):
         return self.expression.atoms(sympy.Symbol)
 
     def _canonicalize(self, expression):
-        if isinstance(expression, types.FloatType):
+        if isinstance(expression, float):
             return sympy.RealNumber(expression)
-        elif isinstance(expression, types.IntType):
+        elif isinstance(expression, int):
             return sympy.Integer(expression)
         else:
             return expression
@@ -545,9 +546,8 @@ class Model(object):
             for atom in value.expression.atoms(sympy.Symbol):
                 if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
                     self._add_variable(atom)
-        except AttributeError, e:
-            if isinstance(value.expression, types.FunctionType) or isinstance(value.expression,
-                                                                              types.FloatType):
+        except AttributeError as e:
+            if isinstance(value.expression, six.types.FunctionType) or isinstance(value.expression, float):
                 pass
             else:
                 raise AttributeError(e)
@@ -758,11 +758,11 @@ if __name__ == '__main__':
 
     try:
         sol = model.optimize()
-    except NotImplementedError, e:
-        print e
+    except NotImplementedError as e:
+        print(e)
 
-    print model
-    print model.variables
+    print(model)
+    print(model.variables)
 
     # model.remove(x1)
 

@@ -1,8 +1,7 @@
 language: python
 python:
   - "2.7"
-virtualenv:
-  system_site_packages: true
+  - "3.4"
 before_install:
   - sudo apt-get install libglpk-dev swig python-numpy glpk-utils
   - export SYMPY_USE_CACHE=no

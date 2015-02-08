@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import six
 
 
 __version__ = '0.0.2'
@@ -32,6 +33,12 @@ else:
     log.error('No solvers available.')
 
 if available_solvers['GLPK']:
-    import glpk_interface
+    if six.PY3:
+        from . import glpk_interface
+    else:
+        import glpk_interface
 if available_solvers['CPLEX']:
-    import cplex_interface
+    if six.PY3:
+        from . import cplex_interface
+    else:
+        import cplex_interface

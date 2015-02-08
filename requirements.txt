@@ -1,2 +1,2 @@
-sympy==0.7.5
-swiglpk==0.1.0
+sympy==0.7.6
+swiglpk==1.0.0

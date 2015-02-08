@@ -33,7 +33,7 @@ try:
             model.optimize()
             self.assertEqual(model.status, 'optimal')
             self.assertEqual(model.objective.value, 0.8739215069684305)
-            print [var.primal for var in model.variables]
+            print([var.primal for var in model.variables])
             for i, j in zip([var.primal for var in model.variables], [0.8739215069684306, -16.023526143167608, 16.023526143167604, -14.71613956874283, 14.71613956874283, 4.959984944574658, 4.959984944574657, 4.959984944574658, 3.1162689467973905e-29, 2.926716099010601e-29, 0.0, 0.0, -6.112235045340358e-30, -5.6659435396316186e-30, 0.0, -4.922925402711085e-29, 0.0, 9.282532599166613, 0.0, 6.00724957535033, 6.007249575350331, 6.00724957535033, -5.064375661482091, 1.7581774441067828, 0.0, 7.477381962160285, 0.0, 0.22346172933182767, 45.514009774517454, 8.39, 0.0, 6.007249575350331, 0.0, -4.541857463865631, 0.0, 5.064375661482091, 0.0, 0.0, 2.504309470368734, 0.0, 0.0, -22.809833310204958, 22.809833310204958, 7.477381962160285, 7.477381962160285, 1.1814980932459636, 1.496983757261567, -0.0, 0.0, 4.860861146496815, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.064375661482091, 0.0, 5.064375661482091, 0.0, 0.0, 1.496983757261567, 10.000000000000002, -10.0, 0.0, 0.0, 0.0, 0.0, 0.0, -29.175827135565804, 43.598985311997524, 29.175827135565804, 0.0, 0.0, 0.0, -1.2332237321082153e-29, 3.2148950476847613, 38.53460965051542, 5.064375661482091, 0.0, -1.2812714099825612e-29, -1.1331887079263237e-29, 17.530865429786694, 0.0, 0.0, 0.0, 4.765319193197458, -4.765319193197457, 21.79949265599876, -21.79949265599876, -3.2148950476847613, 0.0, -2.281503094067127, 2.6784818505075303, 0.0]):
                 self.assertAlmostEqual(i, j)
 
@@ -45,7 +45,7 @@ try:
             model.optimize()
             self.assertEqual(model.status, 'optimal')
             self.assertEqual(model.objective.value, 0.8739215069684305)
-            print [var.dual for var in model.variables]
+            print([var.dual for var in model.variables])
             for i, j in zip([var.dual for var in model.variables], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.022916186593776235, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, -0.007638728864592075, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.005092485909728057, 0.0, 0.0, 0.0, 0.0, -0.005092485909728046, 0.0, 0.0, -0.005092485909728045, 0.0, 0.0, 0.0, -0.0611098309167366, -0.005092485909728045, 0.0, -0.003819364432296033, -0.00509248590972805, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03946676580039239, 0.0, 0.0, -0.005092485909728042, -0.0, -0.0012731214774320113, 0.0, -0.0916647463751049, 0.0, 0.0, 0.0, -0.0, -0.04583237318755246, 0.0, 0.0, -0.0916647463751049, -0.005092485909728045, -0.07002168125876067, 0.0, -0.06874855978132867, -0.0012731214774320113, 0.0, 0.0, 0.0, -0.001273121477432006, -0.0038193644322960392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.040739887277824405, -0.04583237318755245, -0.0012731214774320163, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, 0.0, -0.04837861614241648]):
                 self.assertAlmostEqual(i, j)
 
@@ -74,7 +74,7 @@ try:
             self.model.optimize()
             self.assertEqual(self.model.status, 'optimal')
             self.assertEqual(self.model.objective.value, 0.8739215069684305)
-            print [constraint.primal for constraint in self.model.constraints]
+            print([constraint.primal for constraint in self.model.constraints])
             for i, j in zip([constraint.primal for constraint in self.model.constraints], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.048900234729145e-15, 0.0, 0.0, 0.0, -3.55971196577979e-16, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.5546369406238147e-17, 0.0, -5.080374405378186e-29, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
                 self.assertAlmostEqual(i, j)
 
@@ -83,7 +83,7 @@ try:
             self.model.optimize()
             self.assertEqual(self.model.status, 'optimal')
             self.assertEqual(self.model.objective.value, 0.8739215069684305)
-            print [constraint.dual for constraint in self.model.constraints]
+            print([constraint.dual for constraint in self.model.constraints])
             for i, j in zip([constraint.dual for constraint in self.model.constraints], [-0.047105494664984454, -0.042013008755256404, -0.042013008755256404, -0.09166474637510487, -0.09039162489767286, -0.02418930807120824, -0.022916186593776228, -0.034374279890664335, -0.034374279890664335, -0.028008672503504275, -0.07129480273619268, -0.029281793980936287, 0.005092485909728047, -0.06238295239416859, -0.06110983091673658, 0.010184971819456094, -0.0, -0.07129480273619268, -0.0, 0.0, -0.0, -0.0521979805747125, -0.06747543830389663, -0.0407398872778244, -0.039466765800392385, -0.09803035376226493, -0.104395961149425, 0.0, 0.0, -0.09166474637510488, -0.04837861614241646, -0.045832373187552435, -0.0521979805747125, -0.09803035376226493, -0.09166474637510488, -0.07511416716848872, -0.07002168125876067, -0.07002168125876067, -0.06874855978132866, -0.019096822161480172, -0.0, 0.0, 0.001273121477432012, 0.0, -0.07129480273619268, -0.042013008755256404, -0.04073988727782439, -0.04837861614241646, -0.045832373187552435, 0.007638728864592072, -0.0, 0.008911850342024089, -0.0, -0.0, 0.0, -0.0, 0.0, -0.042013008755256404, -0.042013008755256404, -0.001273121477432012, 0.0, -0.03564740136809635, -0.034374279890664335, 0.002546242954864024, -0.0, -0.08275289603308078, -0.08275289603308078, -0.11330781149144906, -0.050924859097280485, -0.04837861614241646, -0.054744223529576516, -0.08275289603308078]
 ):
                 self.assertAlmostEqual(i, j)
@@ -103,8 +103,8 @@ try:
             problem = cplex.Cplex()
             problem.read(TESTMODELPATH)
             model = Model(problem=problem)
-            print model.constraints[0].lb
-            print model.constraints[0].ub
+            print(model.constraints[0].lb)
+            print(model.constraints[0].ub)
             self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
 
         def test_setting_nonnumerical_bounds_raises(self):
@@ -203,7 +203,7 @@ try:
             self.assertEqual(self.model.variables['12x!!@#5_3'].lb, -666)
             self.assertEqual(self.model.variables['12x!!@#5_3'].ub, 666)
             repickled = pickle.loads(pickle.dumps(self.model))
-            print repickled.variables
+            print(repickled.variables)
             var_from_pickle = repickled.variables['12x!!@#5_3']
             # self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle.index))
 
@@ -250,7 +250,7 @@ try:
             self.assertIn('test2:      y + 2.333 x <= 96.997', cplex_lines)
             # Dummy_21:   y + z + 2.333 x - RgDummy_21  = -300
             self.assertRegexpMatches(str(self.model), '\s*Dummy_\d+:\s*y \+ z \+ 2\.333 x - .*  = -300')
-            print self.model
+            print(self.model)
 
         def test_remove_constraints(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
@@ -283,7 +283,7 @@ try:
             constraint += 77. * z
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y'), ('test', 'z')]), [0.3, 0.4, 77.])
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
-            print self.model
+            print(self.model)
 
         def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -321,12 +321,12 @@ try:
             coeff_dict = constraint.expression.as_coefficients_dict()
             self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], 666.)
 
-except ImportError, e:
+except ImportError as e:
 
-    if e.message.find('cplex') >= 0:
+    if str(e).find('cplex') >= 0:
         class TestMissingDependency(unittest.TestCase):
 
-            @unittest.skip('Missing dependency - ' + e.message)
+            @unittest.skip('Missing dependency - ' + str(e))
             def test_fail(self):
                 pass
     else:

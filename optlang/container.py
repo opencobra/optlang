@@ -21,7 +21,7 @@ class Container(object):
         try:
             self._dict = dict(((elem.name, elem) for elem in iterable))
         except AttributeError as e:
-            print "Only objects with containing a 'name' attribute can be stored in a Container."
+            print("Only objects with containing a 'name' attribute can be stored in a Container.")
             raise e
         self._object_list = list(iterable)
 
@@ -41,13 +41,13 @@ class Container(object):
         return len(self._object_list)
 
     def __contains__(self, key):
-        if self._dict.has_key(key):
+        if key in self._dict:
             return True
         elif key in self._object_list:
             return True
         else:
             self._reindex()
-            return self._dict.has_key(key)
+            return key in self._dict
 
     def __iter__(self):
         original_length = len(self._object_list)
@@ -139,13 +139,13 @@ class Container(object):
         self._dict = dict()
 
     def has_key(self, key):
-        if self._dict.has_key(key):
+        if key in self._dict:
             return True
 
     def append(self, value):
         self._check_for_name_attribute(value)
         name = value.name
-        if self._dict.has_key(name):
+        if name in self._dict:
             raise Exception("Container '%s' already contains an object with name '%s'." % (self, value.name))
         self._object_list.append(value)
         self._dict[value.name] = value
@@ -153,7 +153,7 @@ class Container(object):
     def extend(self, values):
         for value in values:
             self._check_for_name_attribute(value)
-            if self._dict.has_key(value.name):
+            if value.name in self._dict:
                 raise Exception("Container '%s' already contains an object with name '%s'." % (self, value.name))
         self._object_list.extend(values)
         self._dict.update(dict([(value.name, value) for value in values]))
@@ -171,6 +171,6 @@ class Container(object):
         self.__init__(obj_list)
 
     def __dir__(self):
-        attributes = self.__class__.__dict__.keys()
+        attributes = list(self.__class__.__dict__.keys())
         attributes.extend(self._name_list)
         return attributes

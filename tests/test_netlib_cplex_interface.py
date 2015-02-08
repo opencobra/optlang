@@ -64,7 +64,7 @@ try:
 
     def check_objval_against_the_final_netlib_results(netlib_id, model_objval):
         relative_error = abs(1 - (model_objval / float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue'])))
-        print relative_error
+        print(relative_error)
         nose.tools.assert_true(relative_error < 0.01)
         # nose.tools.assert_almost_equal(model_objval, float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue']), places=4)
 
@@ -77,7 +77,7 @@ try:
         model_paths_in_tar = glob.fnmatch.filter(tar.getnames(), '*.SIF')
 
         for model_path_in_tar in model_paths_in_tar:
-            print model_path_in_tar
+            print(model_path_in_tar)
             netlib_id = os.path.basename(model_path_in_tar).replace('.SIF', '')
             # TODO: get the following problems to work
             # E226 seems to be a MPS related problem, see http://lists.gnu.org/archive/html/bug-glpk/2003-01/msg00003.html
@@ -120,12 +120,12 @@ try:
                     netlib_id, os.path.basename(str(__file__)))
                 yield func
 
-except ImportError, e:
+except ImportError as e:
 
-    if e.message.find('cplex') >= 0:
+    if str(e).find('cplex') >= 0:
         class TestMissingDependency(unittest.TestCase):
 
-            @unittest.skip('Missing dependency - ' + e.message)
+            @unittest.skip('Missing dependency - ' + str(e))
             def test_fail(self):
                 pass
     else:

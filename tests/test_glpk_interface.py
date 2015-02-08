@@ -10,6 +10,7 @@ import os
 import nose
 from swiglpk import *
 import sys
+import six
 
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from optlang.util import glpk_read_cplex
@@ -73,7 +74,7 @@ class ConstraintTestCase(unittest.TestCase):
     def test_get_primal(self):
         self.assertEqual(self.constraint.primal, None)
         self.model.optimize()
-        print [constraint.primal for constraint in self.model.constraints]
+        print([constraint.primal for constraint in self.model.constraints])
         for i, j in zip([constraint.primal for constraint in self.model.constraints], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.048900234729145e-15, 0.0, 0.0, 0.0, -3.55971196577979e-16, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.5546369406238147e-17, 0.0, -5.080374405378186e-29, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
             self.assertAlmostEqual(i, j)
 
@@ -297,7 +298,7 @@ class SolverTestCase(unittest.TestCase):
         self.model.add(constr1)
         self.assertEqual(constr1.problem, self.model)
         self.assertIn(constr1.name, self.model.constraints)
-        print constr1.index
+        print(constr1.index)
         self.model.remove(constr1.name)
         self.assertEqual(constr1.problem, None)
         self.assertNotIn(constr1, self.model.constraints)
@@ -321,7 +322,7 @@ class SolverTestCase(unittest.TestCase):
         constraint += 77. * z
         self.assertEqual(z.index, 98)
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
-        print self.model
+        print(self.model)
         self.assertEqual(constraint.index, 73)
 
     def test_change_of_objective_is_reflected_in_low_level_solver(self):
@@ -349,9 +350,9 @@ class SolverTestCase(unittest.TestCase):
     def test_absolute_value_objective(self):
         # TODO: implement hack mentioned in http://www.aimms.com/aimms/download/manuals/aimms3om_linearprogrammingtricks.pdf
 
-        objective = Objective(sum(abs(variable) for variable in self.model.variables.itervalues()), name='test',
+        objective = Objective(sum(abs(variable) for variable in six.itervalues(self.model.variables)), name='test',
                               direction='max')
-        print objective
+        print(objective)
         self.assertTrue(False)
 
     def test_change_variable_bounds(self):
@@ -412,7 +413,7 @@ class SolverTestCase(unittest.TestCase):
 
     def test_change_objective(self):
         """Test that all different kinds of linear objective specification work."""
-        print self.model.variables.values()[0:2]
+        print(self.model.variables.values()[0:2])
         v1, v2 = self.model.variables.values()[0:2]
         self.model.objective = Objective(1. * v1 + 1. * v2)
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
@@ -423,7 +424,7 @@ class SolverTestCase(unittest.TestCase):
         self.model.objective = Objective(0.)
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
         obj_coeff = list()
-        for i in xrange(1, glp_get_num_cols(self.model.problem) + 1):
+        for i in range(1, glp_get_num_cols(self.model.problem) + 1):
             obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
         self.assertEqual(set(obj_coeff), {0.})
 
@@ -436,7 +437,7 @@ class SolverTestCase(unittest.TestCase):
         v2, v3 = self.model.variables.values()[1:3]
         self.model.objective += 2. * v2 - 3. * v3
         obj_coeff = list()
-        for i in xrange(len(self.model.variables)):
+        for i in range(len(self.model.variables)):
             obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
         self.assertEqual(obj_coeff,
                          [0.0, 1.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -450,7 +451,7 @@ class SolverTestCase(unittest.TestCase):
     def test_imul_objective(self):
         self.model.objective *= 2.
         obj_coeff = list()
-        for i in xrange(len(self.model.variables)):
+        for i in range(len(self.model.variables)):
             obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
         self.assertEqual(obj_coeff,
                          [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
