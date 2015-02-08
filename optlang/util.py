@@ -48,9 +48,9 @@ def solve_with_glpsol(glp_prob):
     """
     from swiglpk import glp_get_row_name, glp_get_col_name, glp_write_lp, glp_get_num_rows, glp_get_num_cols
 
-    row_ids = [glp_get_row_name(glp_prob, i) for i in xrange(1, glp_get_num_rows(glp_prob) + 1)]
+    row_ids = [glp_get_row_name(glp_prob, i) for i in range(1, glp_get_num_rows(glp_prob) + 1)]
 
-    col_ids = [glp_get_col_name(glp_prob, i) for i in xrange(1, glp_get_num_cols(glp_prob) + 1)]
+    col_ids = [glp_get_col_name(glp_prob, i) for i in range(1, glp_get_num_cols(glp_prob) + 1)]
 
     tmp_file = tempfile.mktemp(suffix='.lp')
     # glp_write_mps(glp_prob, GLP_MPS_DECK, None, tmp_file)
@@ -72,8 +72,8 @@ def solve_with_glpsol(glp_prob):
             elif i <= len(row_ids) + len(col_ids) + 1:
                 solution[col_ids[i - 2 - len(row_ids)]] = line.strip().split(' ')
             else:
-                print i
-                print line
+                print(i)
+                print(line)
                 raise Exception("Argggh!")
     return solution
 
@@ -139,7 +139,7 @@ if __name__ == '__main__':
 
     problem = glp_create_prob()
     glp_read_lp(problem, None, "../tests/data/model.lp")
-    print "asdf", glp_get_num_rows(problem)
+    print("asdf", glp_get_num_rows(problem))
     solution = solve_with_glpsol(problem)
-    print solution['R_Biomass_Ecoli_core_w_GAM']
+    print(solution['R_Biomass_Ecoli_core_w_GAM'])
         

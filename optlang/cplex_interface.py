@@ -18,7 +18,12 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
-import StringIO
+import six
+
+if six.PY3:
+    from io import StringIO
+else:
+    import StringIO
 import copy
 import sys
 
@@ -106,7 +111,7 @@ _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
 # FIXME: what about 'S': 'semi_continuous', 'N': 'semi_integer'
 
 _VTYPE_TO_CPLEX_VTYPE = dict(
-    [(val, key) for key, val in _CPLEX_VTYPE_TO_VTYPE.iteritems()]
+    [(val, key) for key, val in six.iteritems(_CPLEX_VTYPE_TO_VTYPE)]
 )
 
 
@@ -198,7 +203,7 @@ class Constraint(interface.Constraint):
     def _set_coefficients_low_level(self, variables_coefficients_dict):
         self_name = self.name
         if self.is_Linear:
-            cplex_format = [(self_name, variable.name, coefficient) for variable, coefficient in variables_coefficients_dict.iteritems()]
+            cplex_format = [(self_name, variable.name, coefficient) for variable, coefficient in six.iteritems(variables_coefficients_dict)]
             self.problem.problem.linear_constraints.set_coefficients(cplex_format)
         else:
             raise Exception('_set_coefficients_low_level works only with linear constraints in the cplex interface.')
@@ -302,7 +307,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     def __setstate__(self, state):
         self.__init__()
-        for key, val in state.iteritems():
+        for key, val in six.iteritems(state):
             setattr(self, key, val)
 
     @property
@@ -446,7 +451,7 @@ class Model(interface.Model):
                     else:
                         constr = Constraint(lhs, lb=rhs + range_val, ub=rhs, name=name, problem=self)
                 else:
-                    raise Exception, '%s is not a recognized constraint sense.' % sense
+                    raise Exception('%s is not a recognized constraint sense.' % sense)
 
                 for variable in constraint_variables:
                     try:
@@ -467,7 +472,7 @@ class Model(interface.Model):
                 name=self.problem.objective.get_name()
             )
         else:
-            raise Exception, "Provided problem is not a valid CPLEX model."
+            raise Exception("Provided problem is not a valid CPLEX model.")
         self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
@@ -492,10 +497,10 @@ class Model(interface.Model):
     @objective.setter
     def objective(self, value):
         super(Model, self.__class__).objective.fset(self, value)
-        for i in xrange(len(self.problem.objective.get_linear())):
+        for i in range(len(self.problem.objective.get_linear())):
             self.problem.objective.set_linear(i, 0.)
         expression = self._objective.expression
-        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType) or expression.is_Number:
+        if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
             pass
         else:
             if expression.is_Symbol:
@@ -534,7 +539,7 @@ class Model(interface.Model):
         if not translation: translation = {'E': '==', 'L': '<', 'G': '>'}
         try:
             return translation[sense]
-        except KeyError, e:
+        except KeyError as e:
             raise Exception(' '.join(('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')))
 
     def _add_variable(self, variable):
@@ -617,13 +622,13 @@ if __name__ == '__main__':
     model = Model(name='Simple model')
     model.objective = obj
     model.add([c1, c2, c3])
-    print model
+    print(model)
     status = model.optimize()
-    print "status:", model.status
-    print "objective value:", model.objective.value
+    print("status:", model.status)
+    print("objective value:", model.objective.value)
 
-    for var_name, var in model.variables.iteritems():
-        print var_name, "=", var.primal
+    for var_name, var in model.variables.items():
+        print(var_name, "=", var.primal)
 
 
         # from cplex import Cplex

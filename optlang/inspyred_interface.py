@@ -280,7 +280,7 @@ class Model(interface.Model):
             if variable.type == 'continuous':
                 individual.append(random.uniform(variable.lb, variable.ub))
             else:
-                individual.append(random.choice(xrange(variable.lb, variable.ub + 1)))
+                individual.append(random.choice(range(variable.lb, variable.ub + 1)))
         return individual
 
     def _evaluator(self, candidates, args):
@@ -327,8 +327,8 @@ if __name__ == '__main__':
     x = Variable('x', lb=0, ub=2)
     y = Variable('y', lb=0, ub=2)
     rosenbrock_obj = Objective((1 - x) ** 2 + 100 * (y - x ** 2) ** 2, name="Rosenbrock function", direction='min')
-    print "The rosenbrock function:", rosenbrock_obj
-    print "The global minimum at (x,y) = (1,1) is", rosenbrock_obj.expression.subs({x: 1, y: 1})
+    print("The rosenbrock function:", rosenbrock_obj)
+    print("The global minimum at (x,y) = (1,1) is", rosenbrock_obj.expression.subs({x: 1, y: 1}))
 
     problem = Model(name='rosenbrock', algorithm='PSO')
     # problem = Model(name='rosenbrock')
@@ -337,9 +337,9 @@ if __name__ == '__main__':
 
     def my_observer(population, num_generations, num_evaluations, args):
         best = max(population)
-        print('{0:6} -- {1} : {2}'.format(num_generations,
+        print(('{0:6} -- {1} : {2}'.format(num_generations,
                                           best.fitness,
-                                          str(best.candidate)))
+                                          str(best.candidate))))
 
     problem.configuration.max_generations = 100
     problem.configuration.terminator = inspyred.ec.terminators.generation_termination
@@ -347,9 +347,9 @@ if __name__ == '__main__':
     problem.configuration.selector = inspyred.ec.selectors.tournament_selection
     final_pop = problem.optimize()
     fitnesses = [individual.fitness for individual in final_pop]
-    print fitnesses
-    print "mean", numpy.mean(fitnesses)
-    print "max", numpy.max(fitnesses)
-    print "min", numpy.min(fitnesses)
+    print(fitnesses)
+    print("mean", numpy.mean(fitnesses))
+    print("max", numpy.max(fitnesses))
+    print("min", numpy.min(fitnesses))
     # print numpy.std(fitnesses)
 
