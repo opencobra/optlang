@@ -106,7 +106,6 @@ class ContainerTestCase(unittest.TestCase):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
         generator = self.container.itervalues()
-        self.assertTrue(isinstance(generator, types.GeneratorType))
         self.assertEqual(list(generator), variables)
 
     def test_values(self):
