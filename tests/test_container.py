@@ -15,7 +15,6 @@
 import pickle
 
 import unittest
-import six
 import types
 from optlang.container import Container
 from optlang.interface import Variable
@@ -91,12 +90,10 @@ class ContainerTestCase(unittest.TestCase):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
 
-    @unittest.skipIf(six.PY3, "Doesn't workin in py3")
     def test_iterkeys(self):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
         generator = self.container.iterkeys()
-        self.assertTrue(isinstance(generator, types.GeneratorType))
         self.assertEqual(list(generator), [item.name for item in self.container])
 
     def test_keys(self):
@@ -105,7 +102,6 @@ class ContainerTestCase(unittest.TestCase):
         keys = self.container.keys()
         self.assertEqual(keys, [item.name for item in self.container])
 
-    @unittest.skipIf(six.PY3, "Doesn't workin in py3")
     def test_itervalues(self):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
@@ -119,12 +115,10 @@ class ContainerTestCase(unittest.TestCase):
         values = self.container.values()
         self.assertEqual(values, variables)
 
-    @unittest.skipIf(six.PY3, "Doesn't workin in py3")
     def test_iteritems(self):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
         generator = self.container.iteritems()
-        self.assertTrue(isinstance(generator, types.GeneratorType))
         self.assertEqual(list(generator), [(variable.name, variable) for variable in variables])
 
     def test_fromkeys(self):
