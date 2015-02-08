@@ -6,7 +6,7 @@ before_install:
   - sudo apt-get install libglpk-dev swig python-numpy glpk-utils
   - export SYMPY_USE_CACHE=no
 install:
-  - pip install coveralls nose nose-progressive rednose coverage docutils inspyred
+  - pip install coveralls nose nose-progressive rednose coverage docutils
   - pip install -r requirements.txt
   - python setup.py install
 # # command to run tests
