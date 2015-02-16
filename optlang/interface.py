@@ -642,15 +642,15 @@ class Model(object):
         elif isinstance(stuff, Constraint):
             self._remove_constraint(stuff)
         elif isinstance(stuff, collections.Iterable):
-            element_types = len(set((elem.__class__ for elem in stuff)))
+            element_types = set((elem.__class__ for elem in stuff))
             if len(element_types) == 1:
                 element_type = element_types.pop()
-                if element_type == Variable:
+                if issubclass(element_type, Variable):
                     self._remove_variables(stuff)
-                elif element_type == Constraint:
+                elif issubclass(element_type, Constraint):
                     self._remove_constraints(stuff)
                 else:
-                    raise TypeError("Cannot remove %s. It neither a variable or constraint." % stuff)
+                    raise TypeError("Cannot remove %s. It is neither a variable nor a constraint." % stuff)
             else:
                 for elem in stuff:
                     self.remove(elem)
