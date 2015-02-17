@@ -85,6 +85,28 @@ class Variable(sympy.Symbol):
     '-10 <= x <= 10'
     """
 
+    @staticmethod
+    def __test_valid_lower_bound(type, value, name):
+        if value is not None:
+            if type == 'integer' and value % 1 != 0.:
+                raise ValueError(
+                    'The provided lower bound %g cannot be assigned to integer variable %s (%g mod 1 != 0).' % (
+                        value, name, value))
+        if type == 'binary' and (value is None or value != 0):
+            raise ValueError(
+                'The provided lower bound %s cannot be assigned to binary variable %s.' % (value, name))
+
+    @staticmethod
+    def __test_valid_upper_bound(type, value, name):
+        if value is not None:
+            if type == 'integer' and value % 1 != 0.:
+                raise ValueError(
+                    'The provided upper bound %s cannot be assigned to integer variable %s (%s mod 1 != 0).' % (
+                        value, name, value))
+        if type == 'binary' and (value is None or value != 1):
+            raise ValueError(
+                'The provided upper bound %s cannot be assigned to binary variable %s.' % (value, name))
+
     @classmethod
     def clone(cls, variable, **kwargs):
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
@@ -111,6 +133,12 @@ class Variable(sympy.Symbol):
         sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
         self._lb = lb
         self._ub = ub
+        if self._lb is None and type == 'binary':
+            self._lb = 0.
+        if self._ub is None and type == 'binary':
+            self._ub = 1.
+        self.__test_valid_lower_bound(type, self._lb, name)
+        self.__test_valid_upper_bound(type, self._ub, name)
         self._type = type
         self.problem = problem
 
@@ -124,12 +152,8 @@ class Variable(sympy.Symbol):
             raise ValueError(
                 'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (
                     value, self.ub, self))
-        elif self.type == 'integer' and value % 1 != 0.:
-            raise ValueError(
-                'The provided lower bound %g cannot be assigned to integer variable %s (%g mod 1 != 0).' % (
-                    value, self, value))
-        else:
-            self._lb = value
+        self.__test_valid_lower_bound(self.type, value, self.name)
+        self._lb = value
 
     @property
     def ub(self):
@@ -141,8 +165,8 @@ class Variable(sympy.Symbol):
             raise ValueError(
                 'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (
                     value, self.lb, self))
-        else:
-            self._ub = value
+        self.__test_valid_upper_bound(self.type, value, self.name)
+        self._ub = value
 
     @property
     def type(self):
@@ -342,11 +366,17 @@ class Constraint(OptimizationExpression):
     @classmethod
     def clone(cls, constraint, model=None, **kwargs):
         return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
+                   indicator_variable=constraint.indicator_variable, active_when=constraint.active_when,
                    name=constraint.name, sloppy=True, **kwargs)
 
-    def __init__(self, expression, lb=None, ub=None, *args, **kwargs):
+    def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=0, *args, **kwargs):
         self.lb = lb
         self.ub = ub
+        if indicator_variable is not None and indicator_variable.type != 'binary':
+            raise ValueError('Provided indicator variable %s is not binary.' % indicator_variable)
+        self.indicator_variable = indicator_variable
+        self.active_when = active_when
+
         super(Constraint, self).__init__(expression, *args, **kwargs)
 
     def __str__(self):
@@ -358,6 +388,8 @@ class Constraint(OptimizationExpression):
             rhs = ' <= ' + str(self.ub)
         else:
             rhs = ''
+        if self.indicator_variable is not None:
+            lhs = self.indicator_variable.name + ' = ' + str(self.active_when) + ' -> ' + lhs
         return str(self.name) + ": " + lhs + self.expression.__str__() + rhs
 
     def _canonicalize(self, expression):
@@ -381,7 +413,6 @@ class Constraint(OptimizationExpression):
             expression = expression - coeff
             self.ub = self.ub - coeff
         return expression
-
 
 class Objective(OptimizationExpression):
     """Objective function.
@@ -707,7 +738,10 @@ class Model(object):
     def _add_constraint(self, constraint, sloppy=False):
         constraint_id = constraint.name
         if sloppy is False:
-            for var in constraint.variables:
+            variables = constraint.variables
+            if constraint.indicator_variable is not None:
+                variables.add(constraint.indicator_variable)
+            for var in variables:
                 if var.problem is not self:
                     self._add_variable(var)
                 try:

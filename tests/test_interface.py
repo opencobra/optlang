@@ -107,3 +107,17 @@ class TestSolver(TestCase):
         self.assertNotEqual(self.model.variables['x'].problem, model)
         x.lb = -10
         self.assertNotEqual(self.model.variables['x'].lb, model.variables['x'].lb)
+
+class TestVariable(TestCase):
+
+    def test_set_wrong_bounds_on_binary_raises(self):
+        self.assertRaises(ValueError, Variable, 'x', lb=-33, ub=0.3, type='binary')
+        x = Variable('x', type='binary')
+        self.assertRaises(ValueError, setattr, x, 'lb', -3)
+        self.assertRaises(ValueError, setattr, x, 'ub', 3)
+
+    def test_set_wrong_bounds_on_integer_raises(self):
+        self.assertRaises(ValueError, Variable, 'x', lb=-33, ub=0.3, type='integer')
+        x = Variable('x', type='integer')
+        self.assertRaises(ValueError, setattr, x, 'lb', -3.3)
+        self.assertRaises(ValueError, setattr, x, 'ub', 3.3)

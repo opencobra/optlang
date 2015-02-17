@@ -189,10 +189,10 @@ try:
             self.assertEqual(self.model.variables['x'].ub, None)
 
         def test_add_integer_var(self):
-            var = Variable('int_var', lb=-13, ub=499.4, type='integer')
+            var = Variable('int_var', lb=-13, ub=499., type='integer')
             self.model.add(var)
             self.assertEqual(self.model.variables['int_var'].type, 'integer')
-            self.assertEqual(self.model.variables['int_var'].ub, 499.4)
+            self.assertEqual(self.model.variables['int_var'].ub, 499.)
             self.assertEqual(self.model.variables['int_var'].lb, -13)
 
         def test_add_non_cplex_conform_variable(self):
@@ -215,9 +215,9 @@ try:
             self.assertEqual(var.problem, None)
 
         def test_add_linear_constraints(self):
-            x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+            x = Variable('x', type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-            z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+            z = Variable('z', lb=0., ub=3, type='integer')
             constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
             constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
             constr3 = Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
@@ -253,9 +253,9 @@ try:
             print(self.model)
 
         def test_remove_constraints(self):
-            x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+            x = Variable('x', type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-            z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+            z = Variable('z', lb=4, ub=4, type='integer')
             constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
             self.assertEqual(constr1.problem, None)
             self.model.add(constr1)
@@ -266,9 +266,9 @@ try:
             self.assertNotIn(constr1, self.model.constraints)
 
         def test_add_nonlinear_constraint_raises(self):
-            x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+            x = Variable('x', type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-            z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+            z = Variable('z', lb=3, ub=3, type='integer')
             constraint = Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
             self.assertRaises(ValueError, self.model.add, constraint)
 
@@ -279,7 +279,7 @@ try:
             self.model.add(constraint)
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y')]), [0.3, 0.4])
-            z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+            z = Variable('z', lb=3, ub=4, type='integer')
             constraint += 77. * z
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y'), ('test', 'z')]), [0.3, 0.4, 77.])
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
@@ -290,7 +290,7 @@ try:
             y = Variable('y', lb=-181133.3, ub=12000.)
             constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.model.add(constraint)
-            z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+            z = Variable('z', lb=2, ub=5, type='integer')
             constraint += 77. * z
             self.model.remove(constraint)
             self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')

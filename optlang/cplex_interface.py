@@ -24,15 +24,13 @@ if six.PY3:
     from io import StringIO
 else:
     import StringIO
-import copy
-import sys
 
-from warnings import warn
+import sys
 
 import logging
 
 log = logging.getLogger(__name__)
-import types
+
 import tempfile
 import sympy
 from sympy.core.add import _unevaluated_Add
@@ -119,7 +117,7 @@ def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
     """Helper function used by Constraint and Model"""
     if lb is None and ub is None:
         # FIXME: use cplex.infinity
-        raise Exception("Free constraint ... %s" % constraint)
+        raise Exception("Free constraint ...")
     elif lb is None:
         sense = 'L'
         rhs = float(ub)
@@ -147,24 +145,25 @@ class Variable(interface.Variable):
     @interface.Variable.lb.setter
     def lb(self, value):
         super(Variable, self.__class__).lb.fset(self, value)
-        if self.problem.problem is not None:
+        if self.problem is not None:
             self.problem.problem.variables.set_lower_bounds(self.name, value)
 
     @interface.Variable.ub.setter
     def ub(self, value):
         super(Variable, self.__class__).ub.fset(self, value)
-        if self.problem.problem is not None:
+        if self.problem is not None:
             self.problem.problem.variables.set_upper_bounds(self.name, value)
 
     @interface.Variable.type.setter
     def type(self, value):
-        try:
-            cplex_kind = _VTYPE_TO_CPLEX_VTYPE[value]
-        except KeyError:
-            raise Exception("GLPK cannot handle variables of type %s. \
-                        The following variable types are available:\n" +
-                            " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
-        self.problem.problem.variables.set_types(self.name, cplex_kind)
+        if self.problem is not None:
+            try:
+                cplex_kind = _VTYPE_TO_CPLEX_VTYPE[value]
+            except KeyError:
+                raise Exception("CPLEX cannot handle variables of type %s. \
+                            The following variable types are available:\n" +
+                                " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
+            self.problem.problem.variables.set_types(self.name, cplex_kind)
         super(Variable, self).__setattr__('type', value)
 
 
@@ -245,10 +244,15 @@ class Constraint(interface.Constraint):
         if getattr(self, 'problem', None):
 
             if name == 'name':
-                # TODO: the following needs to deal with quadratic constraints
-                self.problem.problem.linear_constraints.set_names(old_name, value)
+                if self.indicator_variable is not None:
+                    raise NotImplementedError("Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name")
+                else:
+                    # TODO: the following needs to deal with quadratic constraints
+                    self.problem.problem.linear_constraints.set_names(old_name, value)
 
             elif name == 'lb' or name == 'ub':
+                if self.indicator_variable is not None:
+                    raise NotImplementedError("Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds")
                 if name == 'lb':
                     sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(value, self.ub)
                 elif name == 'ub':
@@ -587,13 +591,20 @@ class Model(interface.Model):
                 raise ValueError('Something is fishy with constraint %s' % constraint)
 
             sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(constraint.lb, constraint.ub)
-
-            self.problem.linear_constraints.add(
-                lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
-                range_values=[range_value], names=[constraint.name])
+            if constraint.indicator_variable is None:
+                self.problem.linear_constraints.add(
+                    lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
+                    range_values=[range_value], names=[constraint.name])
+            else:
+                if sense == 'R':
+                    raise ValueError('CPLEX does not support indicator constraints that have both an upper and lower bound.')
+                else:
+                    self.problem.indicator_constraints.add(
+                        lin_expr=cplex.SparsePair(ind=indices, val=values), sense=sense, rhs=rhs, name=constraint.name,
+                        indvar=constraint.indicator_variable.name, complemented=constraint.active_when)
         # TODO: Implement quadratic constraints
         elif constraint.is_Quadratic:
-            pass
+            raise NotImplementedError('Quadratic constraints (like %s) are not supported yet.' % constraint)
         else:
             raise ValueError("CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
         constraint.problem = self

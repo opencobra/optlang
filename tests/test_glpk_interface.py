@@ -176,11 +176,11 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(len(self.model.variables), glp_get_num_cols(self.model.problem))
 
     def test_add_integer_var(self):
-        var = Variable('int_var', lb=-13, ub=499.4, type='integer')
+        var = Variable('int_var', lb=-13, ub=500, type='integer')
         self.model.add(var)
         self.assertEqual(self.model.variables['int_var'].type, 'integer')
         self.assertEqual(glp_get_col_kind(self.model.problem, var.index), GLP_IV)
-        self.assertEqual(self.model.variables['int_var'].ub, 499.4)
+        self.assertEqual(self.model.variables['int_var'].ub, 500)
         self.assertEqual(self.model.variables['int_var'].lb, -13)
 
     def test_add_non_cplex_conform_variable(self):
@@ -215,9 +215,9 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(var.problem, None)
 
     def test_add_constraints(self):
-        x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+        x = Variable('x', lb=0, ub=1, type='binary')
         y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        z = Variable('z', lb=0., ub=10., type='integer')
         constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
         constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
         constr3 = Constraint(2.333 * x + y + z, lb=-300)
@@ -290,9 +290,9 @@ class SolverTestCase(unittest.TestCase):
         self.assertGreater(glp_get_row_ub(self.model.problem, constr5.index), 1e30)
 
     def test_remove_constraints(self):
-        x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+        x = Variable('x', type='binary')
         y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        z = Variable('z', lb=3, ub=3, type='integer')
         constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
         self.assertEqual(constr1.problem, None)
         self.model.add(constr1)
@@ -304,9 +304,9 @@ class SolverTestCase(unittest.TestCase):
         self.assertNotIn(constr1, self.model.constraints)
 
     def test_add_nonlinear_constraint_raises(self):
-        x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+        x = Variable('x', type='binary')
         y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        z = Variable('z', lb=10, type='integer')
         self.assertRaises(ValueError, Constraint, 0.3 * x + 0.4 * y ** 2 + 66. * z, lb=-100, ub=0., name='test')
 
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
@@ -317,7 +317,7 @@ class SolverTestCase(unittest.TestCase):
         self.model.add(constraint)
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
         self.assertEqual(constraint.index, 73)
-        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        z = Variable('z', lb=3, ub=10, type='integer')
         self.assertEqual(z.index, None)
         constraint += 77. * z
         self.assertEqual(z.index, 98)
@@ -336,7 +336,7 @@ class SolverTestCase(unittest.TestCase):
         for i in range(1, glp_get_num_cols(self.model.problem) + 1):
             if i != x.index and i != y.index:
                 self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
-        z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        z = Variable('z', lb=4, ub=4, type='integer')
         self.model.objective += 77. * z
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
         self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
