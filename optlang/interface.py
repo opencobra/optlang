@@ -354,6 +354,10 @@ class Constraint(OptimizationExpression):
         The lower bound, if None then -inf.
     ub: float or None, optional
         The upper bound, if None then inf.
+    indicator_variable: Variable
+        The indicator variable (needs to be binary).
+    active_when: 0 or 1 (default 0)
+        When the constraint should
     problem: Model or None, optional
         A reference to the optimization model the variable belongs to.
     """
@@ -363,21 +367,52 @@ class Constraint(OptimizationExpression):
     #     return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
     #                name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
 
+    _INDICATOR_CONSTRAINT_SUPPORT = True
+
+    @classmethod
+    def __check_valid_indicator_variable(cls, variable):
+        if variable is not None and not cls._INDICATOR_CONSTRAINT_SUPPORT:
+            raise Exception('Solver interface %s does not support indicator constraints' % cls.__module__)
+        if variable is not None and variable.type != 'binary':
+            raise ValueError('Provided indicator variable %s is not binary.' % variable)
+
+    @staticmethod
+    def __check_valid_active_when(active_when):
+        if active_when != 0 and active_when != 1:
+            raise ValueError('Provided active_when argument %s needs to be either 1 or 0' % active_when)
+
     @classmethod
     def clone(cls, constraint, model=None, **kwargs):
         return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
                    indicator_variable=constraint.indicator_variable, active_when=constraint.active_when,
                    name=constraint.name, sloppy=True, **kwargs)
 
-    def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=0, *args, **kwargs):
+    def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=1, *args, **kwargs):
         self.lb = lb
         self.ub = ub
-        if indicator_variable is not None and indicator_variable.type != 'binary':
-            raise ValueError('Provided indicator variable %s is not binary.' % indicator_variable)
-        self.indicator_variable = indicator_variable
-        self.active_when = active_when
-
+        self.__check_valid_indicator_variable(indicator_variable)
+        self.__check_valid_active_when(active_when)
+        self._indicator_variable = indicator_variable
+        self._active_when = active_when
         super(Constraint, self).__init__(expression, *args, **kwargs)
+
+    @property
+    def indicator_variable(self):
+        return self._indicator_variable
+
+    @indicator_variable.setter
+    def indicator_variable(self, value):
+        self.__check_valid_indicator_variable(value)
+        self._indicator_variable = value
+
+    @property
+    def active_when(self):
+        return self._active_when
+
+    @indicator_variable.setter
+    def indicator_variable(self, value):
+        self.__check_valid_active_when(value)
+        self._active_when = value
 
     def __str__(self):
         if self.lb is not None:

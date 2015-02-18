@@ -142,10 +142,10 @@ class Variable(interface.Variable):
 class Constraint(interface.Constraint):
     """GLPK solver interface"""
 
+    _INDICATOR_CONSTRAINT_SUPPORT = False
+
     def __init__(self, expression, sloppy=False, *args, **kwargs):
         super(Constraint, self).__init__(expression, sloppy=sloppy, *args, **kwargs)
-        if self.indicator_variable is not None:
-            raise ValueError("GLPK does not support indicator constraints.")
         if not sloppy:
             if not self.is_Linear:
                 raise ValueError(

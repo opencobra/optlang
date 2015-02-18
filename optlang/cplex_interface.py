@@ -186,6 +186,8 @@ class Variable(interface.Variable):
 class Constraint(interface.Constraint):
     """CPLEX solver interface"""
 
+    _INDICATOR_CONSTRAINT_SUPPORT = True
+
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
 
@@ -601,7 +603,7 @@ class Model(interface.Model):
                 else:
                     self.problem.indicator_constraints.add(
                         lin_expr=cplex.SparsePair(ind=indices, val=values), sense=sense, rhs=rhs, name=constraint.name,
-                        indvar=constraint.indicator_variable.name, complemented=constraint.active_when)
+                        indvar=constraint.indicator_variable.name, complemented=abs(constraint.active_when)-1)
         # TODO: Implement quadratic constraints
         elif constraint.is_Quadratic:
             raise NotImplementedError('Quadratic constraints (like %s) are not supported yet.' % constraint)
