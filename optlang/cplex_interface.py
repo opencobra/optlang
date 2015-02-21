@@ -178,6 +178,8 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         if self.problem is not None:
+            if self.problem.problem.get_problem_type() != self.problem.problem.problem_type.LP: # cplex cannot determine reduced costs for MILP problems ...
+                return None
             return self.problem.problem.solution.get_reduced_costs(self.name)
         else:
             return None
