@@ -19,6 +19,7 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
+import collections
 
 import logging
 import sys
@@ -117,7 +118,7 @@ class Variable(interface.Variable):
                 primal_from_solver = glp_mip_col_val(self.problem.problem, self.index)
             else:
                 raise TypeError("Unknown variable type")
-            return self.__round_primal_to_bounds(primal_from_solver)
+            return self._round_primal_to_bounds(primal_from_solver)
         else:
             return None
 
@@ -585,6 +586,60 @@ class Model(interface.Model):
                 {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction]
             )
         value.problem = self
+
+    @property
+    def primal_values(self):
+        if self.problem:
+            primal_values = collections.OrderedDict()
+            for index, variable in enumerate(self.variables):
+                if variable.type == "continuous":
+                    value = glp_get_col_prim(self.problem, index+1)
+                elif variable.type in ["binary", "integer"]:
+                    value = glp_mip_col_val(self.problem, index+1)
+                else:
+                    raise TypeError("Unknown variable type")
+                primal_values[variable.name] = variable._round_primal_to_bounds(value)
+            return primal_values
+        else:
+            return None
+
+    @property
+    def reduced_costs(self):
+        if self.problem:
+            reduced_costs = collections.OrderedDict()
+            for index, variable in enumerate(self.variables):
+                if variable.type == "continuous":
+                    value = glp_get_col_dual(self.problem, index+1)
+                elif variable.type in ["binary", "integer"]:
+                    value = glp_mip_col_val(self.problem, index+1)
+                else:
+                    raise TypeError("Unknown variable type")
+                reduced_costs[variable.name] = value
+            return reduced_costs
+        else:
+            return None
+
+    @property
+    def dual_values(self):
+        if self.problem:
+            dual_values = collections.OrderedDict()
+            for index, constraint in enumerate(self.constraints):
+                value = glp_get_row_prim(self.problem, index+1)
+                dual_values[constraint.name] = value
+            return dual_values
+        else:
+            return None
+
+    @property
+    def shadow_prices(self):
+        if self.problem:
+            shadow_prices = collections.OrderedDict()
+            for index, constraint in enumerate(self.constraints):
+                value = glp_get_row_dual(self.problem, index+1)
+                shadow_prices[constraint.name] = value
+            return shadow_prices
+        else:
+            return None
 
     def __str__(self):
         tmp_file = tempfile.mktemp(suffix=".lp")

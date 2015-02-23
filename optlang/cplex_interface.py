@@ -18,6 +18,7 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
+import collections
 import six
 
 if six.PY3:
@@ -172,7 +173,7 @@ class Variable(interface.Variable):
     def primal(self):
         if self.problem:
             primal_from_solver = self.problem.problem.solution.get_values(self.name)
-            return self.__round_primal_to_bounds(primal_from_solver)
+            return self._round_primal_to_bounds(primal_from_solver)
         else:
             return None
 
@@ -521,6 +522,41 @@ class Model(interface.Model):
                     value.direction])
         self.problem.objective.set_name(value.name)
         value.problem = self
+
+    @property
+    def primal_values(self):
+        if self.problem:
+            primal_values = collections.OrderedDict()
+            for variable, primal in zip(self.variables, self.problem.solution.get_values()):
+                primal_values[variable.name] = variable._round_primal_to_bounds(primal)
+            return primal_values
+        else:
+            return None
+
+    @property
+    def reduced_costs(self):
+        if self.problem:
+            return collections.OrderedDict(
+                zip([variable.name for variable in self.variables], self.problem.solution.get_reduced_costs()))
+        else:
+            return None
+
+    @property
+    def dual_values(self):
+        if self.problem:
+            return collections.OrderedDict(
+                zip([constraint.name for constraint in self.constraints], self.problem.solution.get_activity_levels()))
+        else:
+            return None
+
+    @property
+    def shadow_prices(self):
+        if self.problem:
+            return collections.OrderedDict(
+                zip([constraint.name for constraint in self.constraints], self.problem.solution.get_dual_values()))
+        else:
+            return None
+
 
     def __str__(self):
         tmp_file = tempfile.mktemp(suffix=".lp")
