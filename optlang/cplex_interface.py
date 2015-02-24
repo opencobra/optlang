@@ -162,7 +162,7 @@ class Variable(interface.Variable):
         try:
             cplex_kind = _VTYPE_TO_CPLEX_VTYPE[value]
         except KeyError:
-            raise Exception("GLPK cannot handle variables of type %s. \
+            raise Exception("CPLEX cannot handle variables of type %s. \
                         The following variable types are available:\n" +
                             " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
         self.problem.problem.variables.set_types(self.name, cplex_kind)
@@ -180,7 +180,13 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         if self.problem is not None:
-            return self.problem.problem.solution.get_reduced_costs(self.name)
+            try:
+                return self.problem.problem.solution.get_reduced_costs(self.name)
+            except cplex.exceptions.CplexSolverError as e:
+                if self.problem.problem.get_problem_type() != self.problem.problem.problem_type.LP: # Cplex can not determine reduced costs for non-LP problems
+                    return None
+                else:
+                    raise e
         else:
             return None
 
