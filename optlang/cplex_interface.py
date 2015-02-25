@@ -367,6 +367,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 self.logger.debug(self.getvalue())
 
         logger = logging.getLogger()
+        logger.setLevel(logging.CRITICAL)
         error_stream_handler = ErrorStreamHandler(logger)
         warning_stream_handler = WarningStreamHandler(logger)
         log_stream_handler = LogStreamHandler(logger)
@@ -398,6 +399,39 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                     "%s is not a valid verbosity level ranging between 0 and 3."
                     % value
                 )
+
+        # logger = logging.getLogger()
+        # error_stream_handler = ErrorStreamHandler(logger)
+        # warning_stream_handler = WarningStreamHandler(logger)
+        # log_stream_handler = LogStreamHandler(logger)
+        # results_stream_handler = LogStreamHandler(logger)
+        # if self.problem is not None:
+        #     problem = self.problem.problem
+        #     if value == 0:
+        #         problem.set_error_stream(error_stream_handler)
+        #         problem.set_warning_stream(warning_stream_handler)
+        #         problem.set_log_stream(log_stream_handler)
+        #         problem.set_results_stream(results_stream_handler)
+        #     elif value == 1:
+        #         problem.set_error_stream(sys.stderr)
+        #         problem.set_warning_stream(warning_stream_handler)
+        #         problem.set_log_stream(log_stream_handler)
+        #         problem.set_results_stream(results_stream_handler)
+        #     elif value == 2:
+        #         problem.set_error_stream(sys.stderr)
+        #         problem.set_warning_stream(sys.stderr)
+        #         problem.set_log_stream(log_stream_handler)
+        #         problem.set_results_stream(results_stream_handler)
+        #     elif value == 3:
+        #         problem.set_error_stream(sys.stderr)
+        #         problem.set_warning_stream(sys.stderr)
+        #         problem.set_log_stream(sys.stdout)
+        #         problem.set_results_stream(sys.stdout)
+        #     else:
+        #         raise Exception(
+        #             "%s is not a valid verbosity level ranging between 0 and 3."
+        #             % value
+        #         )
         self._verbosity = value
 
     @property
