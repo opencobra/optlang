@@ -492,5 +492,25 @@ class SolverTestCase(unittest.TestCase):
             if col_name == 'R_Biomass_Ecoli_core_w_GAM':
                 self.assertEqual(da[i], 666.)
 
+    def test_primal_values(self):
+            self.model.optimize()
+            for k, v in self.model.primal_values.items():
+                self.assertEquals(v, self.model.variables[k].primal)
+
+    def test_reduced_costs(self):
+        self.model.optimize()
+        for k, v in self.model.reduced_costs.items():
+            self.assertEquals(v, self.model.variables[k].dual)
+
+    def test_dual_values(self):
+        self.model.optimize()
+        for k, v in self.model.dual_values.items():
+            self.assertEquals(v, self.model.constraints[k].primal)
+
+    def test_shadow_prices(self):
+        self.model.optimize()
+        for k, v in self.model.shadow_prices.items():
+            self.assertEquals(v, self.model.constraints[k].dual)
+
 if __name__ == '__main__':
     nose.runmodule()

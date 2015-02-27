@@ -194,6 +194,14 @@ class Variable(sympy.Symbol):
             raise ValueError(
                 "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
 
+    @property
+    def primal(self):
+        return None
+
+    @property
+    def dual(self):
+        return None
+
     def __str__(self):
         """Print a string representation of variable.
 
@@ -222,7 +230,7 @@ class Variable(sympy.Symbol):
     def __setstate__(self, state):
         self.__dict__ = state
 
-    def __round_primal_to_bounds(self, primal, tolerance=1e-6):
+    def _round_primal_to_bounds(self, primal, tolerance=1e-6):
         if (primal >= self.lb or self.lb is None) and (primal <= self.ub or self.ub is None):
                 return primal
         else:
@@ -449,6 +457,15 @@ class Constraint(OptimizationExpression):
             self.ub = self.ub - coeff
         return expression
 
+    @property
+    def primal(self):
+        return None
+
+    @property
+    def dual(self):
+        return None
+
+
 class Objective(OptimizationExpression):
     """Objective function.
 
@@ -631,6 +648,26 @@ class Model(object):
     @property
     def status(self):
         return self._status
+
+    @property
+    def primal_values(self):
+        # Fallback, if nothing faster is available
+        return collections.OrderedDict([(variable.name, variable.primal) for variable in self.variables])
+
+    @property
+    def reduced_costs(self):
+        # Fallback, if nothing faster is available
+        return collections.OrderedDict([(variable.name, variable.dual) for variable in self.variables])
+
+    @property
+    def dual_values(self):
+        # Fallback, if nothing faster is available
+        return collections.OrderedDict([(constraint.name, constraint.primal) for constraint in self.constraint])
+
+    @property
+    def shadow_prices(self):
+        # Fallback, if nothing faster is available
+        return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraint])
 
     def __str__(self):
         return '\n'.join((
