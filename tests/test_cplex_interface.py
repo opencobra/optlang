@@ -165,6 +165,17 @@ try:
             self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
+        def test_pickle_empty_model(self):
+            model = Model()
+            self.assertEquals(model.objective, None)
+            self.assertEquals(len(model.variables), 0)
+            self.assertEquals(len(model.constraints), 0)
+            pickle_string = pickle.dumps(model)
+            from_pickle = pickle.loads(pickle_string)
+            self.assertEquals(from_pickle.objective, None)
+            self.assertEquals(len(from_pickle.variables), 0)
+            self.assertEquals(len(from_pickle.constraints), 0)
+
         def test_init_from_existing_problem(self):
             inner_prob = self.model.problem
             self.assertEqual(len(self.model.variables), inner_prob.variables.get_num())
@@ -299,12 +310,13 @@ try:
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
             y = Variable('y', lb=-181133.3, ub=12000.)
-            objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
+            objective = Objective(0.3 * x + 0.4 * y, name='obj', direction='max')
             self.model.objective = objective
             self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-            self.assertIn(' obj: + 0.4 y + 0.3 x', self.model.__str__().split("\n"))
-            z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
-            objective.expression += 77. * z
+            self.assertIn(' obj: 0.4 y + 0.3 x', self.model.__str__().split("\n"))
+            z = Variable('z', lb=0.000003, ub=0.000003, type='continuous')
+            objective += 77. * z
+            print(objective)
             self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
             self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
 

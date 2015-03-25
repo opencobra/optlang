@@ -24,7 +24,7 @@ import six
 if six.PY3:
     from io import StringIO
 else:
-    import StringIO
+    from StringIO import StringIO
 
 import sys
 
@@ -37,7 +37,7 @@ import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 import cplex
-import interface
+from optlang import interface
 
 _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.MIP_abort_feasible: interface.ABORTED,
@@ -342,10 +342,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     @verbosity.setter
     def verbosity(self, value):
 
-        class StreamHandler(StringIO.StringIO):
+        class StreamHandler(StringIO):
 
             def __init__(self, logger, *args, **kwargs):
-                StringIO.StringIO.__init__(self, *args, **kwargs)
+                StringIO.__init__(self, *args, **kwargs)
                 self.logger = logger
 
         class ErrorStreamHandler(StreamHandler):
@@ -473,14 +473,20 @@ class Model(interface.Model):
                     constr,
                     sloppy=True
                 )
-            self._objective = Objective(
-                _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
-                                   enumerate(self.problem.objective.get_linear()) if coeff != 0.]),
-                problem=self,
-                direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
-                    self.problem.objective.get_sense()],
-                name=self.problem.objective.get_name()
-            )
+            try:
+                objective_name = self.problem.objective.get_name()
+            except cplex.exceptions.CplexSolverError as e:
+                if 'CPLEX Error  1219:' not in str(e):
+                    raise e
+            else:
+                self._objective = Objective(
+                    _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
+                                       enumerate(self.problem.objective.get_linear()) if coeff != 0.]),
+                    problem=self,
+                    direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
+                        self.problem.objective.get_sense()],
+                    name=objective_name
+                )
         else:
             raise Exception("Provided problem is not a valid CPLEX model.")
         self.configuration = Configuration(problem=self, verbosity=0)
@@ -488,13 +494,13 @@ class Model(interface.Model):
     def __getstate__(self):
         tmp_file = tempfile.mktemp(suffix=".sav")
         self.problem.write(tmp_file)
-        cplex_binary = open(tmp_file).read()
+        cplex_binary = open(tmp_file, 'rb').read()
         repr_dict = {'cplex_binary': cplex_binary, 'status': self.status}
         return repr_dict
 
     def __setstate__(self, repr_dict):
         tmp_file = tempfile.mktemp(suffix=".sav")
-        open(tmp_file, 'w').write(repr_dict['cplex_binary'])
+        open(tmp_file, 'wb').write(repr_dict['cplex_binary'])
         problem = cplex.Cplex(tmp_file)
         if repr_dict['status'] == 'optimal':
             problem.solve()  # since the start is an optimal solution, nothing will happen here
