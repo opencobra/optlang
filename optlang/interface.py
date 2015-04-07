@@ -601,8 +601,6 @@ class Model(object):
 
     """
 
-    interface = sys.modules[__name__]
-
     @classmethod
     def clone(cls, model):
         interface = sys.modules[cls.__module__]
@@ -627,6 +625,10 @@ class Model(object):
             self.add(variables)
         if constraints is not None:
             self.add(constraints)
+
+    @property
+    def interface(self):
+        return sys.modules[self.__module__]
 
     @property
     def objective(self):
