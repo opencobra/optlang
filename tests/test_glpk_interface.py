@@ -518,5 +518,14 @@ class SolverTestCase(unittest.TestCase):
         for k, v in self.model.shadow_prices.items():
             self.assertEquals(v, self.model.constraints[k].dual)
 
+    def test_clone_solver(self):
+        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.model.configuration.verbosity = 3
+        cloned_model = Model.clone(self.model)
+        self.assertEquals(cloned_model.configuration.verbosity, 3)
+        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
+        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+
+
 if __name__ == '__main__':
     nose.runmodule()
