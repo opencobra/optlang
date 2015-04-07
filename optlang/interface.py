@@ -18,6 +18,7 @@
 :class:`Constraint`, :class:`Objective`) intended to be subclassed and
 extended for individual solvers.
 """
+import inspect
 
 import logging
 import random
@@ -523,11 +524,17 @@ class Objective(OptimizationExpression):
 class Configuration(object):
     """Optimization solver configuration."""
 
-    def __init__(self, *args, **kwargs):
-        pass
+    @classmethod
+    def clone(cls, config, problem=None, **kwargs):
+        properties = (k for k, v in inspect.getmembers(cls, predicate=inspect.isdatadescriptor) if not k.startswith('__'))
+        parameters = {property: getattr(config, property) for property in properties}
+        return cls(problem=problem, **parameters)
+
+    def __init__(self, problem=None, *args, **kwargs):
+        self.problem = problem
 
     @property
-    def verbose(self):
+    def verbosity(self):
         """Verbosity level.
 
         0: no output
@@ -537,8 +544,8 @@ class Configuration(object):
         """
         raise NotImplementedError
 
-    @verbose.setter
-    def verbose(self, value):
+    @verbosity.setter
+    def verbosity(self, value):
         raise NotImplementedError
 
     @property
@@ -550,7 +557,7 @@ class Configuration(object):
         raise NotImplementedError
 
 
-class MathematicalProgrammingConfiguration(object):
+class MathematicalProgrammingConfiguration(Configuration):
     def __init__(self, *args, **kwargs):
         super(MathematicalProgrammingConfiguration, self).__init__(*args, **kwargs)
 
@@ -563,7 +570,7 @@ class MathematicalProgrammingConfiguration(object):
         raise NotImplementedError
 
 
-class EvolutionaryOptimizationConfiguration(object):
+class EvolutionaryOptimizationConfiguration(Configuration):
     """docstring for HeuristicOptimization"""
 
     def __init__(self, *args, **kwargs):

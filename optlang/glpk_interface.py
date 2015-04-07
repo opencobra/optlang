@@ -362,12 +362,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         glp_init_smcp(self._smcp)
         glp_init_iocp(self._iocp)
         self._max_time = min(self._smcp.tm_lim, self._iocp.tm_lim)
-        self._set_presolve(presolve)
-        self._presolve = presolve
-        self._set_verbosity(verbosity)
-        self._verbosity = verbosity
-        self._set_timeout(timeout)
-        self._timeout = timeout
+        self.presolve = presolve
+        self.verbosity = verbosity
+        self.timeout = timeout
 
     def __getstate__(self):
         return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
@@ -534,7 +531,7 @@ class Model(interface.Model):
 
     def __getstate__(self):
         glpk_repr = self._glpk_representation()
-        repr_dict = {'glpk_repr': glpk_repr, 'glpk_status': self.status}
+        repr_dict = {'glpk_repr': glpk_repr, 'glpk_status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
@@ -543,16 +540,17 @@ class Model(interface.Model):
         problem = glp_create_prob()
         glp_read_prob(problem, 0, tmp_file)
         self.__init__(problem=problem)
+        self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
             self.optimize()  # since the start is an optimal solution, nothing will happen here
 
-    def __copy__(self):
-        return Model(problem=self.problem)
-
-    def __deepcopy__(self, memo):
-        copy_problem = glp_create_prob()
-        glp_copy_prob(copy_problem, self.problem, GLP_ON)
-        return Model(problem=copy_problem)
+    # def __copy__(self):
+    #     return Model(problem=self.problem)
+    #
+    # def __deepcopy__(self, memo):
+    #     copy_problem = glp_create_prob()
+    #     glp_copy_prob(copy_problem, self.problem, GLP_ON)
+    #     return Model(problem=copy_problem)
 
     @property
     def objective(self):

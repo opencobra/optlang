@@ -165,6 +165,12 @@ try:
             self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
+        def test_config_gets_copied_too(self):
+            self.assertEquals(self.model.configuration.verbosity, 0)
+            self.model.configuration.verbosity = 3
+            model_copy = copy.copy(self.model)
+            self.assertEquals(model_copy.configuration.verbosity, 3)
+
         def test_pickle_empty_model(self):
             model = Model()
             self.assertEquals(model.objective, None)
