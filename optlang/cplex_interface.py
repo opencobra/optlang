@@ -303,21 +303,11 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, problem=None, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
+    def __init__(self, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
-        self.problem = problem
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
-
-
-    def __getstate__(self):
-        return {'presolve': self.presolve, 'verbosity': self.verbosity}
-
-    def __setstate__(self, state):
-        self.__init__()
-        for key, val in six.iteritems(state):
-            setattr(self, key, val)
 
     @property
     def presolve(self):
@@ -495,7 +485,7 @@ class Model(interface.Model):
         tmp_file = tempfile.mktemp(suffix=".sav")
         self.problem.write(tmp_file)
         cplex_binary = open(tmp_file, 'rb').read()
-        repr_dict = {'cplex_binary': cplex_binary, 'status': self.status}
+        repr_dict = {'cplex_binary': cplex_binary, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
@@ -503,8 +493,14 @@ class Model(interface.Model):
         open(tmp_file, 'wb').write(repr_dict['cplex_binary'])
         problem = cplex.Cplex(tmp_file)
         if repr_dict['status'] == 'optimal':
+            # turn off logging completely, get's configured later
+            problem.set_error_stream(None)
+            problem.set_warning_stream(None)
+            problem.set_log_stream(None)
+            problem.set_results_stream(None)
             problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
+        self.configuration = Configuration.clone(repr_dict['config'], problem=self)
 
     @property
     def objective(self):

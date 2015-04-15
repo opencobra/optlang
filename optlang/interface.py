@@ -18,6 +18,7 @@
 :class:`Constraint`, :class:`Objective`) intended to be subclassed and
 extended for individual solvers.
 """
+import inspect
 
 import logging
 import random
@@ -523,11 +524,17 @@ class Objective(OptimizationExpression):
 class Configuration(object):
     """Optimization solver configuration."""
 
-    def __init__(self, *args, **kwargs):
-        pass
+    @classmethod
+    def clone(cls, config, problem=None, **kwargs):
+        properties = (k for k, v in inspect.getmembers(cls, predicate=inspect.isdatadescriptor) if not k.startswith('__'))
+        parameters = {property: getattr(config, property) for property in properties}
+        return cls(problem=problem, **parameters)
+
+    def __init__(self, problem=None, *args, **kwargs):
+        self.problem = problem
 
     @property
-    def verbose(self):
+    def verbosity(self):
         """Verbosity level.
 
         0: no output
@@ -537,8 +544,8 @@ class Configuration(object):
         """
         raise NotImplementedError
 
-    @verbose.setter
-    def verbose(self, value):
+    @verbosity.setter
+    def verbosity(self, value):
         raise NotImplementedError
 
     @property
@@ -550,7 +557,7 @@ class Configuration(object):
         raise NotImplementedError
 
 
-class MathematicalProgrammingConfiguration(object):
+class MathematicalProgrammingConfiguration(Configuration):
     def __init__(self, *args, **kwargs):
         super(MathematicalProgrammingConfiguration, self).__init__(*args, **kwargs)
 
@@ -563,7 +570,7 @@ class MathematicalProgrammingConfiguration(object):
         raise NotImplementedError
 
 
-class EvolutionaryOptimizationConfiguration(object):
+class EvolutionaryOptimizationConfiguration(Configuration):
     """docstring for HeuristicOptimization"""
 
     def __init__(self, *args, **kwargs):
@@ -594,7 +601,6 @@ class Model(object):
 
     """
 
-    # TODO: configureation needs to be cloned too
     @classmethod
     def clone(cls, model):
         interface = sys.modules[cls.__module__]
@@ -604,6 +610,7 @@ class Model(object):
             new_model._add_constraint(new_constraint)
         if model.objective is not None:
             new_model.objective = interface.Objective.clone(model.objective, model=new_model)
+        new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
         return new_model
 
     def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
@@ -618,6 +625,10 @@ class Model(object):
             self.add(variables)
         if constraints is not None:
             self.add(constraints)
+
+    @property
+    def interface(self):
+        return sys.modules[self.__module__]
 
     @property
     def objective(self):
@@ -678,9 +689,9 @@ class Model(object):
             '\n'.join([str(var) for var in self.variables])
         ))
 
-    @property
-    def interface(self):
-        return sys.modules[self.__module__]
+    # @property
+    # def interface(self):
+    #     return sys.modules[self.__module__]
 
     def add(self, stuff):
         """Add variables and constraints.

@@ -19,20 +19,17 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
+
+import six
 import collections
 
-import logging
-import sys
-import six
-
-import types
-
-
-log = logging.getLogger(__name__)
 import tempfile
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
+
+import logging
+log = logging.getLogger(__name__)
 
 from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GLP_IV, GLP_BV, GLP_UNDEF, GLP_FEAS, \
     GLP_INFEAS, GLP_NOFEAS, GLP_OPT, GLP_UNBND, \
@@ -362,12 +359,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         glp_init_smcp(self._smcp)
         glp_init_iocp(self._iocp)
         self._max_time = min(self._smcp.tm_lim, self._iocp.tm_lim)
-        self._set_presolve(presolve)
-        self._presolve = presolve
-        self._set_verbosity(verbosity)
-        self._verbosity = verbosity
-        self._set_timeout(timeout)
-        self._timeout = timeout
+        self.presolve = presolve
+        self.verbosity = verbosity
+        self.timeout = timeout
 
     def __getstate__(self):
         return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
@@ -534,7 +528,7 @@ class Model(interface.Model):
 
     def __getstate__(self):
         glpk_repr = self._glpk_representation()
-        repr_dict = {'glpk_repr': glpk_repr, 'glpk_status': self.status}
+        repr_dict = {'glpk_repr': glpk_repr, 'glpk_status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
@@ -543,16 +537,17 @@ class Model(interface.Model):
         problem = glp_create_prob()
         glp_read_prob(problem, 0, tmp_file)
         self.__init__(problem=problem)
+        self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
             self.optimize()  # since the start is an optimal solution, nothing will happen here
 
-    def __copy__(self):
-        return Model(problem=self.problem)
-
-    def __deepcopy__(self, memo):
-        copy_problem = glp_create_prob()
-        glp_copy_prob(copy_problem, self.problem, GLP_ON)
-        return Model(problem=copy_problem)
+    # def __copy__(self):
+    #     return Model(problem=self.problem)
+    #
+    # def __deepcopy__(self, memo):
+    #     copy_problem = glp_create_prob()
+    #     glp_copy_prob(copy_problem, self.problem, GLP_ON)
+    #     return Model(problem=copy_problem)
 
     @property
     def objective(self):

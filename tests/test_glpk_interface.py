@@ -129,15 +129,21 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                          [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-    def test_copy(self):
-        model_copy = copy.copy(self.model)
-        self.assertNotEqual(id(self.model), id(model_copy))
-        self.assertEqual(id(self.model.problem), id(model_copy.problem))
+    # def test_copy(self):
+    #     model_copy = copy.copy(self.model)
+    #     self.assertNotEqual(id(self.model), id(model_copy))
+    #     self.assertEqual(id(self.model.problem), id(model_copy.problem))
+    #
+    # def test_deepcopy(self):
+    #     model_copy = copy.deepcopy(self.model)
+    #     self.assertNotEqual(id(self.model), id(model_copy))
+    #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
 
-    def test_deepcopy(self):
-        model_copy = copy.deepcopy(self.model)
-        self.assertNotEqual(id(self.model), id(model_copy))
-        self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+    def test_config_gets_copied_too(self):
+        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.model.configuration.verbosity = 3
+        model_copy = copy.copy(self.model)
+        self.assertEquals(model_copy.configuration.verbosity, 3)
 
     def test_init_from_existing_problem(self):
         inner_prob = self.model.problem
@@ -511,6 +517,15 @@ class SolverTestCase(unittest.TestCase):
         self.model.optimize()
         for k, v in self.model.shadow_prices.items():
             self.assertEquals(v, self.model.constraints[k].dual)
+
+    def test_clone_solver(self):
+        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.model.configuration.verbosity = 3
+        cloned_model = Model.clone(self.model)
+        self.assertEquals(cloned_model.configuration.verbosity, 3)
+        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
+        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+
 
 if __name__ == '__main__':
     nose.runmodule()
