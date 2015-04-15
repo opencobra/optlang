@@ -12,8 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import pickle
 
 import unittest
+import types
 from optlang.container import Container
 from optlang.interface import Variable
 
@@ -43,7 +45,8 @@ class ContainerTestCase(unittest.TestCase):
     def test_dir(self):
         var = Variable('blub')
         self.container.append(var)
-        self.assertEqual(dir(self.container), ['__contains__', '__delitem__', '__dict__', '__dir__', '__doc__', '__getattr__', '__getitem__', '__init__', '__iter__', '__len__', '__module__', '__setitem__', '__weakref__', '_check_for_name_attribute', 'append', 'blub', 'clear', 'extend', 'fromkeys', 'get', 'has_key', 'iteritems', 'iterkeys', 'itervalues', 'keys', 'values'])
+        print(dir(self.container))
+        self.assertEqual(dir(self.container), ['__contains__', '__delitem__', '__dict__', '__dir__', '__doc__', '__getattr__', '__getitem__', '__getstate__', '__init__', '__iter__', '__len__', '__module__', '__setitem__', '__setstate__', '__weakref__', '_check_for_name_attribute', '_name_list', '_reindex', 'append', 'blub', 'clear', 'extend', 'fromkeys', 'get', 'has_key', 'iteritems', 'iterkeys', 'itervalues', 'keys', 'values'])
 
     def test_del_by_index(self):
         variables_iterable = [Variable("v"+str(i), lb=10, ub=100) for i in range(10000)]
@@ -91,7 +94,6 @@ class ContainerTestCase(unittest.TestCase):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
         generator = self.container.iterkeys()
-        self.assertTrue(hasattr(generator, 'next'))
         self.assertEqual(list(generator), [item.name for item in self.container])
 
     def test_keys(self):
@@ -104,7 +106,6 @@ class ContainerTestCase(unittest.TestCase):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
         generator = self.container.itervalues()
-        self.assertTrue(hasattr(generator, 'next'))
         self.assertEqual(list(generator), variables)
 
     def test_values(self):
@@ -117,16 +118,15 @@ class ContainerTestCase(unittest.TestCase):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
         generator = self.container.iteritems()
-        self.assertTrue(hasattr(generator, 'next'))
         self.assertEqual(list(generator), [(variable.name, variable) for variable in variables])
 
     def test_fromkeys(self):
         variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(1000)]
         self.container.extend(variables)
         sub_container = self.container.fromkeys(('v1', 'v66', 'v999'))
-        print sub_container._object_list
+        print(sub_container._object_list)
         lookalike = Container([variables[i] for i in (1, 66, 999)])
-        print lookalike._object_list
+        print(lookalike._object_list)
         self.assertEqual(sub_container._object_list, lookalike._object_list)
         self.assertEqual(sub_container._name_list, lookalike._name_list)
         self.assertEqual(sub_container._dict, lookalike._dict)
@@ -138,10 +138,10 @@ class ContainerTestCase(unittest.TestCase):
         self.assertEqual(self.container.get('blurb', None), None)
 
     def test_has_key(self):
-        self.assertFalse(self.container.has_key('blurb'))
+        self.assertFalse('blurb' in self.container)
         var = Variable('blurb')
         self.container.append(var)
-        self.assertTrue(self.container.has_key('blurb'))
+        self.assertTrue('blurb' in self.container)
 
     def test_getattr(self):
         var = Variable('variable1')
@@ -157,3 +157,24 @@ class ContainerTestCase(unittest.TestCase):
         var2 = Variable('blib')
         self.container[0] = var2
         self.assertEqual(self.container[0], var2)
+
+    def test_change_object_name(self):
+        var = Variable('blub')
+        self.container.append(var)
+        var.name = 'blurg'
+        self.assertEqual(self.container.keys(), ['blurg'])
+        self.assertEqual(self.container['blurg'], var)
+
+    def test_iter_container_len_change_raises(self):
+        def _(container):
+            for item in container:
+                del container[item.name]
+        variables_iterable = [Variable("v"+str(i), lb=10, ub=100) for i in range(10)]
+        container = Container(variables_iterable)
+        self.assertRaises(RuntimeError, _, container)
+
+    def test_pickle(self):
+        variables = [Variable("v"+str(i), lb=10, ub=100) for i in range(100)]
+        self.container.extend(variables)
+        unpickled = pickle.loads(pickle.dumps(self.container))
+        self.assertEquals(unpickled[0].name, variables[0].name)

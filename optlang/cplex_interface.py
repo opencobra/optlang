@@ -18,20 +18,26 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
-import sys
+import collections
+import six
 
-from warnings import warn
+if six.PY3:
+    from io import StringIO
+else:
+    from StringIO import StringIO
+
+import sys
 
 import logging
 
 log = logging.getLogger(__name__)
-import types
+
 import tempfile
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 import cplex
-import interface
+from optlang import interface
 
 _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.MIP_abort_feasible: interface.ABORTED,
@@ -104,7 +110,7 @@ _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
 # FIXME: what about 'S': 'semi_continuous', 'N': 'semi_integer'
 
 _VTYPE_TO_CPLEX_VTYPE = dict(
-    [(val, key) for key, val in _CPLEX_VTYPE_TO_VTYPE.iteritems()]
+    [(val, key) for key, val in six.iteritems(_CPLEX_VTYPE_TO_VTYPE)]
 )
 
 
@@ -112,7 +118,7 @@ def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
     """Helper function used by Constraint and Model"""
     if lb is None and ub is None:
         # FIXME: use cplex.infinity
-        raise Exception("Free constraint ... %s" % constraint)
+        raise Exception("Free constraint ...")
     elif lb is None:
         sense = 'L'
         rhs = float(ub)
@@ -140,24 +146,25 @@ class Variable(interface.Variable):
     @interface.Variable.lb.setter
     def lb(self, value):
         super(Variable, self.__class__).lb.fset(self, value)
-        if self.problem.problem is not None:
+        if self.problem is not None:
             self.problem.problem.variables.set_lower_bounds(self.name, value)
 
     @interface.Variable.ub.setter
     def ub(self, value):
         super(Variable, self.__class__).ub.fset(self, value)
-        if self.problem.problem is not None:
+        if self.problem is not None:
             self.problem.problem.variables.set_upper_bounds(self.name, value)
 
     @interface.Variable.type.setter
     def type(self, value):
-        try:
-            cplex_kind = _VTYPE_TO_CPLEX_VTYPE[value]
-        except KeyError:
-            raise Exception("GLPK cannot handle variables of type %s. \
-                        The following variable types are available:\n" +
-                            " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
-        self.problem.problem.variables.set_types(self.name, cplex_kind)
+        if self.problem is not None:
+            try:
+                cplex_kind = _VTYPE_TO_CPLEX_VTYPE[value]
+            except KeyError:
+                raise Exception("CPLEX cannot handle variables of type %s. \
+                            The following variable types are available:\n" +
+                                " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
+            self.problem.problem.variables.set_types(self.name, cplex_kind)
         super(Variable, self).__setattr__('type', value)
 
 
@@ -165,25 +172,24 @@ class Variable(interface.Variable):
     def primal(self):
         if self.problem:
             primal_from_solver = self.problem.problem.solution.get_values(self.name)
-            if primal_from_solver >= self.lb and primal_from_solver <= self.ub:
-                return primal_from_solver
-            else:
-                if (self.lb - primal_from_solver) <= 1e-6:
-                    return self.lb
-                elif (self.ub - primal_from_solver) >= -1e-6:
-                    return self.ub
-                else:
-                    raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal_from_solver, self.name, self.lb, self.ub))
+            return self._round_primal_to_bounds(primal_from_solver)
         else:
             return None
 
     @property
     def dual(self):
-        return self.problem.problem.solution.get_reduced_costs(self.name)
+        if self.problem is not None:
+            if self.problem.problem.get_problem_type() != self.problem.problem.problem_type.LP: # cplex cannot determine reduced costs for MILP problems ...
+                return None
+            return self.problem.problem.solution.get_reduced_costs(self.name)
+        else:
+            return None
 
 
 class Constraint(interface.Constraint):
     """CPLEX solver interface"""
+
+    _INDICATOR_CONSTRAINT_SUPPORT = True
 
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
@@ -199,7 +205,12 @@ class Constraint(interface.Constraint):
         return self._expression
 
     def _set_coefficients_low_level(self, variables_coefficients_dict):
-        raise NotImplementedError
+        self_name = self.name
+        if self.is_Linear:
+            cplex_format = [(self_name, variable.name, coefficient) for variable, coefficient in six.iteritems(variables_coefficients_dict)]
+            self.problem.problem.linear_constraints.set_coefficients(cplex_format)
+        else:
+            raise Exception('_set_coefficients_low_level works only with linear constraints in the cplex interface.')
 
     @property
     def problem(self):
@@ -216,32 +227,45 @@ class Constraint(interface.Constraint):
 
     @property
     def primal(self):
-        return self.problem.problem.solution.get_dual_values(self.name)
+        if self.problem is not None:
+            return self.problem.problem.solution.get_activity_levels(self.name)
+        else:
+            return None
 
     @property
     def dual(self):
-        return self.problem.problem.solution.get_activity_levels(self.name)
+        if self.problem is not None:
+            return self.problem.problem.solution.get_dual_values(self.name)
+        else:
+            return None
 
     # TODO: Refactor to use properties
     def __setattr__(self, name, value):
-
+        try:
+            old_name = self.name  # TODO: This is a hack
+        except AttributeError:
+            pass
         super(Constraint, self).__setattr__(name, value)
         if getattr(self, 'problem', None):
 
             if name == 'name':
-
-                if self.expression.is_Linear:
-                    self.problem.problem.linear_constraints.set_names(self.name, value)
+                if self.indicator_variable is not None:
+                    raise NotImplementedError("Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name")
+                else:
+                    # TODO: the following needs to deal with quadratic constraints
+                    self.problem.problem.linear_constraints.set_names(old_name, value)
 
             elif name == 'lb' or name == 'ub':
+                if self.indicator_variable is not None:
+                    raise NotImplementedError("Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds")
                 if name == 'lb':
                     sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(value, self.ub)
                 elif name == 'ub':
                     sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(self.lb, value)
                 if self.is_Linear:
-                    self.problem.linear_constraints.set_rhs(self.name, rhs)
-                    self.problem.linear_constraints.set_senses(self.name, sense)
-                    self.problem.linear_constraints.set_range_values(self.name, range_value)
+                    self.problem.problem.linear_constraints.set_rhs(self.name, rhs)
+                    self.problem.problem.linear_constraints.set_senses(self.name, sense)
+                    self.problem.problem.linear_constraints.set_range_values(self.name, range_value)
 
             elif name == 'expression':
                 pass
@@ -272,28 +296,18 @@ class Objective(interface.Objective):
         if getattr(self, 'problem', None):
             if name == 'direction':
                 self.problem.problem.objective.set_sense(
-                    {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize})
+                    {'min': self.problem.problem.objective.sense.minimize, 'max': self.problem.problem.objective.sense.maximize}[value])
             super(Objective, self).__setattr__(name, value)
         else:
             super(Objective, self).__setattr__(name, value)
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, problem=None, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
+    def __init__(self, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
-        self.problem = problem
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
-
-
-    def __getstate__(self):
-        return {'presolve': self.presolve, 'verbosity': self.verbosity}
-
-    def __setstate__(self, state):
-        self.__init__()
-        for key, val in state.iteritems():
-            setattr(self, key, val)
 
     @property
     def presolve(self):
@@ -317,23 +331,56 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @verbosity.setter
     def verbosity(self, value):
+
+        class StreamHandler(StringIO):
+
+            def __init__(self, logger, *args, **kwargs):
+                StringIO.__init__(self, *args, **kwargs)
+                self.logger = logger
+
+        class ErrorStreamHandler(StreamHandler):
+
+            def flush(self):
+                self.logger.error(self.getvalue())
+
+        class WarningStreamHandler(StreamHandler):
+
+            def flush(self):
+                self.logger.warn(self.getvalue())
+
+        class LogStreamHandler(StreamHandler):
+
+            def flush(self):
+                self.logger.debug(self.getvalue())
+
+        class ResultsStreamHandler(StreamHandler):
+
+            def flush(self):
+                self.logger.debug(self.getvalue())
+
+        logger = logging.getLogger()
+        logger.setLevel(logging.CRITICAL)
+        error_stream_handler = ErrorStreamHandler(logger)
+        warning_stream_handler = WarningStreamHandler(logger)
+        log_stream_handler = LogStreamHandler(logger)
+        results_stream_handler = LogStreamHandler(logger)
         if self.problem is not None:
             problem = self.problem.problem
             if value == 0:
-                problem.set_error_stream(None)
-                problem.set_warning_stream(None)
-                problem.set_log_stream(None)
-                problem.set_results_stream(None)
+                problem.set_error_stream(error_stream_handler)
+                problem.set_warning_stream(warning_stream_handler)
+                problem.set_log_stream(log_stream_handler)
+                problem.set_results_stream(results_stream_handler)
             elif value == 1:
                 problem.set_error_stream(sys.stderr)
-                problem.set_warning_stream(None)
-                problem.set_log_stream(None)
-                problem.set_results_stream(None)
+                problem.set_warning_stream(warning_stream_handler)
+                problem.set_log_stream(log_stream_handler)
+                problem.set_results_stream(results_stream_handler)
             elif value == 2:
                 problem.set_error_stream(sys.stderr)
                 problem.set_warning_stream(sys.stderr)
-                problem.set_log_stream(None)
-                problem.set_results_stream(None)
+                problem.set_log_stream(log_stream_handler)
+                problem.set_results_stream(results_stream_handler)
             elif value == 3:
                 problem.set_error_stream(sys.stderr)
                 problem.set_warning_stream(sys.stderr)
@@ -404,7 +451,7 @@ class Model(interface.Model):
                     else:
                         constr = Constraint(lhs, lb=rhs + range_val, ub=rhs, name=name, problem=self)
                 else:
-                    raise Exception, '%s is not a recognized constraint sense.' % sense
+                    raise Exception('%s is not a recognized constraint sense.' % sense)
 
                 for variable in constraint_variables:
                     try:
@@ -416,29 +463,44 @@ class Model(interface.Model):
                     constr,
                     sloppy=True
                 )
-            self._objective = Objective(
-                _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
-                                   enumerate(self.problem.objective.get_linear()) if coeff != 0.]),
-                problem=self,
-                direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
-                    self.problem.objective.get_sense()],
-                name=self.problem.objective.get_name()
-            )
+            try:
+                objective_name = self.problem.objective.get_name()
+            except cplex.exceptions.CplexSolverError as e:
+                if 'CPLEX Error  1219:' not in str(e):
+                    raise e
+            else:
+                self._objective = Objective(
+                    _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
+                                       enumerate(self.problem.objective.get_linear()) if coeff != 0.]),
+                    problem=self,
+                    direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
+                        self.problem.objective.get_sense()],
+                    name=objective_name
+                )
         else:
-            raise Exception, "Provided problem is not a valid CPLEX model."
+            raise Exception("Provided problem is not a valid CPLEX model.")
         self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
-        cplex_repr = self.__repr__()
-        repr_dict = {'cplex_repr': cplex_repr}
+        tmp_file = tempfile.mktemp(suffix=".sav")
+        self.problem.write(tmp_file)
+        cplex_binary = open(tmp_file, 'rb').read()
+        repr_dict = {'cplex_binary': cplex_binary, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
         tmp_file = tempfile.mktemp(suffix=".sav")
-        open(tmp_file, 'w').write(repr_dict['cplex_repr'])
-        problem = cplex.Cplex()
-        problem.read(tmp_file)
+        open(tmp_file, 'wb').write(repr_dict['cplex_binary'])
+        problem = cplex.Cplex(tmp_file)
+        if repr_dict['status'] == 'optimal':
+            # turn off logging completely, get's configured later
+            problem.set_error_stream(None)
+            problem.set_warning_stream(None)
+            problem.set_log_stream(None)
+            problem.set_results_stream(None)
+            problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
+        self.configuration = Configuration.clone(repr_dict['config'], problem=self)
 
     @property
     def objective(self):
@@ -447,10 +509,10 @@ class Model(interface.Model):
     @objective.setter
     def objective(self, value):
         super(Model, self.__class__).objective.fset(self, value)
-        for i in xrange(len(self.problem.objective.get_linear())):
+        for i in range(len(self.problem.objective.get_linear())):
             self.problem.objective.set_linear(i, 0.)
         expression = self._objective.expression
-        if isinstance(expression, types.FloatType) or isinstance(expression, types.IntType) or expression.is_Number:
+        if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
             pass
         else:
             if expression.is_Symbol:
@@ -469,17 +531,46 @@ class Model(interface.Model):
             self.problem.objective.set_sense(
                 {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
                     value.direction])
-
+        self.problem.objective.set_name(value.name)
         value.problem = self
+
+    @property
+    def primal_values(self):
+        if self.problem:
+            primal_values = collections.OrderedDict()
+            for variable, primal in zip(self.variables, self.problem.solution.get_values()):
+                primal_values[variable.name] = variable._round_primal_to_bounds(primal)
+            return primal_values
+        else:
+            return None
+
+    @property
+    def reduced_costs(self):
+        if self.problem:
+            return collections.OrderedDict(
+                zip([variable.name for variable in self.variables], self.problem.solution.get_reduced_costs()))
+        else:
+            return None
+
+    @property
+    def dual_values(self):
+        if self.problem:
+            return collections.OrderedDict(
+                zip([constraint.name for constraint in self.constraints], self.problem.solution.get_activity_levels()))
+        else:
+            return None
+
+    @property
+    def shadow_prices(self):
+        if self.problem:
+            return collections.OrderedDict(
+                zip([constraint.name for constraint in self.constraints], self.problem.solution.get_dual_values()))
+        else:
+            return None
+
 
     def __str__(self):
         tmp_file = tempfile.mktemp(suffix=".lp")
-        self.problem.write(tmp_file)
-        cplex_form = open(tmp_file).read()
-        return cplex_form
-
-    def __repr__(self):
-        tmp_file = tempfile.mktemp(suffix=".sav")
         self.problem.write(tmp_file)
         cplex_form = open(tmp_file).read()
         return cplex_form
@@ -495,7 +586,7 @@ class Model(interface.Model):
         if not translation: translation = {'E': '==', 'L': '<', 'G': '>'}
         try:
             return translation[sense]
-        except KeyError, e:
+        except KeyError as e:
             raise Exception(' '.join(('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')))
 
     def _add_variable(self, variable):
@@ -543,13 +634,20 @@ class Model(interface.Model):
                 raise ValueError('Something is fishy with constraint %s' % constraint)
 
             sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(constraint.lb, constraint.ub)
-
-            self.problem.linear_constraints.add(
-                lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
-                range_values=[range_value], names=[constraint.name])
+            if constraint.indicator_variable is None:
+                self.problem.linear_constraints.add(
+                    lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
+                    range_values=[range_value], names=[constraint.name])
+            else:
+                if sense == 'R':
+                    raise ValueError('CPLEX does not support indicator constraints that have both an upper and lower bound.')
+                else:
+                    self.problem.indicator_constraints.add(
+                        lin_expr=cplex.SparsePair(ind=indices, val=values), sense=sense, rhs=rhs, name=constraint.name,
+                        indvar=constraint.indicator_variable.name, complemented=abs(constraint.active_when)-1)
         # TODO: Implement quadratic constraints
         elif constraint.is_Quadratic:
-            pass
+            raise NotImplementedError('Quadratic constraints (like %s) are not supported yet.' % constraint)
         else:
             raise ValueError("CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
         constraint.problem = self
@@ -578,13 +676,13 @@ if __name__ == '__main__':
     model = Model(name='Simple model')
     model.objective = obj
     model.add([c1, c2, c3])
-    print model
+    print(model)
     status = model.optimize()
-    print "status:", model.status
-    print "objective value:", model.objective.value
+    print("status:", model.status)
+    print("objective value:", model.objective.value)
 
-    for var_name, var in model.variables.iteritems():
-        print var_name, "=", var.primal
+    for var_name, var in model.variables.items():
+        print(var_name, "=", var.primal)
 
 
         # from cplex import Cplex

@@ -1,6 +1,9 @@
 [![Build Status](https://travis-ci.org/biosustain/optlang.png?branch=master)](https://travis-ci.org/biosustain/optlang)
 [![Coverage Status](https://coveralls.io/repos/biosustain/optlang/badge.png?branch=master)](https://coveralls.io/r/biosustain/optlang?branch=master)
 [![PyPI version](https://badge.fury.io/py/optlang.svg)](http://badge.fury.io/py/optlang)
+[![Documentation Status](https://readthedocs.org/projects/optlang/badge/?version=latest)](https://readthedocs.org/projects/optlang/?badge=latest)
+
+
 
 optlang
 =======
@@ -8,9 +11,37 @@ optlang
 ### Vision
 __optlang__ provides a common interface to a series of optimization solvers (linear & non-linear) and relies on [sympy](http://sympy.org/en/index.html) for problem formulation (constraints, objectives, variables, etc.). Adding new solvers is easy: just sub-class the high-level interface and implement the necessary solver specific routines.
 
+### Installation
+
+Install using pip
+    
+    pip install optlang
+
+or
+
+     pip install -e git+https://github.com/biosustain/optlang.git@master#egg=optlang
+
+if you want to work with the latest stable version.
+    
+Local installations like
+    
+    python setup.py install
+     
+might fail installing the dependencies (unresolved issue with `easy_install`). Running
+ 
+    pip install -r requirements.txt
+
+beforehand should fix this issue.
+
 ### Documentation
 
 The documentation for __optlang__ is provided at [readthedocs.org](http://optlang.readthedocs.org/en/latest/).
+
+### Dependencies
+
+* [sympy >= 0.7.5](http://sympy.org/en/index.html)
+* [swiglpk >= 0.1.0](https://pypi.python.org/pypi/swiglpk)
+* [glpk >= 4.45](https://www.gnu.org/software/glpk/)
 
 ### Example
 

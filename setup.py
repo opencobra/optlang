@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import os
 from setuptools import setup, find_packages
 
 
@@ -25,12 +25,16 @@ try:
 except (IOError, ImportError):
     description = ''
 
-with open('requirements.txt') as fhandle:
-    requirements = [line.strip() for line in fhandle]
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+if on_rtd:
+    requirements = []
+else:
+    with open('requirements.txt') as fhandle:
+        requirements = [line.strip() for line in fhandle]
 
 setup(
     name='optlang',
-    version='0.0.2',
+    version='0.1.1',
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
     test_suite='nose.collector',
@@ -39,15 +43,14 @@ setup(
     description='Formulate optimization problems using sympy expressions and solve them using interfaces to third-party optimization software (e.g. GLPK).',
     license='Apache License Version 2.0',
     url='https://github.com/biosustain/optlang',
-    download_url='https://github.com/biosustain/optlang/tarball/v0.0.2',
     long_description=description,
     keywords=['optimization', 'sympy', 'mathematical programming', 'heuristic optimization'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Topic :: Utilities',
-        'Programming Language :: Python :: 2.5',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
         'License :: OSI Approved :: Apache Software License',
     ],
 )
