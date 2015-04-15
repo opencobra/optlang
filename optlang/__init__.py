@@ -12,13 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import six
 
-
-__version__ = '0.0.2'
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 import logging
-
 log = logging.getLogger(__name__)
 
 from .util import list_available_solvers
