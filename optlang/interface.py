@@ -67,7 +67,7 @@ SPECIAL = 'check_original_solver_status'
 
 
 # noinspection PyShadowingBuiltins
-class Variable(sympy.Symbol):
+class Variable(object):
     """Optimization variables.
 
     Extends sympy Symbol with optimization specific attributes and methods.
@@ -117,18 +117,18 @@ class Variable(sympy.Symbol):
     def clone(cls, variable, **kwargs):
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
 
-    def __new__(cls, name, **assumptions):
-
-        if assumptions.get('zero', False):
-            return S.Zero
-        is_commutative = fuzzy_bool(assumptions.get('commutative', True))
-        if is_commutative is None:
-            raise ValueError(
-                '''Symbol commutativity must be True or False.''')
-        assumptions['commutative'] = is_commutative
-        for key in assumptions.keys():
-            assumptions[key] = bool(assumptions[key])
-        return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
+    # def __new__(cls, name, **assumptions):
+    #
+    #     if assumptions.get('zero', False):
+    #         return S.Zero
+    #     is_commutative = fuzzy_bool(assumptions.get('commutative', True))
+    #     if is_commutative is None:
+    #         raise ValueError(
+    #             '''Symbol commutativity must be True or False.''')
+    #     assumptions['commutative'] = is_commutative
+    #     for key in assumptions.keys():
+    #         assumptions[key] = bool(assumptions[key])
+    #     return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
         for char in name:
@@ -136,7 +136,7 @@ class Variable(sympy.Symbol):
                 raise ValueError(
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
-        sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
+        self._symbol = sympy.Symbol(name, *args, **kwargs)
         self._lb = lb
         self._ub = ub
         if self._lb is None and type == 'binary':
@@ -147,6 +147,19 @@ class Variable(sympy.Symbol):
         self.__test_valid_upper_bound(type, self._ub, name)
         self._type = type
         self.problem = problem
+
+    def __getattr__(self, value):
+        return getattr(self._symbol, value)
+
+    def __dir__(self):
+        return self.__dict__.keys() + dir(self._symbol)
+
+    # def __add__(self, other):
+    #     print('Yeah')
+    #     return other
+
+    def _sympy_(self):
+        return self
 
     @property
     def lb(self):
@@ -224,7 +237,7 @@ class Variable(sympy.Symbol):
             ub_str = " <= " + str(self.ub)
         else:
             ub_str = ""
-        return ''.join((lb_str, super(Variable, self).__str__(), ub_str))
+        return ''.join((lb_str, self._symbol.__str__(), ub_str))
 
     def __repr__(self):
         """Does exactly the same as __str__ for now."""
