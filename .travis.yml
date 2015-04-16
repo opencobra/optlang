@@ -3,7 +3,7 @@ python:
 - '2.7'
 - '3.4'
 before_install:
-- sudo apt-get install libglpk-dev swig python-numpy glpk-utils
+- sudo apt-get install libglpk-dev swig python-numpy glpk-utils pandoc
 - export SYMPY_USE_CACHE=no
 install:
 - pip install coveralls nose nose-progressive rednose coverage docutils
