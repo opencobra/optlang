@@ -179,7 +179,7 @@ class Constraint(interface.Constraint):
                     da[i] = indices_coefficients_dict[ia[i]]
                 except KeyError:
                     pass
-            print(glp_set_mat_row(self.problem.problem, index, num, ia, da))
+            glp_set_mat_row(self.problem.problem, index, num, ia, da)
         else:
             raise Exception('_set_coefficients_low_level works only if a constraint is associated with a solver instance.')
 
