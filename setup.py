@@ -23,13 +23,11 @@ versioneer.versionfile_build = 'optlang/_version.py'
 versioneer.tag_prefix = '' # tags are like 1.2.0
 versioneer.parentdir_prefix = 'optlang-' # dirname like 'myproject-1.2.0'
 
-# from https://coderwall.com/p/qawuyq
-try:
-    import pypandoc
-
-    description = pypandoc.convert('README.md', 'rst')
-except (IOError, ImportError):
-    description = ''
+# Run
+# pandoc --from=markdown --to=rst README.md -o README.rst
+# from time to time, to keep README.rst updated
+with open('README.rst', 'r') as f:
+    description = f.read()
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
