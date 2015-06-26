@@ -627,9 +627,12 @@ class Model(interface.Model):
                 variable = list(constraint.expression.atoms(sympy.Symbol))[0]
                 indices = [variable.name]
                 values = [float(constraint.expression.coeff(variable))]
-            elif constraint.expression.is_Atom:
+            elif constraint.expression.is_Atom and constraint.expression.is_Symbol:
                 indices = [constraint.expression.name]
                 values = [1.]
+            elif constraint.expression.is_Number:
+                indices = []
+                values = []
             else:
                 raise ValueError('Something is fishy with constraint %s' % constraint)
 
