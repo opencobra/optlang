@@ -312,7 +312,18 @@ class OptimizationExpression(object):
     @property
     def is_Linear(self):
         """Returns True if constraint is linear (read-only)."""
-        return all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in self.expression.as_coefficients_dict().keys()))
+        coeff_dict = self.expression.as_coefficients_dict()
+        if all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
+            return True
+        else:
+            try:
+                poly = self.expression.as_poly(*self.variables)
+            except sympy.PolynomialError:
+                poly = None
+            if poly is not None:
+                return poly.is_linear
+            else:
+                return False
 
     @property
     def is_Quadratic(self):
