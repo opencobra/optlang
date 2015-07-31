@@ -664,6 +664,8 @@ class Model(interface.Model):
             elif constraint.is_Quadratic:
                 self.problem.quadratic_constraints.delete(constraint.name)
 
+    def _set_linear_objective_term(self, variable, coefficient):
+        self.problem.objective.set_linear(variable.name, float(coefficient))
 
 if __name__ == '__main__':
 

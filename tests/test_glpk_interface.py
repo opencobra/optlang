@@ -480,7 +480,7 @@ class SolverTestCase(unittest.TestCase):
 
     def test_set_linear_objective_term(self):
         self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)
-        glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
 
     def test_instantiating_model_with_non_glpk_problem_raises(self):
         self.assertRaises(TypeError, Model, problem='Chicken soup')

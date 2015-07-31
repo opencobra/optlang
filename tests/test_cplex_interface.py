@@ -331,6 +331,10 @@ try:
             status = self.model.optimize()
             self.assertEqual(status, 'time_limit')
 
+        def test_set_linear_objective_term(self):
+            self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)
+            self.assertEqual(self.model.problem.objective.get_linear(self.model.variables.R_TPI.name), 666.)
+
         def test__set_coefficients_low_level(self):
             constraint = self.model.constraints.M_atp_c
             coeff_dict = constraint.expression.as_coefficients_dict()
