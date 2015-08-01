@@ -30,7 +30,7 @@ install:
 - pip install coveralls nose nose-progressive rednose coverage docutils
 - pip install -r requirements.txt
 - pip install inspyred
-- pip install pypandoc  # needed for proper pypi deployment
+- pip install pypandoc
 - python setup.py install
 script: python setup.py nosetests
 after_success:
@@ -45,4 +45,4 @@ deploy:
     repo: biosustain/optlang
 env:
   global:
-      secure: "OUn6DpIPUkU0/DwKNHc1dNGeKxsm7bGyxGFFf+QU1+bLwr2FKjYnJE+nBB9XC+YTknLYmN7XEgeF5foqW5UIUv1/glmXQ9sx/h3EdO1Pi1CxRNWpRciWYyHZY6yaNGW2y8oPkPvgEzsgNBmNh8txOPnGofq/4t8WaNOeU44tcHQ="
+  - secure: PBcwrLg4ZwVi9Gw25Q2adNd0uK+NCqFSiYl+ZuumkEXs4NQBbSXVd719wrWKUFdIqBy+h9ETo4Vsz/QsTZzI2mSG4zqTkm+oUxMW1tJxYEeKZvCo7GfZ883VlKFgdqvh6iouEvHSjfGbwc5cUp98CbjgI5ni01vGpDQh2hgokkI=
