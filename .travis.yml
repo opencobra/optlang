@@ -45,4 +45,4 @@ deploy:
     repo: biosustain/optlang
 env:
   global:
-    secure: NuFeUPxMG7TIxFRdXsACLoNKLNiWimjHf90Car83FSkObUhUiQHK/2ybO7JEbWHBSjqsfcL6L/E3InkXlAYypl3rq7YJ/JXFiM5GpJwJXg9AqI6Drya1JyAGJBp0/FQQoOE4gNGWL7H+2Myx35sOOydOgjTDzlyJXu4xwCghsv8=
+      secure: "OUn6DpIPUkU0/DwKNHc1dNGeKxsm7bGyxGFFf+QU1+bLwr2FKjYnJE+nBB9XC+YTknLYmN7XEgeF5foqW5UIUv1/glmXQ9sx/h3EdO1Pi1CxRNWpRciWYyHZY6yaNGW2y8oPkPvgEzsgNBmNh8txOPnGofq/4t8WaNOeU44tcHQ="
