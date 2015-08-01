@@ -18,7 +18,7 @@ try:
     from optlang.cplex_interface import Model
 
 
-    with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl')) as fhandle:
+    with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl'), 'rb') as fhandle:
         THE_FINAL_NETLIB_RESULTS = pickle.load(fhandle)
 
 
