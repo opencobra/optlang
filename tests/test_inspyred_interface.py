@@ -20,7 +20,6 @@ try:
                                           str(best.candidate))))
 
 
-    unittest.skipIf(six.PY3, 'inspyred is not compatible with py3.')
     class RosenbrockTestCase(unittest.TestCase):
         def setUp(self):
             benchmark = benchmarks.Rosenbrock()
