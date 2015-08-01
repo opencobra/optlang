@@ -1,10 +1,31 @@
 language: python
+sudo: false
 python:
 - '2.7'
 - '3.4'
+cache:
+- pip: true
+- directories:
+  - cplex/
+addons:
+  apt:
+    packages:
+    - swig
+    - libzmq3-dev
+    - libgmp-dev
+    - libglp
+    - libglpk-dev
+    - glpk-utils
+    - pandoc
 before_install:
-- sudo apt-get install libglpk-dev swig python-numpy glpk-utils pandoc
 - export SYMPY_USE_CACHE=no
+- pip install pip --upgrade
+- curl -L $SECRET_CPLEX_LINK -o cplex.tar.gz
+- tar xvf cplex.tar.gz
+- if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then cd "cplex/python/3.4/x86-64_linux/"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then cd "cplex/python/2.6/x86-64_linux/"; fi
+- pip install .
+- cd $TRAVIS_BUILD_DIR
 install:
 - pip install coveralls nose nose-progressive rednose coverage docutils
 - pip install -r requirements.txt
@@ -22,3 +43,6 @@ deploy:
   on:
     tags: true
     repo: biosustain/optlang
+env:
+  global:
+    secure: NuFeUPxMG7TIxFRdXsACLoNKLNiWimjHf90Car83FSkObUhUiQHK/2ybO7JEbWHBSjqsfcL6L/E3InkXlAYypl3rq7YJ/JXFiM5GpJwJXg9AqI6Drya1JyAGJBp0/FQQoOE4gNGWL7H+2Myx35sOOydOgjTDzlyJXu4xwCghsv8=
