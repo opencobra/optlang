@@ -26,7 +26,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
     def read_netlib_sif_glpk(fhandle):
         tmp_file = tempfile.mktemp(suffix='.mps')
         with open(tmp_file, 'w') as tmp_handle:
-            content = ''.join([s for s in fhandle if s.strip()])
+            content = ''.join([str(s) for s in fhandle if str(s.strip())])
             tmp_handle.write(content)
             fhandle.close()
         problem = glp_create_prob()

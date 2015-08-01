@@ -34,7 +34,7 @@ try:
     def read_netlib_sif_cplex(fhandle):
         tmp_file = tempfile.mktemp(suffix='.sif')
         with open(tmp_file, 'w') as tmp_handle:
-            content = ''.join([s for s in fhandle if s.strip()])
+            content = ''.join([str(s) for s in fhandle if str(s).strip()])
             tmp_handle.write(content)
             fhandle.close()
         problem = cplex.Cplex()
