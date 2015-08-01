@@ -19,7 +19,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
     """
     Test netlib with glpk interface
     """
-    with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl', 'rb')) as fhandle:
+    with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl'), 'rb') as fhandle:
         THE_FINAL_NETLIB_RESULTS = pickle.load(fhandle)
 
     # noinspection PyShadowingNames
