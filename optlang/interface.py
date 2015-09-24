@@ -231,7 +231,7 @@ class Variable(sympy.Symbol):
     def __setstate__(self, state):
         self.__dict__ = state
 
-    def _round_primal_to_bounds(self, primal, tolerance=1e-6):
+    def _round_primal_to_bounds(self, primal, tolerance=1e-5):
         if (primal >= self.lb or self.lb is None) and (primal <= self.ub or self.ub is None):
                 return primal
         else:
