@@ -29,6 +29,7 @@ import types
 import collections
 
 import sys
+from optlang.exceptions import IndicatorConstraintsNotSupported
 
 log = logging.getLogger(__name__)
 
@@ -392,7 +393,7 @@ class Constraint(OptimizationExpression):
     @classmethod
     def __check_valid_indicator_variable(cls, variable):
         if variable is not None and not cls._INDICATOR_CONSTRAINT_SUPPORT:
-            raise Exception('Solver interface %s does not support indicator constraints' % cls.__module__)
+            raise IndicatorConstraintsNotSupported('Solver interface %s does not support indicator constraints' % cls.__module__)
         if variable is not None and variable.type != 'binary':
             raise ValueError('Provided indicator variable %s is not binary.' % variable)
 
