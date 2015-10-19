@@ -530,8 +530,9 @@ class Model(interface.Model):
     @objective.setter
     def objective(self, value):
         super(Model, self.__class__).objective.fset(self, value)
-        for i in range(len(self.problem.objective.get_linear())):
-            self.problem.objective.set_linear(i, 0.)
+        self.problem.objective.set_linear(
+            (i, 0) for i in range(self.problem.variables.get_num())
+        )
         expression = self._objective.expression
         if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
             pass
