@@ -106,6 +106,8 @@ _CPLEX_STATUS_TO_STATUS = {
     102: interface.OPTIMAL # CPXMIP_OPTIMAL_TOL not covered by python bindings???
 }
 
+_LP_METHODS = ["auto", "primal", "dual", "network", "barrier", "sifting", "concurrent"]
+
 _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
 # FIXME: what about 'S': 'semi_continuous', 'N': 'semi_integer'
 
@@ -136,6 +138,7 @@ def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
         rhs = float(lb)
         range_value = float(ub - lb)
     return sense, rhs, range_value
+
 
 class Variable(interface.Variable):
     """CPLEX variable interface."""
@@ -303,11 +306,29 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
+
+    def __init__(self, lp_method='dual', presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
+        self.lp_method = lp_method
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
+
+    @property
+    def lp_method(self):
+        lpmethod = self.problem.problem.parameters.lpmethod
+        try:
+            value = lpmethod.get()
+        except ReferenceError:
+            value = lpmethod.default()
+        return lpmethod.values[value]
+
+    @lp_method.setter
+    def lp_method(self, lp_method):
+        if lp_method not in _LP_METHODS:
+            raise ValueError("LP Method %s is not valid (choose one of: %s)" % (lp_method, ", ".join(_LP_METHODS)))
+        lp_method = getattr(self.problem.problem.parameters.lpmethod.values, lp_method)
+        self.problem.problem.parameters.lpmethod.set(lp_method)
 
     @property
     def presolve(self):
