@@ -539,7 +539,7 @@ class Configuration(object):
     @classmethod
     def clone(cls, config, problem=None, **kwargs):
         properties = (k for k, v in inspect.getmembers(cls, predicate=inspect.isdatadescriptor) if not k.startswith('__'))
-        parameters = {property: getattr(config, property) for property in properties}
+        parameters = {property: getattr(config, property) for property in properties if hasattr(config, property)}
         return cls(problem=problem, **parameters)
 
     def __init__(self, problem=None, *args, **kwargs):
