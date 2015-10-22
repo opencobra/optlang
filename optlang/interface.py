@@ -617,6 +617,9 @@ class Model(object):
     def clone(cls, model):
         interface = sys.modules[cls.__module__]
         new_model = cls()
+        for variable in model.variables:
+            new_variable = interface.Variable.clone(variable)
+            new_model._add_variable(new_variable)
         for constraint in model.constraints:
             new_constraint = interface.Constraint.clone(constraint, model=new_model)
             new_model._add_constraint(new_constraint)
