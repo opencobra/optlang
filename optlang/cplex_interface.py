@@ -20,11 +20,7 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 """
 import collections
 import six
-
-if six.PY3:
-    from io import StringIO
-else:
-    from StringIO import StringIO
+from six.moves import StringIO
 
 import sys
 
@@ -307,9 +303,10 @@ class Objective(interface.Objective):
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
 
-    def __init__(self, lp_method='dual', presolve=False, verbosity=0, timeout=None, *args, **kwargs):
+    def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
+        self.tolerance = tolerance
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
@@ -329,6 +326,19 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             raise ValueError("LP Method %s is not valid (choose one of: %s)" % (lp_method, ", ".join(_LP_METHODS)))
         lp_method = getattr(self.problem.problem.parameters.lpmethod.values, lp_method)
         self.problem.problem.parameters.lpmethod.set(lp_method)
+
+    @property
+    def tolerance(self):
+        return self._tolerance
+
+    @tolerance.setter
+    def tolerance(self, value):
+        self.problem.problem.parameters.simplex.tolerances.feasibility.set(value)
+        self.problem.problem.parameters.simplex.tolerances.optimality.set(value)
+        self.problem.problem.parameters.mip.tolerances.integrality.set(value)
+        self.problem.problem.parameters.mip.tolerances.absmipgap.set(value)
+        self.problem.problem.parameters.mip.tolerances.mipgap.set(value)
+        self._tolerance = value
 
     @property
     def presolve(self):
