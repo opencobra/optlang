@@ -25,7 +25,6 @@ import random
 import uuid
 import six
 
-import types
 import collections
 
 import sys
@@ -59,7 +58,6 @@ SUBOPTIMAL = 'suboptimal'
 INPROGRESS = 'in_progress'
 ABORTED = 'aborted'
 SPECIAL = 'check_original_solver_status'
-
 
 
 # noinspection PyShadowingBuiltins
@@ -127,6 +125,11 @@ class Variable(sympy.Symbol):
         return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
+
+        # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
+        if six.PY2:
+            name = str(name)
+
         for char in name:
             if char.isspace():
                 raise ValueError(
@@ -270,6 +273,10 @@ class OptimizationExpression(object):
         return adjusted_expression
 
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
+        # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
+        if six.PY2 and name is not None:
+            name = str(name)
+
         super(OptimizationExpression, self).__init__(*args, **kwargs)
         if sloppy:
             self._expression = expression
