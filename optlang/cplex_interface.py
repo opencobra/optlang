@@ -258,8 +258,18 @@ class Constraint(interface.Constraint):
                 if self.indicator_variable is not None:
                     raise NotImplementedError("Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds")
                 if name == 'lb':
+                    if value > self.ub:
+                        raise ValueError(
+                            "Lower bound %f is larger than upper bound %f in constraint %s" %
+                            (value, self.ub, self)
+                        )
                     sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(value, self.ub)
                 elif name == 'ub':
+                    if value < self.lb:
+                        raise ValueError(
+                            "Lower bound %f is larger than upper bound %f in constraint %s" %
+                            (self.lb, value, self)
+                        )
                     sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(self.lb, value)
                 if self.is_Linear:
                     self.problem.problem.linear_constraints.set_rhs(self.name, rhs)
@@ -299,6 +309,12 @@ class Objective(interface.Objective):
             super(Objective, self).__setattr__(name, value)
         else:
             super(Objective, self).__setattr__(name, value)
+
+    def _canonicalize(self, expression):
+        """Converts e.g. (x1 + x2)**2 to x1**2 + 2*x1*x2 + x2**2"""
+        expression = super(Objective, self)._canonicalize(expression)
+        expression = expression.expand()
+        return expression
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
@@ -542,6 +558,19 @@ class Model(interface.Model):
         if self._objective is not None:
             for variable in self.objective.variables:
                 self.problem.objective.set_linear(variable.name, 0.)
+            if self.objective.is_Quadratic:
+                if self._objective.expression.is_Mul:
+                    args = (self._objective.expression, )
+                else:
+                    args = self._objective.expression.args
+                for arg in args:
+                    vars = arg.atoms(sympy.Symbol)
+                    assert len(vars) <= 2
+                    if len(vars) == 1:
+                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 0)
+                    else:
+                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 0)
+
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective.expression
         if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
@@ -550,16 +579,28 @@ class Model(interface.Model):
             if expression.is_Symbol:
                 self.problem.objective.set_linear(expression.name, 1.)
             if expression.is_Mul:
-                coeff, var = expression.args
-                self.problem.objective.set_linear(var.name, float(coeff))
+                terms = (expression, )
             elif expression.is_Add:
-                for term in expression.args:
-                    coeff, var = term.args
-                    self.problem.objective.set_linear(var.name, float(coeff))
+                terms = expression.args
             else:
                 raise ValueError(
                     "Provided objective %s doesn't seem to be appropriate." %
                     self._objective)
+
+            for term in terms:
+                factors = term.args
+                coeff = factors[0]
+                vars = factors[1:]
+                assert len(vars) <= 2
+                if len(vars) == 2:
+                    self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, float(coeff))
+                else:
+                    if vars[0].is_Symbol:
+                        self.problem.objective.set_linear(vars[0].name, float(coeff))
+                    elif vars[0].is_Pow:
+                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 2*float(coeff))  # Multiply by 2 because it's on diagonal
+
+
             self.problem.objective.set_sense(
                 {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
                     value.direction])
