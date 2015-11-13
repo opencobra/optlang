@@ -99,10 +99,13 @@ _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.populate_solution_limit: interface.SPECIAL,
     cplex.Cplex.solution.status.solution_limit: interface.SPECIAL,
     cplex.Cplex.solution.status.unbounded: interface.UNBOUNDED,
-    102: interface.OPTIMAL # CPXMIP_OPTIMAL_TOL not covered by python bindings???
+    cplex.Cplex.solution.status.relaxation_unbounded: interface.UNBOUNDED,
+    #102: interface.OPTIMAL # The same as cplex.Cplex.solution.status.optimal_tolerance
 }
 
 _LP_METHODS = ["auto", "primal", "dual", "network", "barrier", "sifting", "concurrent"]
+
+_SOLUTION_TARGETS = ("auto", "convex", "local", "global")
 
 _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
 # FIXME: what about 'S': 'semi_continuous', 'N': 'semi_integer'
@@ -319,13 +322,14 @@ class Objective(interface.Objective):
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
 
-    def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
+    def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None, solution_target="auto", *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
         self.tolerance = tolerance
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
+        self.solution_target = solution_target
 
     @property
     def lp_method(self):
@@ -453,6 +457,26 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 self.problem.problem.parameters.timelimit.set(value)
         self._timeout = value
 
+    @property
+    def solution_target(self):
+        if self.problem is not None:
+            return _SOLUTION_TARGETS[self.problem.problem.parameters.solutiontarget.get()]
+        else:
+            return None
+
+    @solution_target.setter
+    def solution_target(self, value):
+        if self.problem is not None:
+            if value is None:
+                self.problem.problem.parameters.solutiontarget.reset()
+            else:
+                try:
+                    solution_target = _SOLUTION_TARGETS.index(value)
+                except ValueError:
+                    raise ValueError("%s is not a valid solution target. Choose between %s" % (value, str(_SOLUTION_TARGETS)))
+                self.problem.problem.parameters.solutiontarget.set(solution_target)
+        self._solution_target = self.solution_target
+
 
 class Model(interface.Model):
     def __init__(self, problem=None, *args, **kwargs):
@@ -564,7 +588,7 @@ class Model(interface.Model):
                 else:
                     args = self._objective.expression.args
                 for arg in args:
-                    vars = arg.atoms(sympy.Symbol)
+                    vars = tuple(arg.atoms(sympy.Symbol))
                     assert len(vars) <= 2
                     if len(vars) == 1:
                         self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 0)
@@ -598,8 +622,8 @@ class Model(interface.Model):
                     if vars[0].is_Symbol:
                         self.problem.objective.set_linear(vars[0].name, float(coeff))
                     elif vars[0].is_Pow:
-                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 2*float(coeff))  # Multiply by 2 because it's on diagonal
-
+                        var = vars[0].args[0]
+                        self.problem.objective.set_quadratic_coefficients(var.name, var.name, 2*float(coeff))  # Multiply by 2 because it's on diagonal
 
             self.problem.objective.set_sense(
                 {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[

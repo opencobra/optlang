@@ -336,6 +336,8 @@ class OptimizationExpression(object):
     @property
     def is_Quadratic(self):
         """Returns True if constraint is quadratic (read-only)."""
+        if self.expression.is_Atom:
+            return False
         try:
             poly = self.expression.as_poly(*self.expression.atoms(sympy.Symbol))
         except sympy.PolynomialError:
