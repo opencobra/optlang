@@ -132,6 +132,8 @@ def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
         sense = 'E'
         rhs = float(lb)
         range_value = 0.
+    elif lb > ub:
+        raise ValueError("Lower bound is larger than upper bound.")
     else:
         sense = 'R'
         rhs = float(lb)
@@ -195,6 +197,12 @@ class Constraint(interface.Constraint):
 
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
+        if self.ub is not None and self.lb is not None and self.lb > self.ub:
+            raise ValueError(
+                "Lower bound %f is larger than upper bound %f in constraint %s" %
+                (self.lb, self.ub, self)
+            )
+
 
     # TODO: get expression from solver structure
     def _get_expression(self):
@@ -270,8 +278,8 @@ class Constraint(interface.Constraint):
                 elif name == 'ub':
                     if value < self.lb:
                         raise ValueError(
-                            "Lower bound %f is larger than upper bound %f in constraint %s" %
-                            (self.lb, value, self)
+                            "Upper bound %f is less than lower bound %f in constraint %s" %
+                            (value, self.lb, self)
                         )
                     sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(self.lb, value)
                 if self.is_Linear:
