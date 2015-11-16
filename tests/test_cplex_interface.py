@@ -13,6 +13,7 @@ from nose.tools import nottest
 
 try:
     from optlang.cplex_interface import Variable, Constraint, Model, Objective
+    from optlang import cplex_interface
     import cplex
 
     random.seed(666)
@@ -361,6 +362,37 @@ try:
             self.model.optimize()
             for k, v in self.model.shadow_prices.items():
                 self.assertEquals(v, self.model.constraints[k].dual)
+
+
+    class ConfigurationTestCase(unittest.TestCase):
+        def setUp(self):
+            self.model = Model()
+            self.configuration = self.model.configuration
+
+        def test_lp_method(self):
+            for option in cplex_interface._LP_METHODS:
+                self.configuration.lp_method = option
+                self.assertEqual(self.configuration.lp_method, option)
+                self.assertEqual(self.model.problem.parameters.lpmethod.get(), getattr(self.model.problem.parameters.lpmethod.values, option))
+
+            self.assertRaises(ValueError, setattr, self.configuration, "lp_method", "weird_stuff")
+
+        def test_qp_method(self):
+            for option in cplex_interface._QP_METHODS:
+                self.configuration.qp_method = option
+                self.assertEqual(self.configuration.qp_method, option)
+                self.assertEqual(self.model.problem.parameters.qpmethod.get(), getattr(self.model.problem.parameters.qpmethod.values, option))
+
+            self.assertRaises(ValueError, setattr, self.configuration, "qp_method", "weird_stuff")
+
+        def test_solution_method(self):
+            for option in cplex_interface._SOLUTION_TARGETS:
+                self.configuration.solution_target = option
+                self.assertEqual(self.configuration.solution_target, option)
+                self.assertEqual(self.model.problem.parameters.solutiontarget.get(), cplex_interface._SOLUTION_TARGETS.index(option))
+
+            self.assertRaises(ValueError, setattr, self.configuration, "solution_target", "weird_stuff")
+
 
 except ImportError as e:
 

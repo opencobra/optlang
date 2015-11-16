@@ -107,6 +107,8 @@ _LP_METHODS = ["auto", "primal", "dual", "network", "barrier", "sifting", "concu
 
 _SOLUTION_TARGETS = ("auto", "convex", "local", "global")
 
+_QP_METHODS = ("auto", "primal", "dual", "network", "barrier")
+
 _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
 # FIXME: what about 'S': 'semi_continuous', 'N': 'semi_integer'
 
@@ -324,7 +326,8 @@ class Objective(interface.Objective):
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
 
-    def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None, solution_target="auto", *args, **kwargs):
+    def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None,
+                 solution_target="auto", qp_method="primal", *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
         self.tolerance = tolerance
@@ -332,6 +335,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.verbosity = verbosity
         self.timeout = timeout
         self.solution_target = solution_target
+        self.qp_method = qp_method
 
     @property
     def lp_method(self):
@@ -478,6 +482,19 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                     raise ValueError("%s is not a valid solution target. Choose between %s" % (value, str(_SOLUTION_TARGETS)))
                 self.problem.problem.parameters.solutiontarget.set(solution_target)
         self._solution_target = self.solution_target
+
+    @property
+    def qp_method(self):
+        value = self.problem.problem.parameters.qpmethod.get()
+        return self.problem.problem.parameters.qpmethod.values[value]
+
+    @qp_method.setter
+    def qp_method(self, value):
+        if value not in _QP_METHODS:
+            raise ValueError("%s is not a valid qp_method. Choose between %s" % (value, str(_QP_METHODS)))
+        method = getattr(self.problem.problem.parameters.qpmethod.values, value)
+        self.problem.problem.parameters.qpmethod.set(method)
+        self._qp_method = value
 
 
 class Model(interface.Model):

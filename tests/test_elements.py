@@ -132,7 +132,7 @@ class ConstraintTestCase(unittest.TestCase):
     def test_canonicalization_with_lb_and_ub(self):
         constraint = Constraint(-20 + self.x + 3, ub=666, lb=-666)
         self.assertEqual(constraint.lb, -649)
-        self.assertEqual(constraint.ub, 666)
+        self.assertEqual(constraint.ub, 683)
         self.assertEqual(constraint.expression, self.x)
 
         # def test_pickle_ability(self):

@@ -342,7 +342,7 @@ class OptimizationExpression(object):
         try:
             if self.expression.is_Add:
                 terms = tuple(term.as_poly(term.atoms(sympy.Symbol)) for term in self.expression.args)
-                if all((term.is_linear or term.is_quadratic) for term in terms) and any(term.is_quadratic for term in terms):
+                if all((term is not None and (term.is_linear or term.is_quadratic)) for term in terms) and any(not term.is_linear for term in terms):
                     return True
                 else:
                     return False
