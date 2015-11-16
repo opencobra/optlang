@@ -321,12 +321,6 @@ class Objective(interface.Objective):
         else:
             super(Objective, self).__setattr__(name, value)
 
-    def _canonicalize(self, expression):
-        """Converts e.g. (x1 + x2)**2 to x1**2 + 2*x1*x2 + x2**2"""
-        expression = super(Objective, self)._canonicalize(expression)
-        expression = expression.expand()
-        return expression
-
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
 
@@ -589,7 +583,11 @@ class Model(interface.Model):
     def objective(self, value):
         if self._objective is not None:
             for variable in self.objective.variables:
-                self.problem.objective.set_linear(variable.name, 0.)
+                try:
+                    self.problem.objective.set_linear(variable.name, 0.)
+                except cplex.exceptions.CplexSolverError as e:
+                    if " 1210:" not in str(e):  # 1210 = Name not found (variable has been removed from model)
+                        raise e
             if self.objective.is_Quadratic:
                 if self._objective.expression.is_Mul:
                     args = (self._objective.expression, )
@@ -598,10 +596,14 @@ class Model(interface.Model):
                 for arg in args:
                     vars = tuple(arg.atoms(sympy.Symbol))
                     assert len(vars) <= 2
-                    if len(vars) == 1:
-                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 0)
-                    else:
-                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 0)
+                    try:
+                        if len(vars) == 1:
+                            self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 0)
+                        else:
+                            self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 0)
+                    except cplex.exceptions.CplexSolverError as e:
+                        if " 1210:" not in str(e):  # 1210 = Name not found (variable has been removed from model)
+                            raise e
 
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective.expression
@@ -625,7 +627,10 @@ class Model(interface.Model):
                 vars = factors[1:]
                 assert len(vars) <= 2
                 if len(vars) == 2:
-                    self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, float(coeff))
+                    if vars[0].name == vars[1].name:
+                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 2*float(coeff))
+                    else:
+                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, float(coeff))
                 else:
                     if vars[0].is_Symbol:
                         self.problem.objective.set_linear(vars[0].name, float(coeff))

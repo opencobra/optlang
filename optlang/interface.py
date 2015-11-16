@@ -315,6 +315,7 @@ class OptimizationExpression(object):
         elif isinstance(expression, int):
             return sympy.Integer(expression)
         else:
+            #expression = expression.expand() This would be a good way to canonicalize, but is quite slow
             return expression
 
     @property
@@ -339,12 +340,15 @@ class OptimizationExpression(object):
         if self.expression.is_Atom:
             return False
         try:
-            poly = self.expression.as_poly(*self.expression.atoms(sympy.Symbol))
+            if self.expression.is_Add:
+                terms = tuple(term.as_poly(term.atoms(sympy.Symbol)) for term in self.expression.args)
+                if all((term.is_linear or term.is_quadratic) for term in terms) and any(term.is_quadratic for term in terms):
+                    return True
+                else:
+                    return False
+            else:
+                return self.expression.as_poly(*self.variables).is_quadratic
         except sympy.PolynomialError:
-            poly = None
-        if poly is not None and poly.is_quadratic and not poly.is_linear:
-            return True
-        else:
             return False
 
     def __iadd__(self, other):
@@ -471,12 +475,12 @@ class Constraint(OptimizationExpression):
                 "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set."
                 % expression
             )
-        elif self.lb is not None:
-            expression = expression - coeff
-            self.lb = self.lb - coeff
         else:
             expression = expression - coeff
-            self.ub = self.ub - coeff
+            if self.lb is not None:
+                self.lb = self.lb - coeff
+            if self.ub is not None:
+                self.ub = self.ub - coeff
         return expression
 
     @property
