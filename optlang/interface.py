@@ -339,6 +339,9 @@ class OptimizationExpression(object):
         """Returns True if constraint is quadratic (read-only)."""
         if self.expression.is_Atom:
             return False
+        if all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom)
+                for key in self.expression.as_coefficients_dict().keys())):
+            return False
         try:
             if self.expression.is_Add:
                 terms = tuple(term.as_poly(term.atoms(sympy.Symbol)) for term in self.expression.args)
