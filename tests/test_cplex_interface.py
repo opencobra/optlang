@@ -463,7 +463,7 @@ try:
 
             model.configuration.solution_target = "global"
             model.optimize()
-            self.assertAlmostEqual(model.objective.value, 2441.9999999)
+            self.assertAlmostEqual(model.objective.value, 2441.999999971)
 
 except ImportError as e:
 
