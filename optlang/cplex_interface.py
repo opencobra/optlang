@@ -32,8 +32,11 @@ import tempfile
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
+from sympy.core.singleton import S
 import cplex
 from optlang import interface
+Zero = S.Zero
+One = S.One
 
 _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.MIP_abort_feasible: interface.ABORTED,
@@ -559,9 +562,18 @@ class Model(interface.Model):
                 if 'CPLEX Error  1219:' not in str(e):
                     raise e
             else:
+                linear_expression = _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
+                                       enumerate(self.problem.objective.get_linear()) if coeff != 0.])
+
+                try:
+                    quadratic = self.problem.objective.get_quadratic()
+                except IndexError:
+                    quadratic_expression = Zero
+                else:
+                    quadratic_expression = self._get_quadratic_expression(quadratic)
+
                 self._objective = Objective(
-                    _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
-                                       enumerate(self.problem.objective.get_linear()) if coeff != 0.]),
+                    linear_expression + quadratic_expression,
                     problem=self,
                     direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
                         self.problem.objective.get_sense()],
@@ -793,6 +805,24 @@ class Model(interface.Model):
 
     def _set_linear_objective_term(self, variable, coefficient):
         self.problem.objective.set_linear(variable.name, float(coefficient))
+
+    def _get_quadratic_expression(self, quadratic=None):
+        if quadratic is None:
+            try:
+                quadratic = self.problem.objective.get_quadratic()
+            except IndexError:
+                return Zero
+        terms = []
+        for i, sparse_pair in enumerate(quadratic):
+            for j, val in zip(sparse_pair.ind, sparse_pair.val):
+                if i < j:
+                    terms.append(val*self.variables[i]*self.variables[j])
+                elif i == j:
+                    terms.append(0.5*val*self.variables[i]**2)
+                else:
+                    pass  # Only look at upper triangle
+        return _unevaluated_Add(*terms)
+
 
 if __name__ == '__main__':
 

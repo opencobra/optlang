@@ -15,9 +15,12 @@ try:
     from optlang.cplex_interface import Variable, Constraint, Model, Objective
     from optlang import cplex_interface
     import cplex
+    CplexSolverError = cplex.exceptions.CplexSolverError
 
     random.seed(666)
     TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
+    CONVEX_QP_PATH = os.path.join(os.path.dirname(__file__), 'data/qplib_3256.lp')
+    NONCONVEX_QP_PATH = os.path.join(os.path.dirname(__file__), 'data/qplib_1832.lp')
 
     class VariableTestCase(unittest.TestCase):
         def setUp(self):
@@ -393,6 +396,74 @@ try:
 
             self.assertRaises(ValueError, setattr, self.configuration, "solution_target", "weird_stuff")
 
+
+    class QuadraticProgrammingTestCase(unittest.TestCase):
+        def setUp(self):
+            self.model = Model()
+            self.x1 = Variable("x1", lb=0)
+            self.x2 = Variable("x2", lb=0)
+            self.c1 = Constraint(self.x1 + self.x2, lb=1)
+            self.model.add([self.x1, self.x2, self.c1])
+
+        def test_convex_obj(self):
+            model = self.model
+            obj = Objective(self.x1**2 + self.x2**2, direction="min")
+            model.objective = obj
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0.5)
+            self.assertAlmostEqual(self.x1.primal, 0.5)
+            self.assertAlmostEqual(self.x2.primal, 0.5)
+
+        def test_non_convex_obj(self):
+            model = self.model
+            obj = Objective(self.x1 * self.x2, direction="min")
+            model.objective = obj
+            model.configuration.solution_target = "convex"
+            self.assertRaises(CplexSolverError, model.optimize)
+            model.configuration.solution_target = "local"
+            model.configuration.qp_method = "barrier"
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0)
+            model.configuration.solution_target = "global"
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0)
+
+        def test_qp_convex(self):
+            problem = cplex.Cplex()
+            problem.read(CONVEX_QP_PATH)
+            model = Model(problem=problem)
+            self.assertEqual(len(model.variables), 651)
+            self.assertEqual(len(model.constraints), 501)
+            for constraint in model.constraints:
+                self.assertTrue(constraint.is_Linear, "%s should be linear" % (str(constraint.expression)))
+                self.assertFalse(constraint.is_Quadratic, "%s should not be quadratic" % (str(constraint.expression)))
+
+            self.assertTrue(model.objective.is_Quadratic, "objective should be quadratic")
+            self.assertFalse(model.objective.is_Linear, "objective should not be linear")
+
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 32.2291282)
+
+        @unittest.skip("Solving this is slow")
+        def test_qp_non_convex(self):
+            problem = cplex.Cplex()
+            problem.read(NONCONVEX_QP_PATH)
+            model = Model(problem=problem)
+            self.assertEqual(len(model.variables), 31)
+            self.assertEqual(len(model.constraints), 1)
+            for constraint in model.constraints:
+                self.assertTrue(constraint.is_Linear, "%s should be linear" % (str(constraint.expression)))
+                self.assertFalse(constraint.is_Quadratic, "%s should not be quadratic" % (str(constraint.expression)))
+
+            self.assertTrue(model.objective.is_Quadratic, "objective should be quadratic")
+            self.assertFalse(model.objective.is_Linear, "objective should not be linear")
+
+            model.configuration.solution_target = "convex"
+            self.assertRaises(CplexSolverError, model.optimize)
+
+            model.configuration.solution_target = "global"
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 2441.9999999)
 
 except ImportError as e:
 
