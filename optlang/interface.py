@@ -344,11 +344,25 @@ class OptimizationExpression(object):
             return False
         try:
             if self.expression.is_Add:
-                terms = tuple(term.as_poly(term.atoms(sympy.Symbol)) for term in self.expression.args)
-                if all((term is not None and (term.is_linear or term.is_quadratic)) for term in terms) and any(not term.is_linear for term in terms):
-                    return True
-                else:
-                    return False
+                terms = self.expression.args
+                is_quad = False
+                for term in terms:
+                    if len(term.free_symbols) > 2:
+                        return False
+                    if term.is_Pow:
+                        if not term.args[1].is_Number or term.args[1] > 2:
+                            return False
+                        else:
+                            is_quad = True
+                    elif term.is_Mul:
+                        if len(term.free_symbols) == 2:
+                            is_quad = True
+                        if term.args[1].is_Pow:
+                            if not term.args[1].args[1].is_Number or term.args[1].args[1] > 2:
+                                return False
+                            else:
+                                is_quad = True
+                return is_quad
             else:
                 return self.expression.as_poly(*self.variables).is_quadratic
         except sympy.PolynomialError:
