@@ -35,6 +35,7 @@ from sympy.core.mul import _unevaluated_Mul
 from sympy.core.singleton import S
 import cplex
 from optlang import interface
+from optlang.util import inheritdocstring
 Zero = S.Zero
 One = S.One
 
@@ -146,8 +147,8 @@ def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
     return sense, rhs, range_value
 
 
+@six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
-    """CPLEX variable interface."""
 
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
@@ -195,8 +196,8 @@ class Variable(interface.Variable):
             return None
 
 
+@six.add_metaclass(inheritdocstring)
 class Constraint(interface.Constraint):
-    """CPLEX solver interface"""
 
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
@@ -308,6 +309,7 @@ class Constraint(interface.Constraint):
         return self
 
 
+@six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
@@ -327,6 +329,7 @@ class Objective(interface.Objective):
             super(Objective, self).__setattr__(name, value)
 
 
+@six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
 
     def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None,
@@ -500,6 +503,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._qp_method = value
 
 
+@six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
     def __init__(self, problem=None, *args, **kwargs):
 

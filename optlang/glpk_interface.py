@@ -28,6 +28,8 @@ import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
+from optlang.util import inheritdocstring
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -67,8 +69,8 @@ _VTYPE_TO_GLPK_VTYPE = dict(
 )
 
 
+@six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
-    """..."""
 
     def __init__(self, name, index=None, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
@@ -137,8 +139,8 @@ class Variable(interface.Variable):
                 glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
 
 
+@six.add_metaclass(inheritdocstring)
 class Constraint(interface.Constraint):
-    """GLPK solver interface"""
 
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
@@ -284,6 +286,7 @@ class Constraint(interface.Constraint):
         return self
 
 
+@six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
@@ -349,8 +352,8 @@ class Objective(interface.Objective):
         return self
 
 
+@six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    """docstring for Configuration"""
 
     def __init__(self, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
@@ -433,8 +436,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._set_timeout(value)
         self._timeout = value
 
+
+@six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
-    """GLPK solver interface"""
 
     def __init__(self, problem=None, *args, **kwargs):
 

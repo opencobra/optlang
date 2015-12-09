@@ -23,6 +23,7 @@ import os
 
 log = logging.getLogger(__name__)
 import tempfile
+import inspect
 from subprocess import check_output
 
 
@@ -132,6 +133,20 @@ def list_available_solvers():
     except:
         log.debug('CPLEX python bindings not available.')
     return solvers
+
+
+def inheritdocstring(name, bases, attrs):
+    """Use as metaclass to inherit parent class' docstring.
+    From http://stackoverflow.com/questions/13937500/inherit-a-parent-class-docstring-as-doc-attribute"""
+    if '__doc__' not in attrs or not attrs["__doc__"]:
+        # create a temporary 'parent' to (greatly) simplify the MRO search
+        temp = type('temporaryclass', bases, {})
+        for cls in inspect.getmro(temp):
+            if cls.__doc__ is not None:
+                attrs['__doc__'] = cls.__doc__
+                break
+
+    return type(name, bases, attrs)
 
 
 if __name__ == '__main__':
