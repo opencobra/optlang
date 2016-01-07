@@ -128,15 +128,11 @@ class Variable(interface.Variable):
         else:
             return None
 
-    def __setattr__(self, name, value):
-        try:
-            old_name = self.name  # TODO: This is a hack
-        except AttributeError:
-            pass
-        super(Variable, self).__setattr__(name, value)
-        if getattr(self, 'problem', None):
-            if name == 'name':
-                glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
+    @interface.Variable.name.setter
+    def name(self, value):
+        if getattr(self, 'problem', None) is not None:
+            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
+        self._name = value
 
 
 @six.add_metaclass(inheritdocstring)
@@ -184,6 +180,24 @@ class Constraint(interface.Constraint):
             glp_set_mat_row(self.problem.problem, index, num, ia, da)
         else:
             raise Exception('_set_coefficients_low_level works only if a constraint is associated with a solver instance.')
+
+    @interface.Constraint.lb.setter
+    def lb(self, value):
+        self._lb = value
+        if self.problem is not None:
+            self.problem._glpk_set_row_bounds(self)
+
+    @interface.Constraint.ub.setter
+    def ub(self, value):
+        self._ub = value
+        if self.problem is not None:
+            self.problem._glpk_set_row_bounds(self)
+
+    @interface.OptimizationExpression.name.setter
+    def name(self, value):
+        if self.problem is not None:
+            glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, self.name), str(value))
+        self._name = value
 
     @property
     def problem(self):
@@ -236,18 +250,6 @@ class Constraint(interface.Constraint):
             self._problem = None
         else:
             self._problem = value
-
-    def __setattr__(self, name, value):
-        try:
-            old_name = self.name  # TODO: This is a hack
-        except AttributeError:
-            pass
-        super(Constraint, self).__setattr__(name, value)
-        if getattr(self, 'problem', None):
-            if name == 'name':
-                glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
-            elif name == 'lb' or name == 'ub':
-                self.problem._glpk_set_row_bounds(self)
 
     def __iadd__(self, other):
         # if self.problem is not None:
@@ -313,15 +315,11 @@ class Objective(interface.Objective):
         else:
             return glp_get_obj_val(self.problem.problem)
 
-    def __setattr__(self, name, value):
-
-        if getattr(self, 'problem', None):
-            if name == 'direction':
-                glp_set_obj_dir(self.problem.problem,
-                                {'min': GLP_MIN, 'max': GLP_MAX}[value])
-            super(Objective, self).__setattr__(name, value)
-        else:
-            super(Objective, self).__setattr__(name, value)
+    @interface.Objective.direction.setter
+    def direction(self, value):
+        if getattr(self, 'problem', None) is not None:
+            glp_set_obj_dir(self.problem.problem, {'min': GLP_MIN, 'max': GLP_MAX}[value])
+        super(Objective, self).__setattr__("objective", value)
 
     def __iadd__(self, other):
         self.problem = None

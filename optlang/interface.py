@@ -135,6 +135,7 @@ class Variable(sympy.Symbol):
                 raise ValueError(
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
+        self._name = name
         sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
         self._lb = lb
         self._ub = ub
@@ -146,6 +147,14 @@ class Variable(sympy.Symbol):
         self.__test_valid_upper_bound(type, self._ub, name)
         self._type = type
         self.problem = problem
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     @property
     def lb(self):
@@ -278,15 +287,23 @@ class OptimizationExpression(object):
             name = str(name)
 
         super(OptimizationExpression, self).__init__(*args, **kwargs)
+        self._problem = problem
         if sloppy:
             self._expression = expression
         else:
             self._expression = self._canonicalize(expression)
         if name is None:
-            self.name = str(uuid.uuid1())
+            self._name = str(uuid.uuid1())
         else:
-            self.name = name
-        self._problem = problem
+            self._name = name
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     @property
     def problem(self):
@@ -439,13 +456,29 @@ class Constraint(OptimizationExpression):
                    name=constraint.name, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=1, *args, **kwargs):
-        self.lb = lb
-        self.ub = ub
+        self._lb = lb
+        self._ub = ub
+        super(Constraint, self).__init__(expression, *args, **kwargs)
         self.__check_valid_indicator_variable(indicator_variable)
         self.__check_valid_active_when(active_when)
         self._indicator_variable = indicator_variable
         self._active_when = active_when
-        super(Constraint, self).__init__(expression, *args, **kwargs)
+
+    @property
+    def lb(self):
+        return self._lb
+
+    @lb.setter
+    def lb(self, value):
+        self._lb = value
+
+    @property
+    def ub(self):
+        return self._ub
+
+    @ub.setter
+    def ub(self, value):
+        self._ub = value
 
     @property
     def indicator_variable(self):
