@@ -255,46 +255,53 @@ class Constraint(interface.Constraint):
         else:
             return None
 
-    # TODO: Refactor to use properties
-    def __setattr__(self, name, value):
-        try:
-            old_name = self.name  # TODO: This is a hack
-        except AttributeError:
-            pass
-        super(Constraint, self).__setattr__(name, value)
-        if getattr(self, 'problem', None):
+    @interface.Constraint.name.setter
+    def name(self, value):
+        if getattr(self, 'problem', None) is not None:
+            if self.indicator_variable is not None:
+                raise NotImplementedError(
+                    "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name"
+                )
+            else:
+                # TODO: the following needs to deal with quadratic constraints
+                self.problem.problem.linear_constraints.set_names(self.name, value)
+        self._name = value
 
-            if name == 'name':
-                if self.indicator_variable is not None:
-                    raise NotImplementedError("Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name")
-                else:
-                    # TODO: the following needs to deal with quadratic constraints
-                    self.problem.problem.linear_constraints.set_names(old_name, value)
+    @interface.Constraint.lb.setter
+    def lb(self, value):
+        if getattr(self, 'problem', None) is not None:
+            if self.indicator_variable is not None:
+                raise NotImplementedError(
+                    "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds"
+                )
+            if value > self.ub:
+                raise ValueError(
+                    "Lower bound %f is larger than upper bound %f in constraint %s" %
+                    (value, self.ub, self)
+                )
+            sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(value, self.ub)
+            if self.is_Linear:
+                self.problem.problem.linear_constraints.set_rhs(self.name, rhs)
+                self.problem.problem.linear_constraints.set_senses(self.name, sense)
+                self.problem.problem.linear_constraints.set_range_values(self.name, range_value)
 
-            elif name == 'lb' or name == 'ub':
-                if self.indicator_variable is not None:
-                    raise NotImplementedError("Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds")
-                if name == 'lb':
-                    if value > self.ub:
-                        raise ValueError(
-                            "Lower bound %f is larger than upper bound %f in constraint %s" %
-                            (value, self.ub, self)
-                        )
-                    sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(value, self.ub)
-                elif name == 'ub':
-                    if value < self.lb:
-                        raise ValueError(
-                            "Upper bound %f is less than lower bound %f in constraint %s" %
-                            (value, self.lb, self)
-                        )
-                    sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(self.lb, value)
-                if self.is_Linear:
-                    self.problem.problem.linear_constraints.set_rhs(self.name, rhs)
-                    self.problem.problem.linear_constraints.set_senses(self.name, sense)
-                    self.problem.problem.linear_constraints.set_range_values(self.name, range_value)
-
-            elif name == 'expression':
-                pass
+    @interface.Constraint.ub.setter
+    def ub(self, value):
+        if getattr(self, 'problem', None) is not None:
+            if self.indicator_variable is not None:
+                raise NotImplementedError(
+                    "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds"
+                )
+            if value < self.lb:
+                raise ValueError(
+                    "Upper bound %f is less than lower bound %f in constraint %s" %
+                    (value, self.lb, self)
+                )
+            sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(self.lb, value)
+            if self.is_Linear:
+                self.problem.problem.linear_constraints.set_rhs(self.name, rhs)
+                self.problem.problem.linear_constraints.set_senses(self.name, sense)
+                self.problem.problem.linear_constraints.set_range_values(self.name, range_value)
 
     def __iadd__(self, other):
         # if self.problem is not None:
@@ -318,15 +325,13 @@ class Objective(interface.Objective):
     def value(self):
         return self.problem.problem.solution.get_objective_value()
 
-    def __setattr__(self, name, value):
-
-        if getattr(self, 'problem', None):
-            if name == 'direction':
-                self.problem.problem.objective.set_sense(
-                    {'min': self.problem.problem.objective.sense.minimize, 'max': self.problem.problem.objective.sense.maximize}[value])
-            super(Objective, self).__setattr__(name, value)
-        else:
-            super(Objective, self).__setattr__(name, value)
+    @interface.Objective.direction.setter
+    def direction(self, value):
+        if getattr(self, 'problem', None) is not None:
+            self.problem.problem.objective.set_sense(
+                {'min': self.problem.problem.objective.sense.minimize,
+                 'max': self.problem.problem.objective.sense.maximize}[value])
+        super(Objective, self).__setattr__("direction", value)
 
 
 @six.add_metaclass(inheritdocstring)
