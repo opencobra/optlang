@@ -28,6 +28,7 @@ import six
 
 SCIPY_STATUS = {
     0: interface.OPTIMAL,
+    1: interface.ABORTED,
     2: interface.INFEASIBLE,
     3: interface.UNBOUNDED
 }
@@ -41,7 +42,10 @@ class Problem(object):
         self._objective = OrderedDict()
         self._direction = "min"
 
-        self.A = np.zeros(shape=[0, 0])
+        self._rows_to_be_added = None
+        self._cols_to_be_added = None
+
+        self._A = np.zeros(shape=[0, 0])
         self.upper_bounds = np.zeros([0])
         self.bounds = OrderedDict()
 
@@ -60,6 +64,34 @@ class Problem(object):
     def _get_constraint_index(self, name):
         return self._constraints[name]
 
+    def _add_row_to_A(self, row):
+        ## Flush any cols_to_be_added
+        #if self._cols_to_be_added is not None:
+        #    self._flush_cols_to_add()
+        ## Add the row to queue
+        #if self._rows_to_be_added is None:
+        #    self._rows_to_be_added = []
+        #self._rows_to_be_added.append(row)
+        self._A = np.vstack((self._A, row))
+
+    def _flush_rows_to_add(self):
+        self._A = np.vstack([self._A] + self._rows_to_be_added)
+        self._rows_to_be_added = None
+
+    def _add_col_to_A(self, col):
+        ## Flush any rows_to_be_added
+        #if self._rows_to_be_added is not None:
+        #    self._flush_rows_to_add()
+        ## Add the col to queue
+        #if self._cols_to_be_added is None:
+        #    self._cols_to_be_added = []
+        #self._cols_to_be_added.append(col)
+        self._A = np.hstack((self._A, col))
+
+    def _flush_cols_to_add(self):
+        self._A = np.hstack([self._A] + self._cols_to_be_added)
+        self._cols_to_be_added = None
+
     def set_variable_bounds(self, name, lower, upper):
         self.bounds[name] = (lower, upper)
         self._reset_solution()
@@ -73,7 +105,7 @@ class Problem(object):
         self.bounds[name] = (0, None)
 
         new_col = np.zeros(shape=[len(self._constraints), 1])
-        self.A = np.hstack( (self.A, new_col) )
+        self._add_col_to_A(new_col)
         self._reset_solution()
 
     def add_constraint(self, name, coefficients={}, ub=0):
@@ -85,13 +117,13 @@ class Problem(object):
         self.upper_bounds = np.append(self.upper_bounds, ub)
 
         new_row = np.array([[coefficients.get(name, 0) for name in self._variables]])
-        self.A = np.vstack( (self.A, new_row) )
+        self._add_row_to_A(new_row)
         self._reset_solution()
 
     def remove_variable(self, name):
         index = self._get_var_index(name)
         # Remove from matrix
-        self.A = np.delete(self.A, index, 1)
+        self._A = np.delete(self.A, index, 1)
         # Remove from bounds
         del self.bounds[name]
         # Remove from var list
@@ -102,7 +134,7 @@ class Problem(object):
     def remove_constraint(self, name):
         index = self._get_constraint_index(name)
         # Remove from matrix
-        self.A = np.delete(self.A, index, 0)
+        self._A = np.delete(self.A, index, 0)
         # Remove from upper_bounds
         self.upper_bounds = np.delete(self.upper_bounds, index)
         # Remove from constraint list
@@ -125,6 +157,15 @@ class Problem(object):
     def get_var_dual(self, name):
         raise NotImplementedError(
             "Duals are currently not implemented for the Scipy solver. Please use another interface instead.")
+
+    @property
+    def A(self):
+        assert self._rows_to_be_added is None or self._cols_to_be_added is None
+        if self._rows_to_be_added is not None:
+            self._flush_rows_to_add()
+        if self._cols_to_be_added is not None:
+            self._flush_cols_to_add()
+        return self._A
 
     @property
     def objective(self):
@@ -157,17 +198,20 @@ class Problem(object):
             index = self._get_constraint_index(name)
             return self._slacks(index)
 
-    def optimize(self, method="simplex", **kwargs):
+    def optimize(self, method="simplex", verbosity=False, **kwargs):
         c = np.array([self.objective.get(name, 0) for name in self._variables])
         if self.direction == "max":
             c *= -1
 
         bounds = list(six.itervalues(self.bounds))
-        solution = linprog(c, self.A, self.upper_bounds, bounds=bounds, method=method, **kwargs)
+        solution = linprog(c, self.A, self.upper_bounds, bounds=bounds, method=method, options={"maxiter": 10000, "disp": verbosity}, **kwargs)
         self._solution = solution
 
         self._var_primals = solution.x
-        self._slacks = solution.slack
+        try:
+            self._slacks = solution.slack
+        except AttributeError:
+            self._slacks = None
         self._status = solution.status
         self._f = solution.fun
 
@@ -354,8 +398,17 @@ class Objective(interface.Objective):
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, verbosity=0, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
+        self._verbosity = bool(verbosity)
+
+    @property
+    def verbosity(self):
+        return self._verbosity
+
+    @verbosity.setter
+    def verbosity(self, value):
+        self._verbosity = value
 
 
 
@@ -412,7 +465,7 @@ class Model(interface.Model):
             super(Model, self)._remove_constraints(constraints)
 
     def optimize(self):
-        self.problem.optimize()
+        self.problem.optimize(verbosity=self.configuration.verbosity)
         status = self.problem.status
         self._status = status
         return status
