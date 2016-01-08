@@ -244,7 +244,9 @@ class Constraint(interface.Constraint):
     @property
     def primal(self):
         if self.problem is not None:
-            return self.problem.problem.solution.get_activity_levels(self.name)
+            primal_from_solver = self.problem.problem.solution.get_activity_levels(self.name)
+            #return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
+            return primal_from_solver
         else:
             return None
 

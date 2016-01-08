@@ -227,7 +227,9 @@ class Constraint(interface.Constraint):
     @property
     def primal(self):
         if self.problem is not None:
-            return glp_get_row_prim(self.problem.problem, self.index)
+            primal_from_solver = glp_get_row_prim(self.problem.problem, self.index)
+            #return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
+            return primal_from_solver
         else:
             return None
 
