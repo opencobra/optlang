@@ -276,7 +276,7 @@ class Constraint(interface.Constraint):
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds"
                 )
-            if value > self.ub:
+            if self.ub is not None and value > self.ub:
                 raise ValueError(
                     "Lower bound %f is larger than upper bound %f in constraint %s" %
                     (value, self.ub, self)
@@ -294,7 +294,7 @@ class Constraint(interface.Constraint):
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds"
                 )
-            if value < self.lb:
+            if self.lb is not None and value < self.lb:
                 raise ValueError(
                     "Upper bound %f is less than lower bound %f in constraint %s" %
                     (value, self.lb, self)
