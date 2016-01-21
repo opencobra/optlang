@@ -274,14 +274,14 @@ class Constraint(interface.Constraint):
                 if self.indicator_variable is not None:
                     raise NotImplementedError("Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds")
                 if name == 'lb':
-                    if value > self.ub:
+                    if self.ub is not None and value > self.ub:
                         raise ValueError(
                             "Lower bound %f is larger than upper bound %f in constraint %s" %
                             (value, self.ub, self)
                         )
                     sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(value, self.ub)
                 elif name == 'ub':
-                    if value < self.lb:
+                    if self.lb is not None and value < self.lb:
                         raise ValueError(
                             "Upper bound %f is less than lower bound %f in constraint %s" %
                             (value, self.lb, self)
