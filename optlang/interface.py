@@ -553,7 +553,6 @@ class Constraint(OptimizationExpression):
                 raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal, self.name, self.lb, self.ub))
 
 
-
 class Objective(OptimizationExpression):
     """Objective function.
 

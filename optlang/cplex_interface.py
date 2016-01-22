@@ -286,6 +286,7 @@ class Constraint(interface.Constraint):
                 self.problem.problem.linear_constraints.set_rhs(self.name, rhs)
                 self.problem.problem.linear_constraints.set_senses(self.name, sense)
                 self.problem.problem.linear_constraints.set_range_values(self.name, range_value)
+        self._lb = value
 
     @interface.Constraint.ub.setter
     def ub(self, value):
@@ -304,6 +305,7 @@ class Constraint(interface.Constraint):
                 self.problem.problem.linear_constraints.set_rhs(self.name, rhs)
                 self.problem.problem.linear_constraints.set_senses(self.name, sense)
                 self.problem.problem.linear_constraints.set_range_values(self.name, range_value)
+        self._ub = value
 
     def __iadd__(self, other):
         # if self.problem is not None:
