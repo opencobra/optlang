@@ -116,6 +116,13 @@ try:
             model = Model(problem=problem)
             self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
+        def test_setting_bounds(self):
+            value = 42
+            self.constraint.ub = value
+            self.assertEqual(self.constraint.ub, value)
+            self.constraint.lb = value
+            self.assertEqual(self.constraint.lb, value)
+
     class SolverTestCase(unittest.TestCase):
 
         def setUp(self):
