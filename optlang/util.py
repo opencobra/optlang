@@ -153,7 +153,7 @@ def inheritdocstring(name, bases, attrs):
                     if getattr(cls, attr_name).__doc__ is not None:
                         attr.__doc__ = getattr(cls, attr_name).__doc__
                         break
-                except AttributeError:
+                except (AttributeError, TypeError):
                     continue
 
     return type(name, bases, attrs)
