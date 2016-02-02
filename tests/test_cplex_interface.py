@@ -65,6 +65,17 @@ try:
             model = Model(problem=problem)
             self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
 
+        def test_setting_bounds(self):
+            problem = cplex.Cplex()
+            problem.read(TESTMODELPATH)
+            model = Model(problem=problem)
+            var = model.variables[0]
+            var.lb = 1
+            self.assertEqual(var.lb, 1)
+            self.assertEqual(model.problem.variables.get_lower_bounds(var.name), 1)
+            var.ub = 2
+            self.assertEqual(var.ub, 2)
+            self.assertEqual(model.problem.variables.get_upper_bounds(var.name), 2)
 
     class ConstraintTestCase(unittest.TestCase):
         def setUp(self):
@@ -101,7 +112,6 @@ try:
                 constraint.name = 'c'+ str(i)
             self.assertEqual([constraint.name for constraint in self.model.constraints], ['c' + str(i) for i in range(0, len(self.model.constraints))])
 
-        #@unittest.skip('Needs to be implemented in CPLEX interface!')
         def test_setting_lower_bound_higher_than_upper_bound_raises(self):
             problem = cplex.Cplex()
             problem.read(TESTMODELPATH)
@@ -117,11 +127,32 @@ try:
             self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
         def test_setting_bounds(self):
+            constraint = self.model.constraints[0]
             value = 42
-            self.constraint.ub = value
-            self.assertEqual(self.constraint.ub, value)
-            self.constraint.lb = value
-            self.assertEqual(self.constraint.lb, value)
+            constraint.ub = value
+            self.assertEqual(constraint.ub, value)
+            constraint.lb = value
+            self.assertEqual(constraint.lb, value)
+            self.assertEqual(self.model.problem.linear_constraints.get_senses(constraint.name), "E")
+            self.assertEqual(self.model.problem.linear_constraints.get_range_values(constraint.name), 0)
+
+
+    class ObjectiveTestCase(unittest.TestCase):
+        def setUp(self):
+            problem = cplex.Cplex()
+            problem.read(TESTMODELPATH)
+            self.model = Model(problem=problem)
+            self.obj = self.model.objective
+
+        def test_change_direction(self):
+            self.obj.direction = "min"
+            self.assertEqual(self.obj.direction, "min")
+            self.assertEqual(self.model.problem.objective.get_sense(), self.model.problem.objective.sense.minimize)
+
+            self.obj.direction = "max"
+            self.assertEqual(self.obj.direction, "max")
+            self.assertEqual(self.model.problem.objective.get_sense(), self.model.problem.objective.sense.maximize)
+
 
     class SolverTestCase(unittest.TestCase):
 
@@ -435,6 +466,7 @@ try:
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 0)
 
+        @unittest.skip
         def test_qp_convex(self):
             problem = cplex.Cplex()
             problem.read(CONVEX_QP_PATH)

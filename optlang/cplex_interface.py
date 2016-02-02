@@ -335,7 +335,7 @@ class Objective(interface.Objective):
             self.problem.problem.objective.set_sense(
                 {'min': self.problem.problem.objective.sense.minimize,
                  'max': self.problem.problem.objective.sense.maximize}[value])
-        super(Objective, self).__setattr__("direction", value)
+        super(Objective, Objective).direction.__set__(self, value)
 
 
 @six.add_metaclass(inheritdocstring)

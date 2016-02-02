@@ -19,7 +19,6 @@ try:
                                           best.fitness,
                                           str(best.candidate))))
 
-
     class RosenbrockTestCase(unittest.TestCase):
         def setUp(self):
             benchmark = benchmarks.Rosenbrock()
