@@ -734,6 +734,8 @@ class Model(object):
                 pass
             else:
                 raise AttributeError(e)
+        if self._objective is not None:
+            self._objective.problem = None
         self._objective = value
         self._objective.problem = self
 
