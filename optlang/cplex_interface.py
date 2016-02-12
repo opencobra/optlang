@@ -720,7 +720,6 @@ class Model(interface.Model):
         else:
             return None
 
-
     def __str__(self):
         tmp_file = tempfile.mktemp(suffix=".lp")
         self.problem.write(tmp_file)
@@ -761,6 +760,7 @@ class Model(interface.Model):
 
     def _remove_variables(self, variables):
         # Not calling parent method to avoid expensive variable removal from sympy expressions
+        self.objective._expression = self.objective.expression.xreplace({var: 0 for var in variables})
         self.problem.variables.delete([variable.name for variable in variables])
         for variable in variables:
             del self._variables_to_constraints_mapping[variable.name]
