@@ -99,7 +99,7 @@ _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.optimal_relaxed_inf: interface.SPECIAL,
     cplex.Cplex.solution.status.optimal_relaxed_quad: interface.SPECIAL,
     cplex.Cplex.solution.status.optimal_relaxed_sum: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_tolerance: interface.SPECIAL,
+    cplex.Cplex.solution.status.optimal_tolerance: interface.OPTIMAL,
     cplex.Cplex.solution.status.populate_solution_limit: interface.SPECIAL,
     cplex.Cplex.solution.status.solution_limit: interface.SPECIAL,
     cplex.Cplex.solution.status.unbounded: interface.UNBOUNDED,
