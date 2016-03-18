@@ -1,3 +1,6 @@
 include LICENSE
 include README.md
+include README.rst
 include requirements.txt
+include versioneer.py
+include optlang/_version.py

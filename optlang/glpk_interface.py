@@ -19,20 +19,19 @@
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
+
+import six
 import collections
 
-import logging
-import sys
-import six
-
-import types
-
-
-log = logging.getLogger(__name__)
 import tempfile
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
+
+from optlang.util import inheritdocstring
+
+import logging
+log = logging.getLogger(__name__)
 
 from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GLP_IV, GLP_BV, GLP_UNDEF, GLP_FEAS, \
     GLP_INFEAS, GLP_NOFEAS, GLP_OPT, GLP_UNBND, \
@@ -70,8 +69,8 @@ _VTYPE_TO_GLPK_VTYPE = dict(
 )
 
 
+@six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
-    """..."""
 
     def __init__(self, name, index=None, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
@@ -129,19 +128,15 @@ class Variable(interface.Variable):
         else:
             return None
 
-    def __setattr__(self, name, value):
-        try:
-            old_name = self.name  # TODO: This is a hack
-        except AttributeError:
-            pass
-        super(Variable, self).__setattr__(name, value)
-        if getattr(self, 'problem', None):
-            if name == 'name':
-                glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
+    @interface.Variable.name.setter
+    def name(self, value):
+        if getattr(self, 'problem', None) is not None:
+            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
+        self._name = value
 
 
+@six.add_metaclass(inheritdocstring)
 class Constraint(interface.Constraint):
-    """GLPK solver interface"""
 
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
@@ -182,9 +177,27 @@ class Constraint(interface.Constraint):
                     da[i] = indices_coefficients_dict[ia[i]]
                 except KeyError:
                     pass
-            print(glp_set_mat_row(self.problem.problem, index, num, ia, da))
+            glp_set_mat_row(self.problem.problem, index, num, ia, da)
         else:
             raise Exception('_set_coefficients_low_level works only if a constraint is associated with a solver instance.')
+
+    @interface.Constraint.lb.setter
+    def lb(self, value):
+        self._lb = value
+        if self.problem is not None:
+            self.problem._glpk_set_row_bounds(self)
+
+    @interface.Constraint.ub.setter
+    def ub(self, value):
+        self._ub = value
+        if self.problem is not None:
+            self.problem._glpk_set_row_bounds(self)
+
+    @interface.OptimizationExpression.name.setter
+    def name(self, value):
+        if self.problem is not None:
+            glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, self.name), str(value))
+        self._name = value
 
     @property
     def problem(self):
@@ -214,7 +227,9 @@ class Constraint(interface.Constraint):
     @property
     def primal(self):
         if self.problem is not None:
-            return glp_get_row_prim(self.problem.problem, self.index)
+            primal_from_solver = glp_get_row_prim(self.problem.problem, self.index)
+            #return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
+            return primal_from_solver
         else:
             return None
 
@@ -237,18 +252,6 @@ class Constraint(interface.Constraint):
             self._problem = None
         else:
             self._problem = value
-
-    def __setattr__(self, name, value):
-        try:
-            old_name = self.name  # TODO: This is a hack
-        except AttributeError:
-            pass
-        super(Constraint, self).__setattr__(name, value)
-        if getattr(self, 'problem', None):
-            if name == 'name':
-                glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
-            elif name == 'lb' or name == 'ub':
-                self.problem._glpk_set_row_bounds(self)
 
     def __iadd__(self, other):
         # if self.problem is not None:
@@ -287,6 +290,7 @@ class Constraint(interface.Constraint):
         return self
 
 
+@six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
@@ -313,15 +317,11 @@ class Objective(interface.Objective):
         else:
             return glp_get_obj_val(self.problem.problem)
 
-    def __setattr__(self, name, value):
-
-        if getattr(self, 'problem', None):
-            if name == 'direction':
-                glp_set_obj_dir(self.problem.problem,
-                                {'min': GLP_MIN, 'max': GLP_MAX}[value])
-            super(Objective, self).__setattr__(name, value)
-        else:
-            super(Objective, self).__setattr__(name, value)
+    @interface.Objective.direction.setter
+    def direction(self, value):
+        if getattr(self, 'problem', None) is not None:
+            glp_set_obj_dir(self.problem.problem, {'min': GLP_MIN, 'max': GLP_MAX}[value])
+        super(Objective, Objective).direction.__set__(self, value)
 
     def __iadd__(self, other):
         self.problem = None
@@ -352,8 +352,8 @@ class Objective(interface.Objective):
         return self
 
 
+@six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    """docstring for Configuration"""
 
     def __init__(self, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
@@ -436,8 +436,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._set_timeout(value)
         self._timeout = value
 
+
+@six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
-    """GLPK solver interface"""
 
     def __init__(self, problem=None, *args, **kwargs):
 

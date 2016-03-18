@@ -1,15 +1,49 @@
 language: python
+sudo: false
 python:
-  - "2.7"
-  - "3.4"
+- '2.7'
+- '3.4'
+cache:
+- pip: true
+- directories:
+  - cplex/
+addons:
+  apt:
+    packages:
+    - swig
+    - libzmq3-dev
+    - libgmp-dev
+    - libglp
+    - libglpk-dev
+    - glpk-utils
+    - pandoc
 before_install:
-  - sudo apt-get install libglpk-dev swig python-numpy glpk-utils
-  - export SYMPY_USE_CACHE=no
+- export SYMPY_USE_CACHE=no
+- pip install pip --upgrade
+- curl -L $SECRET_CPLEX_LINK -o cplex.tar.gz
+- tar xvf cplex.tar.gz
+- if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then cd "cplex/python/3.4/x86-64_linux/"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then cd "cplex/python/2.6/x86-64_linux/"; fi
+- pip install .
+- cd $TRAVIS_BUILD_DIR
 install:
-  - pip install coveralls nose nose-progressive rednose coverage docutils
-  - pip install -r requirements.txt
-  - python setup.py install
-# # command to run tests
+- pip install coveralls nose nose-progressive rednose coverage docutils
+- pip install -r requirements.txt
+- pip install inspyred
+- pip install pypandoc
+- pip install swiglpk
+- python setup.py install
 script: python setup.py nosetests
 after_success:
-  - coveralls
+- coveralls
+deploy:
+  provider: pypi
+  user: Nikolaus.Sonnenschein
+  password:
+    secure: Gn23MUvzP1DPJXxRXUOXGBJjyMamawxey5ByrOd+JT90roljHKSk8v1wdBMH7+s1DB/ygUJqB2Zy0cBC3mr0waY6HmxKpXhddgzQzG56Eua/npTxpz58Y8xfSYF+5QqS3gcyBrYEXmeHWuEURERy0b7uYKMx/QcHAHYhTaVy4zE=
+  on:
+    tags: true
+    repo: biosustain/optlang
+env:
+  global:
+  - secure: PBcwrLg4ZwVi9Gw25Q2adNd0uK+NCqFSiYl+ZuumkEXs4NQBbSXVd719wrWKUFdIqBy+h9ETo4Vsz/QsTZzI2mSG4zqTkm+oUxMW1tJxYEeKZvCo7GfZ883VlKFgdqvh6iouEvHSjfGbwc5cUp98CbjgI5ni01vGpDQh2hgokkI=

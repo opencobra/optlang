@@ -25,10 +25,10 @@ import random
 import uuid
 import six
 
-import types
 import collections
 
 import sys
+from optlang.exceptions import IndicatorConstraintsNotSupported
 
 log = logging.getLogger(__name__)
 import collections
@@ -63,7 +63,6 @@ SUBOPTIMAL = 'suboptimal'
 INPROGRESS = 'in_progress'
 ABORTED = 'aborted'
 SPECIAL = 'check_original_solver_status'
-
 
 
 # noinspection PyShadowingBuiltins
@@ -131,12 +130,18 @@ class Variable(object):
     #     return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
+
+        # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
+        if six.PY2:
+            name = str(name)
+
         for char in name:
             if char.isspace():
                 raise ValueError(
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
-        self._symbol = sympy.Symbol(name, *args, **kwargs)
+        self._name = name
+        sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
         self._lb = lb
         self._ub = ub
         if self._lb is None and type == 'binary':
@@ -147,6 +152,14 @@ class Variable(object):
         self.__test_valid_upper_bound(type, self._ub, name)
         self._type = type
         self.problem = problem
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     def __getattr__(self, value):
         return getattr(self._symbol, value)
@@ -249,9 +262,9 @@ class Variable(object):
     def __setstate__(self, state):
         self.__dict__ = state
 
-    def _round_primal_to_bounds(self, primal, tolerance=1e-6):
-        if (primal >= self.lb or self.lb is None) and (primal <= self.ub or self.ub is None):
-                return primal
+    def _round_primal_to_bounds(self, primal, tolerance=1e-5):
+        if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
+            return primal
         else:
             if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
                 return self.lb
@@ -287,16 +300,28 @@ class OptimizationExpression(object):
         return adjusted_expression
 
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
+        # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
+        if six.PY2 and name is not None:
+            name = str(name)
+
         super(OptimizationExpression, self).__init__(*args, **kwargs)
+        self._problem = problem
         if sloppy:
             self._expression = expression
         else:
             self._expression = self._canonicalize(expression)
         if name is None:
-            self.name = str(uuid.uuid1())
+            self._name = str(uuid.uuid1())
         else:
-            self.name = name
-        self._problem = problem
+            self._name = name
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     @property
     def problem(self):
@@ -325,23 +350,57 @@ class OptimizationExpression(object):
         elif isinstance(expression, int):
             return sympy.Integer(expression)
         else:
+            #expression = expression.expand() This would be a good way to canonicalize, but is quite slow
             return expression
 
     @property
     def is_Linear(self):
         """Returns True if constraint is linear (read-only)."""
-        return all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in self.expression.as_coefficients_dict().keys()))
+        coeff_dict = self.expression.as_coefficients_dict()
+        if all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
+            return True
+        else:
+            try:
+                poly = self.expression.as_poly(*self.variables)
+            except sympy.PolynomialError:
+                poly = None
+            if poly is not None:
+                return poly.is_linear
+            else:
+                return False
 
     @property
     def is_Quadratic(self):
         """Returns True if constraint is quadratic (read-only)."""
+        if self.expression.is_Atom:
+            return False
+        if all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom)
+                for key in self.expression.as_coefficients_dict().keys())):
+            return False
         try:
-            poly = self.expression.as_poly(*self.expression.atoms(sympy.Symbol))
+            if self.expression.is_Add:
+                terms = self.expression.args
+                is_quad = False
+                for term in terms:
+                    if len(term.free_symbols) > 2:
+                        return False
+                    if term.is_Pow:
+                        if not term.args[1].is_Number or term.args[1] > 2:
+                            return False
+                        else:
+                            is_quad = True
+                    elif term.is_Mul:
+                        if len(term.free_symbols) == 2:
+                            is_quad = True
+                        if term.args[1].is_Pow:
+                            if not term.args[1].args[1].is_Number or term.args[1].args[1] > 2:
+                                return False
+                            else:
+                                is_quad = True
+                return is_quad
+            else:
+                return self.expression.as_poly(*self.variables).is_quadratic
         except sympy.PolynomialError:
-            poly = None
-        if poly is not None and poly.is_quadratic and not poly.is_linear:
-            return True
-        else:
             return False
 
     def __iadd__(self, other):
@@ -399,7 +458,7 @@ class Constraint(OptimizationExpression):
     @classmethod
     def __check_valid_indicator_variable(cls, variable):
         if variable is not None and not cls._INDICATOR_CONSTRAINT_SUPPORT:
-            raise Exception('Solver interface %s does not support indicator constraints' % cls.__module__)
+            raise IndicatorConstraintsNotSupported('Solver interface %s does not support indicator constraints' % cls.__module__)
         if variable is not None and variable.type != 'binary':
             raise ValueError('Provided indicator variable %s is not binary.' % variable)
 
@@ -415,13 +474,29 @@ class Constraint(OptimizationExpression):
                    name=constraint.name, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=1, *args, **kwargs):
-        self.lb = lb
-        self.ub = ub
+        self._lb = lb
+        self._ub = ub
+        super(Constraint, self).__init__(expression, *args, **kwargs)
         self.__check_valid_indicator_variable(indicator_variable)
         self.__check_valid_active_when(active_when)
         self._indicator_variable = indicator_variable
         self._active_when = active_when
-        super(Constraint, self).__init__(expression, *args, **kwargs)
+
+    @property
+    def lb(self):
+        return self._lb
+
+    @lb.setter
+    def lb(self, value):
+        self._lb = value
+
+    @property
+    def ub(self):
+        return self._ub
+
+    @ub.setter
+    def ub(self, value):
+        self._ub = value
 
     @property
     def indicator_variable(self):
@@ -468,12 +543,12 @@ class Constraint(OptimizationExpression):
                 "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set."
                 % expression
             )
-        elif self.lb is not None:
-            expression = expression - coeff
-            self.lb = self.lb - coeff
         else:
             expression = expression - coeff
-            self.ub = self.ub - coeff
+            if self.lb is not None:
+                self.lb = self.lb - coeff
+            if self.ub is not None:
+                self.ub = self.ub - coeff
         return expression
 
     @property
@@ -483,6 +558,17 @@ class Constraint(OptimizationExpression):
     @property
     def dual(self):
         return None
+
+    def _round_primal_to_bounds(self, primal, tolerance=1e-5):
+        if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
+            return primal
+        else:
+            if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
+                return self.lb
+            elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
+                return self.ub
+            else:
+                raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal, self.name, self.lb, self.ub))
 
 
 class Objective(OptimizationExpression):
@@ -521,6 +607,15 @@ class Objective(OptimizationExpression):
         return {'max': 'Maximize', 'min': 'Minimize'}[self.direction] + '\n' + str(self.expression)
         # return ' '.join((self.direction, str(self.expression)))
 
+    def __eq__(self, other):
+        """Tests *mathematical* equality for two Objectives. Solver specific type does NOT have to match.
+        Expression and direction must be the same.
+        Name does not have to match"""
+        if isinstance(other, Objective):
+            return self.expression == other.expression and self.direction == other.direction
+        else:
+            return False
+#
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
         expression = super(Objective, self)._canonicalize(expression)
@@ -545,7 +640,7 @@ class Configuration(object):
     @classmethod
     def clone(cls, config, problem=None, **kwargs):
         properties = (k for k, v in inspect.getmembers(cls, predicate=inspect.isdatadescriptor) if not k.startswith('__'))
-        parameters = {property: getattr(config, property) for property in properties}
+        parameters = {property: getattr(config, property) for property in properties if hasattr(config, property)}
         return cls(problem=problem, **parameters)
 
     def __init__(self, problem=None, *args, **kwargs):
@@ -623,6 +718,9 @@ class Model(object):
     def clone(cls, model):
         interface = sys.modules[cls.__module__]
         new_model = cls()
+        for variable in model.variables:
+            new_variable = interface.Variable.clone(variable)
+            new_model._add_variable(new_variable)
         for constraint in model.constraints:
             new_constraint = interface.Constraint.clone(constraint, model=new_model)
             new_model._add_constraint(new_constraint)
@@ -663,6 +761,8 @@ class Model(object):
                 pass
             else:
                 raise AttributeError(e)
+        if self._objective is not None:
+            self._objective.problem = None
         self._objective = value
         self._objective.problem = self
 

@@ -12,6 +12,8 @@ from swiglpk import *
 import sys
 import six
 
+from optlang import glpk_interface
+
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from optlang.util import glpk_read_cplex
 
@@ -59,6 +61,16 @@ class VariableTestCase(unittest.TestCase):
             self.assertEqual(variable.name, "var"+str(i))
             self.assertEqual(glp_get_col_name(model.problem, variable.index), "var"+str(i))
 
+    def test_setting_bounds(self):
+        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        var = model.variables[0]
+        var.lb = 1
+        self.assertEqual(var.lb, 1)
+        self.assertEqual(glpk_interface.glp_get_col_lb(model.problem, var.index), 1)
+        var.ub = 2
+        self.assertEqual(var.ub, 2)
+        self.assertEqual(glpk_interface.glp_get_col_ub(model.problem, var.index), 2)
+
 
 class ConstraintTestCase(unittest.TestCase):
     def setUp(self):
@@ -102,6 +114,22 @@ class ConstraintTestCase(unittest.TestCase):
     def test_setting_nonnumerical_bounds_raises(self):
         model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
+
+
+class ObjectiveTestCase(unittest.TestCase):
+    def setUp(self):
+        self.model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        self.obj = self.model.objective
+
+    def test_change_direction(self):
+        self.obj.direction = "min"
+        self.assertEqual(self.obj.direction, "min")
+        self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MIN)
+
+        self.obj.direction = "max"
+        self.assertEqual(self.obj.direction, "max")
+        self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MAX)
+
 
 class SolverTestCase(unittest.TestCase):
     def setUp(self):
@@ -480,7 +508,7 @@ class SolverTestCase(unittest.TestCase):
 
     def test_set_linear_objective_term(self):
         self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)
-        glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
 
     def test_instantiating_model_with_non_glpk_problem_raises(self):
         self.assertRaises(TypeError, Model, problem='Chicken soup')
