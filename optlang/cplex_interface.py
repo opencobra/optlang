@@ -99,7 +99,7 @@ _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.optimal_relaxed_inf: interface.SPECIAL,
     cplex.Cplex.solution.status.optimal_relaxed_quad: interface.SPECIAL,
     cplex.Cplex.solution.status.optimal_relaxed_sum: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_tolerance: interface.SPECIAL,
+    cplex.Cplex.solution.status.optimal_tolerance: interface.OPTIMAL,
     cplex.Cplex.solution.status.populate_solution_limit: interface.SPECIAL,
     cplex.Cplex.solution.status.solution_limit: interface.SPECIAL,
     cplex.Cplex.solution.status.unbounded: interface.UNBOUNDED,
@@ -335,7 +335,7 @@ class Objective(interface.Objective):
             self.problem.problem.objective.set_sense(
                 {'min': self.problem.problem.objective.sense.minimize,
                  'max': self.problem.problem.objective.sense.maximize}[value])
-        super(Objective, self).__setattr__("direction", value)
+        super(Objective, Objective).direction.__set__(self, value)
 
 
 @six.add_metaclass(inheritdocstring)
@@ -720,7 +720,6 @@ class Model(interface.Model):
         else:
             return None
 
-
     def __str__(self):
         tmp_file = tempfile.mktemp(suffix=".lp")
         self.problem.write(tmp_file)
@@ -761,6 +760,7 @@ class Model(interface.Model):
 
     def _remove_variables(self, variables):
         # Not calling parent method to avoid expensive variable removal from sympy expressions
+        self.objective._expression = self.objective.expression.xreplace({var: 0 for var in variables})
         self.problem.variables.delete([variable.name for variable in variables])
         for variable in variables:
             del self._variables_to_constraints_mapping[variable.name]

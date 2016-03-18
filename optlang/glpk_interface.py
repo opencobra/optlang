@@ -321,7 +321,7 @@ class Objective(interface.Objective):
     def direction(self, value):
         if getattr(self, 'problem', None) is not None:
             glp_set_obj_dir(self.problem.problem, {'min': GLP_MIN, 'max': GLP_MAX}[value])
-        super(Objective, self).__setattr__("objective", value)
+        super(Objective, Objective).direction.__set__(self, value)
 
     def __iadd__(self, other):
         self.problem = None

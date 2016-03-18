@@ -589,6 +589,15 @@ class Objective(OptimizationExpression):
         return {'max': 'Maximize', 'min': 'Minimize'}[self.direction] + '\n' + str(self.expression)
         # return ' '.join((self.direction, str(self.expression)))
 
+    def __eq__(self, other):
+        """Tests *mathematical* equality for two Objectives. Solver specific type does NOT have to match.
+        Expression and direction must be the same.
+        Name does not have to match"""
+        if isinstance(other, Objective):
+            return self.expression == other.expression and self.direction == other.direction
+        else:
+            return False
+#
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
         expression = super(Objective, self)._canonicalize(expression)
@@ -734,6 +743,8 @@ class Model(object):
                 pass
             else:
                 raise AttributeError(e)
+        if self._objective is not None:
+            self._objective.problem = None
         self._objective = value
         self._objective.problem = self
 
