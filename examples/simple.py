@@ -19,7 +19,11 @@ from optlang import Model, Variable, Constraint, Objective
 x1 = Variable('x1', lb=0)
 x2 = Variable('x2', lb=0)
 x3 = Variable('x3', lb=0)
+stuff = x1 + x2 + x3
+print(type(stuff))
 c1 = Constraint(x1 + x2 + x3, ub=100)
+print(c1)
+print(c1.variables)
 c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
 c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
 obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')

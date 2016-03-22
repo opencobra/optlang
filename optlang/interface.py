@@ -31,12 +31,16 @@ import sys
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
 log = logging.getLogger(__name__)
+
 import collections
 try:
-    import csympy as sympy
+    # raise ImportError
+    import symengine as sympy
 except ImportError:
-    print "csympy not available"
+    log.info('symengine not available. Using normal sympy.')
     import sympy
+
+# import sympy
 
 from sympy.core.singleton import S
 from sympy.core.logic import fuzzy_bool
@@ -141,7 +145,8 @@ class Variable(object):
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
         self._name = name
-        sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
+        self._symbol = sympy.Symbol(self._name)
+        # sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
         self._lb = lb
         self._ub = ub
         if self._lb is None and type == 'binary':
@@ -164,12 +169,24 @@ class Variable(object):
     def __getattr__(self, value):
         return getattr(self._symbol, value)
 
-    def __dir__(self):
-        return self.__dict__.keys() + dir(self._symbol)
+    # def __dir__(self):
+    #     return self.__dict__.keys() + dir(self._symbol)
 
-    # def __add__(self, other):
-    #     print('Yeah')
-    #     return other
+    def __add__(self, other):
+        return sympy.Add(self, other)
+
+    def __radd__(self, other):
+        return sympy.Add(self, other)
+
+    def __mul__(self, other):
+        return sympy.Mul(self, other)
+
+    def __rmul__(self, other):
+        return sympy.Mul(self, other)
+
+
+
+
 
     def _sympy_(self):
         return self
