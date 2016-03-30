@@ -68,9 +68,8 @@ INPROGRESS = 'in_progress'
 ABORTED = 'aborted'
 SPECIAL = 'check_original_solver_status'
 
-
 # noinspection PyShadowingBuiltins
-class Variable(object):
+class Variable(sympy.Symbol):
     """Optimization variables.
 
     Extends sympy Symbol with optimization specific attributes and methods.
@@ -120,18 +119,21 @@ class Variable(object):
     def clone(cls, variable, **kwargs):
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
 
-    # def __new__(cls, name, **assumptions):
-    #
-    #     if assumptions.get('zero', False):
-    #         return S.Zero
-    #     is_commutative = fuzzy_bool(assumptions.get('commutative', True))
-    #     if is_commutative is None:
-    #         raise ValueError(
-    #             '''Symbol commutativity must be True or False.''')
-    #     assumptions['commutative'] = is_commutative
-    #     for key in assumptions.keys():
-    #         assumptions[key] = bool(assumptions[key])
-    #     return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
+    def __new__(cls, name, *args, **kwargs):
+        # https://www.reddit.com/r/learnpython/comments/30tbtf/parent_class_called_before_the_child_class/
+        inst = sympy.Symbol.__new__(cls, name)
+        return inst
+
+        # if assumptions.get('zero', False):
+        #     return S.Zero
+        # is_commutative = fuzzy_bool(assumptions.get('commutative', True))
+        # if is_commutative is None:
+        #     raise ValueError(
+        #         '''Symbol commutativity must be True or False.''')
+        # assumptions['commutative'] = is_commutative
+        # for key in assumptions.keys():
+        #     assumptions[key] = bool(assumptions[key])
+        # return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
 
@@ -145,8 +147,7 @@ class Variable(object):
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
         self._name = name
-        self._symbol = sympy.Symbol(self._name)
-        # sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
+        sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
         self._lb = lb
         self._ub = ub
         if self._lb is None and type == 'binary':
@@ -165,31 +166,6 @@ class Variable(object):
     @name.setter
     def name(self, value):
         self._name = value
-
-    def __getattr__(self, value):
-        return getattr(self._symbol, value)
-
-    # def __dir__(self):
-    #     return self.__dict__.keys() + dir(self._symbol)
-
-    def __add__(self, other):
-        return sympy.Add(self, other)
-
-    def __radd__(self, other):
-        return sympy.Add(self, other)
-
-    def __mul__(self, other):
-        return sympy.Mul(self, other)
-
-    def __rmul__(self, other):
-        return sympy.Mul(self, other)
-
-
-
-
-
-    def _sympy_(self):
-        return self
 
     @property
     def lb(self):
@@ -267,7 +243,7 @@ class Variable(object):
             ub_str = " <= " + str(self.ub)
         else:
             ub_str = ""
-        return ''.join((lb_str, self._symbol.__str__(), ub_str))
+        return ''.join((lb_str, super(Variable, self).__str__(), ub_str))
 
     def __repr__(self):
         """Does exactly the same as __str__ for now."""
@@ -289,6 +265,229 @@ class Variable(object):
                 return self.ub
             else:
                 raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal, self.name, self.lb, self.ub))
+
+
+
+# noinspection PyShadowingBuiltins
+# class Variable(object):
+#     """Optimization variables.
+#
+#     Extends sympy Symbol with optimization specific attributes and methods.
+#
+#     Attributes
+#     ----------
+#     name: str
+#         The variable's name.
+#     lb: float or None, optional
+#         The lower bound, if None then -inf.
+#     ub: float or None, optional
+#         The upper bound, if None then inf.
+#     type: str, optional
+#         The variable type, 'continuous' or 'integer' or 'binary'.
+#     problem: Model or None, optional
+#         A reference to the optimization model the variable belongs to.
+#
+#     Examples
+#     --------
+#     >>> Variable('x', lb=-10, ub=10)
+#     '-10 <= x <= 10'
+#     """
+#
+#     @staticmethod
+#     def __test_valid_lower_bound(type, value, name):
+#         if value is not None:
+#             if type == 'integer' and value % 1 != 0.:
+#                 raise ValueError(
+#                     'The provided lower bound %g cannot be assigned to integer variable %s (%g mod 1 != 0).' % (
+#                         value, name, value))
+#         if type == 'binary' and (value is None or value != 0):
+#             raise ValueError(
+#                 'The provided lower bound %s cannot be assigned to binary variable %s.' % (value, name))
+#
+#     @staticmethod
+#     def __test_valid_upper_bound(type, value, name):
+#         if value is not None:
+#             if type == 'integer' and value % 1 != 0.:
+#                 raise ValueError(
+#                     'The provided upper bound %s cannot be assigned to integer variable %s (%s mod 1 != 0).' % (
+#                         value, name, value))
+#         if type == 'binary' and (value is None or value != 1):
+#             raise ValueError(
+#                 'The provided upper bound %s cannot be assigned to binary variable %s.' % (value, name))
+#
+#     @classmethod
+#     def clone(cls, variable, **kwargs):
+#         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
+#
+#     # def __new__(cls, name, **assumptions):
+#     #
+#     #     if assumptions.get('zero', False):
+#     #         return S.Zero
+#     #     is_commutative = fuzzy_bool(assumptions.get('commutative', True))
+#     #     if is_commutative is None:
+#     #         raise ValueError(
+#     #             '''Symbol commutativity must be True or False.''')
+#     #     assumptions['commutative'] = is_commutative
+#     #     for key in assumptions.keys():
+#     #         assumptions[key] = bool(assumptions[key])
+#     #     return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
+#
+#     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
+#
+#         # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
+#         if six.PY2:
+#             name = str(name)
+#
+#         for char in name:
+#             if char.isspace():
+#                 raise ValueError(
+#                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
+#                         name, char))
+#         self._name = name
+#         self._symbol = sympy.Symbol(self._name)
+#         # sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
+#         self._lb = lb
+#         self._ub = ub
+#         if self._lb is None and type == 'binary':
+#             self._lb = 0.
+#         if self._ub is None and type == 'binary':
+#             self._ub = 1.
+#         self.__test_valid_lower_bound(type, self._lb, name)
+#         self.__test_valid_upper_bound(type, self._ub, name)
+#         self._type = type
+#         self.problem = problem
+#
+#     @property
+#     def name(self):
+#         return self._name
+#
+#     @name.setter
+#     def name(self, value):
+#         self._name = value
+#
+#     def __getattr__(self, value):
+#         return getattr(self._symbol, value)
+#
+#     # def __dir__(self):
+#     #     return self.__dict__.keys() + dir(self._symbol)
+#
+#     def __add__(self, other):
+#         return sympy.Add(self, other)
+#
+#     def __radd__(self, other):
+#         return sympy.Add(self, other)
+#
+#     def __mul__(self, other):
+#         return sympy.Mul(self, other)
+#
+#     def __rmul__(self, other):
+#         return sympy.Mul(self, other)
+#
+#
+#
+#
+#
+#     def _sympy_(self):
+#         return self
+#
+#     @property
+#     def lb(self):
+#         return self._lb
+#
+#     @lb.setter
+#     def lb(self, value):
+#         if hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
+#             raise ValueError(
+#                 'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (
+#                     value, self.ub, self))
+#         self.__test_valid_lower_bound(self.type, value, self.name)
+#         self._lb = value
+#
+#     @property
+#     def ub(self):
+#         return self._ub
+#
+#     @ub.setter
+#     def ub(self, value):
+#         if hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
+#             raise ValueError(
+#                 'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (
+#                     value, self.lb, self))
+#         self.__test_valid_upper_bound(self.type, value, self.name)
+#         self._ub = value
+#
+#     @property
+#     def type(self):
+#         return self._type
+#
+#     @type.setter
+#     def type(self, value):
+#         if value == 'continuous':
+#             self._type = value
+#         elif value == 'integer':
+#             self._type = value
+#             try:
+#                 self.lb = round(self.lb)
+#             except TypeError:
+#                 pass
+#             try:
+#                 self.ub = round(self.ub)
+#             except TypeError:
+#                 pass
+#         elif value == 'binary':
+#             self._type = value
+#             self._lb = 0
+#             self._ub = 1
+#         else:
+#             raise ValueError(
+#                 "'%s' is not a valid variable type. Choose between 'continuous, 'integer', or 'binary'." % value)
+#
+#     @property
+#     def primal(self):
+#         return None
+#
+#     @property
+#     def dual(self):
+#         return None
+#
+#     def __str__(self):
+#         """Print a string representation of variable.
+#
+#         Examples
+#         --------
+#         >>> Variable('x', lb=-10, ub=10)
+#         '-10 <= x <= 10'
+#         """
+#         if self.lb is not None:
+#             lb_str = str(self.lb) + " <= "
+#         else:
+#             lb_str = ""
+#         if self.ub is not None:
+#             ub_str = " <= " + str(self.ub)
+#         else:
+#             ub_str = ""
+#         return ''.join((lb_str, self._symbol.__str__(), ub_str))
+#
+#     def __repr__(self):
+#         """Does exactly the same as __str__ for now."""
+#         return self.__str__()
+#
+#     def __getstate__(self):
+#         return self.__dict__
+#
+#     def __setstate__(self, state):
+#         self.__dict__ = state
+#
+#     def _round_primal_to_bounds(self, primal, tolerance=1e-5):
+#         if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
+#             return primal
+#         else:
+#             if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
+#                 return self.lb
+#             elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
+#                 return self.ub
+#             else:
+#                 raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal, self.name, self.lb, self.ub))
 
 
 # noinspection PyPep8Naming
