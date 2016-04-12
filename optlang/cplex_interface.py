@@ -195,6 +195,12 @@ class Variable(interface.Variable):
         else:
             return None
 
+    @interface.Variable.setter
+    def name(self, value):
+        if getattr(self, "model", None) is not None:
+            self.model.problem.variables.set_names(self.name, value)
+        super(Variable, Variable).name.fset(self, value)
+
 
 @six.add_metaclass(inheritdocstring)
 class Constraint(interface.Constraint):
