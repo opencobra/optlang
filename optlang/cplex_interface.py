@@ -195,7 +195,7 @@ class Variable(interface.Variable):
         else:
             return None
 
-    @interface.Variable.setter
+    @interface.Variable.name.setter
     def name(self, value):
         if getattr(self, "model", None) is not None:
             self.model.problem.variables.set_names(self.name, value)
