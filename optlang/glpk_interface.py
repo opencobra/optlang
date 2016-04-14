@@ -77,14 +77,14 @@ class Variable(interface.Variable):
 
     @property
     def index(self):
-        try:
+        if self.problem is not None:
             i = glp_find_col(self.problem.problem, str(self.name))
             if i != 0:
                 return i
             else:
                 raise IndexError(
-                    "Could not determine row index for variable %s" % self)
-        except:
+                    "Could not determine column index for variable %s" % self)
+        else:
             return None
 
     @interface.Variable.lb.setter
@@ -472,7 +472,7 @@ class Model(interface.Model):
                         glp_get_col_kind(self.problem, i)]
                 )
                 # This avoids adding the variable to the glpk problem
-                super(Model, self)._add_variable(var)
+                super(Model, self)._add_variables([var])
             variables = self.variables
 
             for j in range(1, row_num + 1):
@@ -515,8 +515,8 @@ class Model(interface.Model):
                     except KeyError:
                         self._variables_to_constraints_mapping[variable.name] = set([constraint_id])
 
-                super(Model, self)._add_constraint(
-                    Constraint(lhs, lb=row_lb, ub=row_ub, name=constraint_id, problem=self), sloppy=True)
+                super(Model, self)._add_constraints(
+                    [Constraint(lhs, lb=row_lb, ub=row_ub, name=constraint_id, problem=self)], sloppy=True)
 
             term_generator = (
                 (glp_get_obj_coef(self.problem, index), variables[index - 1])
@@ -702,26 +702,25 @@ class Model(interface.Model):
         self._status = status
         return status
 
-    def _add_variable(self, variable):
-        super(Model, self)._add_variable(variable)
-        glp_add_cols(self.problem, 1)
-        index = glp_get_num_cols(self.problem)
-        glp_set_col_name(self.problem, index, str(variable.name))
-        variable.problem = self
-        self._glpk_set_col_bounds(variable)
-        glp_set_col_kind(self.problem, variable.index, _VTYPE_TO_GLPK_VTYPE[variable.type])
-        return variable
+    def _add_variables(self, variables):
+        for variable in variables:
+            glp_add_cols(self.problem, 1)
+            index = glp_get_num_cols(self.problem)
+            glp_set_col_name(self.problem, index, str(variable.name))
+            variable.problem = self
+            self._glpk_set_col_bounds(variable)
+            glp_set_col_kind(self.problem, variable.index, _VTYPE_TO_GLPK_VTYPE[variable.type])
+        super(Model, self)._add_variables(variables)
 
     def _remove_variables(self, variables):
         if len(variables) > 0:
-
             if len(variables) > 350:
                 delete_indices = [variable.index - 1 for variable in variables]
                 keep_indices = [i for i in range(0, len(self.variables)) if i not in delete_indices]
                 self._variables = self.variables.fromkeys(keep_indices)
             else:
                 for variable in variables:
-                    del self.variables[variable.name]
+                    del self._variables[variable.name]
 
             num = intArray(len(variables) + 1)
             for i, variable in enumerate(variables):
@@ -732,61 +731,54 @@ class Model(interface.Model):
                 del self._variables_to_constraints_mapping[variable.name]
                 variable.problem = None
 
-    # def _add_constraints_low_level(self, variable_ids, coefficients, lb=None, ub=None):
-    #     glp_add_rows(self.problem, len(variable_ids))
-    #     index = glp_get_num_rows(self.problem)
-    #     glp_set_row_name(self.problem, index, constraint.name)
-    #     num_vars = len(constraint.variables)
-    #     index_array = intArray(num_vars + 1)
-    #     value_array = doubleArray(num_vars + 1)
-
-    def _add_constraint(self, constraint, sloppy=False):
-        super(Model, self)._add_constraint(constraint, sloppy=sloppy)
-        constraint._problem = None  # This needs to be dones in order to not trigger constraint._get_expression()
-        glp_add_rows(self.problem, 1)
-        index = glp_get_num_rows(self.problem)
-        glp_set_row_name(self.problem, index, str(constraint.name))
-        num_cols = glp_get_num_cols(self.problem)
-        index_array = intArray(num_cols + 1)
-        value_array = doubleArray(num_cols + 1)
-        num_vars = 0  # constraint.variables is too expensive for large problems
-        if constraint.expression.is_Atom and constraint.expression.is_Symbol:
-            var = constraint.expression
-            index_array[1] = var.index
-            value_array[1] = 1
-            num_vars += 1
-        elif constraint.expression.is_Mul:
-            args = constraint.expression.args
-            if len(args) > 2:
-                raise Exception(
-                    "Term(s) %s from constraint %s is not a proper linear term." % (args, constraint))
-            coeff = float(args[0])
-            var = args[1]
-            index_array[1] = var.index
-            value_array[1] = coeff
-            num_vars += 1
-        else:
-            for i, term in enumerate(constraint.expression.args):
-                args = term.args
-                if args == ():
-                    assert term.is_Symbol
-                    coeff = 1
-                    var = term
-                elif len(args) == 2:
-                    assert args[0].is_Number
-                    assert args[1].is_Symbol
-                    var = args[1]
-                    coeff = float(args[0])
-                elif len(args) > 2:
-                    raise Exception(
-                        "Term %s from constraint %s is not a proper linear term." % (term, constraint))
-                index_array[i + 1] = var.index
-                value_array[i + 1] = coeff
+    def _add_constraints(self, constraints, sloppy=False):
+        super(Model, self)._add_constraints(constraints, sloppy=sloppy)
+        for constraint in constraints:
+            constraint._problem = None  # This needs to be dones in order to not trigger constraint._get_expression()
+            glp_add_rows(self.problem, 1)
+            index = glp_get_num_rows(self.problem)
+            glp_set_row_name(self.problem, index, str(constraint.name))
+            num_cols = glp_get_num_cols(self.problem)
+            index_array = intArray(num_cols + 1)
+            value_array = doubleArray(num_cols + 1)
+            num_vars = 0  # constraint.variables is too expensive for large problems
+            if constraint.expression.is_Atom and constraint.expression.is_Symbol:
+                var = constraint.expression
+                index_array[1] = var.index
+                value_array[1] = 1
                 num_vars += 1
-        glp_set_mat_row(self.problem, index, num_vars,
-                        index_array, value_array)
-        constraint._problem = self
-        self._glpk_set_row_bounds(constraint)
+            elif constraint.expression.is_Mul:
+                args = constraint.expression.args
+                if len(args) > 2:
+                    raise Exception(
+                        "Term(s) %s from constraint %s is not a proper linear term." % (args, constraint))
+                coeff = float(args[0])
+                var = args[1]
+                index_array[1] = var.index
+                value_array[1] = coeff
+                num_vars += 1
+            else:
+                for i, term in enumerate(constraint.expression.args):
+                    args = term.args
+                    if args == ():
+                        assert term.is_Symbol
+                        coeff = 1
+                        var = term
+                    elif len(args) == 2:
+                        assert args[0].is_Number
+                        assert args[1].is_Symbol
+                        var = args[1]
+                        coeff = float(args[0])
+                    elif len(args) > 2:
+                        raise Exception(
+                            "Term %s from constraint %s is not a proper linear term." % (term, constraint))
+                    index_array[i + 1] = var.index
+                    value_array[i + 1] = coeff
+                    num_vars += 1
+            glp_set_mat_row(self.problem, index, num_vars,
+                            index_array, value_array)
+            constraint._problem = self
+            self._glpk_set_row_bounds(constraint)
 
     def _glpk_set_col_bounds(self, variable):
         if variable.lb is None and variable.ub is None:

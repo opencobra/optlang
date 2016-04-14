@@ -122,7 +122,8 @@ class Variable(sympy.Symbol):
         assumptions['commutative'] = is_commutative
         for key in assumptions.keys():
             assumptions[key] = bool(assumptions[key])
-        return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16*random.random()))), **assumptions) # uuid.uuid1()
+        return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16 * random.random()))),
+                                     **assumptions)  # uuid.uuid1()
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
 
@@ -136,7 +137,7 @@ class Variable(sympy.Symbol):
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
         self._name = name
-        sympy.Symbol.__init__(name, *args, **kwargs)  #TODO: change this back to use super
+        sympy.Symbol.__init__(name, *args, **kwargs)  # TODO: change this back to use super
         self._lb = lb
         self._ub = ub
         if self._lb is None and type == 'binary':
@@ -255,7 +256,9 @@ class Variable(sympy.Symbol):
             elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
                 return self.ub
             else:
-                raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal, self.name, self.lb, self.ub))
+                raise AssertionError(
+                    'The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (
+                        primal, self.name, self.lb, self.ub))
 
 
 # noinspection PyPep8Naming
@@ -334,14 +337,14 @@ class OptimizationExpression(object):
         elif isinstance(expression, int):
             return sympy.Integer(expression)
         else:
-            #expression = expression.expand() This would be a good way to canonicalize, but is quite slow
+            # expression = expression.expand() This would be a good way to canonicalize, but is quite slow
             return expression
 
     @property
     def is_Linear(self):
         """Returns True if constraint is linear (read-only)."""
         coeff_dict = self.expression.as_coefficients_dict()
-        if all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
+        if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
             return True
         else:
             try:
@@ -358,7 +361,7 @@ class OptimizationExpression(object):
         """Returns True if constraint is quadratic (read-only)."""
         if self.expression.is_Atom:
             return False
-        if all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom)
+        if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom)
                 for key in self.expression.as_coefficients_dict().keys())):
             return False
         try:
@@ -442,7 +445,8 @@ class Constraint(OptimizationExpression):
     @classmethod
     def __check_valid_indicator_variable(cls, variable):
         if variable is not None and not cls._INDICATOR_CONSTRAINT_SUPPORT:
-            raise IndicatorConstraintsNotSupported('Solver interface %s does not support indicator constraints' % cls.__module__)
+            raise IndicatorConstraintsNotSupported(
+                'Solver interface %s does not support indicator constraints' % cls.__module__)
         if variable is not None and variable.type != 'binary':
             raise ValueError('Provided indicator variable %s is not binary.' % variable)
 
@@ -552,7 +556,9 @@ class Constraint(OptimizationExpression):
             elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
                 return self.ub
             else:
-                raise AssertionError('The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (primal, self.name, self.lb, self.ub))
+                raise AssertionError(
+                    'The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (
+                        primal, self.name, self.lb, self.ub))
 
 
 class Objective(OptimizationExpression):
@@ -575,7 +581,8 @@ class Objective(OptimizationExpression):
 
     @classmethod
     def clone(cls, objective, model=None, **kwargs):
-        return cls(cls._substitute_variables(objective, model=model), name=objective.name,  # TODO: problem=model, (it's breaking cameo for some reason)
+        return cls(cls._substitute_variables(objective, model=model), name=objective.name,
+                   # TODO: problem=model, (it's breaking cameo for some reason)
                    direction=objective.direction, sloppy=True, **kwargs)
 
     def __init__(self, expression, value=None, direction='max', *args, **kwargs):
@@ -599,7 +606,8 @@ class Objective(OptimizationExpression):
             return self.expression == other.expression and self.direction == other.direction
         else:
             return False
-#
+            #
+
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
         expression = super(Objective, self)._canonicalize(expression)
@@ -623,7 +631,8 @@ class Configuration(object):
 
     @classmethod
     def clone(cls, config, problem=None, **kwargs):
-        properties = (k for k, v in inspect.getmembers(cls, predicate=inspect.isdatadescriptor) if not k.startswith('__'))
+        properties = (k for k, v in inspect.getmembers(cls, predicate=inspect.isdatadescriptor) if
+                      not k.startswith('__'))
         parameters = {property: getattr(config, property) for property in properties if hasattr(config, property)}
         return cls(problem=problem, **parameters)
 
@@ -725,6 +734,7 @@ class Model(object):
         self._constraints = Container()
         self._variables_to_constraints_mapping = dict()
         self._status = None
+        self._pending_modifications = dict(add_var=set(), add_constr=set(), rm_var=set(), rm_constr=set())
         self.name = name
         if variables is not None:
             self.add(variables)
@@ -744,7 +754,7 @@ class Model(object):
         try:
             for atom in value.expression.atoms(sympy.Symbol):
                 if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
-                    self._add_variable(atom)
+                    self._pending_modifications['add_var'].add(atom)
         except AttributeError as e:
             if isinstance(value.expression, six.types.FunctionType) or isinstance(value.expression, float):
                 pass
@@ -754,13 +764,16 @@ class Model(object):
             self._objective.problem = None
         self._objective = value
         self._objective.problem = self
+        self.update()
 
     @property
     def variables(self):
+        self.update()
         return self._variables
 
     @property
     def constraints(self):
+        self.update()
         return self._constraints
 
     @property
@@ -788,6 +801,7 @@ class Model(object):
         return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraint])
 
     def __str__(self):
+        self.update()
         return '\n'.join((
             str(self.objective),
             "subject to",
@@ -795,10 +809,6 @@ class Model(object):
             'Bounds',
             '\n'.join([str(var) for var in self.variables])
         ))
-
-    # @property
-    # def interface(self):
-    #     return sys.modules[self.__module__]
 
     def add(self, stuff):
         """Add variables and constraints.
@@ -821,19 +831,14 @@ class Model(object):
             if stuff.__module__ != self.__module__:
                 raise TypeError("Cannot add Variable %s of interface type %s to model of type %s." % (
                     stuff, stuff.__module__, self.__module__))
-            self._add_variable(stuff)
+            self._pending_modifications['add_var'].add(stuff)
         elif isinstance(stuff, Constraint):
             if stuff.__module__ != self.__module__:
                 raise TypeError("Cannot add Constraint %s of interface type %s to model of type %s." % (
                     stuff, stuff.__module__, self.__module__))
-            self._add_constraint(stuff)
-        elif isinstance(stuff, Objective):
-            if stuff.__module__ != self.__module__:
-                raise TypeError("Cannot set Objective %s of interface type %s to model of type %s." % (
-                    stuff, stuff.__module__, self.__module__))
-            self.objective = stuff
+            self._pending_modifications['add_constr'].add(stuff)
         else:
-            raise TypeError("Cannot add %s. It is neither a Variable, Constraint, or Objective." % stuff)
+            raise TypeError("Cannot add %s. It is neither a Variable, or Constraint." % stuff)
 
     def remove(self, stuff):
         """Remove variables and constraints.
@@ -850,26 +855,26 @@ class Model(object):
         if isinstance(stuff, str):
             try:
                 variable = self.variables[stuff]
-                self._remove_variable(variable)
+                self._pending_modifications['rm_var'].add(variable)
             except KeyError:
                 try:
                     constraint = self.constraints[stuff]
-                    self._remove_constraint(constraint)
+                    self._pending_modifications['rm_constr'].add(constraint)
                 except KeyError:
                     raise LookupError(
                         "%s is neither a variable nor a constraint in the current solver instance." % stuff)
         elif isinstance(stuff, Variable):
-            self._remove_variable(stuff)
+            self._pending_modifications['rm_var'].add(stuff)
         elif isinstance(stuff, Constraint):
-            self._remove_constraint(stuff)
+            self._pending_modifications['rm_constr'].add(stuff)
         elif isinstance(stuff, collections.Iterable):
             element_types = set((elem.__class__ for elem in stuff))
             if len(element_types) == 1:
                 element_type = element_types.pop()
                 if issubclass(element_type, Variable):
-                    self._remove_variables(stuff)
+                    self._pending_modifications['rm_var'].update(stuff)
                 elif issubclass(element_type, Constraint):
-                    self._remove_constraints(stuff)
+                    self._pending_modifications['rm_constr'].update(stuff)
                 else:
                     raise TypeError("Cannot remove %s. It is neither a variable nor a constraint." % stuff)
             else:
@@ -882,6 +887,23 @@ class Model(object):
             raise TypeError(
                 "Cannot remove %s. It neither a variable or constraint." % stuff)
 
+    def update(self):
+        """Process all pending model modifications."""
+        self._add_variables(self._pending_modifications['add_var'])
+        self._pending_modifications['add_var'] = set()
+        self._add_constraints(self._pending_modifications['add_constr'])
+        self._pending_modifications['add_constr'] = set()
+
+        self._remove_variables(self._pending_modifications['rm_var'])
+        self._pending_modifications['rm_var'] = set()
+
+        self._remove_constraints(self._pending_modifications['rm_constr'])
+        self._pending_modifications['rm_constr'] = set()
+
+
+        # self._set_lower_bounds(self._pending_lower_bounds)
+        # self._set_upper_bounds(self._pending_upper_bounds)
+
     def optimize(self):
         """Solve the optimization problem.
 
@@ -890,6 +912,7 @@ class Model(object):
         status: str
             Solution status.
         """
+        elf.update()
         status = self._optimize()
         if status != OPTIMAL and self.configuration.presolve == "auto":
             self.configuration.presolve = True
@@ -902,17 +925,19 @@ class Model(object):
             "You're using the high level interface to optlang. Problems cannot be optimized in this mode. Choose from one of the solver specific interfaces.")
 
     def _add_variable(self, variable):
-        self.variables.append(variable)
-        self._variables_to_constraints_mapping[variable.name] = set([])
-        variable.problem = self
+        self._add_variables([variable])
 
-        return variable
+    def _add_variables(self, variables):
+        for variable in variables:
+            self._variables.append(variable)
+            self._variables_to_constraints_mapping[variable.name] = set([])
+            variable.problem = self
 
     def _remove_variables(self, variables):
 
         for variable in variables:
             try:
-                var = self.variables[variable.name]
+                var = self._variables[variable.name]
             except KeyError:
                 raise LookupError("Variable %s not in solver" % var)
 
@@ -921,33 +946,37 @@ class Model(object):
             constraint_ids.update(self._variables_to_constraints_mapping[variable.name])
             del self._variables_to_constraints_mapping[variable.name]
             variable.problem = None
-            del self.variables[variable.name]
+            del self._variables[variable.name]
 
         replacements = dict([(variable, 0) for variable in variables])
         for constraint_id in constraint_ids:
-            constraint = self.constraints[constraint_id]
+            constraint = self._constraints[constraint_id]
             constraint._expression = constraint.expression.xreplace(replacements)
-
-        self.objective._expression = self.objective.expression.xreplace(replacements)
+        if self.objective is not None:
+            self.objective._expression = self.objective.expression.xreplace(replacements)
 
     def _remove_variable(self, variable):
         self._remove_variables([variable])
 
     def _add_constraint(self, constraint, sloppy=False):
-        constraint_id = constraint.name
-        if sloppy is False:
-            variables = constraint.variables
-            if constraint.indicator_variable is not None:
-                variables.add(constraint.indicator_variable)
-            for var in variables:
-                if var.problem is not self:
-                    self._add_variable(var)
-                try:
-                    self._variables_to_constraints_mapping[var.name].add(constraint_id)
-                except KeyError:
-                    self._variables_to_constraints_mapping[var.name] = set([constraint_id])
-        self.constraints.append(constraint)
-        constraint._problem = self
+        self._add_constraints([constraint], sloppy=sloppy)
+
+    def _add_constraints(self, constraints, sloppy=False):
+        for constraint in constraints:
+            constraint_id = constraint.name
+            if sloppy is False:
+                variables = constraint.variables
+                if constraint.indicator_variable is not None:
+                    variables.add(constraint.indicator_variable)
+                for var in variables:
+                    if var.problem is not self:
+                        self._add_variable(var)
+                    try:
+                        self._variables_to_constraints_mapping[var.name].add(constraint_id)
+                    except KeyError:
+                        self._variables_to_constraints_mapping[var.name] = set([constraint_id])
+            self._constraints.append(constraint)
+            constraint._problem = self
 
     def _remove_constraints(self, constraints):
         keys = [constraint.name for constraint in constraints]
@@ -956,11 +985,11 @@ class Model(object):
         else:
             for constraint in constraints:
                 try:
-                    del self.constraints[constraint.name]
+                    del self._constraints[constraint.name]
                 except KeyError:
                     raise LookupError("Constraint %s not in solver" % constraint)
                 else:
-                    constraint.problem = None
+                    constraint._problem = None
 
     def _remove_constraint(self, constraint):
         self._remove_constraints([constraint])
@@ -969,10 +998,14 @@ class Model(object):
         # TODO: the is extremely slow for objectives with many terms
         if variable in self.objective.expression.atoms(sympy.Symbol):
             a = sympy.Wild('a', exclude=[variable])
-            (new_expression, map) = self.objective.expression.replace(lambda expr: expr.match(a*variable), lambda expr: coefficient*variable, simultaneous=False, map=True)
+            (new_expression, map) = self.objective.expression.replace(lambda expr: expr.match(a * variable),
+                                                                      lambda expr: coefficient * variable,
+                                                                      simultaneous=False, map=True)
             self.objective.expression = new_expression
         else:
-            self.objective.expression = sympy.Add._from_args((self.objective.expression, sympy.Mul._from_args((sympy.RealNumber(coefficient), variable))))
+            self.objective.expression = sympy.Add._from_args(
+                (self.objective.expression, sympy.Mul._from_args((sympy.RealNumber(coefficient), variable))))
+
 
 if __name__ == '__main__':
     # Example workflow
