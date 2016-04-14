@@ -33,14 +33,14 @@ from optlang.exceptions import IndicatorConstraintsNotSupported
 log = logging.getLogger(__name__)
 
 import collections
+from sympy import sympify
+import sympy as old_sympy
 try:
     # raise ImportError
     import symengine as sympy
 except ImportError:
     log.info('symengine not available. Using normal sympy.')
     import sympy
-
-# import sympy
 
 from sympy.core.singleton import S
 from sympy.core.logic import fuzzy_bool
@@ -512,7 +512,7 @@ class OptimizationExpression(object):
                 variable_substitutions[variable] = model.variables[variable.name]
             else:
                 variable_substitutions[variable] = interface.Variable.clone(variable)
-        adjusted_expression = expression.expression.xreplace(variable_substitutions)
+        adjusted_expression = sympify(expression.expression).xreplace(variable_substitutions)
         return adjusted_expression
 
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
@@ -558,13 +558,15 @@ class OptimizationExpression(object):
     @property
     def variables(self):
         """Variables in constraint."""
-        return self.expression.atoms(sympy.Symbol)
+        # return sympify(self.expression).atoms(sympy.Symbol)
+
+        return sympify(self.expression).atoms()
 
     def _canonicalize(self, expression):
         if isinstance(expression, float):
-            return sympy.RealNumber(expression)
+            return old_sympy.RealNumber(expression)
         elif isinstance(expression, int):
-            return sympy.Integer(expression)
+            return old_sympy.Integer(expression)
         else:
             #expression = expression.expand() This would be a good way to canonicalize, but is quite slow
             return expression
@@ -572,8 +574,8 @@ class OptimizationExpression(object):
     @property
     def is_Linear(self):
         """Returns True if constraint is linear (read-only)."""
-        coeff_dict = self.expression.as_coefficients_dict()
-        if all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
+        coeff_dict = sympify(self.expression).as_coefficients_dict()
+        if all((len(key.free_symbols)<2 and (sympify(key).is_Add or sympify(key).is_Mul or sympify(key).is_Atom) for key in coeff_dict.keys())):
             return True
         else:
             try:
@@ -588,10 +590,10 @@ class OptimizationExpression(object):
     @property
     def is_Quadratic(self):
         """Returns True if constraint is quadratic (read-only)."""
-        if self.expression.is_Atom:
+        if sympify(self.expression).is_Atom:
             return False
-        if all((len(key.free_symbols)<2 and (key.is_Add or key.is_Mul or key.is_Atom)
-                for key in self.expression.as_coefficients_dict().keys())):
+        if all((len(key.free_symbols)<2 and (sympify(key).is_Add or sympify(key).is_Mul or sympify(key).is_Atom)
+                for key in sympify(self.expression).as_coefficients_dict().keys())):
             return False
         try:
             if self.expression.is_Add:
@@ -601,7 +603,7 @@ class OptimizationExpression(object):
                     if len(term.free_symbols) > 2:
                         return False
                     if term.is_Pow:
-                        if not term.args[1].is_Number or term.args[1] > 2:
+                        if not sympify(term.args[1]).is_Number or term.args[1] > 2:
                             return False
                         else:
                             is_quad = True
@@ -609,7 +611,7 @@ class OptimizationExpression(object):
                         if len(term.free_symbols) == 2:
                             is_quad = True
                         if term.args[1].is_Pow:
-                            if not term.args[1].args[1].is_Number or term.args[1].args[1] > 2:
+                            if not sympify(term.args[1].args[1]).is_Number or term.args[1].args[1] > 2:
                                 return False
                             else:
                                 is_quad = True
@@ -747,9 +749,9 @@ class Constraint(OptimizationExpression):
 
     def _canonicalize(self, expression):
         expression = super(Constraint, self)._canonicalize(expression)
-        if expression.is_Atom or expression.is_Mul:
+        if sympify(expression).is_Atom or sympify(expression).is_Mul:
             return expression
-        lonely_coeffs = [arg for arg in expression.args if arg.is_Number]
+        lonely_coeffs = [arg for arg in expression.args if sympify(arg).is_Number]
         if not lonely_coeffs:
             return expression
         assert len(lonely_coeffs) == 1
@@ -969,7 +971,7 @@ class Model(object):
     @objective.setter
     def objective(self, value):
         try:
-            for atom in value.expression.atoms(sympy.Symbol):
+            for atom in sympify(value.expression).atoms(sympy.Symbol):
                 if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
                     self._add_variable(atom)
         except AttributeError as e:
@@ -1145,9 +1147,9 @@ class Model(object):
         replacements = dict([(variable, 0) for variable in variables])
         for constraint_id in constraint_ids:
             constraint = self.constraints[constraint_id]
-            constraint._expression = constraint.expression.xreplace(replacements)
+            constraint._expression = sympify(constraint.expression).xreplace(replacements)
 
-        self.objective._expression = self.objective.expression.xreplace(replacements)
+        self.objective._expression = sympify(self.objective.expression).xreplace(replacements)
 
     def _remove_variable(self, variable):
         self._remove_variables([variable])
@@ -1186,12 +1188,12 @@ class Model(object):
 
     def _set_linear_objective_term(self, variable, coefficient):
         # TODO: the is extremely slow for objectives with many terms
-        if variable in self.objective.expression.atoms(sympy.Symbol):
+        if variable in sympify(self.objective.expression).atoms(sympy.Symbol):
             a = sympy.Wild('a', exclude=[variable])
             (new_expression, map) = self.objective.expression.replace(lambda expr: expr.match(a*variable), lambda expr: coefficient*variable, simultaneous=False, map=True)
             self.objective.expression = new_expression
         else:
-            self.objective.expression = sympy.Add._from_args((self.objective.expression, sympy.Mul._from_args((sympy.RealNumber(coefficient), variable))))
+            self.objective.expression = sympy.Add._from_args((self.objective.expression, sympy.Mul._from_args((old_sympy.RealNumber(coefficient), variable))))
 
 if __name__ == '__main__':
     # Example workflow
