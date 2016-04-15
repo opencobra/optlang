@@ -683,13 +683,11 @@ class Model(interface.Model):
     def optimize(self):
         status = self._run_glp_simplex()
 
-        if status == interface.UNDEFINED or status == interface.INFEASIBLE:
-            # Let's see if the presolver and some scaling can fix this issue
-            glp_scale_prob(self.problem, GLP_SF_AUTO)
-            original_presolve_setting = self.configuration.presolve
-            self.configuration.presolve = True
+        if status == interface.UNDEFINED and self.configuration.presolve:
+            # If presolve is on, status will be undefined if not optimal
+            self.configuration.presolve = False
             status = self._run_glp_simplex()
-            self.configuration.presolve = original_presolve_setting
+            self.configuration.presolve = True
         if (glp_get_num_int(self.problem) + glp_get_num_bin(self.problem)) > 0:
             status = self._run_glp_mip()
             if status == 'undefined' or status == 'infeasible':
