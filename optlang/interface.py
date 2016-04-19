@@ -883,6 +883,14 @@ class Model(object):
         status: str
             Solution status.
         """
+        status = self._optimize()
+        if status != OPTIMAL and self.configuration.presolve == "auto":
+            self.configuration.presolve = True
+            status = self._optimize()
+            self.configuration.presolve = "auto"
+        return status
+
+    def _optimize(self):
         raise NotImplementedError(
             "You're using the high level interface to optlang. Problems cannot be optimized in this mode. Choose from one of the solver specific interfaces.")
 

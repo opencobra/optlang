@@ -355,7 +355,7 @@ class Objective(interface.Objective):
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
 
-    def __init__(self, presolve=False, verbosity=0, timeout=None, *args, **kwargs):
+    def __init__(self, presolve="auto", verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._smcp = glp_smcp()
         self._iocp = glp_iocp()
@@ -375,8 +375,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             setattr(self, key, val)
 
     def _set_presolve(self, value):
-        self._smcp.presolve = {False: GLP_OFF, True: GLP_ON}[value]
-        self._iocp.presolve = {False: GLP_OFF, True: GLP_ON}[value]
+        self._smcp.presolve = {False: GLP_OFF, True: GLP_ON, "auto": GLP_OFF}[value]
+        self._iocp.presolve = {False: GLP_OFF, True: GLP_ON, "auto": GLP_OFF}[value]
 
     def _set_verbosity(self, value):
         if value == 0:
@@ -680,10 +680,10 @@ class Model(interface.Model):
                 log.debug("Status undefined. GLPK status code returned by glp_intopt was %d" % return_value)
         return status
 
-    def optimize(self):
+    def _optimize(self):
         status = self._run_glp_simplex()
 
-        if status == interface.UNDEFINED and self.configuration.presolve:
+        if status == interface.UNDEFINED and self.configuration.presolve is True:
             # If presolve is on, status will be undefined if not optimal
             self.configuration.presolve = False
             status = self._run_glp_simplex()

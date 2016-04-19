@@ -347,11 +347,10 @@ class Objective(interface.Objective):
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
 
-    def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None,
+    def __init__(self, lp_method='primal', presolve="auto", verbosity=0, timeout=None,
                  solution_target="auto", qp_method="primal", *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
-        self.tolerance = tolerance
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
@@ -374,18 +373,28 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         lp_method = getattr(self.problem.problem.parameters.lpmethod.values, lp_method)
         self.problem.problem.parameters.lpmethod.set(lp_method)
 
-    @property
-    def tolerance(self):
-        return self._tolerance
+    # @property
+    # def tolerance(self):
+    #     return self._tolerance
+#
+    # @tolerance.setter
+    # def tolerance(self, value):
+    #     self.problem.problem.parameters.simplex.tolerances.feasibility.set(value)
+    #     self.problem.problem.parameters.simplex.tolerances.optimality.set(value)
+    #     self.problem.problem.parameters.mip.tolerances.integrality.set(value)
+    #     self.problem.problem.parameters.mip.tolerances.absmipgap.set(value)
+    #     self.problem.problem.parameters.mip.tolerances.mipgap.set(value)
+    #     self._tolerance = value
 
-    @tolerance.setter
-    def tolerance(self, value):
-        self.problem.problem.parameters.simplex.tolerances.feasibility.set(value)
-        self.problem.problem.parameters.simplex.tolerances.optimality.set(value)
-        self.problem.problem.parameters.mip.tolerances.integrality.set(value)
-        self.problem.problem.parameters.mip.tolerances.absmipgap.set(value)
-        self.problem.problem.parameters.mip.tolerances.mipgap.set(value)
-        self._tolerance = value
+    def _set_presolve(self, value):
+        if self.problem is not None:
+            presolve = self.problem.problem.parameters.preprocessing.presolve
+            if value is True:
+                presolve.set(presolve.values.on)
+            elif value is False or value == "auto":
+                presolve.set(presolve.values.off)
+            else:
+                raise ValueError(str(value)+" is not a valid presolve parameter. Must be True, False or 'auto'.")
 
     @property
     def presolve(self):
@@ -393,14 +402,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @presolve.setter
     def presolve(self, value):
-        if self.problem is not None:
-            presolve = self.problem.problem.parameters.preprocessing.presolve
-            if value == True:
-                presolve.set(presolve.values.on)
-            elif value == False:
-                presolve.set(presolve.values.off)
-            else:
-                raise ValueError('%s is not boolean argument for presolve property.')
+        self._set_presolve(value)
         self._presolve = value
 
     @property
@@ -732,7 +734,7 @@ class Model(interface.Model):
         cplex_form = open(tmp_file).read()
         return cplex_form
 
-    def optimize(self):
+    def _optimize(self):
         self.problem.solve()
         cplex_status = self.problem.solution.get_status()
         self._status = _CPLEX_STATUS_TO_STATUS[cplex_status]
