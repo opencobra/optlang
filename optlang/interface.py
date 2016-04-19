@@ -655,6 +655,7 @@ class Configuration(object):
 class MathematicalProgrammingConfiguration(Configuration):
     def __init__(self, *args, **kwargs):
         super(MathematicalProgrammingConfiguration, self).__init__(*args, **kwargs)
+        self.tolerances = type(self).Tolerances(self.problem)
 
     @property
     def presolve(self):
@@ -663,6 +664,10 @@ class MathematicalProgrammingConfiguration(Configuration):
     @presolve.setter
     def presolve(self, value):
         raise NotImplementedError
+
+    class Tolerances(object):
+        def __init__(self, problem):
+            self.problem = problem
 
 
 class EvolutionaryOptimizationConfiguration(Configuration):
