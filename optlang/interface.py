@@ -155,6 +155,8 @@ class Variable(sympy.Symbol):
     @name.setter
     def name(self, value):
         self._name = value
+        if getattr(self, 'problem', None) is not None:
+            self.problem.variables._reindex()
 
     @property
     def lb(self):

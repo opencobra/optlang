@@ -132,6 +132,7 @@ class Variable(interface.Variable):
     def name(self, value):
         if getattr(self, 'problem', None) is not None:
             glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
+            self.problem.variables._reindex()
         self._name = value
 
 
@@ -197,6 +198,7 @@ class Constraint(interface.Constraint):
     def name(self, value):
         if self.problem is not None:
             glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, self.name), str(value))
+            self.problem.constraints._reindex()
         self._name = value
 
     @property

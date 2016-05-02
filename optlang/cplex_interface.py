@@ -273,6 +273,7 @@ class Constraint(interface.Constraint):
             else:
                 # TODO: the following needs to deal with quadratic constraints
                 self.problem.problem.linear_constraints.set_names(self.name, value)
+            self.problem.constraints._reindex()
         self._name = value
 
     @interface.Constraint.lb.setter
