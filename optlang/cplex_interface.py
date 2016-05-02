@@ -374,25 +374,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         lp_method = getattr(self.problem.problem.parameters.lpmethod.values, lp_method)
         self.problem.problem.parameters.lpmethod.set(lp_method)
 
-    class Tolerances(interface.MathematicalProgrammingConfiguration.Tolerances):
-        @property
-        def feasibility(self):
-            """Feasibility tolerance for the simplex algorithm"""
-            return self.problem.problem.parameters.simplex.tolerances.feasibility.get()
-
-        @feasibility.setter
-        def feasibility(self, value):
-            self.problem.problem.parameters.simplex.tolerances.feasibility.set(value)
-
-        @property
-        def optimality(self):
-            """Optimality tolerance for the simplex algorithm"""
-            return self.problem.problem.parameters.simplex.tolerances.optimality.get()
-
-        @optimality.setter
-        def optimality(self, value):
-            self.problem.problem.parameters.simplex.tolerances.optimality.set(value)
-
     def _set_presolve(self, value):
         if self.problem is not None:
             presolve = self.problem.problem.parameters.preprocessing.presolve
