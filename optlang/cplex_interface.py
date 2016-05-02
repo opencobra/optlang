@@ -93,7 +93,7 @@ _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.num_best: interface.NUMERIC,
     cplex.Cplex.solution.status.optimal: interface.OPTIMAL,
     cplex.Cplex.solution.status.optimal_face_unbounded: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_infeasible: interface.SPECIAL,
+    cplex.Cplex.solution.status.optimal_infeasible: interface.INFEASIBLE,
     cplex.Cplex.solution.status.optimal_populated: interface.SPECIAL,
     cplex.Cplex.solution.status.optimal_populated_tolerance: interface.SPECIAL,
     cplex.Cplex.solution.status.optimal_relaxed_inf: interface.SPECIAL,
