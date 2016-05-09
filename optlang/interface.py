@@ -157,7 +157,7 @@ class Variable(sympy.Symbol):
         old_name = getattr(self, 'name', None)
         self._name = value
         if getattr(self, 'problem', None) is not None:
-            self.problem.variables._update_key(old_name)
+            self.problem.variables.update_key(old_name)
 
     @property
     def lb(self):

@@ -275,7 +275,7 @@ class Constraint(interface.Constraint):
             else:
                 # TODO: the following needs to deal with quadratic constraints
                 self.problem.problem.linear_constraints.set_names(old_name, value)
-            self.problem.constraints._update_key(old_name)
+            self.problem.constraints.update_key(old_name)
 
     @interface.Constraint.lb.setter
     def lb(self, value):

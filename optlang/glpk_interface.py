@@ -134,7 +134,7 @@ class Variable(interface.Variable):
         self._name = value
         if getattr(self, 'problem', None) is not None:
             glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
-            self.problem.variables._update_key(old_name)
+            self.problem.variables.update_key(old_name)
 
 
 @six.add_metaclass(inheritdocstring)
@@ -201,7 +201,7 @@ class Constraint(interface.Constraint):
         self._name = value
         if self.problem is not None:
             glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
-            self.problem.constraints._update_key(old_name)
+            self.problem.constraints.update_key(old_name)
 
     @property
     def problem(self):

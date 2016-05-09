@@ -93,7 +93,7 @@ class Container(object):
         for i, item in enumerate(islice(self._object_list, start, len(self))):
             self._indices[item.name] = start + i
 
-    def _update_key(self, key):
+    def update_key(self, key):
         item = self._dict[key]
         name = item.name
         if key != name:
