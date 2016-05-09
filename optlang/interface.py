@@ -154,9 +154,10 @@ class Variable(sympy.Symbol):
 
     @name.setter
     def name(self, value):
+        old_name = getattr(self, 'name', None)
         self._name = value
         if getattr(self, 'problem', None) is not None:
-            self.problem.variables._reindex()
+            self.problem.variables._update_key(old_name)
 
     @property
     def lb(self):

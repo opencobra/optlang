@@ -130,10 +130,11 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
-        if getattr(self, 'problem', None) is not None:
-            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
-            self.problem.variables._reindex()
+        old_name = getattr(self, 'name', None)
         self._name = value
+        if getattr(self, 'problem', None) is not None:
+            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
+            self.problem.variables._update_key(old_name)
 
 
 @six.add_metaclass(inheritdocstring)
@@ -196,10 +197,11 @@ class Constraint(interface.Constraint):
 
     @interface.OptimizationExpression.name.setter
     def name(self, value):
-        if self.problem is not None:
-            glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, self.name), str(value))
-            self.problem.constraints._reindex()
+        old_name = getattr(self, 'name', None)
         self._name = value
+        if self.problem is not None:
+            glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
+            self.problem.constraints._update_key(old_name)
 
     @property
     def problem(self):

@@ -17,11 +17,12 @@ import pickle
 import unittest
 import types
 from optlang.container import Container
-from optlang.interface import Variable
+from optlang.interface import Variable, Model
 
 class ContainerTestCase(unittest.TestCase):
     def setUp(self):
-        self.container = Container()
+        self.model = Model()
+        self.container = self.model.variables
 
     def test_container_from_iterable(self):
         variables_iterable = [Variable("v"+str(i), lb=10, ub=100) for i in range(10000)]
@@ -46,7 +47,7 @@ class ContainerTestCase(unittest.TestCase):
         var = Variable('blub')
         self.container.append(var)
         print(dir(self.container))
-        self.assertEqual(dir(self.container), ['__contains__', '__delitem__', '__dict__', '__dir__', '__doc__', '__getattr__', '__getitem__', '__getstate__', '__init__', '__iter__', '__len__', '__module__', '__setitem__', '__setstate__', '__weakref__', '_check_for_name_attribute', '_name_list', '_reindex', 'append', 'blub', 'clear', 'extend', 'fromkeys', 'get', 'has_key', 'iteritems', 'iterkeys', 'itervalues', 'keys', 'values'])
+        self.assertEqual(dir(self.container), ['__contains__', '__delitem__', '__dict__', '__dir__', '__doc__', '__getattr__', '__getitem__', '__getstate__', '__init__', '__iter__', '__len__', '__module__', '__setitem__', '__setstate__', '__weakref__', '_check_for_name_attribute', '_reindex', '_update_key', 'append', 'blub', 'clear', 'extend', 'fromkeys', 'get', 'has_key', 'items', 'iteritems', 'iterkeys', 'itervalues', 'keys', 'values'])
 
     def test_del_by_index(self):
         variables_iterable = [Variable("v"+str(i), lb=10, ub=100) for i in range(10000)]
@@ -83,7 +84,7 @@ class ContainerTestCase(unittest.TestCase):
         self.container.clear()
         self.assertEqual(len(self.container), 0)
         self.assertEqual(self.container._object_list, [])
-        self.assertEqual(self.container._name_list, [])
+        self.assertEqual(self.container._indices, {})
         self.assertEqual(self.container._dict, {})
 
     def test_extend(self):
@@ -128,7 +129,7 @@ class ContainerTestCase(unittest.TestCase):
         lookalike = Container([variables[i] for i in (1, 66, 999)])
         print(lookalike._object_list)
         self.assertEqual(sub_container._object_list, lookalike._object_list)
-        self.assertEqual(sub_container._name_list, lookalike._name_list)
+        #self.assertEqual(sub_container._name_list, lookalike._name_list)
         self.assertEqual(sub_container._dict, lookalike._dict)
 
     def test_get(self):
@@ -160,7 +161,7 @@ class ContainerTestCase(unittest.TestCase):
 
     def test_change_object_name(self):
         var = Variable('blub')
-        self.container.append(var)
+        self.model.add(var)
         var.name = 'blurg'
         self.assertEqual(self.container.keys(), ['blurg'])
         self.assertEqual(self.container['blurg'], var)
