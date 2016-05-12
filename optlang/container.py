@@ -58,28 +58,29 @@ class Container(object):
 
     def __setitem__(self, key, value):
         self._check_for_name_attribute(value)
-        if value.name in self:
-            raise ValueError("The container already contains an object with the name "+str(value.name))
 
-        try:
-            old_value = self[key]
-        except KeyError:  # Key is a name not currently in container
-            if value.name == key:
+        if isinstance(key, int):
+            old_value = self._object_list[key]
+            if old_value.name == value.name:
+                self._object_list[key] = value
+                self._dict[new_value.name] = value
+            else:
+                if value.name in self:
+                    raise ValueError("The container already contains an object with the name " + repr(value.name))
+                else:
+                    self._object_list[key] = value
+                    del self._dict[old_value.name]
+                    self._dict[value.name] = value
+        else:
+            if value.name != key:
+                raise ValueError("Name of item does not match key")
+            try:
+                old_value = self._dict[key]
+            except KeyError:
                 self.append(value)
             else:
-                raise ValueError("Name of item does not match key")
-        else:
-            new_name = value.name
-            old_name = old_value.name
-            index = self._indices[old_name]
-
-            del self._dict[old_name]
-            self._dict[new_name] = value
-
-            del self._indices[old_name]
-            self._indices[new_name] = index
-
-            self._object_list[index] = value
+                self._dict[old_value.name] = value
+                self._object_list[self._indices[old_value.name]] = value
 
     def __delitem__(self, key):
         name = self[key].name
