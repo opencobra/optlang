@@ -265,6 +265,8 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.name.setter
     def name(self, value):
+        old_name = getattr(self, 'name', None)
+        self._name = value
         if getattr(self, 'problem', None) is not None:
             if self.indicator_variable is not None:
                 raise NotImplementedError(
@@ -272,9 +274,8 @@ class Constraint(interface.Constraint):
                 )
             else:
                 # TODO: the following needs to deal with quadratic constraints
-                self.problem.problem.linear_constraints.set_names(self.name, value)
-            self.problem.constraints._reindex()
-        self._name = value
+                self.problem.problem.linear_constraints.set_names(old_name, value)
+            self.problem.constraints.update_key(old_name)
 
     @interface.Constraint.lb.setter
     def lb(self, value):
