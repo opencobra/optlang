@@ -22,8 +22,10 @@ before_install:
 - pip install pip --upgrade
 - curl -L $SECRET_CPLEX_LINK -o cplex.tar.gz
 - tar xvf cplex.tar.gz
-- if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then cd "cplex/python/3.4/x86-64_linux/"; fi
-- if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then cd "cplex/python/2.6/x86-64_linux/"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then cd "cplex/python/3.4/x86-64_linux/";
+  fi
+- if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then cd "cplex/python/2.6/x86-64_linux/";
+  fi
 - pip install .
 - cd $TRAVIS_BUILD_DIR
 install:
@@ -37,15 +39,29 @@ before_script:
 - flake8 .
 script: python setup.py nosetests
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
-deploy:
-  provider: pypi
-  user: Nikolaus.Sonnenschein
-  password:
-    secure: Gn23MUvzP1DPJXxRXUOXGBJjyMamawxey5ByrOd+JT90roljHKSk8v1wdBMH7+s1DB/ygUJqB2Zy0cBC3mr0waY6HmxKpXhddgzQzG56Eua/npTxpz58Y8xfSYF+5QqS3gcyBrYEXmeHWuEURERy0b7uYKMx/QcHAHYhTaVy4zE=
-  on:
-    tags: true
-    repo: biosustain/optlang
+- bash <(curl -s https://codecov.io/bash)
+before_deploy:
+- pip install twine
+- python setup.py sdist
 env:
   global:
   - secure: PBcwrLg4ZwVi9Gw25Q2adNd0uK+NCqFSiYl+ZuumkEXs4NQBbSXVd719wrWKUFdIqBy+h9ETo4Vsz/QsTZzI2mSG4zqTkm+oUxMW1tJxYEeKZvCo7GfZ883VlKFgdqvh6iouEvHSjfGbwc5cUp98CbjgI5ni01vGpDQh2hgokkI=
+deploy:
+  - provider: releases
+    api_key:
+      secure: u4aJv+5YoH3gjJpyiVoq33SqKIUtx8LWPp15pIh8hKHmUgJNyjGm7ELXOeczfQ5W7ZpnWj+ogewaes2oA0NLxBB1/MBPL7kr77hmzp+XhZomh73DzFKegbpBTgqpioBRxvPlq3HYNIWqrLkeg/HYlBW1WM6mKifFUwqbIaL+++4=
+    file_glob: true
+    file: 'dist/optlang*.whl'
+    skip_cleanup: true
+    on:
+      branch: master
+      tags: true
+      repo: biosustain/optlang
+  - provider: pypi
+    user: Nikolaus.Sonnenschein
+    password:
+      secure: Gn23MUvzP1DPJXxRXUOXGBJjyMamawxey5ByrOd+JT90roljHKSk8v1wdBMH7+s1DB/ygUJqB2Zy0cBC3mr0waY6HmxKpXhddgzQzG56Eua/npTxpz58Y8xfSYF+5QqS3gcyBrYEXmeHWuEURERy0b7uYKMx/QcHAHYhTaVy4zE=
+    on:
+      branch: master
+      tags: true
+      repo: biosustain/optlang
