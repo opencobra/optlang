@@ -20,15 +20,12 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
 
-import random
 import logging
-
+import random
 import types
-
 
 log = logging.getLogger(__name__)
 import sympy
-import inspyred
 import interface
 
 
@@ -206,10 +203,10 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
             previous_selector = self._algorithm.selector
             previous_variator = self._algorithm.variator
             previous_replacer = self._algorithm.replacer
-            previous_migrator = self._algorithm.migrator
-            previous_archiver = self._algorithm.archiver
-            previous_observer = self._algorithm.observer
-            previous_terminator = self._algorithm.terminator
+            # previous_migrator = self._algorithm.migrator
+            # previous_archiver = self._algorithm.archiver
+            # previous_observer = self._algorithm.observer
+            # previous_terminator = self._algorithm.terminator
         except AttributeError:
             init = True
 
@@ -235,16 +232,18 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
             self._algorithm = inspyred.emo.Pareto(random)
         else:
             raise ValueError(
-                "%s is not a supported. Try one of the following instead: 'GeneticAlgorithm', 'ParticleSwarmOptimization', 'EvolutionaryStrategy'. TODO: be more specific here")
+                "%s is not a supported. Try one of the following instead:"
+                "'GeneticAlgorithm', 'ParticleSwarmOptimization', 'EvolutionaryStrategy'."
+                "TODO: be more specific here")
         # self._algorithm.terminator = self._default_terminator
         if init is False:
             self._algorithm.selector = previous_selector
             self._algorithm.variator = previous_variator
             self._algorithm.replacer = previous_replacer
-            previous_migrator = self._algorithm.migrator
-            previous_archiver = self._algorithm.archiver
-            previous_observer = self._algorithm.observer
-            previous_terminator = self._algorithm.terminator
+            # previous_migrator = self._algorithm.migrator
+            # previous_archiver = self._algorithm.archiver
+            # previous_observer = self._algorithm.observer
+            # previous_terminator = self._algorithm.terminator
             # TODO: setting a new algorithm should recycle old variators, selectors etc.
 
     def _evolve_kwargs(self):
@@ -335,11 +334,13 @@ if __name__ == '__main__':
 
     problem.objective = rosenbrock_obj
 
+
     def my_observer(population, num_generations, num_evaluations, args):
         best = max(population)
         print(('{0:6} -- {1} : {2}'.format(num_generations,
-                                          best.fitness,
-                                          str(best.candidate))))
+                                           best.fitness,
+                                           str(best.candidate))))
+
 
     problem.configuration.max_generations = 100
     problem.configuration.terminator = inspyred.ec.terminators.generation_termination
@@ -352,4 +353,3 @@ if __name__ == '__main__':
     print("max", numpy.max(fitnesses))
     print("min", numpy.min(fitnesses))
     # print numpy.std(fitnesses)
-

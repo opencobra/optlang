@@ -20,7 +20,6 @@ import logging
 
 import os
 
-
 log = logging.getLogger(__name__)
 import tempfile
 import inspect
@@ -164,6 +163,7 @@ def method_inheritdocstring(mthd):
     if not mthd.__doc__:
         pass
 
+
 if __name__ == '__main__':
     from swiglpk import glp_create_prob, glp_read_lp, glp_get_num_rows
 
@@ -172,4 +172,3 @@ if __name__ == '__main__':
     print("asdf", glp_get_num_rows(problem))
     solution = solve_with_glpsol(problem)
     print(solution['R_Biomass_Ecoli_core_w_GAM'])
-        

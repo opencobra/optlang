@@ -18,16 +18,15 @@
 :class:`Constraint`, :class:`Objective`) intended to be subclassed and
 extended for individual solvers.
 """
+import collections
 import inspect
-
 import logging
 import random
+import sys
 import uuid
+
 import six
 
-import collections
-
-import sys
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
 log = logging.getLogger(__name__)

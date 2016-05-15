@@ -20,17 +20,17 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
 
-import six
 import collections
-
+import logging
 import tempfile
+
+import six
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
 from optlang.util import inheritdocstring
 
-import logging
 log = logging.getLogger(__name__)
 
 from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GLP_IV, GLP_BV, GLP_UNDEF, GLP_FEAS, \
@@ -38,16 +38,15 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_col_kind, glp_find_row, glp_get_row_prim, glp_get_row_dual, glp_get_obj_val, glp_set_obj_dir, glp_init_smcp, \
     glp_init_iocp, GLP_MIN, GLP_MAX, glp_iocp, glp_smcp, GLP_ON, GLP_OFF, GLP_MSG_OFF, GLP_MSG_ERR, GLP_MSG_ON, \
     GLP_MSG_ALL, glp_term_out, glp_create_index, glp_create_prob, glp_get_num_rows, glp_get_num_cols, glp_get_col_name, \
-    glp_get_col_lb, glp_get_col_ub, glp_get_col_kind, glp_set_prob_name, glp_read_prob, glp_copy_prob, \
-    glp_set_obj_coef, glp_simplex, glp_intopt, glp_get_status, glp_add_cols, \
+    glp_get_col_lb, glp_get_col_ub, glp_get_col_kind, glp_set_prob_name, glp_read_prob, glp_set_obj_coef, glp_simplex, \
+    glp_intopt, glp_get_status, glp_add_cols, \
     glp_set_col_name, intArray, glp_del_cols, glp_add_rows, glp_set_row_name, doubleArray, glp_write_lp, glp_write_prob, \
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
-    glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_version, glp_mip_col_val, \
+    glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
     glp_mip_obj_val, glp_mip_status, GLP_ETMLIM
 
 from optlang import interface
-
 
 _GLPK_STATUS_TO_STATUS = {
     GLP_UNDEF: interface.UNDEFINED,
@@ -71,7 +70,6 @@ _VTYPE_TO_GLPK_VTYPE = dict(
 
 @six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
-
     def __init__(self, name, index=None, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
 
@@ -139,7 +137,6 @@ class Variable(interface.Variable):
 
 @six.add_metaclass(inheritdocstring)
 class Constraint(interface.Constraint):
-
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
@@ -168,20 +165,22 @@ class Constraint(interface.Constraint):
     def _set_coefficients_low_level(self, variables_coefficients_dict):
         if self.problem is not None:
             problem = self.problem.problem
-            indices_coefficients_dict = dict([(variable.index, coefficient) for variable, coefficient in six.iteritems(variables_coefficients_dict)])
+            indices_coefficients_dict = dict(
+                [(variable.index, coefficient) for variable, coefficient in six.iteritems(variables_coefficients_dict)])
             num_cols = glp_get_num_cols(problem)
             ia = intArray(num_cols + 1)
             da = doubleArray(num_cols + 1)
             index = self.index
             num = glp_get_mat_row(self.problem.problem, index, ia, da)
-            for i in range(1, num +1):
+            for i in range(1, num + 1):
                 try:
                     da[i] = indices_coefficients_dict[ia[i]]
                 except KeyError:
                     pass
             glp_set_mat_row(self.problem.problem, index, num, ia, da)
         else:
-            raise Exception('_set_coefficients_low_level works only if a constraint is associated with a solver instance.')
+            raise Exception(
+                '_set_coefficients_low_level works only if a constraint is associated with a solver instance.')
 
     @interface.Constraint.lb.setter
     def lb(self, value):
@@ -232,7 +231,7 @@ class Constraint(interface.Constraint):
     def primal(self):
         if self.problem is not None:
             primal_from_solver = glp_get_row_prim(self.problem.problem, self.index)
-            #return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
+            # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
             return primal_from_solver
         else:
             return None
@@ -305,11 +304,13 @@ class Objective(interface.Objective):
     def _get_expression(self):
         if self.problem is not None:
             variables = self.problem.variables
+
             def term_generator():
                 for index in range(1, glp_get_num_cols(self.problem.problem) + 1):
                     coeff = glp_get_obj_coef(self.problem.problem, index)
                     if coeff != 0.:
                         yield (sympy.RealNumber(coeff), variables[index - 1])
+
             expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
             self._expression = expression
         return self._expression
@@ -358,7 +359,6 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-
     def __init__(self, presolve="auto", verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._smcp = glp_smcp()
@@ -443,7 +443,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
-
     def __init__(self, problem=None, *args, **kwargs):
 
         super(Model, self).__init__(*args, **kwargs)
@@ -529,9 +528,7 @@ class Model(interface.Model):
                     *[_unevaluated_Mul(sympy.RealNumber(term[0]), term[1]) for term in term_generator if
                       term[0] != 0.]),
                 problem=self,
-                direction={GLP_MIN: 'min', GLP_MAX:
-                    'max'}[glp_get_obj_dir(self.problem)]
-            )
+                direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
         glp_scale_prob(self.problem, GLP_SF_AUTO)
 
     def __getstate__(self):
@@ -599,9 +596,9 @@ class Model(interface.Model):
             primal_values = collections.OrderedDict()
             for index, variable in enumerate(self.variables):
                 if variable.type == "continuous":
-                    value = glp_get_col_prim(self.problem, index+1)
+                    value = glp_get_col_prim(self.problem, index + 1)
                 elif variable.type in ["binary", "integer"]:
-                    value = glp_mip_col_val(self.problem, index+1)
+                    value = glp_mip_col_val(self.problem, index + 1)
                 else:
                     raise TypeError("Unknown variable type")
                 primal_values[variable.name] = variable._round_primal_to_bounds(value)
@@ -615,9 +612,9 @@ class Model(interface.Model):
             reduced_costs = collections.OrderedDict()
             for index, variable in enumerate(self.variables):
                 if variable.type == "continuous":
-                    value = glp_get_col_dual(self.problem, index+1)
+                    value = glp_get_col_dual(self.problem, index + 1)
                 elif variable.type in ["binary", "integer"]:
-                    value = glp_mip_col_val(self.problem, index+1)
+                    value = glp_mip_col_val(self.problem, index + 1)
                 else:
                     raise TypeError("Unknown variable type")
                 reduced_costs[variable.name] = value
@@ -630,7 +627,7 @@ class Model(interface.Model):
         if self.problem:
             dual_values = collections.OrderedDict()
             for index, constraint in enumerate(self.constraints):
-                value = glp_get_row_prim(self.problem, index+1)
+                value = glp_get_row_prim(self.problem, index + 1)
                 dual_values[constraint.name] = value
             return dual_values
         else:
@@ -641,7 +638,7 @@ class Model(interface.Model):
         if self.problem:
             shadow_prices = collections.OrderedDict()
             for index, constraint in enumerate(self.constraints):
-                value = glp_get_row_dual(self.problem, index+1)
+                value = glp_get_row_dual(self.problem, index + 1)
                 shadow_prices[constraint.name] = value
             return shadow_prices
         else:

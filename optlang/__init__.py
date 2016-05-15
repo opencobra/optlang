@@ -16,10 +16,12 @@
 import six
 
 from ._version import get_versions
+
 __version__ = get_versions()['version']
 del get_versions
 
 import logging
+
 log = logging.getLogger(__name__)
 
 from .util import list_available_solvers

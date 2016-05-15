@@ -15,17 +15,19 @@
 
 from itertools import islice
 
+
 class Container(object):
     '''A container for objects that have a name attribute.'''
+
     def __init__(self, iterable=()):
         self._dict = {}
         self._object_list = []
         self._indices = {}
         for item in iterable:
             try:
-                name = item.name
+                item.name
             except AttributeError:
-                raise AttributeError("Item "+item.__repr__()+" does not have a 'name' attribute")
+                raise AttributeError("Item " + item.__repr__() + " does not have a 'name' attribute")
             self.append(item)
 
     @staticmethod
@@ -53,7 +55,7 @@ class Container(object):
     def __getitem__(self, item):
         try:
             return self._object_list[item]  # Try treating item as int or slice
-        except TypeError: # Not int or slice
+        except TypeError:  # Not int or slice
             return self._dict[item]  # Treat item as key (name)
 
     def __setitem__(self, key, value):
@@ -63,7 +65,7 @@ class Container(object):
             old_value = self._object_list[key]
             if old_value.name == value.name:
                 self._object_list[key] = value
-                self._dict[new_value.name] = value
+                self._dict[value.name] = value
             else:
                 if value.name in self:
                     raise ValueError("The container already contains an object with the name " + repr(value.name))
@@ -155,7 +157,7 @@ class Container(object):
         length = len(self)
         self._object_list.extend(values)
         self._dict.update({value.name: value for value in values})
-        self._indices.update({value.name: length+i for i, value in enumerate(values)})
+        self._indices.update({value.name: length + i for i, value in enumerate(values)})
 
     def __getattr__(self, name):
         try:

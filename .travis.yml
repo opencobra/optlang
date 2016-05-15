@@ -27,12 +27,14 @@ before_install:
 - pip install .
 - cd $TRAVIS_BUILD_DIR
 install:
-- pip install nose nose-progressive rednose coverage docutils
+- pip install nose nose-progressive rednose coverage docutils flake8
 - pip install -r requirements.txt
 - pip install inspyred
 - pip install pypandoc
 - pip install swiglpk
 - python setup.py install
+before_script:
+- flake8 .
 script: python setup.py nosetests
 after_success:
   - bash <(curl -s https://codecov.io/bash)
