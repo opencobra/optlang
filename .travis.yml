@@ -27,7 +27,7 @@ before_install:
 - pip install .
 - cd $TRAVIS_BUILD_DIR
 install:
-- pip install coveralls nose nose-progressive rednose coverage docutils
+- pip install nose nose-progressive rednose coverage docutils
 - pip install -r requirements.txt
 - pip install inspyred
 - pip install pypandoc
@@ -35,7 +35,7 @@ install:
 - python setup.py install
 script: python setup.py nosetests
 after_success:
-- coveralls
+  - bash <(curl -s https://codecov.io/bash)
 deploy:
   provider: pypi
   user: Nikolaus.Sonnenschein
