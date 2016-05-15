@@ -162,6 +162,7 @@ class ContainerTestCase(unittest.TestCase):
     def test_change_object_name(self):
         var = Variable('blub')
         self.model.add(var)
+        self.model.update()
         var.name = 'blurg'
         self.assertEqual(self.container.keys(), ['blurg'])
         self.assertEqual(self.container['blurg'], var)

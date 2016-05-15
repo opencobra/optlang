@@ -16,7 +16,7 @@ class TestSolver(TestCase):
         self.model.add(x)
         self.model.add(y)
         self.model.add(constr)
-        self.model.add(obj)
+        self.model.objective = obj
 
     def test_read_only_attributes(self):
         self.assertRaises(AttributeError, setattr, self.model, 'variables', 'Foo')
@@ -45,11 +45,18 @@ class TestSolver(TestCase):
 
     def test_add_variable_twice_raises(self):
         var = Variable('x')
-        self.assertRaises(Exception, self.model.add, var)
+        self.model.add(var)
+        self.assertRaises(Exception, self.model.update)
 
     def test_remove_constraint(self):
         self.model.remove('constr1')
         self.assertEqual(list(self.model.constraints), [])
+
+    def test_add_remove_constraint(self):
+        c = Constraint(self.model.variables.x + self.model.variables.y, lb=10)
+        self.model.add(c)
+        self.model.remove(c)
+        self.model.update()
 
     def test_remove_variable_str(self):
         var = self.model.variables['y']
