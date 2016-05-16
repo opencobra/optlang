@@ -45,3 +45,5 @@ nosetests.xml
 .coveralls.yml
 
 .idea
+
+MANIFEST
