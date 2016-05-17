@@ -930,18 +930,8 @@ class Model(object):
         elif isinstance(stuff, Constraint):
             self._pending_modifications['rm_constr'].append(stuff)
         elif isinstance(stuff, collections.Iterable):
-            element_types = set((elem.__class__ for elem in stuff))
-            if len(element_types) == 1:
-                element_type = element_types.pop()
-                if issubclass(element_type, Variable):
-                    self._pending_modifications['rm_var'].extend(stuff)
-                elif issubclass(element_type, Constraint):
-                    self._pending_modifications['rm_constr'].extend(stuff)
-                else:
-                    raise TypeError("Cannot remove %s. It is neither a variable nor a constraint." % stuff)
-            else:
-                for elem in stuff:
-                    self.remove(elem)
+            for elem in stuff:
+                self.remove(elem)
         elif isinstance(stuff, Objective):
             raise TypeError(
                 "Cannot remove objective %s. Use model.objective = Objective(...) to change the current objective." % stuff)
