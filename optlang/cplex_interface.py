@@ -720,15 +720,6 @@ class Model(interface.Model):
         self._status = _CPLEX_STATUS_TO_STATUS[cplex_status]
         return self.status
 
-    @staticmethod
-    def _cplex_sense_to_sympy(sense, translation=None):
-        if not translation:
-            translation = {'E': '==', 'L': '<', 'G': '>'}
-        try:
-            return translation[sense]
-        except KeyError:
-            raise Exception(' '.join(('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')))
-
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):
         lb = [(variable.name, value) for variable, value in var_lb]
         if len(lb) > 0:
