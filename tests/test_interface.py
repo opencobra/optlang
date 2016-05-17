@@ -55,8 +55,18 @@ class TestSolver(TestCase):
     def test_add_remove_constraint(self):
         c = Constraint(self.model.variables.x + self.model.variables.y, lb=10)
         self.model.add(c)
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1'], c])
         self.model.remove(c)
         self.model.update()
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1']])
+
+    def test_add_remove_collection(self):
+        c = Constraint(self.model.variables.x + self.model.variables.y, lb=10)
+        c2 = Constraint(3.* self.model.variables.x + self.model.variables.y, lb=10)
+        self.model.add([c, c2])
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1'], c, c2])
+        self.model.remove([c, 'constr1', c2])
+        self.assertEqual(list(self.model.constraints), [])
 
     def test_remove_variable_str(self):
         var = self.model.variables['y']
