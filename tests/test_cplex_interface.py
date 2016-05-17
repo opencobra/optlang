@@ -358,19 +358,31 @@ try:
             self.model.remove(constraint)
             self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
 
-        @nottest
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
             y = Variable('y', lb=-181133.3, ub=12000.)
             objective = Objective(0.3 * x + 0.4 * y, name='obj', direction='max')
             self.model.objective = objective
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-            self.assertIn(' obj: 0.4 y + 0.3 x', self.model.__str__().split("\n"))
+            for variable in self.model.variables:
+                coeff = self.model.problem.objective.get_linear(variable.name)
+                if variable.name == 'x':
+                    self.assertEqual(coeff, 0.3)
+                elif variable.name == 'y':
+                    self.assertEqual(coeff, 0.4)
+                else:
+                    self.assertEqual(coeff, 0.)
             z = Variable('z', lb=0.000003, ub=0.000003, type='continuous')
             objective += 77. * z
-            print(objective)
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-            self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
+            for variable in self.model.variables:
+                coeff = self.model.problem.objective.get_linear(variable.name)
+                if variable.name == 'x':
+                    self.assertEqual(coeff, 0.3)
+                elif variable.name == 'y':
+                    self.assertEqual(coeff, 0.4)
+                elif variable.name == 'z':
+                    self.assertEqual(coeff, 77.)
+                else:
+                    self.assertEqual(coeff, 0.)
 
         def test_timeout(self):
             self.model.configuration.timeout = 0

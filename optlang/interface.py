@@ -781,7 +781,6 @@ class Model(object):
 
     @objective.setter
     def objective(self, value):
-        self.update()
         try:
             for atom in value.expression.atoms(sympy.Symbol):
                 if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
@@ -791,6 +790,7 @@ class Model(object):
                 pass
             else:
                 raise AttributeError(e)
+        self.update()
         if self._objective is not None:
             self._objective.problem = None
         self._objective = value
