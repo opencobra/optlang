@@ -108,6 +108,7 @@ class Variable(sympy.Symbol):
 
     @classmethod
     def clone(cls, variable, **kwargs):
+        """Clone another variable (for example from another solver interface)."""
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
 
     def __new__(cls, name, **assumptions):
@@ -150,6 +151,7 @@ class Variable(sympy.Symbol):
 
     @property
     def name(self):
+        """Name of variable."""
         return self._name
 
     @name.setter
@@ -161,6 +163,7 @@ class Variable(sympy.Symbol):
 
     @property
     def lb(self):
+        """Lower bound of variable."""
         return self._lb
 
     @lb.setter
@@ -176,6 +179,7 @@ class Variable(sympy.Symbol):
 
     @property
     def ub(self):
+        """Upper bound of variable."""
         return self._ub
 
     @ub.setter
@@ -191,6 +195,7 @@ class Variable(sympy.Symbol):
 
     @property
     def type(self):
+        """Variable type ('either continuous, integer, or binary'.)"""
         return self._type
 
     @type.setter
@@ -217,10 +222,12 @@ class Variable(sympy.Symbol):
 
     @property
     def primal(self):
+        """The primal of variable (None if no solution exists)."""
         return None
 
     @property
     def dual(self):
+        """The dual of variable (None if no solution exists)."""
         return None
 
     def __str__(self):
@@ -252,6 +259,17 @@ class Variable(sympy.Symbol):
         self.__dict__ = state
 
     def _round_primal_to_bounds(self, primal, tolerance=1e-5):
+        """Rounds primal value to lie within variables bounds.
+
+        Raises if exceeding threshold.
+
+        Parameters
+        ----------
+        primal : float
+            The primal value to round.
+        tolerance : float (optional)
+            The tolerance threshold (default: 1e-5).
+        """
         if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
             return primal
         else:
@@ -439,11 +457,6 @@ class Constraint(OptimizationExpression):
         A reference to the optimization model the variable belongs to.
     """
 
-    # @classmethod
-    # def clone(cls, constraint, model=None, **kwargs):
-    #     return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
-    #                name=constraint.name, problem=constraint.problem, sloppy=True, **kwargs)
-
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
     @classmethod
@@ -461,6 +474,7 @@ class Constraint(OptimizationExpression):
 
     @classmethod
     def clone(cls, constraint, model=None, **kwargs):
+        """Clone another constraint (for example from another solver interface)."""
         return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
                    indicator_variable=constraint.indicator_variable, active_when=constraint.active_when,
                    name=constraint.name, sloppy=True, **kwargs)
@@ -476,6 +490,7 @@ class Constraint(OptimizationExpression):
 
     @property
     def lb(self):
+        """Lower bound of constraint."""
         return self._lb
 
     @lb.setter
@@ -484,6 +499,7 @@ class Constraint(OptimizationExpression):
 
     @property
     def ub(self):
+        """Upper bound of constraint."""
         return self._ub
 
     @ub.setter
@@ -492,6 +508,7 @@ class Constraint(OptimizationExpression):
 
     @property
     def indicator_variable(self):
+        """The indicator variable of constraint (if available)."""
         return self._indicator_variable
 
     @indicator_variable.setter
@@ -501,6 +518,7 @@ class Constraint(OptimizationExpression):
 
     @property
     def active_when(self):
+        """Activity relation of constraint to indicator variable (if supported)."""
         return self._active_when
 
     @indicator_variable.setter
@@ -545,10 +563,12 @@ class Constraint(OptimizationExpression):
 
     @property
     def primal(self):
+        """Primal of constraint (None if no solution exists)."""
         return None
 
     @property
     def dual(self):
+        """Dual of constraint (None if no solution exists)."""
         return None
 
     def _round_primal_to_bounds(self, primal, tolerance=1e-5):
@@ -585,6 +605,7 @@ class Objective(OptimizationExpression):
 
     @classmethod
     def clone(cls, objective, model=None, **kwargs):
+        """Clone another objective (for example from another solver interface)."""
         return cls(cls._substitute_variables(objective, model=model), name=objective.name,
                    # TODO: problem=model, (it's breaking cameo for some reason)
                    direction=objective.direction, sloppy=True, **kwargs)
@@ -596,6 +617,7 @@ class Objective(OptimizationExpression):
 
     @property
     def value(self):
+        """The objective value."""
         return self._value
 
     def __str__(self):
@@ -660,6 +682,7 @@ class Configuration(object):
 
     @property
     def timeout(self):
+        """Timeout parameter (seconds)."""
         raise NotImplementedError
 
     @timeout.setter
@@ -673,6 +696,7 @@ class MathematicalProgrammingConfiguration(Configuration):
 
     @property
     def presolve(self):
+        """If the presolver should be used (if available)."""
         raise NotImplementedError
 
     @presolve.setter
@@ -713,6 +737,7 @@ class Model(object):
 
     @classmethod
     def clone(cls, model):
+        """Clone another model (for example from another solver interface)."""
         interface = sys.modules[cls.__module__]
         new_model = cls()
         for variable in model.variables:
@@ -743,10 +768,15 @@ class Model(object):
 
     @property
     def interface(self):
+        """Provides access to the solver interface the model belongs to
+
+        For example optlang.glpk_interface
+        """
         return sys.modules[self.__module__]
 
     @property
     def objective(self):
+        """The model's objective function."""
         return self._objective
 
     @objective.setter
@@ -768,35 +798,62 @@ class Model(object):
 
     @property
     def variables(self):
+        """The model variables."""
         self.update()
         return self._variables
 
     @property
     def constraints(self):
+        """The model constraints."""
         self.update()
         return self._constraints
 
     @property
     def status(self):
+        """The solver status of the model."""
         return self._status
 
     @property
     def primal_values(self):
+        """The primal values of model/all variables.
+
+        Returns
+        -------
+        collections.OrderedDict
+        """
         # Fallback, if nothing faster is available
         return collections.OrderedDict([(variable.name, variable.primal) for variable in self.variables])
 
     @property
     def reduced_costs(self):
+        """The reduced costs/dual values of all variables.
+
+        Returns
+        -------
+        collections.OrderedDict
+        """
         # Fallback, if nothing faster is available
         return collections.OrderedDict([(variable.name, variable.dual) for variable in self.variables])
 
     @property
     def dual_values(self):
+        """The dual values of the problem (primal values of all constraints).
+
+        Returns
+        -------
+        collections.OrderedDict
+        """
         # Fallback, if nothing faster is available
         return collections.OrderedDict([(constraint.name, constraint.primal) for constraint in self.constraint])
 
     @property
     def shadow_prices(self):
+        """The shadow prices of model (dual values of all variables).
+
+        Returns
+        -------
+        collections.OrderedDict
+        """
         # Fallback, if nothing faster is available
         return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraint])
 
