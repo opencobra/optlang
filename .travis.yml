@@ -37,7 +37,7 @@ install:
 - python setup.py install
 before_script:
 - flake8 .
-script: python setup.py nosetests
+script: nosetests --with-coverage
 after_success:
 - bash <(curl -s https://codecov.io/bash)
 before_deploy:

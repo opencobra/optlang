@@ -6,7 +6,7 @@ Currently supported solvers are:
 
 * `GLPK <http://www.gnu.org/software/glpk/>`_ (LP/MILP; via `swiglpk <https://github.com/biosustain/swiglpk>`_)
 * `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`_ (LP/MILP/QP)
-* `inspyred <https://pypi.python.org/pypi/inspyred>`_ (heuristic optimization)
+* `inspyred <https://pypi.python.org/pypi/inspyred>`_ (heuristic optimization; experimental)
 
 Support for the following solvers is in the works:
 
