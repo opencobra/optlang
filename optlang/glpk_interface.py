@@ -243,22 +243,7 @@ class Constraint(interface.Constraint):
         else:
             return None
 
-    @property
-    def problem(self):
-        return self._problem
-
-    @problem.setter
-    def problem(self, value):
-        if value is None:
-            # Update expression from solver instance one last time
-            self._get_expression()
-            self._problem = None
-        else:
-            self._problem = value
-
     def __iadd__(self, other):
-        # if self.problem is not None:
-        # self.problem._add_to_constraint(self.index, other)
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
@@ -266,30 +251,6 @@ class Constraint(interface.Constraint):
             problem_reference._add_constraint(self, sloppy=False)
         else:
             super(Constraint, self).__iadd__(other)
-        return self
-
-    def __isub__(self, other):
-        super(Constraint, self).__isub__(other)
-        if self.problem is not None:
-            problem_reference = self.problem
-            self.problem._remove_constraint(self)
-            problem_reference._add_constraint(self, sloppy=False)
-        return self
-
-    def __imul__(self, other):
-        super(Constraint, self).__imul__(other)
-        if self.problem is not None:
-            problem_reference = self.problem
-            self.problem._remove_constraint(self)
-            problem_reference._add_constraint(self, sloppy=False)
-        return self
-
-    def __idiv__(self, other):
-        super(Constraint, self).__idiv__(other)
-        if self.problem is not None:
-            problem_reference = self.problem
-            self.problem._remove_constraint(self)
-            problem_reference._add_constraint(self, sloppy=False)
         return self
 
 
@@ -335,23 +296,9 @@ class Objective(interface.Objective):
             self.problem.objective = self
         return self
 
-    def __isub__(self, other):
-        self.problem = None
-        super(Objective, self).__isub__(other)
-        if self.problem is not None:
-            self.problem.objective = self
-        return self
-
     def __imul__(self, other):
         self.problem = None
         super(Objective, self).__imul__(other)
-        if self.problem is not None:
-            self.problem.objective = self
-        return self
-
-    def __idiv__(self, other):
-        self.problem = None
-        super(Objective, self).__idiv__(other)
         if self.problem is not None:
             self.problem.objective = self
         return self
@@ -545,14 +492,6 @@ class Model(interface.Model):
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
             self.optimize()  # since the start is an optimal solution, nothing will happen here
-
-    # def __copy__(self):
-    #     return Model(problem=self.problem)
-    #
-    # def __deepcopy__(self, memo):
-    #     copy_problem = glp_create_prob()
-    #     glp_copy_prob(copy_problem, self.problem, GLP_ON)
-    #     return Model(problem=copy_problem)
 
     @property
     def objective(self):
