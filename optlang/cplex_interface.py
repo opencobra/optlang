@@ -609,7 +609,6 @@ class Model(interface.Model):
 
     @objective.setter
     def objective(self, value):
-        self.update()
         if self._objective is not None:
             for variable in self.objective.variables:
                 try:

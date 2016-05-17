@@ -781,16 +781,18 @@ class Model(object):
 
     @objective.setter
     def objective(self, value):
+        self.update()
         try:
             for atom in value.expression.atoms(sympy.Symbol):
                 if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
+                    print(atom, atom.problem)
                     self._pending_modifications['add_var'].append(atom)
+            self.update()
         except AttributeError as e:
             if isinstance(value.expression, six.types.FunctionType) or isinstance(value.expression, float):
                 pass
             else:
                 raise AttributeError(e)
-        self.update()
         if self._objective is not None:
             self._objective.problem = None
         self._objective = value
