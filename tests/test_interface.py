@@ -68,6 +68,12 @@ class TestSolver(TestCase):
         self.model.remove([c, 'constr1', c2])
         self.assertEqual(list(self.model.constraints), [])
 
+    def test_removing_objective_raises(self):
+        self.assertRaises(TypeError, self.model.remove, self.model.objective)
+
+    def test_removing_crap_raises(self):
+        self.assertRaises(TypeError, self.model.remove, dict)
+
     def test_remove_variable_str(self):
         var = self.model.variables['y']
         self.model.remove(var.name)
