@@ -266,7 +266,6 @@ class Model(interface.Model):
         super(Model, self).__init__(*args, **kwargs)
         self.configuration = Configuration()
         if algorithm is None:
-            # TODO: pick something smart?
             self.configuration.algorithm = "GA"
         else:
             self.configuration.algorithm = algorithm

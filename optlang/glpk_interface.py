@@ -560,7 +560,7 @@ class Model(interface.Model):
 
     @objective.setter
     def objective(self, value):
-        value.problem = None  # TODO: temporary fix to allow for objectives that already have a problem set
+        value.problem = None
         if self._objective is not None:
             for variable in self.objective.variables:
                 if variable.index is not None:

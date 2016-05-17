@@ -137,7 +137,7 @@ class Variable(sympy.Symbol):
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
         self._name = name
-        sympy.Symbol.__init__(name, *args, **kwargs)  # TODO: change this back to use super
+        sympy.Symbol.__init__(name, *args, **kwargs)
         self._lb = lb
         self._ub = ub
         if self._lb is None and type == 'binary':
@@ -607,7 +607,6 @@ class Objective(OptimizationExpression):
     def clone(cls, objective, model=None, **kwargs):
         """Clone another objective (for example from another solver interface)."""
         return cls(cls._substitute_variables(objective, model=model), name=objective.name,
-                   # TODO: problem=model, (it's breaking cameo for some reason)
                    direction=objective.direction, sloppy=True, **kwargs)
 
     def __init__(self, expression, value=None, direction='max', *args, **kwargs):
@@ -1079,7 +1078,6 @@ class Model(object):
         self._remove_constraints([constraint])
 
     def _set_linear_objective_term(self, variable, coefficient):
-        # TODO: the is extremely slow for objectives with many terms
         if variable in self.objective.expression.atoms(sympy.Symbol):
             a = sympy.Wild('a', exclude=[variable])
             (new_expression, map) = self.objective.expression.replace(lambda expr: expr.match(a * variable),

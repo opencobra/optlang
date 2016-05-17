@@ -114,7 +114,6 @@ _SOLUTION_TARGETS = ("auto", "convex", "local", "global")
 _QP_METHODS = ("auto", "primal", "dual", "network", "barrier")
 
 _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
-# FIXME: what about 'S': 'semi_continuous', 'N': 'semi_integer'
 
 _VTYPE_TO_CPLEX_VTYPE = dict(
     [(val, key) for key, val in six.iteritems(_CPLEX_VTYPE_TO_VTYPE)]
@@ -124,7 +123,6 @@ _VTYPE_TO_CPLEX_VTYPE = dict(
 def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
     """Helper function used by Constraint and Model"""
     if lb is None and ub is None:
-        # FIXME: use cplex.infinity
         raise Exception("Free constraint ...")
     elif lb is None:
         sense = 'L'
@@ -200,7 +198,6 @@ class Constraint(interface.Constraint):
                 (self.lb, self.ub, self)
             )
 
-    # TODO: get expression from solver structure
     def _get_expression(self):
         if self.problem is not None:
             cplex_problem = self.problem.problem
@@ -260,7 +257,6 @@ class Constraint(interface.Constraint):
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name"
                 )
             else:
-                # TODO: the following needs to deal with quadratic constraints
                 self.problem.problem.linear_constraints.set_names(old_name, value)
             self.problem.constraints.update_key(old_name)
 
@@ -802,7 +798,6 @@ class Model(interface.Model):
                             lin_expr=cplex.SparsePair(ind=indices, val=values), sense=sense, rhs=rhs,
                             name=constraint.name,
                             indvar=constraint.indicator_variable.name, complemented=abs(constraint.active_when) - 1)
-            # TODO: Implement quadratic constraints
             elif constraint.is_Quadratic:
                 raise NotImplementedError('Quadratic constraints (like %s) are not supported yet.' % constraint)
             else:
