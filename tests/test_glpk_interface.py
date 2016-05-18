@@ -12,6 +12,7 @@ from swiglpk import *
 import sys
 import six
 
+import optlang
 from optlang import glpk_interface
 
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
@@ -77,6 +78,9 @@ class ConstraintTestCase(unittest.TestCase):
     def setUp(self):
         self.model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
+
+    def test_indicator_constraint_raises(self):
+        self.assertRaises(optlang.exceptions.IndicatorConstraintsNotSupported, Constraint, Variable('chip') + Variable('chap'), indicator_variable=Variable('indicator', type='binary'))
 
     def test_constraint_index(self):
         constraint = self.model.constraints.M_atp_c
