@@ -69,6 +69,9 @@ class ContainerTestCase(unittest.TestCase):
             else:
                 self.assertEqual(int(variable.name.replace('v', '')) - 1, i)
 
+    def test_non_name_item_raises(self):
+        self.assertRaises(AttributeError, self.container.append, 3)
+
     def test_add_already_existing_item_raises(self):
         var = Variable('blub')
         self.container.append(var)
@@ -140,9 +143,11 @@ class ContainerTestCase(unittest.TestCase):
 
     def test_has_key(self):
         self.assertFalse('blurb' in self.container)
+        self.assertFalse(self.container.has_key('blurb'))
         var = Variable('blurb')
         self.container.append(var)
         self.assertTrue('blurb' in self.container)
+        self.assertTrue(self.container.has_key('blurb'))
 
     def test_getattr(self):
         var = Variable('variable1')
@@ -158,6 +163,20 @@ class ContainerTestCase(unittest.TestCase):
         var2 = Variable('blib')
         self.container[0] = var2
         self.assertEqual(self.container[0], var2)
+
+        var3 = Variable("blab")
+        self.assertRaises(ValueError, self.container.__setitem__, "blub", var3)
+        self.container["blab"] = var3
+        self.assertIs(self.container["blab"], var3)
+        self.assertIs(self.container[1], var3)
+
+        var4 = Variable("blab")
+        self.container["blab"] = var4
+        self.assertFalse(var3 in self.container)
+        self.assertIs(self.container["blab"], var4)
+        self.assertIs(self.container[1], var4)
+
+        self.assertRaises(ValueError, self.container.__setitem__, 1, var2)
 
     def test_change_object_name(self):
         var = Variable('blub')
