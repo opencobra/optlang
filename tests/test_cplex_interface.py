@@ -481,6 +481,13 @@ try:
             self.assertAlmostEqual(self.x1.primal, 0.5)
             self.assertAlmostEqual(self.x2.primal, 0.5)
 
+            obj_2 = Objective(self.x1, direction="min")
+            model.objective = obj_2
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0.0)
+            self.assertAlmostEqual(self.x1.primal, 0.0)
+            self.assertGreaterEqual(self.x2.primal, 1.0)
+
         def test_non_convex_obj(self):
             model = self.model
             obj = Objective(self.x1 * self.x2, direction="min")
@@ -495,7 +502,13 @@ try:
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 0)
 
-        @unittest.skip
+            obj_2 = Objective(self.x1, direction="min")
+            model.objective = obj_2
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0.0)
+            self.assertAlmostEqual(self.x1.primal, 0.0)
+            self.assertGreaterEqual(self.x2.primal, 1.0)
+
         def test_qp_convex(self):
             problem = cplex.Cplex()
             problem.read(CONVEX_QP_PATH)
