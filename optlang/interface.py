@@ -175,7 +175,7 @@ class Variable(sympy.Symbol):
         self.__test_valid_lower_bound(self.type, value, self.name)
         self._lb = value
         if self.problem is not None:
-            self.problem._pending_modifications['var_lb'].append((self, value))
+            self.problem._pending_modifications.var_lb.append((self, value))
 
     @property
     def ub(self):
@@ -191,7 +191,7 @@ class Variable(sympy.Symbol):
         self.__test_valid_upper_bound(self.type, value, self.name)
         self._ub = value
         if self.problem is not None:
-            self.problem._pending_modifications['var_ub'].append((self, value))
+            self.problem._pending_modifications.var_ub.append((self, value))
 
     @property
     def type(self):
@@ -414,7 +414,6 @@ class OptimizationExpression(object):
 
     def __iadd__(self, other):
         self._expression += other
-        # self.expression = sympy.Add._from_args((self.expression, other))
         return self
 
     def __isub__(self, other):
@@ -757,8 +756,24 @@ class Model(object):
         self._constraints = Container()
         self._variables_to_constraints_mapping = dict()
         self._status = None
-        self._pending_modifications = dict(add_var=[], add_constr=[], add_constr_sloppy=[], rm_var=[],
-                                           rm_constr=[], var_lb=[], var_ub=[])
+
+        class Modifications():
+
+            def __init__(self):
+                self.add_var = []
+                self.add_constr = []
+                self.add_constr_sloppy = []
+                self.rm_var = []
+                self.rm_constr = []
+                self.var_lb = []
+                self.var_ub = []
+                self.toggle = 'add'
+
+            def __str__(self):
+                return str(self.__dict__)
+                # return "Variables to add: {add_var}\nVariables to remove: {rm_var}\nConstraints to add {add_constr}\nConstrians to remove: {rm_constr}\nToggle: {toggle}".format(**self.__dict__)
+
+        self._pending_modifications = Modifications()
         self.name = name
         if variables is not None:
             self.add(variables)
@@ -785,7 +800,7 @@ class Model(object):
             for atom in value.expression.atoms(sympy.Symbol):
                 if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
                     print(atom, atom.problem)
-                    self._pending_modifications['add_var'].append(atom)
+                    self._pending_modifications.add_var.append(atom)
             self.update()
         except AttributeError as e:
             if isinstance(value.expression, six.types.FunctionType) or isinstance(value.expression, float):
@@ -883,6 +898,9 @@ class Model(object):
         -------
         None
         """
+        if self._pending_modifications.toggle == 'remove':
+            self.update()
+            self._pending_modifications.toggle = 'add'
         if isinstance(stuff, collections.Iterable):
             for elem in stuff:
                 self.add(elem, sloppy=sloppy)
@@ -890,15 +908,15 @@ class Model(object):
             if stuff.__module__ != self.__module__:
                 raise TypeError("Cannot add Variable %s of interface type %s to model of type %s." % (
                     stuff, stuff.__module__, self.__module__))
-            self._pending_modifications['add_var'].append(stuff)
+            self._pending_modifications.add_var.append(stuff)
         elif isinstance(stuff, Constraint):
             if stuff.__module__ != self.__module__:
                 raise TypeError("Cannot add Constraint %s of interface type %s to model of type %s." % (
                     stuff, stuff.__module__, self.__module__))
             if sloppy is True:
-                self._pending_modifications['add_constr_sloppy'].append(stuff)
+                self._pending_modifications.add_constr_sloppy.append(stuff)
             else:
-                self._pending_modifications['add_constr'].append(stuff)
+                self._pending_modifications.add_constr.append(stuff)
         else:
             raise TypeError("Cannot add %s. It is neither a Variable, or Constraint." % stuff)
 
@@ -914,21 +932,24 @@ class Model(object):
         -------
         None
         """
+        if self._pending_modifications.toggle == 'add':
+            self.update()
+            self._pending_modifications.toggle = 'remove'
         if isinstance(stuff, str):
             try:
                 variable = self.variables[stuff]
-                self._pending_modifications['rm_var'].append(variable)
+                self._pending_modifications.rm_var.append(variable)
             except KeyError:
                 try:
                     constraint = self.constraints[stuff]
-                    self._pending_modifications['rm_constr'].append(constraint)
+                    self._pending_modifications.rm_constr.append(constraint)
                 except KeyError:
                     raise LookupError(
                         "%s is neither a variable nor a constraint in the current solver instance." % stuff)
         elif isinstance(stuff, Variable):
-            self._pending_modifications['rm_var'].append(stuff)
+            self._pending_modifications.rm_var.append(stuff)
         elif isinstance(stuff, Constraint):
-            self._pending_modifications['rm_constr'].append(stuff)
+            self._pending_modifications.rm_constr.append(stuff)
         elif isinstance(stuff, collections.Iterable):
             for elem in stuff:
                 self.remove(elem)
@@ -941,37 +962,38 @@ class Model(object):
 
     def update(self):
         """Process all pending model modifications."""
-        add_var = self._pending_modifications['add_var']
+        # print(self._pending_modifications)
+        add_var = self._pending_modifications.add_var
         if len(add_var) > 0:
             self._add_variables(add_var)
-            self._pending_modifications['add_var'] = []
+            self._pending_modifications.add_var = []
 
-        add_constr = self._pending_modifications['add_constr']
+        add_constr = self._pending_modifications.add_constr
         if len(add_constr) > 0:
             self._add_constraints(add_constr)
-            self._pending_modifications['add_constr'] = []
+            self._pending_modifications.add_constr = []
 
-        add_constr_sloppy = self._pending_modifications['add_constr_sloppy']
+        add_constr_sloppy = self._pending_modifications.add_constr_sloppy
         if len(add_constr_sloppy) > 0:
             self._add_constraints(add_constr_sloppy, sloppy=True)
-            self._pending_modifications['add_constr_sloppy'] = []
+            self._pending_modifications.add_constr_sloppy = []
 
-        var_lb = self._pending_modifications['var_lb']
-        var_ub = self._pending_modifications['var_ub']
+        var_lb = self._pending_modifications.var_lb
+        var_ub = self._pending_modifications.var_ub
         if len(var_lb) > 0 or len(var_ub) > 0:
             self._set_variable_bounds_on_problem(var_lb, var_ub)
-            self._pending_modifications['var_lb'] = []
-            self._pending_modifications['var_ub'] = []
+            self._pending_modifications.var_lb = []
+            self._pending_modifications.var_ub = []
 
-        rm_var = self._pending_modifications['rm_var']
+        rm_var = self._pending_modifications.rm_var
         if len(rm_var) > 0:
             self._remove_variables(rm_var)
-            self._pending_modifications['rm_var'] = []
+            self._pending_modifications.rm_var = []
 
-        rm_constr = self._pending_modifications['rm_constr']
+        rm_constr = self._pending_modifications.rm_constr
         if len(rm_constr) > 0:
             self._remove_constraints(rm_constr)
-            self._pending_modifications['rm_constr'] = []
+            self._pending_modifications.rm_constr = []
 
     def optimize(self):
         """Solve the optimization problem.
@@ -1052,6 +1074,8 @@ class Model(object):
             constraint._problem = self
 
     def _remove_constraints(self, constraints):
+        for constraint in constraints:  # TODO: remove this hack that fixes problems with lazy solver expressions.
+            constraint.expression
         keys = [constraint.name for constraint in constraints]
         if len(constraints) > 350:  # Need to figure out a good threshold here
             self._constraints = self.constraints.fromkeys(set(self.constraints.keys()).difference(set(keys)))

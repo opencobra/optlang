@@ -15,6 +15,8 @@
 
 from itertools import islice
 
+from optlang.exceptions import ContainerAlreadyContains
+
 
 class Container(object):
     '''A container for objects that have a name attribute.'''
@@ -144,7 +146,7 @@ class Container(object):
         self._check_for_name_attribute(value)
         name = value.name
         if name in self._dict:
-            raise Exception("Container '%s' already contains an object with name '%s'." % (self, value.name))
+            raise ContainerAlreadyContains("Container '%s' already contains an object with name '%s'." % (self, value.name))
         self._indices[name] = len(self)
         self._object_list.append(value)
         self._dict[name] = value
@@ -153,7 +155,7 @@ class Container(object):
         for value in values:
             self._check_for_name_attribute(value)
             if value.name in self._dict:
-                raise Exception("Container '%s' already contains an object with name '%s'." % (self, value.name))
+                raise ContainerAlreadyContains("Container '%s' already contains an object with name '%s'." % (self, value.name))
         length = len(self)
         self._object_list.extend(values)
         self._dict.update({value.name: value for value in values})

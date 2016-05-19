@@ -3,6 +3,7 @@
 
 from unittest import TestCase
 
+from optlang.exceptions import ContainerAlreadyContains
 from optlang.interface import Model, Variable, Constraint, Objective
 
 
@@ -45,6 +46,29 @@ class TestSolver(TestCase):
 
     def test_add_variable_twice_raises(self):
         var = Variable('x')
+        self.model.add(var)
+        self.assertRaises(ContainerAlreadyContains, self.model.update)
+
+    def test_remove_add_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        self.model.update()
+
+    def test_remove_add_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        self.model.update()
+
+    def test_remove_add_remove_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        # self.assertRaises(ContainerAlreadyContains, self.model.remove, var)
+
+    def test_add_existing_variable(self):
+        var = self.model.variables[0]
         self.model.add(var)
         self.assertRaises(Exception, self.model.update)
 
