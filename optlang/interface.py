@@ -771,7 +771,6 @@ class Model(object):
 
             def __str__(self):
                 return str(self.__dict__)
-                # return "Variables to add: {add_var}\nVariables to remove: {rm_var}\nConstraints to add {add_constr}\nConstrians to remove: {rm_constr}\nToggle: {toggle}".format(**self.__dict__)
 
         self._pending_modifications = Modifications()
         self.name = name
