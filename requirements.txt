@@ -1,3 +1,4 @@
+swiglpk>=1.2.14
 sympy>=1.0.0
 six
 rednose
