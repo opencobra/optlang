@@ -152,9 +152,7 @@ class Constraint(interface.Constraint):
             ia = intArray(col_num + 1)
             da = doubleArray(col_num + 1)
             nnz = glp_get_mat_row(self.problem.problem, self.index, ia, da)
-            # variables = self.problem.variables
-            # constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
-            constraint_variables = [self.problem.variables[glp_get_col_name(self.problem.problem, ia[i])] for i in
+            constraint_variables = [self.problem._variables[glp_get_col_name(self.problem.problem, ia[i])] for i in
                                     range(1, nnz + 1)]
             expression = sympy.Add._from_args(
                 [sympy.Mul._from_args((sympy.RealNumber(da[i]), constraint_variables[i - 1])) for i in
@@ -264,7 +262,7 @@ class Objective(interface.Objective):
 
     def _get_expression(self):
         if self.problem is not None:
-            variables = self.problem.variables
+            variables = self.problem._variables
 
             def term_generator():
                 for index in range(1, glp_get_num_cols(self.problem.problem) + 1):
