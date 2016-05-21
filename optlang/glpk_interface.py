@@ -477,6 +477,7 @@ class Model(interface.Model):
         glp_scale_prob(self.problem, GLP_SF_AUTO)
 
     def __getstate__(self):
+        self.update()
         glpk_repr = self._glpk_representation()
         repr_dict = {'glpk_repr': glpk_repr, 'glpk_status': self.status, 'config': self.configuration}
         return repr_dict

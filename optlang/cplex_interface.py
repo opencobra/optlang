@@ -579,6 +579,7 @@ class Model(interface.Model):
         self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
+        self.update()
         tmp_file = tempfile.mktemp(suffix=".sav")
         self.problem.write(tmp_file)
         cplex_binary = open(tmp_file, 'rb').read()
