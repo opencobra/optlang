@@ -4,7 +4,7 @@
 [![Coverage Status](https://img.shields.io/codecov/c/github/biosustain/optlang/master.svg)](https://codecov.io/gh/biosustain/optlang/branch/master)
 [![Code Climate](https://codeclimate.com/github/biosustain/optlang/badges/gpa.svg)](https://codeclimate.com/github/biosustain/optlang)
 [![Documentation Status](https://readthedocs.org/projects/optlang/badge/?version=latest)](https://readthedocs.org/projects/optlang/?badge=latest)
-
+[![DOI](https://zenodo.org/badge/5031/biosustain/optlang.svg)](https://zenodo.org/badge/latestdoi/5031/biosustain/optlang)
 
 
 optlang

@@ -1,5 +1,5 @@
 |PyPI| |License| |Travis| |Coverage Status| |Code Climate|
-|Documentation Status|
+|Documentation Status| |DOI|
 
 optlang
 =======
@@ -138,3 +138,5 @@ Requirements
    :target: https://codeclimate.com/github/biosustain/optlang
 .. |Documentation Status| image:: https://readthedocs.org/projects/optlang/badge/?version=latest
    :target: https://readthedocs.org/projects/optlang/?badge=latest
+.. |DOI| image:: https://zenodo.org/badge/5031/biosustain/optlang.svg
+   :target: https://zenodo.org/badge/latestdoi/5031/biosustain/optlang
