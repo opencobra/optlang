@@ -19,12 +19,11 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
 import collections
-import six
-from six.moves import StringIO
-
+import logging
 import sys
 
-import logging
+import six
+from six.moves import StringIO
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +35,7 @@ from sympy.core.singleton import S
 import cplex
 from optlang import interface
 from optlang.util import inheritdocstring
+
 Zero = S.Zero
 One = S.One
 
@@ -93,7 +93,7 @@ _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.num_best: interface.NUMERIC,
     cplex.Cplex.solution.status.optimal: interface.OPTIMAL,
     cplex.Cplex.solution.status.optimal_face_unbounded: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_infeasible: interface.SPECIAL,
+    cplex.Cplex.solution.status.optimal_infeasible: interface.INFEASIBLE,
     cplex.Cplex.solution.status.optimal_populated: interface.SPECIAL,
     cplex.Cplex.solution.status.optimal_populated_tolerance: interface.SPECIAL,
     cplex.Cplex.solution.status.optimal_relaxed_inf: interface.SPECIAL,
@@ -104,7 +104,7 @@ _CPLEX_STATUS_TO_STATUS = {
     cplex.Cplex.solution.status.solution_limit: interface.SPECIAL,
     cplex.Cplex.solution.status.unbounded: interface.UNBOUNDED,
     cplex.Cplex.solution.status.relaxation_unbounded: interface.UNBOUNDED,
-    #102: interface.OPTIMAL # The same as cplex.Cplex.solution.status.optimal_tolerance
+    # 102: interface.OPTIMAL # The same as cplex.Cplex.solution.status.optimal_tolerance
 }
 
 _LP_METHODS = ["auto", "primal", "dual", "network", "barrier", "sifting", "concurrent"]
@@ -114,7 +114,6 @@ _SOLUTION_TARGETS = ("auto", "convex", "local", "global")
 _QP_METHODS = ("auto", "primal", "dual", "network", "barrier")
 
 _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
-# FIXME: what about 'S': 'semi_continuous', 'N': 'semi_integer'
 
 _VTYPE_TO_CPLEX_VTYPE = dict(
     [(val, key) for key, val in six.iteritems(_CPLEX_VTYPE_TO_VTYPE)]
@@ -124,7 +123,6 @@ _VTYPE_TO_CPLEX_VTYPE = dict(
 def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
     """Helper function used by Constraint and Model"""
     if lb is None and ub is None:
-        # FIXME: use cplex.infinity
         raise Exception("Free constraint ...")
     elif lb is None:
         sense = 'L'
@@ -149,21 +147,8 @@ def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
 
 @six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
-
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
-
-    @interface.Variable.lb.setter
-    def lb(self, value):
-        super(Variable, self.__class__).lb.fset(self, value)
-        if self.problem is not None:
-            self.problem.problem.variables.set_lower_bounds(self.name, value)
-
-    @interface.Variable.ub.setter
-    def ub(self, value):
-        super(Variable, self.__class__).ub.fset(self, value)
-        if self.problem is not None:
-            self.problem.problem.variables.set_upper_bounds(self.name, value)
 
     @interface.Variable.type.setter
     def type(self, value):
@@ -177,7 +162,6 @@ class Variable(interface.Variable):
             self.problem.problem.variables.set_types(self.name, cplex_kind)
         super(Variable, self).__setattr__('type', value)
 
-
     @property
     def primal(self):
         if self.problem:
@@ -189,7 +173,7 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         if self.problem is not None:
-            if self.problem.problem.get_problem_type() != self.problem.problem.problem_type.LP: # cplex cannot determine reduced costs for MILP problems ...
+            if self.problem.problem.get_problem_type() != self.problem.problem.problem_type.LP:  # cplex cannot determine reduced costs for MILP problems ...
                 return None
             return self.problem.problem.solution.get_reduced_costs(self.name)
         else:
@@ -204,7 +188,6 @@ class Variable(interface.Variable):
 
 @six.add_metaclass(inheritdocstring)
 class Constraint(interface.Constraint):
-
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
     def __init__(self, expression, *args, **kwargs):
@@ -215,21 +198,22 @@ class Constraint(interface.Constraint):
                 (self.lb, self.ub, self)
             )
 
-
-    # TODO: get expression from solver structure
     def _get_expression(self):
         if self.problem is not None:
             cplex_problem = self.problem.problem
             cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
-            variables = self.problem.variables
-            expression = sympy.Add._from_args([sympy.Mul._from_args((sympy.RealNumber(cplex_row.val[i]), variables[ind])) for i, ind in enumerate(cplex_row.ind)])
+            variables = self.problem._variables
+            expression = sympy.Add._from_args(
+                [sympy.Mul._from_args((sympy.RealNumber(cplex_row.val[i]), variables[ind])) for i, ind in
+                 enumerate(cplex_row.ind)])
             self._expression = expression
         return self._expression
 
     def _set_coefficients_low_level(self, variables_coefficients_dict):
         self_name = self.name
         if self.is_Linear:
-            cplex_format = [(self_name, variable.name, coefficient) for variable, coefficient in six.iteritems(variables_coefficients_dict)]
+            cplex_format = [(self_name, variable.name, coefficient) for variable, coefficient in
+                            six.iteritems(variables_coefficients_dict)]
             self.problem.problem.linear_constraints.set_coefficients(cplex_format)
         else:
             raise Exception('_set_coefficients_low_level works only with linear constraints in the cplex interface.')
@@ -251,7 +235,7 @@ class Constraint(interface.Constraint):
     def primal(self):
         if self.problem is not None:
             primal_from_solver = self.problem.problem.solution.get_activity_levels(self.name)
-            #return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
+            # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
             return primal_from_solver
         else:
             return None
@@ -265,15 +249,16 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.name.setter
     def name(self, value):
+        old_name = getattr(self, 'name', None)
+        self._name = value
         if getattr(self, 'problem', None) is not None:
             if self.indicator_variable is not None:
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name"
                 )
             else:
-                # TODO: the following needs to deal with quadratic constraints
-                self.problem.problem.linear_constraints.set_names(self.name, value)
-        self._name = value
+                self.problem.problem.linear_constraints.set_names(old_name, value)
+            self.problem.constraints.update_key(old_name)
 
     @interface.Constraint.lb.setter
     def lb(self, value):
@@ -346,7 +331,6 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-
     def __init__(self, lp_method='primal', presolve="auto", verbosity=0, timeout=None,
                  solution_target="auto", qp_method="primal", *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
@@ -381,7 +365,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             elif value is False or value == "auto":
                 presolve.set(presolve.values.off)
             else:
-                raise ValueError(str(value)+" is not a valid presolve parameter. Must be True, False or 'auto'.")
+                raise ValueError(str(value) + " is not a valid presolve parameter. Must be True, False or 'auto'.")
 
     @property
     def presolve(self):
@@ -489,7 +473,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 try:
                     solution_target = _SOLUTION_TARGETS.index(value)
                 except ValueError:
-                    raise ValueError("%s is not a valid solution target. Choose between %s" % (value, str(_SOLUTION_TARGETS)))
+                    raise ValueError(
+                        "%s is not a valid solution target. Choose between %s" % (value, str(_SOLUTION_TARGETS)))
                 self.problem.problem.parameters.solutiontarget.set(solution_target)
         self._solution_target = self.solution_target
 
@@ -521,17 +506,17 @@ class Model(interface.Model):
             zipped_var_args = zip(self.problem.variables.get_names(),
                                   self.problem.variables.get_lower_bounds(),
                                   self.problem.variables.get_upper_bounds()
-            )
+                                  )
             for name, lb, ub in zipped_var_args:
                 var = Variable(name, lb=lb, ub=ub, problem=self)
-                super(Model, self)._add_variable(var)  # This avoids adding the variable to the glpk problem
+                super(Model, self)._add_variables([var])  # This avoids adding the variable to the glpk problem
             zipped_constr_args = zip(self.problem.linear_constraints.get_names(),
                                      self.problem.linear_constraints.get_rows(),
                                      self.problem.linear_constraints.get_senses(),
                                      self.problem.linear_constraints.get_rhs()
 
-            )
-            variables = self.variables
+                                     )
+            variables = self._variables
             for name, row, sense, rhs in zipped_constr_args:
                 constraint_variables = [variables[i - 1] for i in row.ind]
                 lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])
@@ -560,8 +545,8 @@ class Model(interface.Model):
                     except KeyError:
                         self._variables_to_constraints_mapping[variable.name] = set([name])
 
-                super(Model, self)._add_constraint(
-                    constr,
+                super(Model, self)._add_constraints(
+                    [constr],
                     sloppy=True
                 )
             try:
@@ -570,8 +555,9 @@ class Model(interface.Model):
                 if 'CPLEX Error  1219:' not in str(e):
                     raise e
             else:
-                linear_expression = _unevaluated_Add(*[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
-                                       enumerate(self.problem.objective.get_linear()) if coeff != 0.])
+                linear_expression = _unevaluated_Add(
+                    *[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
+                      enumerate(self.problem.objective.get_linear()) if coeff != 0.])
 
                 try:
                     quadratic = self.problem.objective.get_quadratic()
@@ -583,7 +569,8 @@ class Model(interface.Model):
                 self._objective = Objective(
                     linear_expression + quadratic_expression,
                     problem=self,
-                    direction={self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
+                    direction=
+                    {self.problem.objective.sense.minimize: 'min', self.problem.objective.sense.maximize: 'max'}[
                         self.problem.objective.get_sense()],
                     name=objective_name
                 )
@@ -592,6 +579,7 @@ class Model(interface.Model):
         self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
+        self.update()
         tmp_file = tempfile.mktemp(suffix=".sav")
         self.problem.write(tmp_file)
         cplex_binary = open(tmp_file, 'rb').read()
@@ -627,7 +615,7 @@ class Model(interface.Model):
                         raise e
             if self.objective.is_Quadratic:
                 if self._objective.expression.is_Mul:
-                    args = (self._objective.expression, )
+                    args = (self._objective.expression,)
                 else:
                     args = self._objective.expression.args
                 for arg in args:
@@ -650,7 +638,7 @@ class Model(interface.Model):
             if expression.is_Symbol:
                 self.problem.objective.set_linear(expression.name, 1.)
             if expression.is_Mul:
-                terms = (expression, )
+                terms = (expression,)
             elif expression.is_Add:
                 terms = expression.args
             else:
@@ -665,7 +653,7 @@ class Model(interface.Model):
                 assert len(vars) <= 2
                 if len(vars) == 2:
                     if vars[0].name == vars[1].name:
-                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 2*float(coeff))
+                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 2 * float(coeff))
                     else:
                         self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, float(coeff))
                 else:
@@ -673,7 +661,8 @@ class Model(interface.Model):
                         self.problem.objective.set_linear(vars[0].name, float(coeff))
                     elif vars[0].is_Pow:
                         var = vars[0].args[0]
-                        self.problem.objective.set_quadratic_coefficients(var.name, var.name, 2*float(coeff))  # Multiply by 2 because it's on diagonal
+                        self.problem.objective.set_quadratic_coefficients(var.name, var.name, 2 * float(
+                            coeff))  # Multiply by 2 because it's on diagonal
 
             self.problem.objective.set_sense(
                 {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
@@ -724,84 +713,99 @@ class Model(interface.Model):
     def _optimize(self):
         self.problem.solve()
         cplex_status = self.problem.solution.get_status()
+        self._original_status = self.problem.solution.get_status_string()
         self._status = _CPLEX_STATUS_TO_STATUS[cplex_status]
         return self.status
 
-    @staticmethod
-    def _cplex_sense_to_sympy(sense, translation=None):
-        if not translation: translation = {'E': '==', 'L': '<', 'G': '>'}
-        try:
-            return translation[sense]
-        except KeyError as e:
-            raise Exception(' '.join(('Sense', sense, 'is not a proper relational operator, e.g. >, <, == etc.')))
+    def _set_variable_bounds_on_problem(self, var_lb, var_ub):
+        lb = [(variable.name, value) for variable, value in var_lb]
+        if len(lb) > 0:
+            self.problem.variables.set_lower_bounds(lb)
+        ub = [(variable.name, value) for variable, value in var_ub]
+        if len(ub) > 0:
+            self.problem.variables.set_upper_bounds(ub)
 
-    def _add_variable(self, variable):
-        super(Model, self)._add_variable(variable)
-        if variable.lb is None:
-            lb = -cplex.infinity
+    def _add_variables(self, variables):
+        super(Model, self)._add_variables(variables)
+        lb, ub, vtype, names, coeff = list(), list(), list(), list(), list()
+        for variable in variables:
+            if variable.lb is None:
+                lb.append(-cplex.infinity)
+            else:
+                lb.append(variable.lb)
+            if variable.ub is None:
+                ub.append(cplex.infinity)
+            else:
+                ub.append(variable.ub)
+            vtype.append(_VTYPE_TO_CPLEX_VTYPE[variable.type])
+            names.append(variable.name)
+            coeff.append(0.)
+            variable.problem = self
+
+        if set(vtype) == set(['C']):  # this is needed because CPLEX will automatically set the problem_type to MILP if types are specified
+            self.problem.variables.add(coeff, lb=lb, ub=ub, names=names)
         else:
-            lb = variable.lb
-        if variable.ub is None:
-            ub = cplex.infinity
-        else:
-            ub = variable.ub
-        vtype = _VTYPE_TO_CPLEX_VTYPE[variable.type]
-        if vtype == 'C':  # this is needed because CPLEX will automatically set the problem_type to MILP if types are specified
-            self.problem.variables.add([0.], lb=[lb], ub=[ub], names=[variable.name])
-        else:
-            self.problem.variables.add([0.], lb=[lb], ub=[ub], types=[vtype], names=[variable.name])
-        variable.problem = self
-        return variable
+            self.problem.variables.add(coeff, lb=lb, ub=ub, types=vtype, names=names)
 
     def _remove_variables(self, variables):
         # Not calling parent method to avoid expensive variable removal from sympy expressions
-        self.objective._expression = self.objective.expression.xreplace({var: 0 for var in variables})
+        if self.objective is not None:
+            self.objective._expression = self.objective.expression.xreplace({var: 0 for var in variables})
         self.problem.variables.delete([variable.name for variable in variables])
         for variable in variables:
             del self._variables_to_constraints_mapping[variable.name]
             variable.problem = None
-            del self.variables[variable.name]
+            del self._variables[variable.name]
 
-    def _add_constraint(self, constraint, sloppy=False):
-        super(Model, self)._add_constraint(constraint, sloppy=sloppy)
-        constraint._problem = None
-        if constraint.is_Linear:
-            if constraint.expression.is_Add:
-                coeff_dict = constraint.expression.as_coefficients_dict()
-                indices = [var.name for var in coeff_dict.keys()]
-                values = [float(val) for val in coeff_dict.values()]
-            elif constraint.expression.is_Mul:
-                variable = list(constraint.expression.atoms(sympy.Symbol))[0]
-                indices = [variable.name]
-                values = [float(constraint.expression.coeff(variable))]
-            elif constraint.expression.is_Atom and constraint.expression.is_Symbol:
-                indices = [constraint.expression.name]
-                values = [1.]
-            elif constraint.expression.is_Number:
-                indices = []
-                values = []
-            else:
-                raise ValueError('Something is fishy with constraint %s' % constraint)
+    def _add_constraints(self, constraints, sloppy=False):
+        super(Model, self)._add_constraints(constraints, sloppy=sloppy)
 
-            sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(constraint.lb, constraint.ub)
-            if constraint.indicator_variable is None:
-                self.problem.linear_constraints.add(
-                    lin_expr=[cplex.SparsePair(ind=indices, val=values)], senses=[sense], rhs=[rhs],
-                    range_values=[range_value], names=[constraint.name])
-            else:
-                if sense == 'R':
-                    raise ValueError('CPLEX does not support indicator constraints that have both an upper and lower bound.')
+        for constraint in constraints:
+            constraint._problem = None
+            linear_constraints = dict(lin_expr=[], senses=[], rhs=[], range_values=[], names=[])
+            if constraint.is_Linear:
+                if constraint.expression.is_Add:
+                    coeff_dict = constraint.expression.as_coefficients_dict()
+                    indices = [var.name for var in coeff_dict.keys()]
+                    values = [float(val) for val in coeff_dict.values()]
+                elif constraint.expression.is_Mul:
+                    variable = list(constraint.expression.atoms(sympy.Symbol))[0]
+                    indices = [variable.name]
+                    values = [float(constraint.expression.coeff(variable))]
+                elif constraint.expression.is_Atom and constraint.expression.is_Symbol:
+                    indices = [constraint.expression.name]
+                    values = [1.]
+                elif constraint.expression.is_Number:
+                    indices = []
+                    values = []
                 else:
-                    self.problem.indicator_constraints.add(
-                        lin_expr=cplex.SparsePair(ind=indices, val=values), sense=sense, rhs=rhs, name=constraint.name,
-                        indvar=constraint.indicator_variable.name, complemented=abs(constraint.active_when)-1)
-        # TODO: Implement quadratic constraints
-        elif constraint.is_Quadratic:
-            raise NotImplementedError('Quadratic constraints (like %s) are not supported yet.' % constraint)
-        else:
-            raise ValueError("CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
-        constraint.problem = self
-        return constraint
+                    raise ValueError('Something is fishy with constraint %s' % constraint)
+
+                sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(constraint.lb,
+                                                                                                   constraint.ub)
+                if constraint.indicator_variable is None:
+                    linear_constraints['lin_expr'].append(cplex.SparsePair(ind=indices, val=values))
+                    linear_constraints['senses'].append(sense)
+                    linear_constraints['rhs'].append(rhs)
+                    linear_constraints['range_values'].append(range_value)
+                    linear_constraints['names'].append(constraint.name)
+                else:
+                    if sense == 'R':
+                        raise ValueError(
+                            'CPLEX does not support indicator constraints that have both an upper and lower bound.')
+                    else:
+                        # Indicator constraints cannot be added in batch
+                        self.problem.indicator_constraints.add(
+                            lin_expr=cplex.SparsePair(ind=indices, val=values), sense=sense, rhs=rhs,
+                            name=constraint.name,
+                            indvar=constraint.indicator_variable.name, complemented=abs(constraint.active_when) - 1)
+            elif constraint.is_Quadratic:
+                raise NotImplementedError('Quadratic constraints (like %s) are not supported yet.' % constraint)
+            else:
+                raise ValueError(
+                    "CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
+            self.problem.linear_constraints.add(**linear_constraints)
+            constraint.problem = self
 
     def _remove_constraints(self, constraints):
         super(Model, self)._remove_constraints(constraints)
@@ -824,47 +828,9 @@ class Model(interface.Model):
         for i, sparse_pair in enumerate(quadratic):
             for j, val in zip(sparse_pair.ind, sparse_pair.val):
                 if i < j:
-                    terms.append(val*self.variables[i]*self.variables[j])
+                    terms.append(val * self._variables[i] * self._variables[j])
                 elif i == j:
-                    terms.append(0.5*val*self.variables[i]**2)
+                    terms.append(0.5 * val * self._variables[i] ** 2)
                 else:
                     pass  # Only look at upper triangle
         return _unevaluated_Add(*terms)
-
-
-if __name__ == '__main__':
-
-    from optlang.cplex_interface import Model, Variable, Constraint, Objective
-
-    x1 = Variable('x1', lb=0)
-    x2 = Variable('x2', lb=0)
-    x3 = Variable('x3', lb=0)
-    c1 = Constraint(x1 + x2 + x3, ub=100, name='c1')
-    c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600, name='c2')
-    c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300, name='c3')
-    obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
-    model = Model(name='Simple model')
-    model.objective = obj
-    model.add([c1, c2, c3])
-    print(model)
-    status = model.optimize()
-    print("status:", model.status)
-    print("objective value:", model.objective.value)
-
-    for var_name, var in model.variables.items():
-        print(var_name, "=", var.primal)
-
-
-        # from cplex import Cplex
-        # problem = Cplex()
-        # problem.read("../tests/data/model.lp")
-
-        # solver = Model(problem=problem)
-        # print solver
-        # solver.optimize()
-        # print solver.objective.value
-        # solver.add(z)
-        # solver.add(constr)
-        # # print solver
-        # print solver.optimize()
-        # print solver.objective

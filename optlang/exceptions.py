@@ -14,6 +14,11 @@
 # limitations under the License.
 
 
+class ContainerAlreadyContains(Exception):
+    def __init__(self, message):
+        super(ContainerAlreadyContains, self).__init__(message)
+
+
 class IndicatorConstraintsNotSupported(Exception):
     def __init__(self, message):
         super(IndicatorConstraintsNotSupported, self).__init__(message)

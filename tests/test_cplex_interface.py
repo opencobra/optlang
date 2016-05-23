@@ -72,9 +72,11 @@ try:
             var = model.variables[0]
             var.lb = 1
             self.assertEqual(var.lb, 1)
+            model.update()
             self.assertEqual(model.problem.variables.get_lower_bounds(var.name), 1)
             var.ub = 2
             self.assertEqual(var.ub, 2)
+            model.update()
             self.assertEqual(model.problem.variables.get_upper_bounds(var.name), 2)
 
     class ConstraintTestCase(unittest.TestCase):
@@ -279,15 +281,27 @@ try:
             constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
             constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
             constr3 = Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
+            constr4 = Constraint(77*x, lb=10, name='Mul_constraint')
+            constr5 = Constraint(x, ub=-10, name='Only_var_constraint')
+            constr6 = Constraint(3, ub=88., name='Number_constraint')
             self.model.add(constr1)
+            self.model.update()
             self.model.add(constr2)
+            self.model.update()
             self.model.add(constr3)
+            self.model.update()
+            self.model.add([constr4, constr5, constr6])
+            self.model.update()
             self.assertIn(constr1.name, self.model.constraints)
             self.assertIn(constr2.name, self.model.constraints)
             self.assertIn(constr3.name, self.model.constraints)
+            self.assertIn(constr4.name, self.model.constraints)
+            self.assertIn(constr5.name, self.model.constraints)
+            self.assertIn(constr6.name, self.model.constraints)
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test', 'y'), ('test', 'z'), ('test', 'x'))), [0.4, 66, 0.3])
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test2', 'y'), ('test2', 'x'))), [1., 2.333])
-            self.assertEqual(self.model.problem.linear_constraints.get_coefficients(((74, 'y'), (74, 'z'), (74, 'x'))), [1., 1., 2.333])
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Mul_constraint', 'x'), 77.)
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Only_var_constraint', 'x'), 1.)
 
         @unittest.skip
         def test_add_quadratic_constraints(self):
@@ -317,9 +331,11 @@ try:
             constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
             self.assertEqual(constr1.problem, None)
             self.model.add(constr1)
+            self.model.update()
             self.assertEqual(constr1.problem, self.model)
             self.assertIn(constr1, self.model.constraints)
             self.model.remove(constr1.name)
+            self.model.update()
             self.assertEqual(constr1.problem, None)
             self.assertNotIn(constr1, self.model.constraints)
 
@@ -328,7 +344,8 @@ try:
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=3, ub=3, type='integer')
             constraint = Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
-            self.assertRaises(ValueError, self.model.add, constraint)
+            self.model.add(constraint)
+            self.assertRaises(ValueError, self.model.update)
 
         def test_change_of_constraint_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -353,19 +370,31 @@ try:
             self.model.remove(constraint)
             self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
 
-        @nottest
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
             y = Variable('y', lb=-181133.3, ub=12000.)
             objective = Objective(0.3 * x + 0.4 * y, name='obj', direction='max')
             self.model.objective = objective
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-            self.assertIn(' obj: 0.4 y + 0.3 x', self.model.__str__().split("\n"))
+            for variable in self.model.variables:
+                coeff = self.model.problem.objective.get_linear(variable.name)
+                if variable.name == 'x':
+                    self.assertEqual(coeff, 0.3)
+                elif variable.name == 'y':
+                    self.assertEqual(coeff, 0.4)
+                else:
+                    self.assertEqual(coeff, 0.)
             z = Variable('z', lb=0.000003, ub=0.000003, type='continuous')
             objective += 77. * z
-            print(objective)
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-            self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
+            for variable in self.model.variables:
+                coeff = self.model.problem.objective.get_linear(variable.name)
+                if variable.name == 'x':
+                    self.assertEqual(coeff, 0.3)
+                elif variable.name == 'y':
+                    self.assertEqual(coeff, 0.4)
+                elif variable.name == 'z':
+                    self.assertEqual(coeff, 77.)
+                else:
+                    self.assertEqual(coeff, 0.)
 
         def test_timeout(self):
             self.model.configuration.timeout = 0
@@ -452,6 +481,13 @@ try:
             self.assertAlmostEqual(self.x1.primal, 0.5)
             self.assertAlmostEqual(self.x2.primal, 0.5)
 
+            obj_2 = Objective(self.x1, direction="min")
+            model.objective = obj_2
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0.0)
+            self.assertAlmostEqual(self.x1.primal, 0.0)
+            self.assertGreaterEqual(self.x2.primal, 1.0)
+
         def test_non_convex_obj(self):
             model = self.model
             obj = Objective(self.x1 * self.x2, direction="min")
@@ -466,7 +502,13 @@ try:
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 0)
 
-        @unittest.skip
+            obj_2 = Objective(self.x1, direction="min")
+            model.objective = obj_2
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0.0)
+            self.assertAlmostEqual(self.x1.primal, 0.0)
+            self.assertGreaterEqual(self.x2.primal, 1.0)
+
         def test_qp_convex(self):
             problem = cplex.Cplex()
             problem.read(CONVEX_QP_PATH)

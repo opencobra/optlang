@@ -3,6 +3,7 @@
 
 from unittest import TestCase
 
+from optlang.exceptions import ContainerAlreadyContains
 from optlang.interface import Model, Variable, Constraint, Objective
 
 
@@ -16,7 +17,7 @@ class TestSolver(TestCase):
         self.model.add(x)
         self.model.add(y)
         self.model.add(constr)
-        self.model.add(obj)
+        self.model.objective = obj
 
     def test_read_only_attributes(self):
         self.assertRaises(AttributeError, setattr, self.model, 'variables', 'Foo')
@@ -45,11 +46,57 @@ class TestSolver(TestCase):
 
     def test_add_variable_twice_raises(self):
         var = Variable('x')
-        self.assertRaises(Exception, self.model.add, var)
+        self.model.add(var)
+        self.assertRaises(ContainerAlreadyContains, self.model.update)
+
+    def test_remove_add_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        self.model.update()
+
+    def test_remove_add_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        self.model.update()
+
+    def test_remove_add_remove_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        # self.assertRaises(ContainerAlreadyContains, self.model.remove, var)
+
+    def test_add_existing_variable(self):
+        var = self.model.variables[0]
+        self.model.add(var)
+        self.assertRaises(Exception, self.model.update)
 
     def test_remove_constraint(self):
         self.model.remove('constr1')
         self.assertEqual(list(self.model.constraints), [])
+
+    def test_add_remove_constraint(self):
+        c = Constraint(self.model.variables.x + self.model.variables.y, lb=10)
+        self.model.add(c)
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1'], c])
+        self.model.remove(c)
+        self.model.update()
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1']])
+
+    def test_add_remove_collection(self):
+        c = Constraint(self.model.variables.x + self.model.variables.y, lb=10)
+        c2 = Constraint(3.* self.model.variables.x + self.model.variables.y, lb=10)
+        self.model.add([c, c2])
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1'], c, c2])
+        self.model.remove([c, 'constr1', c2])
+        self.assertEqual(list(self.model.constraints), [])
+
+    def test_removing_objective_raises(self):
+        self.assertRaises(TypeError, self.model.remove, self.model.objective)
+
+    def test_removing_crap_raises(self):
+        self.assertRaises(TypeError, self.model.remove, dict)
 
     def test_remove_variable_str(self):
         var = self.model.variables['y']

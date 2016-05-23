@@ -1,4 +1,5 @@
-|Build Status| |Coverage Status| |PyPI version| |Documentation Status|
+|PyPI| |License| |Travis| |Coverage Status| |Code Climate|
+|Documentation Status|
 
 optlang
 =======
@@ -112,6 +113,9 @@ Future outlook
    `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
    etc.)
 
+The optlang `trello board <https://trello.com/b/aiwfbVKO/optlang>`__
+also provides a good overview of the project's roadmap.
+
 Requirements
 ~~~~~~~~~~~~
 
@@ -122,11 +126,15 @@ Requirements
 -  Models should be pickable
 -  Common solver configuration interface (presolver, MILP gap, etc.)
 
-.. |Build Status| image:: https://travis-ci.org/biosustain/optlang.png?branch=master
+.. |PyPI| image:: https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000
+   :target: https://pypi.python.org/pypi/optlang
+.. |License| image:: http://img.shields.io/badge/license-APACHE2-blue.svg
+   :target: http://img.shields.io/badge/license-APACHE2-blue.svg
+.. |Travis| image:: https://img.shields.io/travis/biosustain/optlang/master.svg
    :target: https://travis-ci.org/biosustain/optlang
-.. |Coverage Status| image:: https://coveralls.io/repos/biosustain/optlang/badge.png?branch=master
-   :target: https://coveralls.io/r/biosustain/optlang?branch=master
-.. |PyPI version| image:: https://badge.fury.io/py/optlang.svg
-   :target: http://badge.fury.io/py/optlang
+.. |Coverage Status| image:: https://img.shields.io/codecov/c/github/biosustain/optlang/master.svg
+   :target: https://codecov.io/gh/biosustain/optlang/branch/master
+.. |Code Climate| image:: https://codeclimate.com/github/biosustain/optlang/badges/gpa.svg
+   :target: https://codeclimate.com/github/biosustain/optlang
 .. |Documentation Status| image:: https://readthedocs.org/projects/optlang/badge/?version=latest
    :target: https://readthedocs.org/projects/optlang/?badge=latest

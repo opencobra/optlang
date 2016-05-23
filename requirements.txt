@@ -1,2 +1,5 @@
-sympy==0.7.5
-six==1.9.0
+swiglpk>=1.2.14
+sympy>=1.0.0
+six
+rednose
+coverage
