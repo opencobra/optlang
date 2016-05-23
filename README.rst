@@ -113,6 +113,9 @@ Future outlook
    `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
    etc.)
 
+The optlang `trello board <https://trello.com/b/aiwfbVKO/optlang>`__
+also provides a good overview of the project's roadmap.
+
 Requirements
 ~~~~~~~~~~~~
 

@@ -84,6 +84,8 @@ Formulating and solving the problem is straightforward (example taken from [GLPK
 * Interface to [NEOS][neos_url] optimization server (for testing purposes and solver evaluation)
 * Automatically handle fractional and absolute value problems when dealing with LP/MILP/QP solvers (like GLPK, [CPLEX][cplex_url] etc.)
 
+The optlang [trello board](https://trello.com/b/aiwfbVKO/optlang) also provides a good overview of the project's roadmap.
+
 ### Requirements
 
 * Models should always be serializable to common problem formulation languages ([CPLEX][cplex_url], [GAMS][gams_url], etc.)
