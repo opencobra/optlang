@@ -43,8 +43,8 @@ class Container(object):
     def __contains__(self, item):
         if item in self._dict:
             return True
-        elif hasattr(item, "name") and item in self._object_list:
-            return True
+        elif hasattr(item, "name") and item.name in self._dict:
+            return item is self._dict[item.name]
         return False
 
     def __iter__(self):
