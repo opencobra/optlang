@@ -40,6 +40,9 @@ before_script:
 script: nosetests
 after_success:
 - codecov
+notifications:
+  slack:
+    secure: s8Dj0MFreNwZ3Zhb0+5yJiHPL33JsxLjmoRo8f0ohLdD15L//E4VjkCsYkNEcLzid6HarEL/1JSmzAuGl40fCdLqTAoDRy01shT1zmfWQPXQlaALh5f8ExBAlyDHxKhd/B2SytYu6uhe0WOuxu/oo4c33a7pKhuV1piNcevPZew=
 before_deploy:
 - pip install twine
 - python setup.py sdist
@@ -47,21 +50,21 @@ env:
   global:
   - secure: PBcwrLg4ZwVi9Gw25Q2adNd0uK+NCqFSiYl+ZuumkEXs4NQBbSXVd719wrWKUFdIqBy+h9ETo4Vsz/QsTZzI2mSG4zqTkm+oUxMW1tJxYEeKZvCo7GfZ883VlKFgdqvh6iouEvHSjfGbwc5cUp98CbjgI5ni01vGpDQh2hgokkI=
 deploy:
-  - provider: releases
-    api_key:
-      secure: u4aJv+5YoH3gjJpyiVoq33SqKIUtx8LWPp15pIh8hKHmUgJNyjGm7ELXOeczfQ5W7ZpnWj+ogewaes2oA0NLxBB1/MBPL7kr77hmzp+XhZomh73DzFKegbpBTgqpioBRxvPlq3HYNIWqrLkeg/HYlBW1WM6mKifFUwqbIaL+++4=
-    file_glob: true
-    file: 'dist/optlang*.whl'
-    skip_cleanup: true
-    on:
-      branch: master
-      tags: true
-      repo: biosustain/optlang
-  - provider: pypi
-    user: Nikolaus.Sonnenschein
-    password:
-      secure: Gn23MUvzP1DPJXxRXUOXGBJjyMamawxey5ByrOd+JT90roljHKSk8v1wdBMH7+s1DB/ygUJqB2Zy0cBC3mr0waY6HmxKpXhddgzQzG56Eua/npTxpz58Y8xfSYF+5QqS3gcyBrYEXmeHWuEURERy0b7uYKMx/QcHAHYhTaVy4zE=
-    on:
-      branch: master
-      tags: true
-      repo: biosustain/optlang
+- provider: releases
+  api_key:
+    secure: u4aJv+5YoH3gjJpyiVoq33SqKIUtx8LWPp15pIh8hKHmUgJNyjGm7ELXOeczfQ5W7ZpnWj+ogewaes2oA0NLxBB1/MBPL7kr77hmzp+XhZomh73DzFKegbpBTgqpioBRxvPlq3HYNIWqrLkeg/HYlBW1WM6mKifFUwqbIaL+++4=
+  file_glob: true
+  file: dist/optlang*.whl
+  skip_cleanup: true
+  on:
+    branch: master
+    tags: true
+    repo: biosustain/optlang
+- provider: pypi
+  user: Nikolaus.Sonnenschein
+  password:
+    secure: Gn23MUvzP1DPJXxRXUOXGBJjyMamawxey5ByrOd+JT90roljHKSk8v1wdBMH7+s1DB/ygUJqB2Zy0cBC3mr0waY6HmxKpXhddgzQzG56Eua/npTxpz58Y8xfSYF+5QqS3gcyBrYEXmeHWuEURERy0b7uYKMx/QcHAHYhTaVy4zE=
+  on:
+    branch: master
+    tags: true
+    repo: biosustain/optlang
