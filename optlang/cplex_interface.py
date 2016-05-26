@@ -181,8 +181,8 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
-        if getattr(self, "model", None) is not None:
-            self.model.problem.variables.set_names(self.name, value)
+        if getattr(self, "problem", None) is not None:
+            self.problem.problem.variables.set_names(self.name, value)
         super(Variable, Variable).name.fset(self, value)
 
 
