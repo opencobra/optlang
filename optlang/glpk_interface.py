@@ -426,8 +426,12 @@ class Model(interface.Model):
                 da = doubleArray(col_num + 1)
                 nnz = glp_get_mat_row(self.problem, j, ia, da)
                 constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
-                lhs = _unevaluated_Add(*[da[i] * constraint_variables[i - 1]
-                                         for i in range(1, nnz + 1)])
+
+                # Since constraint expressions are lazily retrieved from the solver they don't have to be built here
+                # lhs = _unevaluated_Add(*[da[i] * constraint_variables[i - 1]
+                #                         for i in range(1, nnz + 1)])
+                lhs = 0
+
                 glpk_row_type = glp_get_row_type(self.problem, j)
                 if glpk_row_type == GLP_FX:
                     row_lb = glp_get_row_lb(self.problem, j)
@@ -462,7 +466,9 @@ class Model(interface.Model):
                         self._variables_to_constraints_mapping[variable.name] = set([constraint_id])
 
                 super(Model, self)._add_constraints(
-                    [Constraint(lhs, lb=row_lb, ub=row_ub, name=constraint_id, problem=self)], sloppy=True)
+                    [Constraint(lhs, lb=row_lb, ub=row_ub, name=constraint_id, problem=self, sloppy=True)],
+                    sloppy=True
+                )
 
             term_generator = (
                 (glp_get_obj_coef(self.problem, index), variables[index - 1])
