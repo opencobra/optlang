@@ -796,9 +796,8 @@ class Model(object):
     def objective(self, value):
         self.update()
         try:
-            for atom in value.expression.atoms(sympy.Symbol):
+            for atom in sorted(value.expression.atoms(Variable), key=lambda v: v.name):
                 if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
-                    print(atom, atom.problem)
                     self._pending_modifications.add_var.append(atom)
             self.update()
         except AttributeError as e:
