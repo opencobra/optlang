@@ -736,6 +736,7 @@ class Model(object):
     @classmethod
     def clone(cls, model):
         """Clone another model (for example from another solver interface)."""
+        model.update()
         interface = sys.modules[cls.__module__]
         new_model = cls()
         for variable in model.variables:
