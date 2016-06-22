@@ -106,8 +106,7 @@ class Variable(interface.Variable):
         glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
         interface.Variable.type.fset(self, value)
 
-    @property
-    def primal(self):
+    def _get_primal(self):
         if self.problem:
             if self.type == "continuous":
                 primal_from_solver = glp_get_col_prim(self.problem.problem, self.index)

@@ -162,8 +162,7 @@ class Variable(interface.Variable):
             self.problem.problem.variables.set_types(self.name, cplex_kind)
         super(Variable, self).__setattr__('type', value)
 
-    @property
-    def primal(self):
+    def _get_primal(self):
         if self.problem:
             primal_from_solver = self.problem.problem.solution.get_values(self.name)
             return self._round_primal_to_bounds(primal_from_solver)
