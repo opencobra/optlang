@@ -807,16 +807,16 @@ class Model(object):
     @objective.setter
     def objective(self, value):
         self.update()
-        try:
-            for atom in sorted(value.expression.atoms(Variable), key=lambda v: v.name):
-                if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
-                    self._pending_modifications.add_var.append(atom)
-            self.update()
-        except AttributeError as e:
-            if isinstance(value.expression, six.types.FunctionType) or isinstance(value.expression, float):
-                pass
-            else:
-                raise AttributeError(e)
+        # try:  # Is this except ever needed?
+        for atom in sorted(value.expression.atoms(Variable), key=lambda v: v.name):
+            if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
+                self._pending_modifications.add_var.append(atom)
+        self.update()
+        # except AttributeError as e:
+        #     if isinstance(value.expression, six.types.FunctionType) or isinstance(value.expression, float):
+        #         pass
+        #     else:
+        #         raise AttributeError(e)
         if self._objective is not None:
             self._objective.problem = None
         self._objective = value
