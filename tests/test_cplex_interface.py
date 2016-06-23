@@ -25,9 +25,19 @@ try:
     class VariableTestCase(unittest.TestCase):
         def setUp(self):
             self.var = Variable('test')
+            self.model = Model()
 
         def test_set_wrong_type_raises(self):
             self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+            self.model.add(self.var)
+            self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
+            self.var.type = "integer"
+            self.assertEqual(self.var.type, "integer")
+
+        def test_change_name(self):
+            self.model.add(self.var)
+            self.var.name = "test_2"
+            self.assertEqual(self.var.name, "test_2")
 
         def test_get_primal(self):
             self.assertEqual(self.var.primal, None)
@@ -52,6 +62,10 @@ try:
             print([var.dual for var in model.variables])
             #for i, j in zip([var.dual for var in model.variables], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.022916186593776235, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, -0.007638728864592075, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.005092485909728057, 0.0, 0.0, 0.0, 0.0, -0.005092485909728046, 0.0, 0.0, -0.005092485909728045, 0.0, 0.0, 0.0, -0.0611098309167366, -0.005092485909728045, 0.0, -0.003819364432296033, -0.00509248590972805, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03946676580039239, 0.0, 0.0, -0.005092485909728042, -0.0, -0.0012731214774320113, 0.0, -0.0916647463751049, 0.0, 0.0, 0.0, -0.0, -0.04583237318755246, 0.0, 0.0, -0.0916647463751049, -0.005092485909728045, -0.07002168125876067, 0.0, -0.06874855978132867, -0.0012731214774320113, 0.0, 0.0, 0.0, -0.001273121477432006, -0.0038193644322960392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.040739887277824405, -0.04583237318755245, -0.0012731214774320163, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, 0.0, -0.04837861614241648]):
             #    self.assertAlmostEqual(i, j)
+            self.var.type = "integer"
+            model.add(self.var)
+            model.optimize()
+            self.assertTrue(self.var.dual is None)  # Cannot find reduced cost for MILP
 
         def test_setting_lower_bound_higher_than_upper_bound_raises(self):
             problem = cplex.Cplex()
@@ -137,6 +151,14 @@ try:
             self.assertEqual(constraint.lb, value)
             self.assertEqual(self.model.problem.linear_constraints.get_senses(constraint.name), "E")
             self.assertEqual(self.model.problem.linear_constraints.get_range_values(constraint.name), 0)
+
+        def test_remove_constraint(self):
+            constraint = self.model.constraints[0]
+            expr = constraint.expression
+            self.model.remove(constraint)
+            self.model.update()
+            self.assertTrue(constraint.problem is None)
+            self.assertEqual(expr, constraint._expression)
 
 
     class ObjectiveTestCase(unittest.TestCase):
@@ -463,7 +485,13 @@ try:
 
             self.assertRaises(ValueError, setattr, self.configuration, "solution_target", "weird_stuff")
 
+        def test_verbosity(self):
+            for i in range(4):
+                self.model.configuration.verbosity = i
+                self.assertEqual(self.model.configuration.verbosity, i)
+            self.assertRaises(ValueError, setattr, self.configuration, "verbosity", 8)
 
+    @unittest.skip
     class QuadraticProgrammingTestCase(unittest.TestCase):
         def setUp(self):
             self.model = Model()
