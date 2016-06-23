@@ -5,6 +5,7 @@ from unittest import TestCase
 
 from optlang.exceptions import ContainerAlreadyContains
 from optlang.interface import Model, Variable, Constraint, Objective
+import sys
 
 
 class TestSolver(TestCase):
@@ -155,7 +156,20 @@ class TestSolver(TestCase):
         x.lb = -10
         self.assertNotEqual(self.model.variables['x'].lb, model.variables['x'].lb)
 
+    def test_primal_and_dual_values(self):
+        model = self.model
+        self.assertTrue(all([primal is None for primal in model.primal_values.values()]))
+        self.assertTrue(all([constraint_primal is None for constraint_primal in model.dual_values.values()]))
+        self.assertTrue(all([sp is None for sp in model.shadow_prices.values()]))
+        self.assertTrue(all([rc is None for rc in model.reduced_costs.values()]))
+
+    def test_interface(self):
+        self.assertEqual(self.model.interface, sys.modules["optlang.interface"])
+
+
 class TestVariable(TestCase):
+    def setUp(self):
+        self.x = Variable("x")
 
     def test_set_wrong_bounds_on_binary_raises(self):
         self.assertRaises(ValueError, Variable, 'x', lb=-33, ub=0.3, type='binary')
@@ -168,3 +182,35 @@ class TestVariable(TestCase):
         x = Variable('x', type='integer')
         self.assertRaises(ValueError, setattr, x, 'lb', -3.3)
         self.assertRaises(ValueError, setattr, x, 'ub', 3.3)
+
+    def test_primal_and_dual(self):
+        x = self.x
+        self.assertTrue(x.primal is None)
+        self.assertTrue(x.dual is None)
+
+    def test_change_name(self):
+        x = self.x
+        x.name = "xx"
+        self.assertEqual(x.name, "xx")
+
+
+class TestConstraint(TestCase):
+    def setUp(self):
+        self.a = Variable("a")
+        self.b = Variable("b")
+        self.c = Variable("c")
+        self.d = Variable("d")
+
+    def test_is_linear_and_quadratic(self):
+        c1 = Constraint(self.a)
+        self.assertTrue(c1.is_Linear)
+        self.assertFalse(c1.is_Quadratic)
+        c2 = Constraint(self.a * self.b ** self.c)
+        self.assertFalse(c2.is_Linear)
+        self.assertFalse(c2.is_Quadratic)
+        c3 = Constraint(self.a * self.b * self.c + self.d)
+        self.assertFalse(c3.is_Linear)
+        self.assertFalse(c3.is_Quadratic)
+        c4 = Constraint(self.a + self.b ** 3)
+        self.assertFalse(c4.is_Linear)
+        self.assertFalse(c4.is_Quadratic)
