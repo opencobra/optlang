@@ -107,16 +107,13 @@ class Variable(interface.Variable):
         interface.Variable.type.fset(self, value)
 
     def _get_primal(self):
-        if self.problem:
-            if self.type == "continuous":
-                primal_from_solver = glp_get_col_prim(self.problem.problem, self.index)
-            elif self.type in ["binary", "integer"]:
-                primal_from_solver = glp_mip_col_val(self.problem.problem, self.index)
-            else:
-                raise TypeError("Unknown variable type")
-            return self._round_primal_to_bounds(primal_from_solver)
+        if self.type == "continuous":
+            primal_from_solver = glp_get_col_prim(self.problem.problem, self.index)
+        elif self.type in ("binary", "integer"):
+            primal_from_solver = glp_mip_col_val(self.problem.problem, self.index)
         else:
-            return None
+            raise TypeError("Unknown variable type")
+        return primal_from_solver
 
     @property
     def dual(self):

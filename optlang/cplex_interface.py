@@ -163,11 +163,8 @@ class Variable(interface.Variable):
         super(Variable, self).__setattr__('type', value)
 
     def _get_primal(self):
-        if self.problem:
-            primal_from_solver = self.problem.problem.solution.get_values(self.name)
-            return self._round_primal_to_bounds(primal_from_solver)
-        else:
-            return None
+        primal_from_solver = self.problem.problem.solution.get_values(self.name)
+        return primal_from_solver
 
     @property
     def dual(self):

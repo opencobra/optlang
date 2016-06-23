@@ -223,10 +223,15 @@ class Variable(sympy.Symbol):
     @property
     def primal(self):
         """The primal of variable (None if no solution exists)."""
-        primal = self._get_primal()
-        if self.type in ("integer", "binary") and primal is not None:
-            primal = round(primal)
-        return primal
+        if self.problem:
+            primal = self._get_primal()
+            if primal is not None:
+                if self.type in ("integer", "binary"):
+                    primal = round(primal)
+                primal = self._round_primal_to_bounds(primal)
+            return primal
+        else:
+            return None
 
     def _get_primal(self):
         return None
