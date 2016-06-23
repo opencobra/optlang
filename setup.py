@@ -35,7 +35,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
     requirements = []
 else:
-    requirements = ['sympy>=0.7.5', 'six>=1.9.0']
+    requirements = ['sympy>=1.0.0', 'six>=1.9.0']
 
 setup(
     name='optlang',
