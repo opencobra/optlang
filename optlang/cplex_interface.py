@@ -156,7 +156,7 @@ class Variable(interface.Variable):
             try:
                 cplex_kind = _VTYPE_TO_CPLEX_VTYPE[value]
             except KeyError:
-                raise Exception("CPLEX cannot handle variables of type %s. \
+                raise ValueError("CPLEX cannot handle variables of type %s. \
                             The following variable types are available:\n" +
                                 " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
             self.problem.problem.variables.set_types(self.name, cplex_kind)
