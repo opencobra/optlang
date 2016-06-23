@@ -492,7 +492,7 @@ try:
                 self.assertEqual(self.model.configuration.verbosity, i)
             self.assertRaises(ValueError, setattr, self.configuration, "verbosity", 8)
 
-    @unittest.skip
+
     class QuadraticProgrammingTestCase(unittest.TestCase):
         def setUp(self):
             self.model = Model()
