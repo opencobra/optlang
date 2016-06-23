@@ -434,7 +434,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 problem.set_log_stream(sys.stdout)
                 problem.set_results_stream(sys.stdout)
             else:
-                raise Exception(
+                raise ValueError(
                     "%s is not a valid verbosity level ranging between 0 and 3."
                     % value
                 )
