@@ -30,6 +30,7 @@ try:
         def test_set_wrong_type_raises(self):
             self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
             self.model.add(self.var)
+            self.model.update()
             self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
             self.var.type = "integer"
             self.assertEqual(self.var.type, "integer")
