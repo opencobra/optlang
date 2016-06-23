@@ -863,7 +863,7 @@ class Model(object):
 
     @property
     def dual_values(self):
-        """The dual values of the problem (primal values of all constraints).
+        """The primal values of all constraints.
 
         Returns
         -------
@@ -874,7 +874,7 @@ class Model(object):
 
     @property
     def shadow_prices(self):
-        """The shadow prices of model (dual values of all variables).
+        """The shadow prices of model (dual values of all constraints).
 
         Returns
         -------
