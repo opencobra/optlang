@@ -223,9 +223,7 @@ class Constraint(interface.Constraint):
         if value is None:
             # Update expression from solver instance one last time
             self._get_expression()
-            self._problem = None
-        else:
-            self._problem = value
+        self._problem = value
 
     @property
     def primal(self):
