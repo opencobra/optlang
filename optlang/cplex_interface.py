@@ -160,7 +160,7 @@ class Variable(interface.Variable):
                             The following variable types are available:\n" +
                                 " ".join(_VTYPE_TO_CPLEX_VTYPE.keys()))
             self.problem.problem.variables.set_types(self.name, cplex_kind)
-        super(Variable, self).__setattr__('type', value)
+        super(Variable, Variable).type.fset(self, value)
 
     def _get_primal(self):
         primal_from_solver = self.problem.problem.solution.get_values(self.name)
