@@ -683,7 +683,7 @@ class Model(interface.Model):
     def reduced_costs(self):
         if self.problem:
             return collections.OrderedDict(
-                zip([variable.name for variable in self.variables], self.problem.solution.get_reduced_costs()))
+                zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
         else:
             return None
 
@@ -691,7 +691,7 @@ class Model(interface.Model):
     def dual_values(self):
         if self.problem:
             return collections.OrderedDict(
-                zip([constraint.name for constraint in self.constraints], self.problem.solution.get_activity_levels()))
+                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
         else:
             return None
 
@@ -699,7 +699,7 @@ class Model(interface.Model):
     def shadow_prices(self):
         if self.problem:
             return collections.OrderedDict(
-                zip([constraint.name for constraint in self.constraints], self.problem.solution.get_dual_values()))
+                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
         else:
             return None
 
