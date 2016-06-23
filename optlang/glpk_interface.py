@@ -112,7 +112,7 @@ class Variable(interface.Variable):
         elif self.type in ("binary", "integer"):
             primal_from_solver = glp_mip_col_val(self.problem.problem, self.index)
         else:
-            raise TypeError("Unknown variable type")
+            raise AssertionError("Unknown variable type")
         return primal_from_solver
 
     @property
@@ -341,7 +341,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             self._smcp.msg_lev = GLP_MSG_ALL
             self._iocp.msg_lev = GLP_MSG_ALL
         else:
-            raise Exception(
+            raise ValueError(
                 "%s is not a valid verbosity level ranging between 0 and 3."
                 % value
             )
@@ -540,7 +540,7 @@ class Model(interface.Model):
                 elif variable.type in ["binary", "integer"]:
                     value = glp_mip_col_val(self.problem, index + 1)
                 else:
-                    raise TypeError("Unknown variable type")
+                    raise AssertionError("Unknown variable type")
                 primal_values[variable.name] = variable._round_primal_to_bounds(value)
             return primal_values
         else:
@@ -556,7 +556,7 @@ class Model(interface.Model):
                 elif variable.type in ["binary", "integer"]:
                     value = glp_mip_col_val(self.problem, index + 1)
                 else:
-                    raise TypeError("Unknown variable type")
+                    raise AssertionError("Unknown variable type")
                 reduced_costs[variable.name] = value
             return reduced_costs
         else:
