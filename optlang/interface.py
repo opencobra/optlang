@@ -870,7 +870,7 @@ class Model(object):
         collections.OrderedDict
         """
         # Fallback, if nothing faster is available
-        return collections.OrderedDict([(constraint.name, constraint.primal) for constraint in self.constraint])
+        return collections.OrderedDict([(constraint.name, constraint.primal) for constraint in self.constraints])
 
     @property
     def shadow_prices(self):
@@ -881,7 +881,7 @@ class Model(object):
         collections.OrderedDict
         """
         # Fallback, if nothing faster is available
-        return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraint])
+        return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraints])
 
     def __str__(self):
         self.update()
