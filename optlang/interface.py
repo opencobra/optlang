@@ -380,10 +380,7 @@ class OptimizationExpression(object):
         if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
             return True
         else:
-            try:
-                poly = self.expression.as_poly(*self.variables)
-            except sympy.PolynomialError:
-                poly = None
+            poly = self.expression.as_poly(*self.variables)
             if poly is not None:
                 return poly.is_linear
             else:
@@ -397,31 +394,32 @@ class OptimizationExpression(object):
         if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom)
                 for key in self.expression.as_coefficients_dict().keys())):
             return False
-        try:
-            if self.expression.is_Add:
-                terms = self.expression.args
-                is_quad = False
-                for term in terms:
-                    if len(term.free_symbols) > 2:
+        if self.expression.is_Add:
+            terms = self.expression.args
+            is_quad = False
+            for term in terms:
+                if len(term.free_symbols) > 2:
+                    return False
+                if term.is_Pow:
+                    if not term.args[1].is_Number or term.args[1] > 2:
                         return False
-                    if term.is_Pow:
-                        if not term.args[1].is_Number or term.args[1] > 2:
+                    else:
+                        is_quad = True
+                elif term.is_Mul:
+                    if len(term.free_symbols) == 2:
+                        is_quad = True
+                    if term.args[1].is_Pow:
+                        if not term.args[1].args[1].is_Number or term.args[1].args[1] > 2:
                             return False
                         else:
                             is_quad = True
-                    elif term.is_Mul:
-                        if len(term.free_symbols) == 2:
-                            is_quad = True
-                        if term.args[1].is_Pow:
-                            if not term.args[1].args[1].is_Number or term.args[1].args[1] > 2:
-                                return False
-                            else:
-                                is_quad = True
-                return is_quad
+            return is_quad
+        else:
+            poly = self.expression.as_poly(*self.variables)
+            if poly is None:
+                return False
             else:
-                return self.expression.as_poly(*self.variables).is_quadratic
-        except sympy.PolynomialError:
-            return False
+                return poly.is_quadratic
 
     def __iadd__(self, other):
         self._expression += other
@@ -841,7 +839,7 @@ class Model(object):
 
     @property
     def primal_values(self):
-        """The primal values of model/all variables.
+        """The primal values of model variables.
 
         Returns
         -------
