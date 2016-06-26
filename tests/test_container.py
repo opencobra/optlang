@@ -177,6 +177,10 @@ class ContainerTestCase(unittest.TestCase):
         self.assertIs(self.container[1], var4)
 
         self.assertRaises(ValueError, self.container.__setitem__, 1, var2)
+        self.container[1] = var3
+        self.assertIs(self.container["blab"], var3)
+        self.assertIs(self.container[1], var3)
+        self.container.update_key("blab")
 
     def test_change_object_name(self):
         var = Variable('blub')
