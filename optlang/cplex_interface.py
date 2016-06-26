@@ -340,10 +340,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     @property
     def lp_method(self):
         lpmethod = self.problem.problem.parameters.lpmethod
-        try:
-            value = lpmethod.get()
-        except ReferenceError:
-            value = lpmethod.default()
+        value = lpmethod.get()
         return lpmethod.values[value]
 
     @lp_method.setter
@@ -607,11 +604,11 @@ class Model(interface.Model):
     def objective(self, value):
         if self._objective is not None:
             for variable in self.objective.variables:
-                try:
-                    self.problem.objective.set_linear(variable.name, 0.)
-                except cplex.exceptions.CplexSolverError as e:
-                    if " 1210:" not in str(e):  # 1210 = Name not found (variable has been removed from model)
-                        raise e
+                # try:  # Removed variables is handled in Model._remove_variables
+                self.problem.objective.set_linear(variable.name, 0.)
+                # except cplex.exceptions.CplexSolverError as e:
+                #     if " 1210:" not in str(e):  # 1210 = Name not found (variable has been removed from model)
+                #         raise e
             if self.objective.is_Quadratic:
                 if self._objective.expression.is_Mul:
                     args = (self._objective.expression,)
@@ -620,22 +617,22 @@ class Model(interface.Model):
                 for arg in args:
                     vars = tuple(arg.atoms(sympy.Symbol))
                     assert len(vars) <= 2
-                    try:
-                        if len(vars) == 1:
-                            self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 0)
-                        else:
-                            self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 0)
-                    except cplex.exceptions.CplexSolverError as e:
-                        if " 1210:" not in str(e):  # 1210 = Name not found (variable has been removed from model)
-                            raise e
+                    # try:  # Removed variables is handled in Model._remove_variables
+                    if len(vars) == 1:
+                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 0)
+                    else:
+                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 0)
+                    # except cplex.exceptions.CplexSolverError as e:
+                    #     if " 1210:" not in str(e):  # 1210 = Name not found (variable has been removed from model)
+                    #         raise e
 
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective.expression
         if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
             pass
         else:
-            if expression.is_Symbol:
-                self.problem.objective.set_linear(expression.name, 1.)
+            # if expression.is_Symbol:  # This won't happen due to canonicalize
+            #     self.problem.objective.set_linear(expression.name, 1.)
             if expression.is_Mul:
                 terms = (expression,)
             elif expression.is_Add:
