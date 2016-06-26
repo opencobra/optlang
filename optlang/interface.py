@@ -1094,7 +1094,7 @@ class Model(object):
                 except KeyError:
                     raise LookupError("Constraint %s not in solver" % constraint)
                 else:
-                    constraint._problem = None
+                    constraint.problem = None
 
     def _remove_constraint(self, constraint):
         self._remove_constraints([constraint])
