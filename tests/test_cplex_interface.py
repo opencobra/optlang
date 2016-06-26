@@ -37,6 +37,7 @@ try:
 
         def test_change_name(self):
             self.model.add(self.var)
+            self.model.update()
             self.var.name = "test_2"
             self.assertEqual(self.var.name, "test_2")
 
@@ -136,6 +137,9 @@ try:
             print(model.constraints[0].lb)
             print(model.constraints[0].ub)
             self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
+            self.assertRaises(ValueError, setattr, model.constraints[0], "ub", -1000000000.)
+
+            self.assertRaises(ValueError, Constraint, 0, lb=0, ub=-1)
 
         def test_setting_nonnumerical_bounds_raises(self):
             problem = cplex.Cplex()
@@ -456,6 +460,14 @@ try:
             for k, v in self.model.shadow_prices.items():
                 self.assertEquals(v, self.model.constraints[k].dual)
 
+        def test_change_objective_can_handle_removed_vars(self):
+            self.model.objective = Objective(self.model.variables[0])
+            self.model.remove(self.model.variables[0])
+            self.model.update()
+            self.model.objective = Objective(self.model.variables[1] ** 2)
+            self.model.remove(self.model.variables[1])
+            self.model.objective = Objective(self.model.variables[2])
+
 
     class ConfigurationTestCase(unittest.TestCase):
         def setUp(self):
@@ -477,6 +489,9 @@ try:
                 self.assertEqual(self.model.problem.parameters.qpmethod.get(), getattr(self.model.problem.parameters.qpmethod.values, option))
 
             self.assertRaises(ValueError, setattr, self.configuration, "qp_method", "weird_stuff")
+            self.configuration.solution_target = None
+            self.assertEqual(self.model.problem.parameters.solutiontarget.get(),
+                             self.model.problem.parameters.solutiontarget.default())
 
         def test_solution_method(self):
             for option in cplex_interface._SOLUTION_TARGETS:
@@ -491,6 +506,13 @@ try:
                 self.model.configuration.verbosity = i
                 self.assertEqual(self.model.configuration.verbosity, i)
             self.assertRaises(ValueError, setattr, self.configuration, "verbosity", 8)
+
+        def test_presolve(self):
+            for presolve in (True, False, "auto"):
+                self.configuration.presolve = presolve
+                self.assertEqual(self.configuration.presolve, presolve)
+
+            self.assertRaises(ValueError, setattr, self.configuration, "presolve", "trump")
 
 
     class QuadraticProgrammingTestCase(unittest.TestCase):
