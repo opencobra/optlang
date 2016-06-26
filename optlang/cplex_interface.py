@@ -671,37 +671,26 @@ class Model(interface.Model):
 
     @property
     def primal_values(self):
-        if self.problem:
-            primal_values = collections.OrderedDict()
-            for variable, primal in zip(self.variables, self.problem.solution.get_values()):
-                primal_values[variable.name] = variable._round_primal_to_bounds(primal)
-            return primal_values
-        else:
-            return None
+        primal_values = collections.OrderedDict()
+        for variable, primal in zip(self.variables, self.problem.solution.get_values()):
+            primal_values[variable.name] = variable._round_primal_to_bounds(primal)
+        return primal_values
 
     @property
     def reduced_costs(self):
-        if self.problem:
-            return collections.OrderedDict(
-                zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
-        else:
-            return None
+        return collections.OrderedDict(
+            zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
 
     @property
     def dual_values(self):
-        if self.problem:
-            return collections.OrderedDict(
-                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
-        else:
-            return None
+        return collections.OrderedDict(
+            zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
+
 
     @property
     def shadow_prices(self):
-        if self.problem:
-            return collections.OrderedDict(
-                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
-        else:
-            return None
+        return collections.OrderedDict(
+            zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
 
     def __str__(self):
         tmp_file = tempfile.mktemp(suffix=".lp")
