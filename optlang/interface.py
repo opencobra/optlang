@@ -529,11 +529,6 @@ class Constraint(OptimizationExpression):
         """Activity relation of constraint to indicator variable (if supported)."""
         return self._active_when
 
-    @indicator_variable.setter
-    def indicator_variable(self, value):
-        self.__check_valid_active_when(value)
-        self._active_when = value
-
     def __str__(self):
         if self.lb is not None:
             lhs = str(self.lb) + ' <= '
