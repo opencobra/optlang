@@ -102,6 +102,12 @@ try:
             self.model = Model(problem=problem)
             self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
 
+        def test_set_linear_coefficients(self):
+            self.model.add(self.constraint)
+            self.constraint.set_linear_coefficients({Variable('chip'): 33., self.model.variables.R_PGK: -33})
+            sparse_pair = self.model.problem.linear_constraints.get_rows(self.constraint.name)
+            self.assertEqual(dict(zip(self.model.problem.variables.get_names(sparse_pair.ind), sparse_pair.val)), dict([('R_PGK', -33.0), ('chap', 1.0), ('chip', 33.0)]))
+
         def test_get_primal(self):
             self.assertEqual(self.constraint.primal, None)
             self.model.optimize()
@@ -330,7 +336,7 @@ try:
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Mul_constraint', 'x'), 77.)
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Only_var_constraint', 'x'), 1.)
 
-        @unittest.skip
+        @unittest.skip('Skipping for now')
         def test_add_quadratic_constraints(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
@@ -428,15 +434,15 @@ try:
             status = self.model.optimize()
             self.assertEqual(status, 'time_limit')
 
-        def test_set_linear_objective_term(self):
-            self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)
+        def test_set_linear_objective_coefficients(self):
+            self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
             self.assertEqual(self.model.problem.objective.get_linear(self.model.variables.R_TPI.name), 666.)
 
-        def test__set_coefficients_low_level(self):
+        def test_set_coefficients_low_level(self):
             constraint = self.model.constraints.M_atp_c
             coeff_dict = constraint.expression.as_coefficients_dict()
             self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], -59.8100000000000)
-            constraint._set_coefficients_low_level({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
+            constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
             coeff_dict = constraint.expression.as_coefficients_dict()
             self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], 666.)
 
@@ -526,6 +532,8 @@ try:
         def test_convex_obj(self):
             model = self.model
             obj = Objective(self.x1**2 + self.x2**2, direction="min")
+            print(obj.expression)
+            print(obj.is_Quadratic)
             model.objective = obj
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 0.5)
@@ -533,7 +541,9 @@ try:
             self.assertAlmostEqual(self.x2.primal, 0.5)
 
             obj_2 = Objective(self.x1, direction="min")
+            print(model.__str__()[0:1000])
             model.objective = obj_2
+            print(model.__str__()[0:1000])
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 0.0)
             self.assertAlmostEqual(self.x1.primal, 0.0)

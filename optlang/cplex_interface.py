@@ -171,7 +171,7 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         if self.problem is not None:
-            if self.problem.problem.get_problem_type() != self.problem.problem.problem_type.LP:  # cplex cannot determine reduced costs for MILP problems ...
+            if self.problem.problem.get_problem_type() == self.problem.problem.problem_type.MILP:  # cplex cannot determine reduced costs for MILP problems ...
                 return None
             return self.problem.problem.solution.get_reduced_costs(self.name)
         else:
@@ -196,6 +196,13 @@ class Constraint(interface.Constraint):
                 (self.lb, self.ub, self)
             )
 
+    def set_linear_coefficients(self, coefficients):
+        if self.problem is not None:
+            triplets = [(self.name, var.name, float(coeff)) for var, coeff in six.iteritems(coefficients)]
+            self.problem.problem.linear_constraints.set_coefficients(triplets)
+        else:
+            raise Exception("Can't change coefficients if constraint is not associated with a model.")
+
     def _get_expression(self):
         if self.problem is not None:
             cplex_problem = self.problem.problem
@@ -206,15 +213,6 @@ class Constraint(interface.Constraint):
                  enumerate(cplex_row.ind)])
             self._expression = expression
         return self._expression
-
-    def _set_coefficients_low_level(self, variables_coefficients_dict):
-        self_name = self.name
-        if self.is_Linear:
-            cplex_format = [(self_name, variable.name, coefficient) for variable, coefficient in
-                            six.iteritems(variables_coefficients_dict)]
-            self.problem.problem.linear_constraints.set_coefficients(cplex_format)
-        else:
-            raise Exception('_set_coefficients_low_level works only with linear constraints in the cplex interface.')
 
     @property
     def problem(self):
@@ -323,6 +321,22 @@ class Objective(interface.Objective):
                 {'min': self.problem.problem.objective.sense.minimize,
                  'max': self.problem.problem.objective.sense.maximize}[value])
         super(Objective, Objective).direction.__set__(self, value)
+
+    def _get_expression(self):
+        if self.problem is not None and len(self.problem._variables) > 0:
+            cplex_problem = self.problem.problem
+            coeffs = cplex_problem.objective.get_linear()
+            expression = sympy.Add._from_args([coeff * var for coeff, var in zip(coeffs, self.problem._variables) if coeff != 0.])
+            if cplex_problem.objective.get_num_quadratic_nonzeros() > 0:
+                expression += self.problem._get_quadratic_expression(cplex_problem.objective.get_quadratic())
+            self._expression = expression
+        return self._expression
+
+    def set_linear_coefficients(self, coefficients):
+        if self.problem is not None:
+            self.problem.problem.objective.set_linear([(variable.name, float(coefficient)) for variable, coefficient in coefficients.items()])
+        else:
+            raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
 
 @six.add_metaclass(inheritdocstring)
@@ -602,37 +616,20 @@ class Model(interface.Model):
 
     @objective.setter
     def objective(self, value):
-        if self._objective is not None:
-            for variable in self.objective.variables:
-                # try:  # Removed variables is handled in Model._remove_variables
-                self.problem.objective.set_linear(variable.name, 0.)
-                # except cplex.exceptions.CplexSolverError as e:
-                #     if " 1210:" not in str(e):  # 1210 = Name not found (variable has been removed from model)
-                #         raise e
-            if self.objective.is_Quadratic:
-                if self._objective.expression.is_Mul:
-                    args = (self._objective.expression,)
-                else:
-                    args = self._objective.expression.args
-                for arg in args:
-                    vars = tuple(arg.atoms(sympy.Symbol))
-                    assert len(vars) <= 2
-                    # try:  # Removed variables is handled in Model._remove_variables
-                    if len(vars) == 1:
-                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[0].name, 0)
-                    else:
-                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 0)
-                    # except cplex.exceptions.CplexSolverError as e:
-                    #     if " 1210:" not in str(e):  # 1210 = Name not found (variable has been removed from model)
-                    #         raise e
-
+        value.problem = None
+        if self._objective is not None:  # Reset previous objective
+            # self.problem.objective.set_linear([(i, 0.) for i in range(self.problem.variables.get_num())])
+            variables = self.objective._expression.free_symbols
+            if len(variables) > 0:
+                self.problem.objective.set_linear([(variable.name, 0.) for variable in variables])
+            if self.problem.objective.get_num_quadratic_variables() > 0:
+                self.problem.objective.set_quadratic([0. for _ in range(self.problem.variables.get_num())])
         super(Model, self.__class__).objective.fset(self, value)
-        expression = self._objective.expression
+        self.update()
+        expression = self._objective._expression
         if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
             pass
         else:
-            # if expression.is_Symbol:  # This won't happen due to canonicalize
-            #     self.problem.objective.set_linear(expression.name, 1.)
             if expression.is_Mul:
                 terms = (expression,)
             elif expression.is_Add:
@@ -660,9 +657,9 @@ class Model(interface.Model):
                         self.problem.objective.set_quadratic_coefficients(var.name, var.name, 2 * float(
                             coeff))  # Multiply by 2 because it's on diagonal
 
-            self.problem.objective.set_sense(
-                {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
-                    value.direction])
+        self.problem.objective.set_sense(
+            {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
+                value.direction])
         self.problem.objective.set_name(value.name)
         value.problem = self
 
@@ -800,9 +797,6 @@ class Model(interface.Model):
             elif constraint.is_Quadratic:
                 self.problem.quadratic_constraints.delete(constraint.name)
 
-    def _set_linear_objective_term(self, variable, coefficient):
-        self.problem.objective.set_linear(variable.name, float(coefficient))
-
     def _get_quadratic_expression(self, quadratic=None):
         if quadratic is None:
             try:
@@ -812,10 +806,11 @@ class Model(interface.Model):
         terms = []
         for i, sparse_pair in enumerate(quadratic):
             for j, val in zip(sparse_pair.ind, sparse_pair.val):
+                i_name, j_name = self.problem.variables.get_names([i, j])
                 if i < j:
-                    terms.append(val * self._variables[i] * self._variables[j])
+                    terms.append(val * self._variables[i_name] * self._variables[j_name])
                 elif i == j:
-                    terms.append(0.5 * val * self._variables[i] ** 2)
+                    terms.append(0.5 * val * self._variables[i_name] ** 2)
                 else:
                     pass  # Only look at upper triangle
         return _unevaluated_Add(*terms)

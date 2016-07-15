@@ -21,7 +21,6 @@ extended for individual solvers.
 import collections
 import inspect
 import logging
-import random
 import sys
 import uuid
 
@@ -29,13 +28,16 @@ import six
 
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
-log = logging.getLogger(__name__)
-
 import sympy
-from sympy.core.singleton import S
-from sympy.core.logic import fuzzy_bool
+
+from sympy.core.assumptions import _assume_rules
+from sympy.core.facts import FactKB
+from sympy.core.expr import Expr
 
 from .container import Container
+
+
+log = logging.getLogger(__name__)
 
 OPTIMAL = 'optimal'
 UNDEFINED = 'undefined'
@@ -111,19 +113,32 @@ class Variable(sympy.Symbol):
         """Clone another variable (for example from another solver interface)."""
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
 
-    def __new__(cls, name, **assumptions):
+    # def __new__(cls, name, **assumptions):
+    #
+    #     if assumptions.get('zero', False):
+    #         return S.Zero
+    #     is_commutative = fuzzy_bool(assumptions.get('commutative', True))
+    #     if is_commutative is None:
+    #         raise ValueError(
+    #             '''Symbol commutativity must be True or False.''')
+    #     assumptions['commutative'] = is_commutative
+    #     for key in assumptions.keys():
+    #         assumptions[key] = bool(assumptions[key])
+    #     return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16 * random.random()))),
+    #                                  **assumptions)  # uuid.uuid1()
 
-        if assumptions.get('zero', False):
-            return S.Zero
-        is_commutative = fuzzy_bool(assumptions.get('commutative', True))
-        if is_commutative is None:
-            raise ValueError(
-                '''Symbol commutativity must be True or False.''')
-        assumptions['commutative'] = is_commutative
-        for key in assumptions.keys():
-            assumptions[key] = bool(assumptions[key])
-        return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16 * random.random()))),
-                                     **assumptions)  # uuid.uuid1()
+    def __new__(cls, name, **kwargs):
+        if not isinstance(name, six.string_types):
+            raise TypeError("name should be a string, not %s" % repr(type(name)))
+
+        obj = Expr.__new__(cls)
+
+        obj.name = name
+        obj._assumptions = FactKB(_assume_rules)
+        obj._assumptions._tell('commutative', True)
+        obj._assumptions._tell('uuid', uuid.uuid1())
+
+        return obj
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
 
@@ -312,7 +327,7 @@ class OptimizationExpression(object):
         variable_substitutions = dict()
         for variable in expression.variables:
             if model is not None and variable.name in model.variables:
-                # print variable.name, id(variable.problem)
+                # print(variable.name, id(variable.problem))
                 variable_substitutions[variable] = model.variables[variable.name]
             else:
                 variable_substitutions[variable] = interface.Variable.clone(variable)
@@ -440,6 +455,20 @@ class OptimizationExpression(object):
     def __itruediv__(self, other):
         self._expression /= other
         return self
+
+    def set_linear_coefficients(self, coefficients):
+        """Set coefficients of linear terms in constraint.
+
+        Parameters
+        ----------
+        coefficients : dict
+            A dictionary like {variable1: coefficient1, variable2: coefficient2, ...}
+
+        Returns
+        -------
+        None
+        """
+        raise NotImplementedError("Child classes should implement this.")
 
 
 class Constraint(OptimizationExpression):
@@ -657,6 +686,14 @@ class Objective(OptimizationExpression):
         if value not in ['max', 'min']:
             raise ValueError("Provided optimization direction %s is neither 'min' or 'max'." % value)
         self._direction = value
+
+    def set_linear_coefficients(self, coefficients):
+        """Set linear coefficients in objective.
+
+        coefficients : dict
+            A dictionary of the form {variable1: coefficient1, variable2: coefficient2, ...}
+        """
+        raise NotImplementedError("Child class should implement this.")
 
 
 class Configuration(object):
@@ -1099,17 +1136,19 @@ class Model(object):
     def _remove_constraint(self, constraint):
         self._remove_constraints([constraint])
 
-    def _set_linear_objective_term(self, variable, coefficient):
-        if variable in self.objective.expression.atoms(sympy.Symbol):
-            a = sympy.Wild('a', exclude=[variable])
-            (new_expression, map) = self.objective.expression.replace(lambda expr: expr.match(a * variable),
-                                                                      lambda expr: coefficient * variable,
-                                                                      simultaneous=False, map=True)
-            self.objective.expression = new_expression
-        else:
-            self.objective.expression = sympy.Add._from_args(
-                (self.objective.expression, sympy.Mul._from_args((sympy.RealNumber(coefficient), variable))))
+    def set_linear_coefficients(self, coefficients):
+        """Set coefficients of linear terms in constraints.
 
+        Parameters
+        ----------
+        coefficients : dict
+            A dictionary of dictionaries: {constraint: {variable1: coefficient1, variable2: coefficient2, ...}, ...}
+
+        Returns
+        -------
+        None
+        """
+        raise NotImplementedError("Child classes should implement this.")
 
 if __name__ == '__main__':
     # Example workflow
