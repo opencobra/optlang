@@ -241,7 +241,7 @@ class Constraint(interface.Constraint):
 
             final_variables_and_coefficients = {
                 glp_get_col_name(problem, ia[i]): va[i] for i in range(1, num_rows + 1)
-                }
+            }
             final_variables_and_coefficients.update(variables_and_coefficients)
             print(final_variables_and_coefficients)
 
