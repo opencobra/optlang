@@ -1136,19 +1136,6 @@ class Model(object):
     def _remove_constraint(self, constraint):
         self._remove_constraints([constraint])
 
-    def set_linear_coefficients(self, coefficients):
-        """Set coefficients of linear terms in constraints.
-
-        Parameters
-        ----------
-        coefficients : dict
-            A dictionary of dictionaries: {constraint: {variable1: coefficient1, variable2: coefficient2, ...}, ...}
-
-        Returns
-        -------
-        None
-        """
-        raise NotImplementedError("Child classes should implement this.")
 
 if __name__ == '__main__':
     # Example workflow

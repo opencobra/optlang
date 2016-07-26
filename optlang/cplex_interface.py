@@ -309,6 +309,7 @@ class Constraint(interface.Constraint):
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
+        self._expression_expired = False
 
     @property
     def value(self):
@@ -323,18 +324,20 @@ class Objective(interface.Objective):
         super(Objective, Objective).direction.__set__(self, value)
 
     def _get_expression(self):
-        if self.problem is not None and len(self.problem._variables) > 0:
+        if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             cplex_problem = self.problem.problem
             coeffs = cplex_problem.objective.get_linear()
             expression = sympy.Add._from_args([coeff * var for coeff, var in zip(coeffs, self.problem._variables) if coeff != 0.])
             if cplex_problem.objective.get_num_quadratic_nonzeros() > 0:
                 expression += self.problem._get_quadratic_expression(cplex_problem.objective.get_quadratic())
             self._expression = expression
+            self._expression_expired = False
         return self._expression
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
             self.problem.problem.objective.set_linear([(variable.name, float(coefficient)) for variable, coefficient in coefficients.items()])
+            self._expression_expired = True
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
@@ -618,8 +621,7 @@ class Model(interface.Model):
     def objective(self, value):
         value.problem = None
         if self._objective is not None:  # Reset previous objective
-            # self.problem.objective.set_linear([(i, 0.) for i in range(self.problem.variables.get_num())])
-            variables = self.objective._expression.free_symbols
+            variables = self.objective.variables
             if len(variables) > 0:
                 self.problem.objective.set_linear([(variable.name, 0.) for variable in variables])
             if self.problem.objective.get_num_quadratic_variables() > 0:

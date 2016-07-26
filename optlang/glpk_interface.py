@@ -261,12 +261,13 @@ class Constraint(interface.Constraint):
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
+        self._expression_expired = False
         if not self.is_Linear:
             raise ValueError(
                 "GLPK only supports linear objectives. %s is not linear." % self)
 
     def _get_expression(self):
-        if self.problem is not None:
+        if self.problem is not None and self._expression_expired:
             variables = self.problem._variables
 
             def term_generator():
@@ -277,6 +278,7 @@ class Objective(interface.Objective):
 
             expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
             self._expression = expression
+            self._expression_expired = False
         return self._expression
 
     @property
@@ -309,6 +311,7 @@ class Objective(interface.Objective):
     def set_linear_coefficients(self, coefficients):
         for variable, coefficient in coefficients.items():
             glp_set_obj_coef(self.problem.problem, variable.index, coefficient)
+        self._expression_expired = True
 
 
 @six.add_metaclass(inheritdocstring)
@@ -515,12 +518,13 @@ class Model(interface.Model):
     def objective(self, value):
         value.problem = None
         if self._objective is not None:
-            for variable in self.objective.variables:
+            variables = self.objective.variables
+            for variable in variables:
                 if variable.index is not None:
                     glp_set_obj_coef(self.problem, variable.index, 0.)
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
-        expression = self._objective._expression
+        expression = self._objective.expression
         if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
             pass
         else:
