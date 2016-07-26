@@ -103,7 +103,7 @@ else:
                     problem = read_netlib_sif_cplex(fhandle)
                     model = Model(problem=problem)
                     model.configuration.presolve = True
-                    # model.configuration.verbosity = 3
+                    model.configuration.verbosity = 3
                     func = partial(check_dimensions, problem, model)
                     func.description = "test_netlib_check_dimensions_%s (%s)" % (netlib_id, os.path.basename(str(__file__)))
                     yield func

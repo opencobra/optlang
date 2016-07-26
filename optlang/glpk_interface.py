@@ -156,26 +156,6 @@ class Constraint(interface.Constraint):
             self._expression = expression
         return self._expression
 
-    def _set_coefficients_low_level(self, variables_coefficients_dict):
-        if self.problem is not None:
-            problem = self.problem.problem
-            indices_coefficients_dict = dict(
-                [(variable.index, coefficient) for variable, coefficient in six.iteritems(variables_coefficients_dict)])
-            num_cols = glp_get_num_cols(problem)
-            ia = intArray(num_cols + 1)
-            da = doubleArray(num_cols + 1)
-            index = self.index
-            num = glp_get_mat_row(self.problem.problem, index, ia, da)
-            for i in range(1, num + 1):
-                try:
-                    da[i] = indices_coefficients_dict[ia[i]]
-                except KeyError:
-                    pass
-            glp_set_mat_row(self.problem.problem, index, num, ia, da)
-        else:
-            raise Exception(
-                '_set_coefficients_low_level works only if a constraint is associated with a solver instance.')
-
     @interface.Constraint.lb.setter
     def lb(self, value):
         self._lb = value
@@ -247,17 +227,47 @@ class Constraint(interface.Constraint):
             super(Constraint, self).__iadd__(other)
         return self
 
+    def set_linear_coefficients(self, coefficients):
+        if self.problem is not None:
+            problem = self.problem.problem
+
+            num_cols = glp_get_num_cols(problem)
+
+            ia = intArray(num_cols + 1)
+            va = doubleArray(num_cols + 1)
+
+            num_rows = glp_get_mat_row(self.problem.problem, self.index, ia, va)
+            variables_and_coefficients = {var.name: coeff for var, coeff in six.iteritems(coefficients)}
+
+            final_variables_and_coefficients = {
+                glp_get_col_name(problem, ia[i]): va[i] for i in range(1, num_rows + 1)
+            }
+            final_variables_and_coefficients.update(variables_and_coefficients)
+            print(final_variables_and_coefficients)
+
+            ia = intArray(num_cols + 1)
+            va = doubleArray(num_cols + 1)
+
+            for i, (name, coeff) in enumerate(six.iteritems(final_variables_and_coefficients)):
+                ia[i + 1] = self.problem._variables[name].index
+                va[i + 1] = coeff
+
+            glp_set_mat_row(problem, self.index, len(final_variables_and_coefficients), ia, va)
+        else:
+            raise Exception("Can't change coefficients if constraint is not associated with a model.")
+
 
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
+        self._expression_expired = False
         if not self.is_Linear:
             raise ValueError(
                 "GLPK only supports linear objectives. %s is not linear." % self)
 
     def _get_expression(self):
-        if self.problem is not None:
+        if self.problem is not None and self._expression_expired:
             variables = self.problem._variables
 
             def term_generator():
@@ -268,6 +278,7 @@ class Objective(interface.Objective):
 
             expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
             self._expression = expression
+            self._expression_expired = False
         return self._expression
 
     @property
@@ -296,6 +307,11 @@ class Objective(interface.Objective):
         if self.problem is not None:
             self.problem.objective = self
         return self
+
+    def set_linear_coefficients(self, coefficients):
+        for variable, coefficient in coefficients.items():
+            glp_set_obj_coef(self.problem.problem, variable.index, coefficient)
+        self._expression_expired = True
 
 
 @six.add_metaclass(inheritdocstring)
@@ -502,12 +518,13 @@ class Model(interface.Model):
     def objective(self, value):
         value.problem = None
         if self._objective is not None:
-            for variable in self.objective.variables:
+            variables = self.objective.variables
+            for variable in variables:
                 if variable.index is not None:
                     glp_set_obj_coef(self.problem, variable.index, 0.)
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
-        expression = self._objective._expression
+        expression = self._objective.expression
         if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
             pass
         else:
@@ -524,10 +541,10 @@ class Model(interface.Model):
                 raise ValueError(
                     "Provided objective %s doesn't seem to be appropriate." %
                     self._objective)
-            glp_set_obj_dir(
-                self.problem,
-                {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction]
-            )
+        glp_set_obj_dir(
+            self.problem,
+            {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction]
+        )
         value.problem = self
 
     @property
@@ -770,9 +787,6 @@ class Model(interface.Model):
             for i, constraint_index in enumerate(constraint_indices):
                 num[i + 1] = constraint_index
             glp_del_rows(self.problem, len(constraints), num)
-
-    def _set_linear_objective_term(self, variable, coefficient):
-        glp_set_obj_coef(self.problem, variable.index, coefficient)
 
 
 if __name__ == '__main__':
