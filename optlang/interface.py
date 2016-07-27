@@ -27,7 +27,6 @@ import uuid
 import six
 
 from optlang.exceptions import IndicatorConstraintsNotSupported
-from optlang.util import VarStrPrinter
 
 import sympy
 
@@ -38,7 +37,6 @@ from optlang.util import parse_expr, expr_to_json
 
 from .container import Container
 
-varStrPrinter = VarStrPrinter()
 log = logging.getLogger(__name__)
 
 OPTIMAL = 'optimal'

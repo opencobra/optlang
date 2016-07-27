@@ -166,20 +166,6 @@ def method_inheritdocstring(mthd):
         pass
 
 
-class VarStrPrinter(StrPrinter):
-    """
-    Sympy printer that prepends variables with "var_".
-    """
-    def _print_Variable(self, variable):
-        return "var_" + variable.name
-
-    def _print_Mul(self, mul):
-        if len(mul.args) == 2 and mul.args[0] == 1:
-            return self.doprint(mul.args[1])
-        else:
-            return super(VarStrPrinter, self)._print_Mul(mul)
-
-
 def expr_to_json(expr):
     if isinstance(expr, sympy.Mul):
         return {"type": "Mul", "args": [expr_to_json(arg) for arg in expr.args]}
