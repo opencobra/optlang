@@ -187,6 +187,8 @@ def expr_to_json(expr):
         return {"type": "Add", "args": [expr_to_json(arg) for arg in expr.args]}
     elif isinstance(expr, sympy.Symbol):
         return {"type": "Symbol", "name": expr.name}
+    elif isinstance(expr, sympy.Pow):
+        return {"type": "Pow", "args": [expr_to_json(arg) for arg in expr.args]}
     elif isinstance(expr, (float, int, sympy.Float, sympy.Integer)):
         return {"type": "Number", "value": expr}
     else:
@@ -200,6 +202,8 @@ def parse_expr(expr, local_dict=None):
         return sympy.Add._from_args([parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Mul":
         return sympy.Mul._from_args([parse_expr(arg, local_dict) for arg in expr["args"]])
+    elif expr["type"] == "Pow":
+        return sympy.Pow(parse_expr(arg, local_dict) for arg in expr["args"])
     elif expr["type"] == "Symbol":
         try:
             return local_dict[expr["name"]]
