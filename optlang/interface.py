@@ -27,16 +27,18 @@ import uuid
 import six
 
 from optlang.exceptions import IndicatorConstraintsNotSupported
+from optlang.util import VarStrPrinter
 
 import sympy
 
 from sympy.core.assumptions import _assume_rules
 from sympy.core.facts import FactKB
 from sympy.core.expr import Expr
+from sympy.parsing.sympy_parser import parse_expr
 
 from .container import Container
 
-
+varStrPrinter = VarStrPrinter()
 log = logging.getLogger(__name__)
 
 OPTIMAL = 'optimal'
@@ -283,6 +285,19 @@ class Variable(sympy.Symbol):
 
     def __setstate__(self, state):
         self.__dict__ = state
+
+    def to_json(self):
+        json_obj = {
+            "name": self.name,
+            "lb": self.lb,
+            "ub": self.ub,
+            "type": self.type
+        }
+        return json_obj
+
+    @classmethod
+    def from_json(cls, json_obj):
+        return cls(json_obj["name"], lb=json_obj["lb"], ub=json_obj["ub"], type=json_obj["type"])
 
     def _round_primal_to_bounds(self, primal, tolerance=1e-5):
         """Rounds primal value to lie within variables bounds.
@@ -616,6 +631,31 @@ class Constraint(OptimizationExpression):
                     'The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (
                         primal, self.name, self.lb, self.ub))
 
+    def to_json(self):
+        json_obj = {
+            "name": self.name,
+            "expression": varStrPrinter.doprint(self.expression),
+            "lb": self.lb,
+            "ub": self.ub,
+            "indicator_variable": self.indicator_variable,
+            "active_when": self.active_when
+        }
+        return json_obj
+
+    @classmethod
+    def from_json(cls, json_obj, variables=None):
+        if variables is None:
+            variables = {}
+        expression = parse_expr(json_obj["expression"], local_dict=variables)
+        return cls(
+            expression,
+            name=json_obj["name"],
+            lb=json_obj["lb"],
+            ub=json_obj["ub"],
+            indicator_variable=json_obj["indicator_variable"],
+            active_when=json_obj["active_when"]
+        )
+
 
 class Objective(OptimizationExpression):
     """Objective function.
@@ -689,6 +729,25 @@ class Objective(OptimizationExpression):
             A dictionary of the form {variable1: coefficient1, variable2: coefficient2, ...}
         """
         raise NotImplementedError("Child class should implement this.")
+
+    def to_json(self):
+        json_obj = {
+            "name": self.name,
+            "expression": varStrPrinter.doprint(self.expression),
+            "direction": self.direction
+        }
+        return json_obj
+
+    @classmethod
+    def from_json(cls, json_obj, variables=None):
+        if variables is None:
+            variables = {}
+        expression = parse_expr(json_obj["expression"], variables)
+        return cls(
+            expression,
+            direction=json_obj["direction"],
+            name=json_obj["name"]
+        )
 
 
 class Configuration(object):
@@ -1131,6 +1190,28 @@ class Model(object):
     def _remove_constraint(self, constraint):
         self._remove_constraints([constraint])
 
+    def to_json(self):
+        json_obj = {
+            "name": self.name,
+            "variables": [var.to_json() for var in self.variables],
+            "constraints": [const.to_json() for const in self.constraints],
+            "objective": self.objective.to_json()
+        }
+        return json_obj
+
+    @classmethod
+    def from_json(cls, json_obj):
+        model = cls(name=json_obj["name"])
+        interface = model.interface
+        variables = [interface.Variable.from_json(var_json) for var_json in json_obj["variables"]]
+        var_dict = {"var_" + var.name: var for var in variables}
+        constraints = [interface.Constraint.from_json(constraint_json, var_dict) for constraint_json in json_obj["constraints"]]
+        objective = interface.Objective.from_json(json_obj["objective"], var_dict)
+        model.add(variables)
+        model.add(constraints)
+        model.objective = objective
+        model.update()
+        return model
 
 if __name__ == '__main__':
     # Example workflow

@@ -24,6 +24,8 @@ log = logging.getLogger(__name__)
 import tempfile
 import inspect
 from subprocess import check_output
+from sympy.printing.str import StrPrinter
+import sympy
 
 
 def solve_with_glpsol(glp_prob):
