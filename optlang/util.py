@@ -166,6 +166,20 @@ def method_inheritdocstring(mthd):
         pass
 
 
+class VarStrPrinter(StrPrinter):
+    """
+    Sympy printer that prepends variables with "var_".
+    """
+    def _print_Variable(self, variable):
+        return "var_" + variable.name
+
+    def _print_Mul(self, mul):
+        if len(mul.args) == 2 and mul.args[0] == 1:
+            return self.doprint(mul.args[1])
+        else:
+            return super(VarStrPrinter, self)._print_Mul(mul)
+
+
 if __name__ == '__main__':
     from swiglpk import glp_create_prob, glp_read_lp, glp_get_num_rows
 
