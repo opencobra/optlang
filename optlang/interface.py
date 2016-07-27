@@ -634,7 +634,7 @@ class Constraint(OptimizationExpression):
     def to_json(self):
         json_obj = {
             "name": self.name,
-            "expression": expr_to_json(self.expression), # varStrPrinter.doprint(self.expression),
+            "expression": expr_to_json(self.expression),
             "lb": self.lb,
             "ub": self.ub,
             "indicator_variable": self.indicator_variable,
@@ -733,7 +733,7 @@ class Objective(OptimizationExpression):
     def to_json(self):
         json_obj = {
             "name": self.name,
-            "expression": expr_to_json(self.expression), # varStrPrinter.doprint(self.expression),
+            "expression": expr_to_json(self.expression),
             "direction": self.direction
         }
         return json_obj
