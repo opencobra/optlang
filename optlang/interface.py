@@ -34,7 +34,7 @@ import sympy
 from sympy.core.assumptions import _assume_rules
 from sympy.core.facts import FactKB
 from sympy.core.expr import Expr
-from sympy.parsing.sympy_parser import parse_expr
+from optlang.util import parse_expr, expr_to_json
 
 from .container import Container
 
@@ -634,7 +634,7 @@ class Constraint(OptimizationExpression):
     def to_json(self):
         json_obj = {
             "name": self.name,
-            "expression": varStrPrinter.doprint(self.expression),
+            "expression": expr_to_json(self.expression), # varStrPrinter.doprint(self.expression),
             "lb": self.lb,
             "ub": self.ub,
             "indicator_variable": self.indicator_variable,
@@ -646,7 +646,7 @@ class Constraint(OptimizationExpression):
     def from_json(cls, json_obj, variables=None):
         if variables is None:
             variables = {}
-        expression = parse_expr(json_obj["expression"], local_dict=variables)
+        expression = parse_expr(json_obj["expression"], variables)
         return cls(
             expression,
             name=json_obj["name"],
@@ -733,7 +733,7 @@ class Objective(OptimizationExpression):
     def to_json(self):
         json_obj = {
             "name": self.name,
-            "expression": varStrPrinter.doprint(self.expression),
+            "expression": expr_to_json(self.expression), # varStrPrinter.doprint(self.expression),
             "direction": self.direction
         }
         return json_obj
@@ -1204,7 +1204,7 @@ class Model(object):
         model = cls(name=json_obj["name"])
         interface = model.interface
         variables = [interface.Variable.from_json(var_json) for var_json in json_obj["variables"]]
-        var_dict = {"var_" + var.name: var for var in variables}
+        var_dict = {var.name: var for var in variables}
         constraints = [interface.Constraint.from_json(constraint_json, var_dict) for constraint_json in json_obj["constraints"]]
         objective = interface.Objective.from_json(json_obj["objective"], var_dict)
         model.add(variables)
