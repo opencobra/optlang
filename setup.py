@@ -16,6 +16,7 @@
 import os
 
 from setuptools import setup, find_packages
+from itertools import chain
 
 import versioneer
 
@@ -37,12 +38,19 @@ if on_rtd:
 else:
     requirements = ['sympy>=1.0.0', 'six>=1.9.0']
 
+
+extra_requirements = {
+    'test': ['nose>=1.3.7', 'rednose>=0.4.3', 'coverage>=4.0.3', 'jsonschema>=2.5'],
+}
+extra_requirements['all'] = list(set(chain(*extra_requirements.values())))
+
 setup(
     name='optlang',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
+    extras_require=extra_requirements,
     test_suite='nose.collector',
     author='Nikolaus Sonnenschein',
     author_email='niko.sonnenschein@gmail.com',

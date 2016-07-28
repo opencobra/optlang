@@ -29,7 +29,7 @@ before_install:
 - pip install .
 - cd $TRAVIS_BUILD_DIR
 install:
-- pip install nose nose-progressive rednose coverage docutils flake8 codecov
+- pip install nose nose-progressive rednose coverage docutils flake8 codecov jsonschema
 - pip install -r requirements.txt
 - pip install inspyred
 - pip install pypandoc
