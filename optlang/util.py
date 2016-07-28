@@ -175,8 +175,12 @@ def expr_to_json(expr):
         return {"type": "Symbol", "name": expr.name}
     elif isinstance(expr, sympy.Pow):
         return {"type": "Pow", "args": [expr_to_json(arg) for arg in expr.args]}
-    elif isinstance(expr, (float, int, sympy.Float, sympy.Integer)):
+    elif isinstance(expr, (float, int)):
         return {"type": "Number", "value": expr}
+    elif isinstance(expr, sympy.Float):
+        return {"type": "Number", "value": float(expr)}
+    elif isinstance(expr, sympy.Integer):
+        return {"type": "Number", "value": int(expr)}
     else:
         raise NotImplementedError("Type not implemented: " + str(type(expr)))
 
