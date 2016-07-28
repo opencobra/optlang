@@ -630,12 +630,16 @@ class Constraint(OptimizationExpression):
                         primal, self.name, self.lb, self.ub))
 
     def to_json(self):
+        if self.indicator_variable is None:
+            indicator = None
+        else:
+            indicator = self.indicator_variable.name
         json_obj = {
             "name": self.name,
             "expression": expr_to_json(self.expression),
             "lb": self.lb,
             "ub": self.ub,
-            "indicator_variable": self.indicator_variable,
+            "indicator_variable": indicator,
             "active_when": self.active_when
         }
         return json_obj
@@ -645,12 +649,16 @@ class Constraint(OptimizationExpression):
         if variables is None:
             variables = {}
         expression = parse_expr(json_obj["expression"], variables)
+        if json_obj["indicator_variable"] is None:
+            indicator = None
+        else:
+            indicator = variables[json_obj["indicator_variable"]]
         return cls(
             expression,
             name=json_obj["name"],
             lb=json_obj["lb"],
             ub=json_obj["ub"],
-            indicator_variable=json_obj["indicator_variable"],
+            indicator_variable=indicator,
             active_when=json_obj["active_when"]
         )
 
