@@ -602,13 +602,14 @@ class Model(interface.Model):
     def __setstate__(self, repr_dict):
         tmp_file = tempfile.mktemp(suffix=".sav")
         open(tmp_file, 'wb').write(repr_dict['cplex_binary'])
-        problem = cplex.Cplex(tmp_file)
+        problem = cplex.Cplex()
+        # turn off logging completely, get's configured later
+        problem.set_error_stream(None)
+        problem.set_warning_stream(None)
+        problem.set_log_stream(None)
+        problem.set_results_stream(None)
+        problem.read(tmp_file)
         if repr_dict['status'] == 'optimal':
-            # turn off logging completely, get's configured later
-            problem.set_error_stream(None)
-            problem.set_warning_stream(None)
-            problem.set_log_stream(None)
-            problem.set_results_stream(None)
             problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
