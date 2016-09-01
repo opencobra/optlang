@@ -243,7 +243,6 @@ class Constraint(interface.Constraint):
                 glp_get_col_name(problem, ia[i]): va[i] for i in range(1, num_rows + 1)
             }
             final_variables_and_coefficients.update(variables_and_coefficients)
-            print(final_variables_and_coefficients)
 
             ia = intArray(num_cols + 1)
             va = doubleArray(num_cols + 1)
