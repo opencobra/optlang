@@ -126,6 +126,16 @@ else:
     #         model = Model(problem=glpk_read_cplex(TESTMODELPATH))
     #         self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
+        def test_set_linear_coefficients(self):
+            constraint = self.model.constraints.M_atp_c
+            constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
+            self.model.update()
+            row = self.model.problem.getRow(self.model.problem.getConstrByName(constraint.name))
+            for i in range(row.size()):
+                col_name = row.getVar(i).getAttr('VarName')
+                if col_name == 'R_Biomass_Ecoli_core_w_GAM':
+                    self.assertEqual(row.getCoeff(i), 666.)
+
 
     class ObjectiveTestCase(unittest.TestCase):
         def setUp(self):

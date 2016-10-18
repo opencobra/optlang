@@ -150,6 +150,15 @@ class Constraint(interface.Constraint):
                 (self.lb, self.ub, self)
             )
 
+    def set_linear_coefficients(self, coefficients):
+        if self.problem is not None:
+            grb_constraint = self.problem.problem.getConstrByName(self.name)
+            for var, coeff in six.iteritems(coefficients):
+                print(grb_constraint, self.problem.problem.getVarByName(var.name), float(coeff))
+                self.problem.problem.chgCoeff(grb_constraint, self.problem.problem.getVarByName(var.name), float(coeff))
+        else:
+            raise Exception("Can't change coefficients if constraint is not associated with a model.")
+
     @property
     def _internal_constraint(self):
         if self.problem is not None:
@@ -171,9 +180,6 @@ class Constraint(interface.Constraint):
             sympy.Add._from_args(terms)
             self._expression = sympy.Add._from_args(terms)
         return self._expression
-
-    def _set_coefficients_low_level(self, variables_coefficients_dict):
-        raise NotImplemented
 
     def __str__(self):
         if self.problem is not None:
