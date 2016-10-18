@@ -235,9 +235,9 @@ class Constraint(interface.Constraint):
                 gurobi_constraint.setAttr('Sense', sense)
                 gurobi_constraint.setAttr('RHS', rhs)
             else:
-                aux_var = self.problem.problem.getVarByName(gurobi_constraint.name + '_aux')
+                aux_var = self.problem.problem.getVarByName(gurobi_constraint.getAttr('ConstrName') + '_aux')
                 if aux_var is None:
-                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.name + '_aux', lb=0, ub=range_value)
+                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0, ub=range_value)
                     row = self.problem.problem.getRow(gurobi_constraint)
                     updated_row = row - aux_var
                     self.problem.problem.remove(gurobi_constraint)
@@ -261,9 +261,9 @@ class Constraint(interface.Constraint):
                 gurobi_constraint.setAttr('Sense', sense)
                 gurobi_constraint.setAttr('RHS', rhs)
             else:
-                aux_var = self.problem.problem.getVarByName(gurobi_constraint.name + '_aux')
+                aux_var = self.problem.problem.getVarByName(gurobi_constraint.getAttr('ConstrName') + '_aux')
                 if aux_var is None:
-                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.name + '_aux', lb=0, ub=range_value)
+                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0, ub=range_value)
                     row = self.problem.problem.getRow(gurobi_constraint)
                     updated_row = row - aux_var
                     self.problem.problem.remove(gurobi_constraint)
