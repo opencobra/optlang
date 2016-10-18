@@ -5,8 +5,6 @@ python:
 - '3.4'
 cache:
 - pip: true
-- directories:
-  - cplex/
 addons:
   apt:
     packages:
