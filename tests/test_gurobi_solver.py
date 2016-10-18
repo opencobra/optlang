@@ -156,6 +156,14 @@ else:
             self.model.update()
             self.assertEqual(self.model.problem.getAttr('ModelSense'), gurobipy.GRB.MAXIMIZE)
 
+        def test_set_linear_objective_coefficients(self):
+            self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
+            self.model.update()
+            grb_obj = self.model.problem.getObjective()
+            for i in range(grb_obj.size()):
+                if 'R_TPI' == grb_obj.getVar(i).getAttr('VarName'):
+                    self.assertEqual(grb_obj.getCoeff(i), 666.)
+
 
     class SolverTestCase(unittest.TestCase):
         def setUp(self):

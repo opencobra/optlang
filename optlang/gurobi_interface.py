@@ -308,6 +308,15 @@ class Objective(interface.Objective):
         if getattr(self, 'problem', None) is not None:
             self.problem.problem.setAttr('ModelSense', {'min': 1, 'max': -1}[value])
 
+    def set_linear_coefficients(self, coefficients):
+        if self.problem is not None:
+            grb_obj = self.problem.problem.getObjective()
+            for var, coeff in six.iteritems(coefficients):
+                grb_var = self.problem.problem.getVarByName(var.name)
+                grb_obj.remove(grb_var)
+                grb_obj.addTerms(float(coeff), grb_var)
+        else:
+            raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
