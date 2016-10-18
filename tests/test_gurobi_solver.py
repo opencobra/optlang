@@ -127,19 +127,24 @@ else:
     #         self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
 
-    # class ObjectiveTestCase(unittest.TestCase):
-    #     def setUp(self):
-    #         self.model = Model(problem=glpk_read_cplex(TESTMODELPATH))
-    #         self.obj = self.model.objective
+    class ObjectiveTestCase(unittest.TestCase):
+        def setUp(self):
+            problem = gurobipy.read(TESTMODELPATH)
+            self.model = Model(problem=problem)
+            self.obj = self.model.objective
 
-        # def test_change_direction(self):
-        #     self.obj.direction = "min"
-        #     self.assertEqual(self.obj.direction, "min")
-        #     self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MIN)
-        #
-        #     self.obj.direction = "max"
-        #     self.assertEqual(self.obj.direction, "max")
-        #     self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MAX)
+        def test_change_direction(self):
+            self.obj.direction = "min"
+            self.assertEqual(self.obj.direction, "min")
+            self.assertEqual(self.model.problem.getAttr('ModelSense'), gurobipy.GRB.MAXIMIZE)
+            self.model.update()
+            self.assertEqual(self.model.problem.getAttr('ModelSense'), gurobipy.GRB.MINIMIZE)
+
+            self.obj.direction = "max"
+            self.assertEqual(self.obj.direction, "max")
+            self.assertEqual(self.model.problem.getAttr('ModelSense'), gurobipy.GRB.MINIMIZE)
+            self.model.update()
+            self.assertEqual(self.model.problem.getAttr('ModelSense'), gurobipy.GRB.MAXIMIZE)
 
 
     class SolverTestCase(unittest.TestCase):

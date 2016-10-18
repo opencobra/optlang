@@ -298,9 +298,9 @@ class Objective(interface.Objective):
 
     @interface.Objective.direction.setter
     def direction(self, value):
-        if getattr(self, 'problem', None) is not None:
-            self.problem.problem.setAttr('ModelSense', {'min': 1, 'max': -1}[self.problem.objective.direction])
         super(Objective, Objective).direction.__set__(self, value)
+        if getattr(self, 'problem', None) is not None:
+            self.problem.problem.setAttr('ModelSense', {'min': 1, 'max': -1}[value])
 
 
 @six.add_metaclass(inheritdocstring)
@@ -447,10 +447,52 @@ class Model(interface.Model):
         cplex_form = open(tmp_file).read()
         return cplex_form
 
+    @property
+    def objective(self):
+        return self._objective
+
+    @objective.setter
+    def objective(self, value):
+        super(Model, self.__class__).objective.fset(self, value)
+        expression = self._objective._expression
+        if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
+            pass
+        else:
+            if expression.is_Mul:
+                terms = (expression,)
+            elif expression.is_Add:
+                terms = expression.args
+            else:
+                raise ValueError(
+                    "Provided objective %s doesn't seem to be appropriate." %
+                    self._objective)
+
+            grb_terms = []
+            for term in terms:
+                factors = term.args
+                coeff = factors[0]
+                vars = factors[1:]
+                assert len(vars) <= 2
+                var1 = self.problem.getVarByName(vars[0].name)
+                if len(vars) == 2:
+                    var2 = self.problem.getVarByName(vars[1].name)
+                    grb_terms.append(coeff * var1 * var2)
+                else:
+                    if vars[0].is_Symbol:
+                        grb_terms.append(coeff * var1)
+                    elif vars[0].is_Pow:
+                        grb_terms.append(coeff * var1**2)
+
+
+        grb_expression = gurobipy.quicksum(grb_terms)
+
+        self.problem.setObjective(grb_expression, {'min': gurobipy.GRB.MINIMIZE, 'max': gurobipy.GRB.MAXIMIZE}[value.direction])
+        value.problem = self
+
     def update(self):
         super(Model, self).update(callback=self.problem.update)
 
-    def optimize(self):
+    def _optimize(self):
         self.problem.optimize()
         self._status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
         return self.status
