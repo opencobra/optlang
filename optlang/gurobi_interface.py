@@ -218,13 +218,8 @@ class Constraint(interface.Constraint):
     @interface.Constraint.name.setter
     def name(self, value):
         if getattr(self, 'problem', None) is not None:
-            if self.indicator_variable is not None:
-                raise NotImplementedError(
-                    "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name"
-                )
-            else:
-                # TODO: the following needs to deal with quadratic constraints
-                self.problem.problem.linear_constraints.set_names(self.name, value)
+            grb_constraint = self.problem.problem.getConstrByName(self.name)
+            grb_constraint.setAttr('ConstrName', value)
         self._name = value
 
     @interface.Constraint.lb.setter
@@ -453,7 +448,7 @@ class Model(interface.Model):
         #     problem.set_results_stream(None)
         #     problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
-        # self.configuration = Configuration.clone(repr_dict['config'], problem=self)  # TODO: make configuration work
+        self.configuration = Configuration.clone(repr_dict['config'], problem=self)  # TODO: make configuration work
 
     def __str__(self):
         self.problem.update()

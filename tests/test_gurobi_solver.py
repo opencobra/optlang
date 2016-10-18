@@ -107,17 +107,17 @@ else:
             for i, j in zip([constraint.dual for constraint in self.model.constraints], [-0.04710549466498445, -0.0420130087552564, -0.0420130087552564, -0.09166474637510486, -0.09039162489767284, -0.024189308071208226, -0.022916186593776214, -0.03437427989066433, -0.03437427989066433, -0.028008672503504264, -0.07129480273619268, -0.029281793980936277, 0.0, -0.06238295239416859, -0.06110983091673658, 0.005092485909728049, -0.005092485909728049, -0.07129480273619268, -0.0, -0.0, 0.0, -0.0521979805747125, -0.06747543830389663, -0.04073988727782439, -0.03946676580039238, -0.09803035376226493, -0.104395961149425, -0.0, -0.0, -0.09166474637510488, -0.04837861614241646, -0.045832373187552435, -0.0521979805747125, -0.09803035376226493, -0.09166474637510488, -0.0751141671684887, -0.07002168125876065, -0.07002168125876065, -0.06874855978132864, -0.019096822161480183, -0.0, -0.0, 0.0012731214774320122, -0.0, -0.07129480273619268, -0.042013008755256404, -0.04073988727782439, -0.04837861614241646, -0.045832373187552435, 0.007638728864592073, 0.0, 0.008911850342024082, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0420130087552564, -0.0420130087552564, -0.0012731214774320122, -0.0, -0.03564740136809634, -0.03437427989066433, 0.0, -0.0025462429548640244, -0.08275289603308078, -0.08275289603308078, -0.11330781149144906, -0.050924859097280485, -0.04837861614241646, -0.054744223529576516, -0.08275289603308078]):
                 self.assertAlmostEqual(i, j)
 
-    #     def test_change_constraint_name(self):
-    #         constraint = copy.copy(self.constraint)
-    #         self.assertEqual(constraint.name, 'woodchips')
-    #         constraint.name = 'ketchup'
-    #         self.assertEqual(constraint.name, 'ketchup')
-    #         self.assertEqual([constraint.name for constraint in self.model.constraints], ['M_13dpg_c', 'M_2pg_c', 'M_3pg_c', 'M_6pgc_c', 'M_6pgl_c', 'M_ac_c', 'M_ac_e', 'M_acald_c', 'M_acald_e', 'M_accoa_c', 'M_acon_C_c', 'M_actp_c', 'M_adp_c', 'M_akg_c', 'M_akg_e', 'M_amp_c', 'M_atp_c', 'M_cit_c', 'M_co2_c', 'M_co2_e', 'M_coa_c', 'M_dhap_c', 'M_e4p_c', 'M_etoh_c', 'M_etoh_e', 'M_f6p_c', 'M_fdp_c', 'M_for_c', 'M_for_e', 'M_fru_e', 'M_fum_c', 'M_fum_e', 'M_g3p_c', 'M_g6p_c', 'M_glc_D_e', 'M_gln_L_c', 'M_gln_L_e', 'M_glu_L_c', 'M_glu_L_e', 'M_glx_c', 'M_h2o_c', 'M_h2o_e', 'M_h_c', 'M_h_e', 'M_icit_c', 'M_lac_D_c', 'M_lac_D_e', 'M_mal_L_c', 'M_mal_L_e', 'M_nad_c', 'M_nadh_c', 'M_nadp_c', 'M_nadph_c', 'M_nh4_c', 'M_nh4_e', 'M_o2_c', 'M_o2_e', 'M_oaa_c', 'M_pep_c', 'M_pi_c', 'M_pi_e', 'M_pyr_c', 'M_pyr_e', 'M_q8_c', 'M_q8h2_c', 'M_r5p_c', 'M_ru5p_D_c', 'M_s7p_c', 'M_succ_c', 'M_succ_e', 'M_succoa_c', 'M_xu5p_D_c']
-    # )
-    #         for i, constraint in enumerate(self.model.constraints):
-    #             constraint.name = 'c'+ str(i)
-    #         self.assertEqual([constraint.name for constraint in self.model.constraints], ['c' + str(i) for i in range(0, len(self.model.constraints))])
-    #
+        def test_change_constraint_name(self):
+            constraint = copy.copy(self.constraint)
+            self.assertEqual(constraint.name, 'woodchips')
+            constraint.name = 'ketchup'
+            self.assertEqual(constraint.name, 'ketchup')
+            self.assertEqual([constraint.name for constraint in self.model.constraints], ['M_13dpg_c', 'M_2pg_c', 'M_3pg_c', 'M_6pgc_c', 'M_6pgl_c', 'M_ac_c', 'M_ac_e', 'M_acald_c', 'M_acald_e', 'M_accoa_c', 'M_acon_C_c', 'M_actp_c', 'M_adp_c', 'M_akg_c', 'M_akg_e', 'M_amp_c', 'M_atp_c', 'M_cit_c', 'M_co2_c', 'M_co2_e', 'M_coa_c', 'M_dhap_c', 'M_e4p_c', 'M_etoh_c', 'M_etoh_e', 'M_f6p_c', 'M_fdp_c', 'M_for_c', 'M_for_e', 'M_fru_e', 'M_fum_c', 'M_fum_e', 'M_g3p_c', 'M_g6p_c', 'M_glc_D_e', 'M_gln_L_c', 'M_gln_L_e', 'M_glu_L_c', 'M_glu_L_e', 'M_glx_c', 'M_h2o_c', 'M_h2o_e', 'M_h_c', 'M_h_e', 'M_icit_c', 'M_lac_D_c', 'M_lac_D_e', 'M_mal_L_c', 'M_mal_L_e', 'M_nad_c', 'M_nadh_c', 'M_nadp_c', 'M_nadph_c', 'M_nh4_c', 'M_nh4_e', 'M_o2_c', 'M_o2_e', 'M_oaa_c', 'M_pep_c', 'M_pi_c', 'M_pi_e', 'M_pyr_c', 'M_pyr_e', 'M_q8_c', 'M_q8h2_c', 'M_r5p_c', 'M_ru5p_D_c', 'M_s7p_c', 'M_succ_c', 'M_succ_e', 'M_succoa_c', 'M_xu5p_D_c']
+    )
+            for i, constraint in enumerate(self.model.constraints):
+                constraint.name = 'c'+ str(i)
+            self.assertEqual([constraint.name for constraint in self.model.constraints], ['c' + str(i) for i in range(0, len(self.model.constraints))])
+
         def test_setting_lower_bound_higher_than_upper_bound_raises(self):
             model = Model(problem=gurobipy.read(TESTMODELPATH))
             self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
@@ -193,9 +193,17 @@ else:
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
         def test_copy(self):
+            self.model.optimize()
+            value = self.model.objective.value
             model_copy = copy.copy(self.model)
             self.assertNotEqual(id(self.model), id(model_copy))
-            self.assertEqual(id(self.model.problem), id(model_copy.problem))
+            self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+            model_copy.optimize()
+            self.assertAlmostEqual(value, model_copy.objective.value)
+            self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
+                             [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
+                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
         def test_deepcopy(self):
             model_copy = copy.deepcopy(self.model)
@@ -440,16 +448,7 @@ else:
             print('bounds', inner_problem_bounds)
             print('bounds', bounds)
             self.assertEqual(bounds, inner_problem_bounds)
-            # for constr in self.model.constraints:
-            #     constr.lb = random.uniform(-1000, constr.ub)
-            #     constr.ub = random.uniform(constr.lb, 1000)
-            # inner_problem_bounds_new = [(glp_get_row_lb(inner_prob, i), glp_get_row_ub(inner_prob, i)) for i in
-            #                             range(1, glp_get_num_rows(inner_prob) + 1)]
-            # bounds_new = [(constr.lb, constr.ub) for constr in self.model.constraints]
-            # self.assertNotEqual(bounds, bounds_new)
-            # self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
-            # self.assertEqual(bounds_new, inner_problem_bounds_new)
-            #
+
         def test_initial_objective(self):
             self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
 
@@ -537,25 +536,8 @@ else:
             print(status)
             self.assertEqual(status, 'time_limit')
 
-        # def test_set_linear_objective_term(self):
-        #     self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)
-        #     self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
-
         def test_instantiating_model_with_non_glpk_problem_raises(self):
             self.assertRaises(TypeError, Model, problem='Chicken soup')
-
-        # def test__set_coefficients_low_level(self):
-        #     constraint = self.model.constraints.M_atp_c
-        #     constraint._set_coefficients_low_level({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
-        #     num_cols = glp_get_num_cols(self.model.problem)
-        #     ia = intArray(num_cols + 1)
-        #     da = doubleArray(num_cols + 1)
-        #     index = constraint.index
-        #     num = glp_get_mat_row(self.model.problem, index, ia, da)
-        #     for i in range(1, num +1):
-        #         col_name = glp_get_col_name(self.model.problem, ia[i])
-        #         if col_name == 'R_Biomass_Ecoli_core_w_GAM':
-        #             self.assertEqual(da[i], 666.)
 
         def test_primal_values(self):
                 self.model.optimize()
