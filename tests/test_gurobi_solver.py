@@ -161,35 +161,35 @@ else:
             self.assertEqual(model.problem.getAttr('ModelName'), '')
             model = Model(name="empty_problem")
             self.assertEqual(model.problem.getAttr('ModelName'), 'empty_problem')
-        #
-        # def test_pickle_ability(self):
-        #     self.model.optimize()
-        #     value = self.model.objective.value
-        #     pickle_string = pickle.dumps(self.model)
-        #     from_pickle = pickle.loads(pickle_string)
-        #     from_pickle.optimize()
-        #     self.assertAlmostEqual(value, from_pickle.objective.value)
-        #     self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in from_pickle.variables.values()],
-        #                      [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-        #     self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
-        #                      [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        # def test_copy(self):
-        #     model_copy = copy.copy(self.model)
-        #     self.assertNotEqual(id(self.model), id(model_copy))
-        #     self.assertEqual(id(self.model.problem), id(model_copy.problem))
-        #
-        # def test_deepcopy(self):
-        #     model_copy = copy.deepcopy(self.model)
-        #     self.assertNotEqual(id(self.model), id(model_copy))
-        #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+        def test_pickle_ability(self):
+            self.model.optimize()
+            value = self.model.objective.value
+            pickle_string = pickle.dumps(self.model)
+            from_pickle = pickle.loads(pickle_string)
+            from_pickle.optimize()
+            self.assertAlmostEqual(value, from_pickle.objective.value)
+            self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in from_pickle.variables.values()],
+                             [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
+                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        # def test_config_gets_copied_too(self):
-        #     self.assertEquals(self.model.configuration.verbosity, 0)
-        #     self.model.configuration.verbosity = 3
-        #     model_copy = copy.copy(self.model)
-        #     self.assertEquals(model_copy.configuration.verbosity, 3)
-        #
+        def test_copy(self):
+            model_copy = copy.copy(self.model)
+            self.assertNotEqual(id(self.model), id(model_copy))
+            self.assertEqual(id(self.model.problem), id(model_copy.problem))
+
+        def test_deepcopy(self):
+            model_copy = copy.deepcopy(self.model)
+            self.assertNotEqual(id(self.model), id(model_copy))
+            self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+
+        def test_config_gets_copied_too(self):
+            self.assertEquals(self.model.configuration.verbosity, 0)
+            self.model.configuration.verbosity = 3
+            model_copy = copy.copy(self.model)
+            self.assertEquals(model_copy.configuration.verbosity, 3)
+
         def test_init_from_existing_problem(self):
             self.assertEqual(len(self.model.variables), len(self.model.problem.getVars()))
             self.assertEqual(len(self.model.constraints), len(self.model.problem.getConstrs()))

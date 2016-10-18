@@ -311,7 +311,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.lp_method = lp_method
         self.tolerance = tolerance
         self.presolve = presolve
-        self._verbosity = verbosity
+        self.verbosity = verbosity
         self.timeout = timeout
         self.solution_target = solution_target
         self.qp_method = qp_method
@@ -366,6 +366,7 @@ class Model(interface.Model):
 
         if problem is None:
             self.problem = gurobipy.Model()
+            self.problem.params.OutputFlag = 0
             if self.name is not None:
                 self.problem.setAttr('ModelName', self.name)
                 self.problem.update()
