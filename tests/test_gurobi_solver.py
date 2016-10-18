@@ -365,27 +365,25 @@ else:
             self.assertEqual(z._internal_variable, self.model.problem.getVarByName('z'))
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
 
-        # def test_change_of_objective_is_reflected_in_low_level_solver(self):
-        #     x = Variable('x', lb=-83.3, ub=1324422.)
-        #     y = Variable('y', lb=-181133.3, ub=12000.)
-        #     objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
-        #     self.model.objective = objective
-        #     self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-        #     self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
-        #     self.assertEqual(glp_get_obj_coef(self.model.problem, y.index), 0.4)
-        #     for i in range(1, glp_get_num_cols(self.model.problem) + 1):
-        #         if i != x.index and i != y.index:
-        #             self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
-        #     z = Variable('z', lb=4, ub=4, type='integer')
-        #     self.model.objective += 77. * z
-        #     self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-        #     self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
-        #     self.assertEqual(glp_get_obj_coef(self.model.problem, y.index), 0.4)
-        #     self.assertEqual(glp_get_obj_coef(self.model.problem, z.index), 77.)
-        #     for i in range(1, glp_get_num_cols(self.model.problem) + 1):
-        #         if i != x.index and i != y.index and i != z.index:
-        #             self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
-
+        def test_change_of_objective_is_reflected_in_low_level_solver(self):
+            x = Variable('x', lb=-83.3, ub=1324422.)
+            y = Variable('y', lb=-181133.3, ub=12000.)
+            objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
+            self.model.objective = objective
+            self.model.update()
+            grb_obj = self.model.problem.getObjective()
+            grb_x = self.model.problem.getVarByName(x.name)
+            grb_y = self.model.problem.getVarByName(y.name)
+            expected = {grb_x: 0.3, grb_y: 0.4}
+            for i in range(grb_obj.size()):
+                self.assertEqual(grb_obj.getCoeff(i), expected[grb_obj.getVar(i)])
+            z = Variable('z', lb=4, ub=4, type='integer')
+            grb_z = self.model.problem.getVarByName(z.name)
+            self.model.objective += 77. * z
+            expected[grb_z] = 77.
+            self.model.update()
+            for i in range(grb_obj.size()):
+                self.assertEqual(grb_obj.getCoeff(i), expected[grb_obj.getVar(i)])
 
         def test_change_variable_bounds(self):
             inner_prob = self.model.problem
