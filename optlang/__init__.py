@@ -13,33 +13,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
+from __future__ import absolute_import
 
-from ._version import get_versions
+import logging
+from optlang._version import get_versions
+from optlang.util import list_available_solvers
+
 __version__ = get_versions()['version']
 del get_versions
 
-import logging
 log = logging.getLogger(__name__)
-
-from .util import list_available_solvers
 
 available_solvers = list_available_solvers()
 
-if available_solvers['GLPK']:
-    from .glpk_interface import Model, Variable, Constraint, Objective
-elif available_solvers['CPLEX']:
-    from .cplex_interface import Model, Variable, Constraint, Objective
+if available_solvers['CPLEX']:
+    from optlang.cplex_interface import Model, Variable, Constraint, Objective
+elif available_solvers['GLPK']:
+    from optlang.glpk_interface import Model, Variable, Constraint, Objective
 else:
     log.error('No solvers available.')
 
 if available_solvers['GLPK']:
-    if six.PY3:
-        from . import glpk_interface
-    else:
-        import glpk_interface
+    from optlang import glpk_interface
 if available_solvers['CPLEX']:
-    if six.PY3:
-        from . import cplex_interface
-    else:
-        import cplex_interface
+    from optlang import cplex_interface

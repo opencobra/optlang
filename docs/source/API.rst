@@ -7,3 +7,4 @@ API reference
    Variable
    Constraint
    Objective
+   Configuration

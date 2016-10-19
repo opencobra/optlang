@@ -14,14 +14,16 @@
 # limitations under the License.
 
 import os
+
 from setuptools import setup, find_packages
 
 import versioneer
+
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'optlang/_version.py'
 versioneer.versionfile_build = 'optlang/_version.py'
-versioneer.tag_prefix = '' # tags are like 1.2.0
-versioneer.parentdir_prefix = 'optlang-' # dirname like 'myproject-1.2.0'
+versioneer.tag_prefix = ''  # tags are like 1.2.0
+versioneer.parentdir_prefix = 'optlang-'  # dirname like 'myproject-1.2.0'
 
 # Run
 # pandoc --from=markdown --to=rst README.md -o README.rst
@@ -33,8 +35,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
     requirements = []
 else:
-    with open('requirements.txt') as fhandle:
-        requirements = [line.strip() for line in fhandle]
+    requirements = ['sympy>=1.0.0', 'six>=1.9.0']
 
 setup(
     name='optlang',
@@ -59,4 +60,3 @@ setup(
         'License :: OSI Approved :: Apache Software License',
     ],
 )
-

@@ -3,7 +3,9 @@
 
 from unittest import TestCase
 
+from optlang.exceptions import ContainerAlreadyContains
 from optlang.interface import Model, Variable, Constraint, Objective
+import sys
 
 
 class TestSolver(TestCase):
@@ -16,7 +18,7 @@ class TestSolver(TestCase):
         self.model.add(x)
         self.model.add(y)
         self.model.add(constr)
-        self.model.add(obj)
+        self.model.objective = obj
 
     def test_read_only_attributes(self):
         self.assertRaises(AttributeError, setattr, self.model, 'variables', 'Foo')
@@ -45,11 +47,57 @@ class TestSolver(TestCase):
 
     def test_add_variable_twice_raises(self):
         var = Variable('x')
-        self.assertRaises(Exception, self.model.add, var)
+        self.model.add(var)
+        self.assertRaises(ContainerAlreadyContains, self.model.update)
+
+    def test_remove_add_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        self.model.update()
+
+    def test_remove_add_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        self.model.update()
+
+    def test_remove_add_remove_variable(self):
+        var = self.model.variables[0]
+        self.model.remove(var)
+        self.model.add(var)
+        # self.assertRaises(ContainerAlreadyContains, self.model.remove, var)
+
+    def test_add_existing_variable(self):
+        var = self.model.variables[0]
+        self.model.add(var)
+        self.assertRaises(Exception, self.model.update)
 
     def test_remove_constraint(self):
         self.model.remove('constr1')
         self.assertEqual(list(self.model.constraints), [])
+
+    def test_add_remove_constraint(self):
+        c = Constraint(self.model.variables.x + self.model.variables.y, lb=10)
+        self.model.add(c)
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1'], c])
+        self.model.remove(c)
+        self.model.update()
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1']])
+
+    def test_add_remove_collection(self):
+        c = Constraint(self.model.variables.x + self.model.variables.y, lb=10)
+        c2 = Constraint(3.* self.model.variables.x + self.model.variables.y, lb=10)
+        self.model.add([c, c2])
+        self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1'], c, c2])
+        self.model.remove([c, 'constr1', c2])
+        self.assertEqual(list(self.model.constraints), [])
+
+    def test_removing_objective_raises(self):
+        self.assertRaises(TypeError, self.model.remove, self.model.objective)
+
+    def test_removing_crap_raises(self):
+        self.assertRaises(TypeError, self.model.remove, dict)
 
     def test_remove_variable_str(self):
         var = self.model.variables['y']
@@ -108,7 +156,20 @@ class TestSolver(TestCase):
         x.lb = -10
         self.assertNotEqual(self.model.variables['x'].lb, model.variables['x'].lb)
 
+    def test_primal_and_dual_values(self):
+        model = self.model
+        self.assertTrue(all([primal is None for primal in model.primal_values.values()]))
+        self.assertTrue(all([constraint_primal is None for constraint_primal in model.dual_values.values()]))
+        self.assertTrue(all([sp is None for sp in model.shadow_prices.values()]))
+        self.assertTrue(all([rc is None for rc in model.reduced_costs.values()]))
+
+    def test_interface(self):
+        self.assertEqual(self.model.interface, sys.modules["optlang.interface"])
+
+
 class TestVariable(TestCase):
+    def setUp(self):
+        self.x = Variable("x")
 
     def test_set_wrong_bounds_on_binary_raises(self):
         self.assertRaises(ValueError, Variable, 'x', lb=-33, ub=0.3, type='binary')
@@ -121,3 +182,35 @@ class TestVariable(TestCase):
         x = Variable('x', type='integer')
         self.assertRaises(ValueError, setattr, x, 'lb', -3.3)
         self.assertRaises(ValueError, setattr, x, 'ub', 3.3)
+
+    def test_primal_and_dual(self):
+        x = self.x
+        self.assertTrue(x.primal is None)
+        self.assertTrue(x.dual is None)
+
+    def test_change_name(self):
+        x = self.x
+        x.name = "xx"
+        self.assertEqual(x.name, "xx")
+
+
+class TestConstraint(TestCase):
+    def setUp(self):
+        self.a = Variable("a")
+        self.b = Variable("b")
+        self.c = Variable("c")
+        self.d = Variable("d")
+
+    def test_is_linear_and_quadratic(self):
+        c1 = Constraint(self.a)
+        self.assertTrue(c1.is_Linear)
+        self.assertFalse(c1.is_Quadratic)
+        c2 = Constraint(self.a * self.b ** self.c)
+        self.assertFalse(c2.is_Linear)
+        self.assertFalse(c2.is_Quadratic)
+        c3 = Constraint(self.a * self.b * self.c + self.d)
+        self.assertFalse(c3.is_Linear)
+        self.assertFalse(c3.is_Quadratic)
+        c4 = Constraint(self.a + self.b ** 3)
+        self.assertFalse(c4.is_Linear)
+        self.assertFalse(c4.is_Quadratic)

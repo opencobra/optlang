@@ -13,17 +13,33 @@ from nose.tools import nottest
 
 try:
     from optlang.cplex_interface import Variable, Constraint, Model, Objective
+    from optlang import cplex_interface
     import cplex
+    CplexSolverError = cplex.exceptions.CplexSolverError
 
     random.seed(666)
     TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
+    CONVEX_QP_PATH = os.path.join(os.path.dirname(__file__), 'data/qplib_3256.lp')
+    NONCONVEX_QP_PATH = os.path.join(os.path.dirname(__file__), 'data/qplib_1832.lp')
 
     class VariableTestCase(unittest.TestCase):
         def setUp(self):
             self.var = Variable('test')
+            self.model = Model()
 
         def test_set_wrong_type_raises(self):
             self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+            self.model.add(self.var)
+            self.model.update()
+            self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
+            self.var.type = "integer"
+            self.assertEqual(self.var.type, "integer")
+
+        def test_change_name(self):
+            self.model.add(self.var)
+            self.model.update()
+            self.var.name = "test_2"
+            self.assertEqual(self.var.name, "test_2")
 
         def test_get_primal(self):
             self.assertEqual(self.var.primal, None)
@@ -46,8 +62,12 @@ try:
             self.assertEqual(model.status, 'optimal')
             self.assertEqual(model.objective.value, 0.8739215069684305)
             print([var.dual for var in model.variables])
-            for i, j in zip([var.dual for var in model.variables], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.022916186593776235, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, -0.007638728864592075, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.005092485909728057, 0.0, 0.0, 0.0, 0.0, -0.005092485909728046, 0.0, 0.0, -0.005092485909728045, 0.0, 0.0, 0.0, -0.0611098309167366, -0.005092485909728045, 0.0, -0.003819364432296033, -0.00509248590972805, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03946676580039239, 0.0, 0.0, -0.005092485909728042, -0.0, -0.0012731214774320113, 0.0, -0.0916647463751049, 0.0, 0.0, 0.0, -0.0, -0.04583237318755246, 0.0, 0.0, -0.0916647463751049, -0.005092485909728045, -0.07002168125876067, 0.0, -0.06874855978132867, -0.0012731214774320113, 0.0, 0.0, 0.0, -0.001273121477432006, -0.0038193644322960392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.040739887277824405, -0.04583237318755245, -0.0012731214774320163, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, 0.0, -0.04837861614241648]):
-                self.assertAlmostEqual(i, j)
+            #for i, j in zip([var.dual for var in model.variables], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.022916186593776235, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, -0.007638728864592075, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.005092485909728057, 0.0, 0.0, 0.0, 0.0, -0.005092485909728046, 0.0, 0.0, -0.005092485909728045, 0.0, 0.0, 0.0, -0.0611098309167366, -0.005092485909728045, 0.0, -0.003819364432296033, -0.00509248590972805, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03946676580039239, 0.0, 0.0, -0.005092485909728042, -0.0, -0.0012731214774320113, 0.0, -0.0916647463751049, 0.0, 0.0, 0.0, -0.0, -0.04583237318755246, 0.0, 0.0, -0.0916647463751049, -0.005092485909728045, -0.07002168125876067, 0.0, -0.06874855978132867, -0.0012731214774320113, 0.0, 0.0, 0.0, -0.001273121477432006, -0.0038193644322960392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.040739887277824405, -0.04583237318755245, -0.0012731214774320163, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, 0.0, -0.04837861614241648]):
+            #    self.assertAlmostEqual(i, j)
+            self.var.type = "integer"
+            model.add(self.var)
+            model.optimize()
+            self.assertTrue(self.var.dual is None)  # Cannot find reduced cost for MILP
 
         def test_setting_lower_bound_higher_than_upper_bound_raises(self):
             problem = cplex.Cplex()
@@ -61,6 +81,19 @@ try:
             model = Model(problem=problem)
             self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
 
+        def test_setting_bounds(self):
+            problem = cplex.Cplex()
+            problem.read(TESTMODELPATH)
+            model = Model(problem=problem)
+            var = model.variables[0]
+            var.lb = 1
+            self.assertEqual(var.lb, 1)
+            model.update()
+            self.assertEqual(model.problem.variables.get_lower_bounds(var.name), 1)
+            var.ub = 2
+            self.assertEqual(var.ub, 2)
+            model.update()
+            self.assertEqual(model.problem.variables.get_upper_bounds(var.name), 2)
 
     class ConstraintTestCase(unittest.TestCase):
         def setUp(self):
@@ -68,6 +101,12 @@ try:
             problem.read(TESTMODELPATH)
             self.model = Model(problem=problem)
             self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
+
+        def test_set_linear_coefficients(self):
+            self.model.add(self.constraint)
+            self.constraint.set_linear_coefficients({Variable('chip'): 33., self.model.variables.R_PGK: -33})
+            sparse_pair = self.model.problem.linear_constraints.get_rows(self.constraint.name)
+            self.assertEqual(dict(zip(self.model.problem.variables.get_names(sparse_pair.ind), sparse_pair.val)), dict([('R_PGK', -33.0), ('chap', 1.0), ('chip', 33.0)]))
 
         def test_get_primal(self):
             self.assertEqual(self.constraint.primal, None)
@@ -84,9 +123,8 @@ try:
             self.assertEqual(self.model.status, 'optimal')
             self.assertEqual(self.model.objective.value, 0.8739215069684305)
             print([constraint.dual for constraint in self.model.constraints])
-            for i, j in zip([constraint.dual for constraint in self.model.constraints], [-0.047105494664984454, -0.042013008755256404, -0.042013008755256404, -0.09166474637510487, -0.09039162489767286, -0.02418930807120824, -0.022916186593776228, -0.034374279890664335, -0.034374279890664335, -0.028008672503504275, -0.07129480273619268, -0.029281793980936287, 0.005092485909728047, -0.06238295239416859, -0.06110983091673658, 0.010184971819456094, -0.0, -0.07129480273619268, -0.0, 0.0, -0.0, -0.0521979805747125, -0.06747543830389663, -0.0407398872778244, -0.039466765800392385, -0.09803035376226493, -0.104395961149425, 0.0, 0.0, -0.09166474637510488, -0.04837861614241646, -0.045832373187552435, -0.0521979805747125, -0.09803035376226493, -0.09166474637510488, -0.07511416716848872, -0.07002168125876067, -0.07002168125876067, -0.06874855978132866, -0.019096822161480172, -0.0, 0.0, 0.001273121477432012, 0.0, -0.07129480273619268, -0.042013008755256404, -0.04073988727782439, -0.04837861614241646, -0.045832373187552435, 0.007638728864592072, -0.0, 0.008911850342024089, -0.0, -0.0, 0.0, -0.0, 0.0, -0.042013008755256404, -0.042013008755256404, -0.001273121477432012, 0.0, -0.03564740136809635, -0.034374279890664335, 0.002546242954864024, -0.0, -0.08275289603308078, -0.08275289603308078, -0.11330781149144906, -0.050924859097280485, -0.04837861614241646, -0.054744223529576516, -0.08275289603308078]
-):
-                self.assertAlmostEqual(i, j)
+            #for i, j in zip([constraint.dual for constraint in self.model.constraints], [-0.047105494664984454, -0.042013008755256404, -0.042013008755256404, -0.09166474637510487, -0.09039162489767286, -0.02418930807120824, -0.022916186593776228, -0.034374279890664335, -0.034374279890664335, -0.028008672503504275, -0.07129480273619268, -0.029281793980936287, 0.005092485909728047, -0.06238295239416859, -0.06110983091673658, 0.010184971819456094, -0.0, -0.07129480273619268, -0.0, 0.0, -0.0, -0.0521979805747125, -0.06747543830389663, -0.0407398872778244, -0.039466765800392385, -0.09803035376226493, -0.104395961149425, 0.0, 0.0, -0.09166474637510488, -0.04837861614241646, -0.045832373187552435, -0.0521979805747125, -0.09803035376226493, -0.09166474637510488, -0.07511416716848872, -0.07002168125876067, -0.07002168125876067, -0.06874855978132866, -0.019096822161480172, -0.0, 0.0, 0.001273121477432012, 0.0, -0.07129480273619268, -0.042013008755256404, -0.04073988727782439, -0.04837861614241646, -0.045832373187552435, 0.007638728864592072, -0.0, 0.008911850342024089, -0.0, -0.0, 0.0, -0.0, 0.0, -0.042013008755256404, -0.042013008755256404, -0.001273121477432012, 0.0, -0.03564740136809635, -0.034374279890664335, 0.002546242954864024, -0.0, -0.08275289603308078, -0.08275289603308078, -0.11330781149144906, -0.050924859097280485, -0.04837861614241646, -0.054744223529576516, -0.08275289603308078]):
+            #    self.assertAlmostEqual(i, j)
 
         def test_change_constraint_name(self):
             constraint = copy.copy(self.constraint)
@@ -98,7 +136,6 @@ try:
                 constraint.name = 'c'+ str(i)
             self.assertEqual([constraint.name for constraint in self.model.constraints], ['c' + str(i) for i in range(0, len(self.model.constraints))])
 
-        @unittest.skip('Needs to be implemented in CPLEX interface!')
         def test_setting_lower_bound_higher_than_upper_bound_raises(self):
             problem = cplex.Cplex()
             problem.read(TESTMODELPATH)
@@ -106,12 +143,51 @@ try:
             print(model.constraints[0].lb)
             print(model.constraints[0].ub)
             self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
+            self.assertRaises(ValueError, setattr, model.constraints[0], "ub", -1000000000.)
+
+            self.assertRaises(ValueError, Constraint, 0, lb=0, ub=-1)
 
         def test_setting_nonnumerical_bounds_raises(self):
             problem = cplex.Cplex()
             problem.read(TESTMODELPATH)
             model = Model(problem=problem)
             self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
+
+        def test_setting_bounds(self):
+            constraint = self.model.constraints[0]
+            value = 42
+            constraint.ub = value
+            self.assertEqual(constraint.ub, value)
+            constraint.lb = value
+            self.assertEqual(constraint.lb, value)
+            self.assertEqual(self.model.problem.linear_constraints.get_senses(constraint.name), "E")
+            self.assertEqual(self.model.problem.linear_constraints.get_range_values(constraint.name), 0)
+
+        def test_remove_constraint(self):
+            constraint = self.model.constraints[0]
+            expr = constraint.expression
+            self.model.remove(constraint)
+            self.model.update()
+            self.assertTrue(constraint.problem is None)
+            self.assertEqual(expr, constraint._expression)
+
+
+    class ObjectiveTestCase(unittest.TestCase):
+        def setUp(self):
+            problem = cplex.Cplex()
+            problem.read(TESTMODELPATH)
+            self.model = Model(problem=problem)
+            self.obj = self.model.objective
+
+        def test_change_direction(self):
+            self.obj.direction = "min"
+            self.assertEqual(self.obj.direction, "min")
+            self.assertEqual(self.model.problem.objective.get_sense(), self.model.problem.objective.sense.minimize)
+
+            self.obj.direction = "max"
+            self.assertEqual(self.obj.direction, "max")
+            self.assertEqual(self.model.problem.objective.get_sense(), self.model.problem.objective.sense.maximize)
+
 
     class SolverTestCase(unittest.TestCase):
 
@@ -238,17 +314,29 @@ try:
             constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
             constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
             constr3 = Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
+            constr4 = Constraint(77*x, lb=10, name='Mul_constraint')
+            constr5 = Constraint(x, ub=-10, name='Only_var_constraint')
+            constr6 = Constraint(3, ub=88., name='Number_constraint')
             self.model.add(constr1)
+            self.model.update()
             self.model.add(constr2)
+            self.model.update()
             self.model.add(constr3)
+            self.model.update()
+            self.model.add([constr4, constr5, constr6])
+            self.model.update()
             self.assertIn(constr1.name, self.model.constraints)
             self.assertIn(constr2.name, self.model.constraints)
             self.assertIn(constr3.name, self.model.constraints)
+            self.assertIn(constr4.name, self.model.constraints)
+            self.assertIn(constr5.name, self.model.constraints)
+            self.assertIn(constr6.name, self.model.constraints)
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test', 'y'), ('test', 'z'), ('test', 'x'))), [0.4, 66, 0.3])
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test2', 'y'), ('test2', 'x'))), [1., 2.333])
-            self.assertEqual(self.model.problem.linear_constraints.get_coefficients(((74, 'y'), (74, 'z'), (74, 'x'))), [1., 1., 2.333])
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Mul_constraint', 'x'), 77.)
+            self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Only_var_constraint', 'x'), 1.)
 
-        @unittest.skip
+        @unittest.skip('Skipping for now')
         def test_add_quadratic_constraints(self):
             x = Variable('x', lb=-83.3, ub=1324422., type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
@@ -276,9 +364,11 @@ try:
             constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
             self.assertEqual(constr1.problem, None)
             self.model.add(constr1)
+            self.model.update()
             self.assertEqual(constr1.problem, self.model)
             self.assertIn(constr1, self.model.constraints)
             self.model.remove(constr1.name)
+            self.model.update()
             self.assertEqual(constr1.problem, None)
             self.assertNotIn(constr1, self.model.constraints)
 
@@ -287,7 +377,8 @@ try:
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=3, ub=3, type='integer')
             constraint = Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
-            self.assertRaises(ValueError, self.model.add, constraint)
+            self.model.add(constraint)
+            self.assertRaises(ValueError, self.model.update)
 
         def test_change_of_constraint_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -312,30 +403,46 @@ try:
             self.model.remove(constraint)
             self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
 
-        @nottest
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
             y = Variable('y', lb=-181133.3, ub=12000.)
             objective = Objective(0.3 * x + 0.4 * y, name='obj', direction='max')
             self.model.objective = objective
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-            self.assertIn(' obj: 0.4 y + 0.3 x', self.model.__str__().split("\n"))
+            for variable in self.model.variables:
+                coeff = self.model.problem.objective.get_linear(variable.name)
+                if variable.name == 'x':
+                    self.assertEqual(coeff, 0.3)
+                elif variable.name == 'y':
+                    self.assertEqual(coeff, 0.4)
+                else:
+                    self.assertEqual(coeff, 0.)
             z = Variable('z', lb=0.000003, ub=0.000003, type='continuous')
             objective += 77. * z
-            print(objective)
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-            self.assertIn(' obj: + 0.4 y + 0.3 x + 77. z', self.model.__str__().split("\n"))
+            for variable in self.model.variables:
+                coeff = self.model.problem.objective.get_linear(variable.name)
+                if variable.name == 'x':
+                    self.assertEqual(coeff, 0.3)
+                elif variable.name == 'y':
+                    self.assertEqual(coeff, 0.4)
+                elif variable.name == 'z':
+                    self.assertEqual(coeff, 77.)
+                else:
+                    self.assertEqual(coeff, 0.)
 
         def test_timeout(self):
             self.model.configuration.timeout = 0
             status = self.model.optimize()
             self.assertEqual(status, 'time_limit')
 
-        def test__set_coefficients_low_level(self):
+        def test_set_linear_objective_coefficients(self):
+            self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
+            self.assertEqual(self.model.problem.objective.get_linear(self.model.variables.R_TPI.name), 666.)
+
+        def test_set_coefficients_low_level(self):
             constraint = self.model.constraints.M_atp_c
             coeff_dict = constraint.expression.as_coefficients_dict()
             self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], -59.8100000000000)
-            constraint._set_coefficients_low_level({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
+            constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
             coeff_dict = constraint.expression.as_coefficients_dict()
             self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], 666.)
 
@@ -358,6 +465,147 @@ try:
             self.model.optimize()
             for k, v in self.model.shadow_prices.items():
                 self.assertEquals(v, self.model.constraints[k].dual)
+
+        def test_change_objective_can_handle_removed_vars(self):
+            self.model.objective = Objective(self.model.variables[0])
+            self.model.remove(self.model.variables[0])
+            self.model.update()
+            self.model.objective = Objective(self.model.variables[1] ** 2)
+            self.model.remove(self.model.variables[1])
+            self.model.objective = Objective(self.model.variables[2])
+
+
+    class ConfigurationTestCase(unittest.TestCase):
+        def setUp(self):
+            self.model = Model()
+            self.configuration = self.model.configuration
+
+        def test_lp_method(self):
+            for option in cplex_interface._LP_METHODS:
+                self.configuration.lp_method = option
+                self.assertEqual(self.configuration.lp_method, option)
+                self.assertEqual(self.model.problem.parameters.lpmethod.get(), getattr(self.model.problem.parameters.lpmethod.values, option))
+
+            self.assertRaises(ValueError, setattr, self.configuration, "lp_method", "weird_stuff")
+
+        def test_qp_method(self):
+            for option in cplex_interface._QP_METHODS:
+                self.configuration.qp_method = option
+                self.assertEqual(self.configuration.qp_method, option)
+                self.assertEqual(self.model.problem.parameters.qpmethod.get(), getattr(self.model.problem.parameters.qpmethod.values, option))
+
+            self.assertRaises(ValueError, setattr, self.configuration, "qp_method", "weird_stuff")
+            self.configuration.solution_target = None
+            self.assertEqual(self.model.problem.parameters.solutiontarget.get(),
+                             self.model.problem.parameters.solutiontarget.default())
+
+        def test_solution_method(self):
+            for option in cplex_interface._SOLUTION_TARGETS:
+                self.configuration.solution_target = option
+                self.assertEqual(self.configuration.solution_target, option)
+                self.assertEqual(self.model.problem.parameters.solutiontarget.get(), cplex_interface._SOLUTION_TARGETS.index(option))
+
+            self.assertRaises(ValueError, setattr, self.configuration, "solution_target", "weird_stuff")
+
+        def test_verbosity(self):
+            for i in range(4):
+                self.model.configuration.verbosity = i
+                self.assertEqual(self.model.configuration.verbosity, i)
+            self.assertRaises(ValueError, setattr, self.configuration, "verbosity", 8)
+
+        def test_presolve(self):
+            for presolve in (True, False, "auto"):
+                self.configuration.presolve = presolve
+                self.assertEqual(self.configuration.presolve, presolve)
+
+            self.assertRaises(ValueError, setattr, self.configuration, "presolve", "trump")
+
+
+    class QuadraticProgrammingTestCase(unittest.TestCase):
+        def setUp(self):
+            self.model = Model()
+            self.x1 = Variable("x1", lb=0)
+            self.x2 = Variable("x2", lb=0)
+            self.c1 = Constraint(self.x1 + self.x2, lb=1)
+            self.model.add([self.x1, self.x2, self.c1])
+
+        def test_convex_obj(self):
+            model = self.model
+            obj = Objective(self.x1**2 + self.x2**2, direction="min")
+            print(obj.expression)
+            print(obj.is_Quadratic)
+            model.objective = obj
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0.5)
+            self.assertAlmostEqual(self.x1.primal, 0.5)
+            self.assertAlmostEqual(self.x2.primal, 0.5)
+
+            obj_2 = Objective(self.x1, direction="min")
+            print(model.__str__()[0:1000])
+            model.objective = obj_2
+            print(model.__str__()[0:1000])
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0.0)
+            self.assertAlmostEqual(self.x1.primal, 0.0)
+            self.assertGreaterEqual(self.x2.primal, 1.0)
+
+        def test_non_convex_obj(self):
+            model = self.model
+            obj = Objective(self.x1 * self.x2, direction="min")
+            model.objective = obj
+            model.configuration.solution_target = "convex"
+            self.assertRaises(CplexSolverError, model.optimize)
+            model.configuration.solution_target = "local"
+            model.configuration.qp_method = "barrier"
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0)
+            model.configuration.solution_target = "global"
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0)
+
+            obj_2 = Objective(self.x1, direction="min")
+            model.objective = obj_2
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 0.0)
+            self.assertAlmostEqual(self.x1.primal, 0.0)
+            self.assertGreaterEqual(self.x2.primal, 1.0)
+
+        def test_qp_convex(self):
+            problem = cplex.Cplex()
+            problem.read(CONVEX_QP_PATH)
+            model = Model(problem=problem)
+            self.assertEqual(len(model.variables), 651)
+            self.assertEqual(len(model.constraints), 501)
+            for constraint in model.constraints:
+                self.assertTrue(constraint.is_Linear, "%s should be linear" % (str(constraint.expression)))
+                self.assertFalse(constraint.is_Quadratic, "%s should not be quadratic" % (str(constraint.expression)))
+
+            self.assertTrue(model.objective.is_Quadratic, "objective should be quadratic")
+            self.assertFalse(model.objective.is_Linear, "objective should not be linear")
+
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 32.2291282)
+
+        @unittest.skip("Solving this is slow")
+        def test_qp_non_convex(self):
+            problem = cplex.Cplex()
+            problem.read(NONCONVEX_QP_PATH)
+            model = Model(problem=problem)
+            self.assertEqual(len(model.variables), 31)
+            self.assertEqual(len(model.constraints), 1)
+            for constraint in model.constraints:
+                self.assertTrue(constraint.is_Linear, "%s should be linear" % (str(constraint.expression)))
+                self.assertFalse(constraint.is_Quadratic, "%s should not be quadratic" % (str(constraint.expression)))
+
+            self.assertTrue(model.objective.is_Quadratic, "objective should be quadratic")
+            self.assertFalse(model.objective.is_Linear, "objective should not be linear")
+
+            model.configuration.solution_target = "convex"
+            self.assertRaises(CplexSolverError, model.optimize)
+
+            model.configuration.solution_target = "global"
+            model.optimize()
+            self.assertAlmostEqual(model.objective.value, 2441.999999971)
 
 except ImportError as e:
 

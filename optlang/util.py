@@ -20,9 +20,9 @@ import logging
 
 import os
 
-
 log = logging.getLogger(__name__)
 import tempfile
+import inspect
 from subprocess import check_output
 
 
@@ -134,6 +134,36 @@ def list_available_solvers():
     return solvers
 
 
+def inheritdocstring(name, bases, attrs):
+    """Use as metaclass to inherit class and method docstrings from parent.
+    Adapted from http://stackoverflow.com/questions/13937500/inherit-a-parent-class-docstring-as-doc-attribute"""
+    if '__doc__' not in attrs or not attrs["__doc__"]:
+        # create a temporary 'parent' to (greatly) simplify the MRO search
+        temp = type('temporaryclass', bases, {})
+        for cls in inspect.getmro(temp):
+            if cls.__doc__ is not None:
+                attrs['__doc__'] = cls.__doc__
+                break
+
+    for attr_name, attr in attrs.items():
+        if not attr.__doc__:
+            for cls in inspect.getmro(temp):
+                try:
+                    if getattr(cls, attr_name).__doc__ is not None:
+                        attr.__doc__ = getattr(cls, attr_name).__doc__
+                        break
+                except (AttributeError, TypeError):
+                    continue
+
+    return type(name, bases, attrs)
+
+
+def method_inheritdocstring(mthd):
+    """Use as decorator on a method to inherit doc from parent method of same name"""
+    if not mthd.__doc__:
+        pass
+
+
 if __name__ == '__main__':
     from swiglpk import glp_create_prob, glp_read_lp, glp_get_num_rows
 
@@ -142,4 +172,3 @@ if __name__ == '__main__':
     print("asdf", glp_get_num_rows(problem))
     solution = solve_with_glpsol(problem)
     print(solution['R_Biomass_Ecoli_core_w_GAM'])
-        

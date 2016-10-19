@@ -22,15 +22,14 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
     if six.PY3:
         nose.SkipTest('Skipping because py3')
     else:
-
-        with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl')) as fhandle:
+        with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl'), 'rb') as fhandle:
             THE_FINAL_NETLIB_RESULTS = pickle.load(fhandle)
 
         # noinspection PyShadowingNames
         def read_netlib_sif_glpk(fhandle):
             tmp_file = tempfile.mktemp(suffix='.mps')
             with open(tmp_file, 'w') as tmp_handle:
-                content = ''.join([s for s in fhandle if s.strip()])
+                content = ''.join([str(s) for s in fhandle if str(s.strip())])
                 tmp_handle.write(content)
                 fhandle.close()
             problem = glp_create_prob()
@@ -76,7 +75,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
             netlib_id = os.path.basename(model_path_in_tar).replace('.SIF', '')
             # TODO: get the following problems to work
             # E226 seems to be a MPS related problem, see http://lists.gnu.org/archive/html/bug-glpk/2003-01/msg00003.html
-            if netlib_id in ('AGG', 'E226', 'SCSD6'):
+            if netlib_id in ('AGG', 'E226', 'SCSD6', 'DFL001'):
                 # def test_skip(netlib_id):
                 # raise SkipTest('Skipping netlib problem %s ...' % netlib_id)
                 # test_skip(netlib_id)
