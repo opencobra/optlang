@@ -141,7 +141,7 @@ class JsonTest(unittest.TestCase):
     def test_objective_json_validates(self):
         jsonschema.validate(self.model.objective.to_json(), objective_schema)
 
-    def model_is_reconstructed_from_json(self):
+    def test_model_is_reconstructed_from_json(self):
         model = Model.from_json(json.loads(self.json_string))
         self.assertEqual(model.variables["var1"].lb, 0)
         self.assertEqual(model.variables["var1"].ub, 1)
