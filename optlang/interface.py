@@ -1118,7 +1118,7 @@ class Model(object):
             constraint.expression
         keys = [constraint.name for constraint in constraints]
         if len(constraints) > 350:  # Need to figure out a good threshold here
-            self._constraints = self.constraints.fromkeys(set(self.constraints.keys()).difference(set(keys)))
+            self._constraints = self._constraints.fromkeys(set(self._constraints.keys()).difference(set(keys)))
         else:
             for constraint in constraints:
                 try:

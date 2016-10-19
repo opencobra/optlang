@@ -44,7 +44,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
-    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM
+    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis
 
 from optlang import interface
 
@@ -631,6 +631,11 @@ class Model(interface.Model):
 
     def _optimize(self):
         status = self._run_glp_simplex()
+
+        # Sometimes GLPK gets itself stuck with an invalid basis. This will help it get rid of it.
+        if status == interface.UNDEFINED and self.configuration.presolve is not True:
+            glp_adv_basis(self.problem, 0)
+            status = self._run_glp_simplex()
 
         if status == interface.UNDEFINED and self.configuration.presolve is True:
             # If presolve is on, status will be undefined if not optimal
