@@ -261,7 +261,7 @@ class Constraint(interface.Constraint):
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds"
                 )
-            if self.ub is not None and value > self.ub:
+            if self.ub is not None and value is not None and value > self.ub:
                 raise ValueError(
                     "Lower bound %f is larger than upper bound %f in constraint %s" %
                     (value, self.ub, self)
@@ -280,7 +280,7 @@ class Constraint(interface.Constraint):
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds"
                 )
-            if self.lb is not None and value < self.lb:
+            if self.lb is not None and value is not None and value < self.lb:
                 raise ValueError(
                     "Upper bound %f is less than lower bound %f in constraint %s" %
                     (value, self.lb, self)
@@ -706,10 +706,14 @@ class Model(interface.Model):
         return self.status
 
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):
-        lb = [(variable.name, value) for variable, value in var_lb]
+        lb = [
+            (var.name, -cplex.infinity) if val is None else (var.name, val) for var, val in var_lb
+        ]
         if len(lb) > 0:
             self.problem.variables.set_lower_bounds(lb)
-        ub = [(variable.name, value) for variable, value in var_ub]
+        ub = [
+            (var.name, cplex.infinity) if val is None else (var.name, val) for var, val in var_ub
+        ]
         if len(ub) > 0:
             self.problem.variables.set_upper_bounds(ub)
 
