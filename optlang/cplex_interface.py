@@ -593,22 +593,24 @@ class Model(interface.Model):
 
     def __getstate__(self):
         self.update()
-        tmp_file = tempfile.mktemp(suffix=".sav")
-        self.problem.write(tmp_file)
-        cplex_binary = open(tmp_file, 'rb').read()
+        tmp_file_name = tempfile.mktemp(suffix=".sav")
+        self.problem.write(tmp_file_name)
+        with open(tmp_file_name, 'rb') as tmp_file:
+            cplex_binary = tmp_file.read()
         repr_dict = {'cplex_binary': cplex_binary, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        tmp_file = tempfile.mktemp(suffix=".sav")
-        open(tmp_file, 'wb').write(repr_dict['cplex_binary'])
+        tmp_file_name = tempfile.mktemp(suffix=".sav")
+        with open(tmp_file_name, 'wb') as tmp_file:
+            tmp_file.write(repr_dict['cplex_binary'])
         problem = cplex.Cplex()
         # turn off logging completely, get's configured later
         problem.set_error_stream(None)
         problem.set_warning_stream(None)
         problem.set_log_stream(None)
         problem.set_results_stream(None)
-        problem.read(tmp_file)
+        problem.read(tmp_file_name)
         if repr_dict['status'] == 'optimal':
             problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
@@ -690,9 +692,10 @@ class Model(interface.Model):
             zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
 
     def __str__(self):
-        tmp_file = tempfile.mktemp(suffix=".lp")
-        self.problem.write(tmp_file)
-        cplex_form = open(tmp_file).read()
+        tmp_file_name = tempfile.mktemp(suffix=".lp")
+        self.problem.write(tmp_file_name)
+        with open(tmp_file_name) as tmp_file:
+            cplex_form = tmp_file.read()
         return cplex_form
 
     def _optimize(self):

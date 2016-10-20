@@ -500,10 +500,11 @@ class Model(interface.Model):
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        tmp_file = tempfile.mktemp(suffix=".glpk")
-        open(tmp_file, 'w').write(repr_dict['glpk_repr'])
-        problem = glp_create_prob()
-        glp_read_prob(problem, 0, tmp_file)
+        tmp_file_name = tempfile.mktemp(suffix=".glpk")
+        with open(tmp_file_name, 'w') as tmp_file:
+            tmp_file.write(repr_dict['glpk_repr'])
+            problem = glp_create_prob()
+        glp_read_prob(problem, 0, tmp_file_name)
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
@@ -589,15 +590,17 @@ class Model(interface.Model):
         return shadow_prices
 
     def __str__(self):
-        tmp_file = tempfile.mktemp(suffix=".lp")
-        glp_write_lp(self.problem, None, tmp_file)
-        cplex_form = open(tmp_file).read()
+        tmp_file_name = tempfile.mktemp(suffix=".lp")
+        glp_write_lp(self.problem, None, tmp_file_name)
+        with open(tmp_file_name) as tmp_file:
+            cplex_form = tmp_file.read()
         return cplex_form
 
     def _glpk_representation(self):
-        tmp_file = tempfile.mktemp(suffix=".glpk")
-        glp_write_prob(self.problem, 0, tmp_file)
-        glpk_form = open(tmp_file).read()
+        tmp_file_name = tempfile.mktemp(suffix=".glpk")
+        glp_write_prob(self.problem, 0, tmp_file_name)
+        with open(tmp_file_name) as tmp_file:
+            glpk_form = tmp_file.read()
         return glpk_form
 
     def _run_glp_simplex(self):
