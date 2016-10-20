@@ -15,16 +15,13 @@
 
 from __future__ import absolute_import, print_function
 
-from optlang import interface
-import six
-
-import numpy as np
 from collections import OrderedDict
 from itertools import islice
 
-from scipy.optimize import linprog
-
+import numpy as np
 import six
+from optlang import interface
+from scipy.optimize import linprog
 
 SCIPY_STATUS = {
     0: interface.OPTIMAL,
@@ -38,6 +35,7 @@ class Problem(object):
     """
     Scipy linprog problem object
     """
+
     def __init__(self):
         self._objective = OrderedDict()
         self._direction = "min"
@@ -65,13 +63,13 @@ class Problem(object):
         return self._constraints[name]
 
     def _add_row_to_A(self, row):
-        ## Flush any cols_to_be_added
-        #if self._cols_to_be_added is not None:
+        # Flush any cols_to_be_added
+        # if self._cols_to_be_added is not None:
         #    self._flush_cols_to_add()
-        ## Add the row to queue
-        #if self._rows_to_be_added is None:
+        # Add the row to queue
+        # if self._rows_to_be_added is None:
         #    self._rows_to_be_added = []
-        #self._rows_to_be_added.append(row)
+        # self._rows_to_be_added.append(row)
         self._A = np.vstack((self._A, row))
 
     def _flush_rows_to_add(self):
@@ -79,13 +77,13 @@ class Problem(object):
         self._rows_to_be_added = None
 
     def _add_col_to_A(self, col):
-        ## Flush any rows_to_be_added
-        #if self._rows_to_be_added is not None:
+        # Flush any rows_to_be_added
+        # if self._rows_to_be_added is not None:
         #    self._flush_rows_to_add()
-        ## Add the col to queue
-        #if self._cols_to_be_added is None:
+        # Add the col to queue
+        # if self._cols_to_be_added is None:
         #    self._cols_to_be_added = []
-        #self._cols_to_be_added.append(col)
+        # self._cols_to_be_added.append(col)
         self._A = np.hstack((self._A, col))
 
     def _flush_cols_to_add(self):
@@ -99,7 +97,7 @@ class Problem(object):
     def add_variable(self, name):
         if name in self._variables:
             raise ValueError(
-                "A variable named "+name+" already exists."
+                "A variable named " + name + " already exists."
             )
         self._variables[name] = len(self._variables)
         self.bounds[name] = (0, None)
@@ -111,7 +109,7 @@ class Problem(object):
     def add_constraint(self, name, coefficients={}, ub=0):
         if name in self._constraints:
             raise ValueError(
-                "A constraint named "+name+" already exists."
+                "A constraint named " + name + " already exists."
             )
         self._constraints[name] = len(self._constraints)
         self.upper_bounds = np.append(self.upper_bounds, ub)
@@ -204,7 +202,8 @@ class Problem(object):
             c *= -1
 
         bounds = list(six.itervalues(self.bounds))
-        solution = linprog(c, self.A, self.upper_bounds, bounds=bounds, method=method, options={"maxiter": 10000, "disp": verbosity}, **kwargs)
+        solution = linprog(c, self.A, self.upper_bounds, bounds=bounds, method=method,
+                           options={"maxiter": 10000, "disp": verbosity}, **kwargs)
         self._solution = solution
 
         self._var_primals = solution.x
@@ -244,7 +243,6 @@ class Problem(object):
 
 
 class Variable(interface.Variable):
-
     def __init__(self, name, lb=None, ub=None, type="continuous", *args, **kwargs):
         if type != "continuous":
             raise ValueError("Scipy solver only works with continuous variables. Please use another interface")
@@ -285,7 +283,6 @@ class Variable(interface.Variable):
 
 
 class Constraint(interface.Constraint):
-
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
@@ -297,11 +294,11 @@ class Constraint(interface.Constraint):
 
     @property
     def upper_constraint_name(self):
-        return self.name+"_upper"
+        return self.name + "_upper"
 
     @property
     def lower_constraint_name(self):
-        return self.name+"_lower"
+        return self.name + "_lower"
 
     @property
     def primal(self):
@@ -331,7 +328,8 @@ class Constraint(interface.Constraint):
             if name == "lb":
                 if self.lb is None and value is not None:
                     negative_coefficient_dict = {name: -coef for name, coef in self.coefficient_dict().items()}
-                    self.problem.problem.add_constraint(self.lower_constraint_name, negative_coefficient_dict, ub=-value)
+                    self.problem.problem.add_constraint(self.lower_constraint_name, negative_coefficient_dict,
+                                                        ub=-value)
                 elif value is None and self.lb is not None:
                     self.problem.problem.remove_constraint(self.lower_constraint_name)
                 elif value is not None and self.lb is not None:
@@ -348,7 +346,8 @@ class Constraint(interface.Constraint):
 
     def coefficient_dict(self):
         if self.expression.is_Add:
-            coefficient_dict = {variable.name: coef for variable, coef in self.expression.as_coefficients_dict().items()}
+            coefficient_dict = {variable.name: coef for variable, coef in
+                                self.expression.as_coefficients_dict().items()}
         elif self.expression.is_Atom and self.expression.is_Symbol:
             coefficient_dict = {self.expression.name: 1}
         elif self.expression.is_Mul and len(self.expression.args) <= 2:
@@ -360,7 +359,6 @@ class Constraint(interface.Constraint):
 
 
 class Objective(interface.Objective):
-
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
         if not self.is_Linear:
@@ -382,7 +380,8 @@ class Objective(interface.Objective):
 
     def coefficient_dict(self):
         if self.expression.is_Add:
-            coefficient_dict = {variable.name: coef for variable, coef in self.expression.as_coefficients_dict().items()}
+            coefficient_dict = {variable.name: coef for variable, coef in
+                                self.expression.as_coefficients_dict().items()}
         elif self.expression.is_Atom:
             if self.expression.is_Symbol:
                 coefficient_dict = {self.expression.name: 1}
@@ -397,7 +396,6 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
-
     def __init__(self, verbosity=0, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._verbosity = bool(verbosity)
@@ -411,9 +409,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._verbosity = value
 
 
-
 class Model(interface.Model):
-
     def __init__(self, problem=None, *args, **kwargs):
 
         super(Model, self).__init__(*args, **kwargs)
@@ -478,7 +474,6 @@ class Model(interface.Model):
         else:
             self.problem.objective = self._objective.coefficient_dict()
             self.problem.direction = value.direction
-
 
 
 if __name__ == "__main__":
