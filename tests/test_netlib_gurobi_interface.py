@@ -129,7 +129,7 @@ else:
 
     except ImportError as e:
 
-        if str(e).find('cplex') >= 0:
+        if str(e).find('gurobipy') >= 0:
             class TestMissingDependency(unittest.TestCase):
 
                 @unittest.skip('Missing dependency - ' + str(e))
