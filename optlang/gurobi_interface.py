@@ -325,6 +325,7 @@ class Objective(interface.Objective):
             self._expression_expired = False
         return self._expression
 
+
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
     def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None,
