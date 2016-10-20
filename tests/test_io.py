@@ -146,7 +146,9 @@ class JsonTest(unittest.TestCase):
         self.assertEqual(model.variables["var1"].lb, 0)
         self.assertEqual(model.variables["var1"].ub, 1)
         self.assertEqual(model.constraints["c1"].expression, 0.5 * model.variables["var1"])
-        self.assertEqual(model.objective.expression, sum(model.variables))
+        self.assertEqual(
+            (model.objective.expression - sum(model.variables)).simplify(), 0
+        )
 
 if __name__ == "__main__":
     import nose
