@@ -9,6 +9,7 @@ import pickle
 import os
 import nose
 from nose.tools import nottest
+from optlang import interface
 
 
 try:
@@ -95,6 +96,22 @@ try:
             model.update()
             self.assertEqual(model.problem.variables.get_upper_bounds(var.name), 2)
 
+        def test_set_bounds_to_none(self):
+            model = Model()
+            var = Variable("test_var")
+            obj = Objective(var)
+            model.objective = obj
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+            var.ub = 10
+            self.assertEqual(model.optimize(), interface.OPTIMAL)
+            var.ub = None
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+            obj.direction = "min"
+            var.lb = -10
+            self.assertEqual(model.optimize(), interface.OPTIMAL)
+            var.lb = None
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+
     class ConstraintTestCase(unittest.TestCase):
         def setUp(self):
             problem = cplex.Cplex()
@@ -170,6 +187,23 @@ try:
             self.model.update()
             self.assertTrue(constraint.problem is None)
             self.assertEqual(expr, constraint._expression)
+
+        def test_set_constraint_bounds_to_none(self):
+            model = Model()
+            var = Variable("test")
+            const = Constraint(var, lb=-10, ub=10)
+            obj = Objective(var)
+            model.add(const)
+            model.objective = obj
+            self.assertEqual(model.optimize(), interface.OPTIMAL)
+            const.ub = None
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+            const.ub = 10
+            const.lb = None
+            obj.direction = "min"
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+            const.lb = -10
+            self.assertEqual(model.optimize(), interface.OPTIMAL)
 
 
     class ObjectiveTestCase(unittest.TestCase):
