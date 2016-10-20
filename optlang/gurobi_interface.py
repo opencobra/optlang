@@ -132,10 +132,9 @@ class Variable(interface.Variable):
     @interface.Variable.name.setter
     def name(self, value):
         if getattr(self, 'problem', None) is not None:
-            # raise NotImplementedError('Cannot change variable names due to a bug in gurobipy.')
             self._internal_variable.setAttr('VarName', value)
             self.problem.problem.update()
-        self._name = value
+        super(Variable, Variable).name.fset(self, value)
 
 
 @six.add_metaclass(inheritdocstring)
@@ -154,7 +153,6 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             grb_constraint = self.problem.problem.getConstrByName(self.name)
             for var, coeff in six.iteritems(coefficients):
-                print(grb_constraint, self.problem.problem.getVarByName(var.name), float(coeff))
                 self.problem.problem.chgCoeff(grb_constraint, self.problem.problem.getVarByName(var.name), float(coeff))
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
@@ -289,6 +287,7 @@ class Constraint(interface.Constraint):
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
+        self._expression_expired = False
 
     @property
     def value(self):
@@ -310,8 +309,21 @@ class Objective(interface.Objective):
                 grb_var = self.problem.problem.getVarByName(var.name)
                 grb_obj.remove(grb_var)
                 grb_obj.addTerms(float(coeff), grb_var)
+                self._expression_expired = True
         else:
-            raise Exception("Can't change coefficients if constraint is not associated with a model.")
+            raise Exception("Can't change coefficients if objective is not associated with a model.")
+
+    def _get_expression(self):
+        if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
+            grb_obj = self.problem.problem.getObjective()
+            terms = []
+            for i in range(grb_obj.size()):
+                terms.append(grb_obj.getCoeff(i) * self.problem.variables[grb_obj.getVar(i).getAttr('VarName')])
+            expression = sympy.Add._from_args(terms)
+            # TODO implement quadratic objectives
+            self._expression = expression
+            self._expression_expired = False
+        return self._expression
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
