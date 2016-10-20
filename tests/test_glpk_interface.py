@@ -11,7 +11,7 @@ import six
 from swiglpk import *
 
 import optlang
-from optlang import glpk_interface
+from optlang import glpk_interface, interface
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from optlang.util import glpk_read_cplex
 
@@ -96,6 +96,22 @@ class VariableTestCase(unittest.TestCase):
         var.ub = 2
         self.assertEqual(var.ub, 2)
         self.assertEqual(glpk_interface.glp_get_col_ub(model.problem, var.index), 2)
+
+    def test_set_bounds_to_none(self):
+        model = Model()
+        var = Variable("test_var")
+        obj = Objective(var)
+        model.objective = obj
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        var.ub = 10
+        self.assertEqual(model.optimize(), interface.OPTIMAL)
+        var.ub = None
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        obj.direction = "min"
+        var.lb = -10
+        self.assertEqual(model.optimize(), interface.OPTIMAL)
+        var.lb = None
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
 
 class ConstraintTestCase(unittest.TestCase):
@@ -191,6 +207,23 @@ class ConstraintTestCase(unittest.TestCase):
     def test_setting_nonnumerical_bounds_raises(self):
         model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
+
+    def test_set_constraint_bounds_to_none(self):
+        model = Model()
+        var = Variable("test")
+        const = Constraint(var, lb=-10, ub=10)
+        obj = Objective(var)
+        model.add(const)
+        model.objective = obj
+        self.assertEqual(model.optimize(), interface.OPTIMAL)
+        const.ub = None
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        const.ub = 10
+        const.lb = None
+        obj.direction = "min"
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        const.lb = -10
+        self.assertEqual(model.optimize(), interface.OPTIMAL)
 
 
 class ObjectiveTestCase(unittest.TestCase):
