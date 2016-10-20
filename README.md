@@ -1,8 +1,10 @@
-[![Build Status](https://travis-ci.org/biosustain/optlang.png?branch=master)](https://travis-ci.org/biosustain/optlang)
-[![Coverage Status](https://coveralls.io/repos/biosustain/optlang/badge.png?branch=master)](https://coveralls.io/r/biosustain/optlang?branch=master)
-[![PyPI version](https://badge.fury.io/py/optlang.svg)](http://badge.fury.io/py/optlang)
+[![PyPI](https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000)](https://pypi.python.org/pypi/optlang)
+[![License](http://img.shields.io/badge/license-APACHE2-blue.svg)](http://img.shields.io/badge/license-APACHE2-blue.svg)
+[![Travis](https://img.shields.io/travis/biosustain/optlang/master.svg)](https://travis-ci.org/biosustain/optlang)
+[![Coverage Status](https://img.shields.io/codecov/c/github/biosustain/optlang/master.svg)](https://codecov.io/gh/biosustain/optlang/branch/master)
+[![Code Climate](https://codeclimate.com/github/biosustain/optlang/badges/gpa.svg)](https://codeclimate.com/github/biosustain/optlang)
 [![Documentation Status](https://readthedocs.org/projects/optlang/badge/?version=latest)](https://readthedocs.org/projects/optlang/?badge=latest)
-
+[![DOI](https://zenodo.org/badge/5031/biosustain/optlang.svg)](https://zenodo.org/badge/latestdoi/5031/biosustain/optlang)
 
 
 optlang
@@ -81,6 +83,8 @@ Formulating and solving the problem is straightforward (example taken from [GLPK
 * [DEAP][deap_url] (support for heuristic optimization)
 * Interface to [NEOS][neos_url] optimization server (for testing purposes and solver evaluation)
 * Automatically handle fractional and absolute value problems when dealing with LP/MILP/QP solvers (like GLPK, [CPLEX][cplex_url] etc.)
+
+The optlang [trello board](https://trello.com/b/aiwfbVKO/optlang) also provides a good overview of the project's roadmap.
 
 ### Requirements
 

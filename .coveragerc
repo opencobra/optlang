@@ -3,9 +3,11 @@
 branch = True
 source = optlang
 omit =
-    optlang/cplex_interface.py
     optlang/gurobi_interface.py
     optlang/__init__.py
+    optlang/_version.py
+    optlang/inspyred_interface.py
+    optlang/util.py
 
 [report]
 # Regexes for lines to exclude from consideration

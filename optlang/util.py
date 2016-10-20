@@ -20,10 +20,12 @@ import logging
 
 import os
 
-
 log = logging.getLogger(__name__)
 import tempfile
+import inspect
 from subprocess import check_output
+from sympy.printing.str import StrPrinter
+import sympy
 
 
 def solve_with_glpsol(glp_prob):
@@ -134,6 +136,75 @@ def list_available_solvers():
     return solvers
 
 
+def inheritdocstring(name, bases, attrs):
+    """Use as metaclass to inherit class and method docstrings from parent.
+    Adapted from http://stackoverflow.com/questions/13937500/inherit-a-parent-class-docstring-as-doc-attribute"""
+    if '__doc__' not in attrs or not attrs["__doc__"]:
+        # create a temporary 'parent' to (greatly) simplify the MRO search
+        temp = type('temporaryclass', bases, {})
+        for cls in inspect.getmro(temp):
+            if cls.__doc__ is not None:
+                attrs['__doc__'] = cls.__doc__
+                break
+
+    for attr_name, attr in attrs.items():
+        if not attr.__doc__:
+            for cls in inspect.getmro(temp):
+                try:
+                    if getattr(cls, attr_name).__doc__ is not None:
+                        attr.__doc__ = getattr(cls, attr_name).__doc__
+                        break
+                except (AttributeError, TypeError):
+                    continue
+
+    return type(name, bases, attrs)
+
+
+def method_inheritdocstring(mthd):
+    """Use as decorator on a method to inherit doc from parent method of same name"""
+    if not mthd.__doc__:
+        pass
+
+
+def expr_to_json(expr):
+    if isinstance(expr, sympy.Mul):
+        return {"type": "Mul", "args": [expr_to_json(arg) for arg in expr.args]}
+    elif isinstance(expr, sympy.Add):
+        return {"type": "Add", "args": [expr_to_json(arg) for arg in expr.args]}
+    elif isinstance(expr, sympy.Symbol):
+        return {"type": "Symbol", "name": expr.name}
+    elif isinstance(expr, sympy.Pow):
+        return {"type": "Pow", "args": [expr_to_json(arg) for arg in expr.args]}
+    elif isinstance(expr, (float, int)):
+        return {"type": "Number", "value": expr}
+    elif isinstance(expr, sympy.Float):
+        return {"type": "Number", "value": float(expr)}
+    elif isinstance(expr, sympy.Integer):
+        return {"type": "Number", "value": int(expr)}
+    else:
+        raise NotImplementedError("Type not implemented: " + str(type(expr)))
+
+
+def parse_expr(expr, local_dict=None):
+    if local_dict is None:
+        local_dict = {}
+    if expr["type"] == "Add":
+        return sympy.Add._from_args([parse_expr(arg, local_dict) for arg in expr["args"]])
+    elif expr["type"] == "Mul":
+        return sympy.Mul._from_args([parse_expr(arg, local_dict) for arg in expr["args"]])
+    elif expr["type"] == "Pow":
+        return sympy.Pow(parse_expr(arg, local_dict) for arg in expr["args"])
+    elif expr["type"] == "Symbol":
+        try:
+            return local_dict[expr["name"]]
+        except KeyError:
+            return sympy.Symbol(expr["name"])
+    elif expr["type"] == "Number":
+        return sympy.sympify(expr["value"])
+    else:
+        raise NotImplementedError(expr["type"] + " is not implemented")
+
+
 if __name__ == '__main__':
     from swiglpk import glp_create_prob, glp_read_lp, glp_get_num_rows
 
@@ -142,4 +213,3 @@ if __name__ == '__main__':
     print("asdf", glp_get_num_rows(problem))
     solution = solve_with_glpsol(problem)
     print(solution['R_Biomass_Ecoli_core_w_GAM'])
-        
