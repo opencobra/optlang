@@ -339,7 +339,7 @@ class Objective(interface.Objective):
             self.problem.problem.objective.set_linear([(variable.name, float(coefficient)) for variable, coefficient in coefficients.items()])
             self._expression_expired = True
         else:
-            raise Exception("Can't change coefficients if constraint is not associated with a model.")
+            raise Exception("Can't change coefficients if objective is not associated with a model.")
 
 
 @six.add_metaclass(inheritdocstring)

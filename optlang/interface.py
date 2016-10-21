@@ -1065,13 +1065,14 @@ class Model(object):
             raise TypeError(
                 "Cannot remove %s. It neither a variable or constraint." % stuff)
 
-    def update(self):
+    def update(self, callback=int):
         """Process all pending model modifications."""
         # print(self._pending_modifications)
         add_var = self._pending_modifications.add_var
         if len(add_var) > 0:
             self._add_variables(add_var)
             self._pending_modifications.add_var = []
+        callback()
 
         add_constr = self._pending_modifications.add_constr
         if len(add_constr) > 0:
@@ -1094,6 +1095,7 @@ class Model(object):
         if len(rm_var) > 0:
             self._remove_variables(rm_var)
             self._pending_modifications.rm_var = []
+        callback()
 
         rm_constr = self._pending_modifications.rm_constr
         if len(rm_constr) > 0:
