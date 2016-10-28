@@ -13,6 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+The scipy interface uses the 'linprog' function of the scipy package.
+It has no integer or QP capabilities. Furthermore dual values (reduced costs and shadow prices) are
+not supported by this interface.
+
+This interface works well with small to medium scale models but for better performance, other
+solvers should be used for large models.
+"""
+
+
 from __future__ import absolute_import, print_function
 
 from collections import OrderedDict
@@ -22,6 +32,7 @@ import numpy as np
 import six
 from optlang import interface
 from scipy.optimize import linprog
+from optlang.util import inheritdocstring
 
 SCIPY_STATUS = {
     0: interface.OPTIMAL,
@@ -33,9 +44,9 @@ SCIPY_STATUS = {
 
 class Problem(object):
     """
-    Scipy linprog problem object
+    Scipy linprog problem. This object implements an object-oriented interface to the linprog solver function.
+    This class is wrapped by the Model object, but can also be used as a stand-alone low-level interface.
     """
-
     def __init__(self):
         self._objective = OrderedDict()
         self._direction = "min"
@@ -91,10 +102,12 @@ class Problem(object):
         self._cols_to_be_added = None
 
     def set_variable_bounds(self, name, lower, upper):
+        """Set the bounds of a variable"""
         self.bounds[name] = (lower, upper)
         self._reset_solution()
 
     def add_variable(self, name):
+        """Add a variable to the problem"""
         if name in self._variables:
             raise ValueError(
                 "A variable named " + name + " already exists."
@@ -107,6 +120,12 @@ class Problem(object):
         self._reset_solution()
 
     def add_constraint(self, name, coefficients={}, ub=0):
+        """
+        Add a constraint to the problem. The constrain is formulated as a dictionary of variable names to
+        linear coefficients.
+        The constraint can only have an upper bound. To make a constraint with a lower bound, multiply
+        all coefficients by -1.
+        """
         if name in self._constraints:
             raise ValueError(
                 "A constraint named " + name + " already exists."
@@ -119,6 +138,7 @@ class Problem(object):
         self._reset_solution()
 
     def remove_variable(self, name):
+        """Remove a variable from the problem."""
         index = self._get_var_index(name)
         # Remove from matrix
         self._A = np.delete(self.A, index, 1)
@@ -130,6 +150,7 @@ class Problem(object):
         self._reset_solution()
 
     def remove_constraint(self, name):
+        """Remove a constraint from the problem"""
         index = self._get_constraint_index(name)
         # Remove from matrix
         self._A = np.delete(self.A, index, 0)
@@ -141,11 +162,13 @@ class Problem(object):
         self._reset_solution()
 
     def set_constraint_bound(self, name, value):
+        """Set the upper bound of a constraint."""
         index = self._get_constraint_index(name)
         self.upper_bounds[index] = value
         self._reset_solution()
 
     def get_var_primal(self, name):
+        """Get the primal value of a variable. Returns None if the problem has not bee optimized."""
         if self._var_primals is None:
             return None
         else:
@@ -158,6 +181,7 @@ class Problem(object):
 
     @property
     def A(self):
+        """The linear coefficient matrix."""
         assert self._rows_to_be_added is None or self._cols_to_be_added is None
         if self._rows_to_be_added is not None:
             self._flush_rows_to_add()
@@ -190,6 +214,7 @@ class Problem(object):
         return SCIPY_STATUS[self._status]
 
     def get_constraint_slack(self, name):
+        """Get the value of the slack variable of a constraint."""
         if self._slacks is None:
             return None
         else:
@@ -197,6 +222,7 @@ class Problem(object):
             return self._slacks(index)
 
     def optimize(self, method="simplex", verbosity=False, **kwargs):
+        """Run the linprog function on the problem. Returns None."""
         c = np.array([self.objective.get(name, 0) for name in self._variables])
         if self.direction == "max":
             c *= -1
@@ -216,6 +242,7 @@ class Problem(object):
 
     @property
     def objective_value(self):
+        """Returns the optimal objective value"""
         if self._f is None:
             raise RuntimeError("Problem has not been optimized yet")
         if self.direction == "max":
@@ -242,6 +269,7 @@ class Problem(object):
         self._f = None
 
 
+@six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
     def __init__(self, name, lb=None, ub=None, type="continuous", *args, **kwargs):
         if type != "continuous":
@@ -282,6 +310,7 @@ class Variable(interface.Variable):
             return None
 
 
+@six.add_metaclass(inheritdocstring)
 class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
@@ -358,6 +387,7 @@ class Constraint(interface.Constraint):
         return coefficient_dict
 
 
+@six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
@@ -395,6 +425,7 @@ class Objective(interface.Objective):
         return coefficient_dict
 
 
+@six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
     def __init__(self, verbosity=0, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
@@ -409,6 +440,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._verbosity = value
 
 
+@six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
     def __init__(self, problem=None, *args, **kwargs):
 

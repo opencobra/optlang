@@ -14,9 +14,14 @@
 # limitations under the License.
 
 
-"""Abstract solver interface definitions (:class:`Model`, :class:`Variable`,
+"""
+Abstract solver interface definitions (:class:`Model`, :class:`Variable`,
 :class:`Constraint`, :class:`Objective`) intended to be subclassed and
 extended for individual solvers.
+
+This module defines the API of optlang objects and indicates which methods need to be implemented in
+subclassed solver interfaces.
+The classes in this module can be used to construct and modify problems, but no optimizations can be done.
 """
 import collections
 import inspect
@@ -60,6 +65,14 @@ INPROGRESS = 'in_progress'
 ABORTED = 'aborted'
 SPECIAL = 'check_original_solver_status'
 
+statuses = {
+    OPTIMAL: "An optimal solution as been found.",
+    INFEASIBLE: "The problem has no feasible solutions.",
+    UNBOUNDED: "The objective can be optimized infinitely.",
+    SPECIAL: "The status returned by the solver could not be interpreted. Please refer to the solver's documentation to find the status.",
+    UNDEFINED: "The solver determined that the problem is ill-formed. "
+    # TODO Add the rest
+}
 
 # noinspection PyShadowingBuiltins
 class Variable(sympy.Symbol):
@@ -285,6 +298,15 @@ class Variable(sympy.Symbol):
         self.__dict__ = state
 
     def to_json(self):
+        """
+        Returns a json-compatible object from the Variable that can be saved using the json module.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json", "w") as outfile:
+        >>>     json.dump(var.to_json(), outfile)
+        """
         json_obj = {
             "name": self.name,
             "lb": self.lb,
@@ -295,6 +317,15 @@ class Variable(sympy.Symbol):
 
     @classmethod
     def from_json(cls, json_obj):
+        """
+        Constructs a Variable from the provided json-object.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json") as infile:
+        >>>     var = Variable.from_json(json.load(infile))
+        """
         return cls(json_obj["name"], lb=json_obj["lb"], ub=json_obj["ub"], type=json_obj["type"])
 
     def _round_primal_to_bounds(self, primal, tolerance=1e-5):
@@ -365,6 +396,7 @@ class OptimizationExpression(object):
 
     @property
     def name(self):
+        """The name of the object"""
         return self._name
 
     @name.setter
@@ -373,6 +405,7 @@ class OptimizationExpression(object):
 
     @property
     def problem(self):
+        """A reference to the model that the object belongs to (or None)"""
         return self._problem
 
     @problem.setter
@@ -389,7 +422,7 @@ class OptimizationExpression(object):
 
     @property
     def variables(self):
-        """Variables in constraint."""
+        """Variables in constraint/objective's expression."""
         return self.expression.atoms(sympy.Symbol)
 
     def _canonicalize(self, expression):
@@ -403,7 +436,7 @@ class OptimizationExpression(object):
 
     @property
     def is_Linear(self):
-        """Returns True if constraint is linear (read-only)."""
+        """Returns True if expression is linear (a polynomial with degree 1 or 0) (read-only)."""
         coeff_dict = self.expression.as_coefficients_dict()
         if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
             return True
@@ -416,7 +449,7 @@ class OptimizationExpression(object):
 
     @property
     def is_Quadratic(self):
-        """Returns True if constraint is quadratic (read-only)."""
+        """Returns True if the expression is a polynomial with degree exactly 2 (read-only)."""
         if self.expression.is_Atom:
             return False
         if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom)
@@ -470,7 +503,8 @@ class OptimizationExpression(object):
         return self
 
     def set_linear_coefficients(self, coefficients):
-        """Set coefficients of linear terms in constraint.
+        """Set coefficients of linear terms in constraint or objective.
+        Existing coefficients for linear or non-linear terms will not be modified.
 
         Parameters
         ----------
@@ -630,6 +664,15 @@ class Constraint(OptimizationExpression):
                         primal, self.name, self.lb, self.ub))
 
     def to_json(self):
+        """
+        Returns a json-compatible object from the constraint that can be saved using the json module.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json", "w") as outfile:
+        >>>     json.dump(constraint.to_json(), outfile)
+        """
         if self.indicator_variable is None:
             indicator = None
         else:
@@ -646,6 +689,15 @@ class Constraint(OptimizationExpression):
 
     @classmethod
     def from_json(cls, json_obj, variables=None):
+        """
+        Constructs a Variable from the provided json-object.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json") as infile:
+        >>>     constraint = Constraint.from_json(json.load(infile))
+        """
         if variables is None:
             variables = {}
         expression = parse_expr(json_obj["expression"], variables)
@@ -737,6 +789,15 @@ class Objective(OptimizationExpression):
         raise NotImplementedError("Child class should implement this.")
 
     def to_json(self):
+        """
+        Returns a json-compatible object from the objective that can be saved using the json module.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json", "w") as outfile:
+        >>>     json.dump(obj.to_json(), outfile)
+        """
         json_obj = {
             "name": self.name,
             "expression": expr_to_json(self.expression),
@@ -746,6 +807,15 @@ class Objective(OptimizationExpression):
 
     @classmethod
     def from_json(cls, json_obj, variables=None):
+        """
+        Constructs an Objective from the provided json-object.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json") as infile:
+        >>>     obj = Objective.from_json(json.load(infile))
+        """
         if variables is None:
             variables = {}
         expression = parse_expr(json_obj["expression"], variables)
@@ -757,7 +827,28 @@ class Objective(OptimizationExpression):
 
 
 class Configuration(object):
-    """Optimization solver configuration."""
+    """
+    Optimization solver configuration.
+    This object allows the user to change certain parameters and settings in the solver.
+    It is meant to allow easy access to a few common and important parameters. For information on changing
+    other solver parameters, please consult the documentation from the solver provider.
+    Some changeable parameters are listed below. Note that some solvers might not implement all of these
+    and might also implement additional parameters.
+
+    Attributes
+    ----------
+    verbosity: int from 0 to 3
+        Changes the level of output.
+    timeout: int or None
+        The time limit in second the solver will use to optimize the problem.
+    presolve: Boolean or 'auto'
+        Tells the solver whether to use (solver-specific) pre-processing to simplify the problem.
+        This can decrease solution time, but also introduces overhead. If set to 'auto' the solver will
+        first try to solve without pre-processing, and only turn in on in case no optimal solution can be found.
+    lp_method: str
+        Select which algorithm the LP solver uses, e.g. simplex, barrier, etc.
+
+    """
 
     @classmethod
     def clone(cls, config, problem=None, **kwargs):
@@ -776,7 +867,7 @@ class Configuration(object):
         0: no output
         1: error and warning messages only
         2: normal output
-        4: full output
+        3: full output
         """
         raise NotImplementedError
 
@@ -791,6 +882,17 @@ class Configuration(object):
 
     @timeout.setter
     def timeout(self):
+        raise NotImplementedError
+
+    @property
+    def presolve(self):
+        """
+        Turn pre-processing on or off. Set to 'auto' to only use presolve if no optimal solution can be found.
+        """
+        raise NotImplementedError
+
+    @presolve.setter
+    def presolve(self):
         raise NotImplementedError
 
 
@@ -890,7 +992,7 @@ class Model(object):
     def interface(self):
         """Provides access to the solver interface the model belongs to
 
-        For example optlang.glpk_interface
+        Returns a Python module, for example optlang.glpk_interface
         """
         return sys.modules[self.__module__]
 
@@ -1103,7 +1205,14 @@ class Model(object):
             self._pending_modifications.rm_constr = []
 
     def optimize(self):
-        """Solve the optimization problem.
+        """
+        Solve the optimization problem using the relevant solver back-end.
+        The status returned by this method tells whether an optimal solution was found,
+        if the problem is infeasible etc. Consult optlang.statuses for more elaborate explanations
+        of each status.
+
+        The objective value can be accessed from 'model.objective.value', while the solution can be
+        retrieved by 'model.primal_values'.
 
         Returns
         -------
@@ -1199,6 +1308,17 @@ class Model(object):
         self._remove_constraints([constraint])
 
     def to_json(self):
+        """
+        Returns a json-compatible object from the model that can be saved using the json module.
+        Variables, constraints and objective contained in the model will be saved. Configurations
+        will not be saved.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json", "w") as outfile:
+        >>>     json.dump(model.to_json(), outfile)
+        """
         json_obj = {
             "name": self.name,
             "variables": [var.to_json() for var in self.variables],
@@ -1209,6 +1329,15 @@ class Model(object):
 
     @classmethod
     def from_json(cls, json_obj):
+        """
+        Constructs a Model from the provided json-object.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json") as infile:
+        >>>     model = Model.from_json(json.load(infile))
+        """
         model = cls(name=json_obj["name"])
         interface = model.interface
         variables = [interface.Variable.from_json(var_json) for var_json in json_obj["variables"]]

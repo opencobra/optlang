@@ -19,7 +19,30 @@ from optlang.exceptions import ContainerAlreadyContains
 
 
 class Container(object):
-    '''A container for objects that have a name attribute.'''
+    '''
+    A container for objects that have a name attribute.
+    Items in the Container can be accessed by index like a list or by key (the name attribute of the item).
+    For convenience, an item can also be accessed as an attribute with the same name as the name attribute of the item.
+
+    Items can be added to the Container using the list-like methods 'append' and 'extend' or by
+    dict-like assignment.
+
+    Examples
+    --------
+    >>> container = Container()
+    >>> var1 = Variable("coffee", lb=-10, ub=10)
+
+    The variable can be added in either of the following ways:
+    >>> container.append(var1)
+    >>> container.extend([var1])
+    >>> container["coffee"] = var1 # Note the key must match the name attribute of the item
+
+    The added item can be accessed in either of the following ways:
+    >>> container[0]
+    >>> container["coffee"]
+    >>> container.coffee
+    '-10 <= coffee <= 10'
+    '''
 
     def __init__(self, iterable=()):
         self._dict = {}

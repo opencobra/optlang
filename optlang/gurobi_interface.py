@@ -381,7 +381,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 
 class Model(interface.Model):
-    """docstring for Model"""
 
     def __init__(self, problem=None, *args, **kwargs):
 

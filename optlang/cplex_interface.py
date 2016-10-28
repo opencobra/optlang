@@ -356,6 +356,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @property
     def lp_method(self):
+        """The algorithm used to solve LP problems."""
         lpmethod = self.problem.problem.parameters.lpmethod
         value = lpmethod.get()
         return lpmethod.values[value]
@@ -469,6 +470,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @property
     def solution_target(self):
+        """Change whether the QP solver will try to find a globally optimal solution or a local optimum.
+        This will only"""
         if self.problem is not None:
             return _SOLUTION_TARGETS[self.problem.problem.parameters.solutiontarget.get()]
         else:
@@ -490,6 +493,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @property
     def qp_method(self):
+        """Change the algorithm used to optimize QP problems."""
         value = self.problem.problem.parameters.qpmethod.get()
         return self.problem.problem.parameters.qpmethod.values[value]
 

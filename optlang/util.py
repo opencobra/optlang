@@ -137,8 +137,11 @@ def list_available_solvers():
 
 
 def inheritdocstring(name, bases, attrs):
-    """Use as metaclass to inherit class and method docstrings from parent.
-    Adapted from http://stackoverflow.com/questions/13937500/inherit-a-parent-class-docstring-as-doc-attribute"""
+    """
+    Use as metaclass to inherit class and method docstrings from parent.
+    Adapted from http://stackoverflow.com/questions/13937500/inherit-a-parent-class-docstring-as-doc-attribute
+    Use this on classes defined in solver-specific interfaces to inherit docstrings from the high-level interface.
+    """
     if '__doc__' not in attrs or not attrs["__doc__"]:
         # create a temporary 'parent' to (greatly) simplify the MRO search
         temp = type('temporaryclass', bases, {})
@@ -167,6 +170,9 @@ def method_inheritdocstring(mthd):
 
 
 def expr_to_json(expr):
+    """
+    Converts a Sympy expression to a json-compatible tree-structure.
+    """
     if isinstance(expr, sympy.Mul):
         return {"type": "Mul", "args": [expr_to_json(arg) for arg in expr.args]}
     elif isinstance(expr, sympy.Add):
@@ -186,6 +192,12 @@ def expr_to_json(expr):
 
 
 def parse_expr(expr, local_dict=None):
+    """
+    Parses a json-object created with 'expr_to_json' into a Sympy expression.
+
+    If a local_dict argument is passed, symbols with be looked up by name, and a new symbol will
+    be created only if the name is not in local_dict.
+    """
     if local_dict is None:
         local_dict = {}
     if expr["type"] == "Add":

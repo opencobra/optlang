@@ -14,10 +14,14 @@
 # limitations under the License.
 
 
-"""Interface for the GNU Linear Programming Kit (GLPK)
+"""
+Interface for the GNU Linear Programming Kit (GLPK)
 
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
+
+GLPK is an open source LP solver, with MILP capabilities.
+To use GLPK you need the 'swiglpk' python package.
 """
 
 import collections
@@ -30,6 +34,7 @@ from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
 from optlang.util import inheritdocstring
+from optlang import interface
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +51,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
     glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis
 
-from optlang import interface
+
 
 _GLPK_STATUS_TO_STATUS = {
     GLP_UNDEF: interface.UNDEFINED,
