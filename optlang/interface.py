@@ -74,6 +74,7 @@ statuses = {
     # TODO Add the rest
 }
 
+
 # noinspection PyShadowingBuiltins
 class Variable(sympy.Symbol):
     """Optimization variables.
