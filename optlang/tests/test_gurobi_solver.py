@@ -25,13 +25,14 @@ else:
     import pickle
 
     from optlang.gurobi_interface import Variable, Constraint, Model, Objective
+    from optlang.tests import abstract_test_cases
 
     random.seed(666)
     TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
     TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp')
 
 
-    class VariableTestCase(unittest.TestCase):
+    class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         def setUp(self):
             self.var = Variable('test')
 
@@ -40,6 +41,9 @@ else:
 
         def test_set_wrong_type_raises(self):
             self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+
+        def test_change_name(self):
+            1/0
 
         def test_get_primal(self):
             self.assertEqual(self.var.primal, None)
@@ -88,11 +92,27 @@ else:
             model.problem.update()
             self.assertEqual(var._internal_variable.getAttr('UB'), 2)
 
+        def test_set_bounds_to_none(self):
+            1/0
 
-    class ConstraintTestCase(unittest.TestCase):
+
+    class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
         def setUp(self):
             self.model = Model(problem=gurobipy.read(TESTMODELPATH))
             self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
+
+        def test_set_linear_coefficients(self):
+            constraint = self.model.constraints.M_atp_c
+            constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
+            self.model.update()
+            row = self.model.problem.getRow(self.model.problem.getConstrByName(constraint.name))
+            for i in range(row.size()):
+                col_name = row.getVar(i).getAttr('VarName')
+                if col_name == 'R_Biomass_Ecoli_core_w_GAM':
+                    self.assertEqual(row.getCoeff(i), 666.)
+
+        def test_indicator_constraint_support(self):
+            pass
 
         def test_get_primal(self):
             self.assertEqual(self.constraint.primal, None)
@@ -121,23 +141,23 @@ else:
         def test_setting_lower_bound_higher_than_upper_bound_raises(self):
             model = Model(problem=gurobipy.read(TESTMODELPATH))
             self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
-    #
-    #     def test_setting_nonnumerical_bounds_raises(self):
-    #         model = Model(problem=glpk_read_cplex(TESTMODELPATH))
-    #         self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
-        def test_set_linear_coefficients(self):
-            constraint = self.model.constraints.M_atp_c
-            constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
-            self.model.update()
-            row = self.model.problem.getRow(self.model.problem.getConstrByName(constraint.name))
-            for i in range(row.size()):
-                col_name = row.getVar(i).getAttr('VarName')
-                if col_name == 'R_Biomass_Ecoli_core_w_GAM':
-                    self.assertEqual(row.getCoeff(i), 666.)
+        def test_setting_nonnumerical_bounds_raises(self):
+            problem = gurobipy.read(TESTMODELPATH)
+            model = Model(problem=problem)
+            self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
+
+        def test_setting_bounds(self):
+            1/0
+
+        def test_remove_constraint(self):
+            1/0
+
+        def test_set_constraint_bounds_to_none(self):
+            1/0
 
 
-    class ObjectiveTestCase(unittest.TestCase):
+    class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
         def setUp(self):
             problem = gurobipy.read(TESTMODELPATH)
             self.model = Model(problem=problem)
@@ -165,7 +185,7 @@ else:
                     self.assertEqual(grb_obj.getCoeff(i), 666.)
 
 
-    class SolverTestCase(unittest.TestCase):
+    class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         def setUp(self):
             # problem = gurobipy.Model()
             problem = gurobipy.read(TESTMODELPATH)
@@ -536,8 +556,14 @@ else:
             print(status)
             self.assertEqual(status, 'time_limit')
 
-        def test_instantiating_model_with_non_glpk_problem_raises(self):
+        def test_set_linear_coefficients_objective(self):
+            1/0
+
+        def test_instantiating_model_with_different_solver_problem_raises(self):
             self.assertRaises(TypeError, Model, problem='Chicken soup')
+
+        def test_set_linear_coefficients_constraint(self):
+            1/0
 
         def test_primal_values(self):
                 self.model.optimize()

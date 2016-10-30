@@ -8,7 +8,7 @@ from optlang.interface import Model, Variable, Constraint, Objective
 import sys
 
 
-class TestSolver(TestCase):
+class TestModel(TestCase):
     def setUp(self):
         self.model = Model()
         x = Variable('x', lb=0, ub=10)

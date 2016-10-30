@@ -7,20 +7,20 @@ import random
 import unittest
 
 import nose
-import six
 from swiglpk import *
 
 import optlang
 from optlang import glpk_interface, interface
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from optlang.util import glpk_read_cplex
+from optlang.tests import abstract_test_cases
 
 random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp')
 
 
-class VariableTestCase(unittest.TestCase):
+class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
     def setUp(self):
         self.var = Variable('test')
 
@@ -29,6 +29,9 @@ class VariableTestCase(unittest.TestCase):
 
     def test_set_wrong_type_raises(self):
         self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+
+    def test_change_name(self):
+        1/0
 
     def test_get_primal(self):
         self.assertEqual(self.var.primal, None)
@@ -114,7 +117,7 @@ class VariableTestCase(unittest.TestCase):
         self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
 
-class ConstraintTestCase(unittest.TestCase):
+class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
     def setUp(self):
         self.model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
@@ -132,7 +135,7 @@ class ConstraintTestCase(unittest.TestCase):
             dict([('chap', 1.0), ('R_PGK', -33.0), ('chip', 33.0)])
         )
 
-    def test_indicator_constraint_raises(self):
+    def test_indicator_constraint_support(self):
         self.assertRaises(optlang.exceptions.IndicatorConstraintsNotSupported, Constraint,
                           Variable('chip') + Variable('chap'), indicator_variable=Variable('indicator', type='binary'))
 
@@ -208,6 +211,12 @@ class ConstraintTestCase(unittest.TestCase):
         model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
+    def test_setting_bounds(self):
+        1/0
+
+    def test_remove_constraint(self):
+        1/0
+
     def test_set_constraint_bounds_to_none(self):
         model = Model()
         var = Variable("test")
@@ -226,7 +235,7 @@ class ConstraintTestCase(unittest.TestCase):
         self.assertEqual(model.optimize(), interface.OPTIMAL)
 
 
-class ObjectiveTestCase(unittest.TestCase):
+class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
     def setUp(self):
         self.model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.obj = self.model.objective
@@ -240,8 +249,11 @@ class ObjectiveTestCase(unittest.TestCase):
         self.assertEqual(self.obj.direction, "max")
         self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MAX)
 
+    def test_set_linear_objective_coefficients(self):
+        1/0
 
-class SolverTestCase(unittest.TestCase):
+
+class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     def setUp(self):
         problem = glpk_read_cplex(TESTMODELPATH)
         self.model = Model(problem=problem)
@@ -267,15 +279,15 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                          [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-    # def test_copy(self):
-    #     model_copy = copy.copy(self.model)
-    #     self.assertNotEqual(id(self.model), id(model_copy))
-    #     self.assertEqual(id(self.model.problem), id(model_copy.problem))
-    #
-    # def test_deepcopy(self):
-    #     model_copy = copy.deepcopy(self.model)
-    #     self.assertNotEqual(id(self.model), id(model_copy))
-    #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+    def test_copy(self):
+        model_copy = copy.copy(self.model)
+        self.assertNotEqual(id(self.model), id(model_copy))
+        self.assertEqual(id(self.model.problem), id(model_copy.problem))
+
+    def test_deepcopy(self):
+        model_copy = copy.deepcopy(self.model)
+        self.assertNotEqual(id(self.model), id(model_copy))
+        self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
 
     def test_config_gets_copied_too(self):
         self.assertEquals(self.model.configuration.verbosity, 0)
@@ -497,15 +509,6 @@ class SolverTestCase(unittest.TestCase):
             if i != x.index and i != y.index and i != z.index:
                 self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
 
-    @unittest.skip('Skipping for now')
-    def test_absolute_value_objective(self):
-        # TODO: implement hack mentioned in http://www.aimms.com/aimms/download/manuals/aimms3om_linearprogrammingtricks.pdf
-
-        objective = Objective(sum(abs(variable) for variable in six.itervalues(self.model.variables)), name='test',
-                              direction='max')
-        print(objective)
-        self.assertTrue(False)
-
     def test_change_variable_bounds(self):
         inner_prob = self.model.problem
         inner_problem_bounds = [(glp_get_col_lb(inner_prob, i), glp_get_col_ub(inner_prob, i)) for i in
@@ -623,14 +626,14 @@ class SolverTestCase(unittest.TestCase):
         status = self.model.optimize()
         self.assertEqual(status, 'time_limit')
 
-    def test_set_linear_coefficients(self):
+    def test_set_linear_coefficients_objective(self):
         self.model.objective.set_linear_coefficients({self.model.variables.R_TPI, 666.})
         self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
 
-    def test_instantiating_model_with_non_glpk_problem_raises(self):
+    def test_instantiating_model_with_different_solver_problem_raises(self):
         self.assertRaises(TypeError, Model, problem='Chicken soup')
 
-    def test_set_linear_coefficients(self):
+    def test_set_linear_coefficients_constraint(self):
         constraint = self.model.constraints.M_atp_c
         constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
         num_cols = glp_get_num_cols(self.model.problem)
