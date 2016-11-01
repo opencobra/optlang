@@ -55,7 +55,7 @@ class ContainerTestCase(unittest.TestCase):
                           'itervalues', 'keys', 'update_key', 'values'])
 
     def test_del_by_index(self):
-        variables_iterable = [Variable("v" + str(i), lb=10, ub=100) for i in range(10000)]
+        variables_iterable = [Variable("v" + str(i), lb=10, ub=100) for i in range(1000)]
         container = Container(variables_iterable)
         del container[10]
         for i, variable in enumerate(container):
@@ -65,7 +65,7 @@ class ContainerTestCase(unittest.TestCase):
                 self.assertEqual(int(variable.name.replace('v', '')) - 1, i)
 
     def test_del_by_key(self):
-        variables_iterable = [Variable("v" + str(i), lb=10, ub=100) for i in range(10000)]
+        variables_iterable = [Variable("v" + str(i), lb=10, ub=100) for i in range(1000)]
         container = Container(variables_iterable)
         del container["v333"]
         for i, variable in enumerate(container):
