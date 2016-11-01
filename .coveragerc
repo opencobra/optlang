@@ -8,6 +8,7 @@ omit =
     optlang/_version.py
     optlang/inspyred_interface.py
     optlang/util.py
+    optlang/tests/*
 
 [report]
 # Regexes for lines to exclude from consideration
