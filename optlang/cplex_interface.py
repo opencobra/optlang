@@ -310,6 +310,8 @@ class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
         self._expression_expired = False
+        if not (self.is_Linear or self.is_Quadratic):
+            raise ValueError("Cplex only supports linear and quadratic objectives.")
 
     @property
     def value(self):
