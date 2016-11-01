@@ -521,15 +521,19 @@ else:
 
         def test_change_variable_bounds(self):
             inner_prob = self.model.problem
-            inner_problem_bounds = zip(inner_prob.variables.get_lower_bounds(), inner_prob.variables.get_upper_bounds())
+            inner_problem_bounds = list(
+                zip(inner_prob.variables.get_lower_bounds(), inner_prob.variables.get_upper_bounds())
+            )
             bounds = [(var.lb, var.ub) for var in self.model.variables.values()]
             self.assertEqual(bounds, inner_problem_bounds)
             for var in self.model.variables.values():
                 var.lb = random.uniform(-1000, 1000)
                 var.ub = random.uniform(var.lb, 1000)
             self.model.update()
-            inner_problem_bounds_new = zip(inner_prob.variables.get_lower_bounds(),
+            inner_problem_bounds_new = list(
+                zip(inner_prob.variables.get_lower_bounds(),
                                            inner_prob.variables.get_upper_bounds())
+            )
             bounds_new = [(var.lb, var.ub) for var in self.model.variables.values()]
             self.assertNotEqual(bounds, bounds_new)
             self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
