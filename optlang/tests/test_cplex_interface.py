@@ -19,12 +19,14 @@ try:
 
     random.seed(666)
     TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
+    TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp')
     CONVEX_QP_PATH = os.path.join(os.path.dirname(__file__), 'data/qplib_3256.lp')
     NONCONVEX_QP_PATH = os.path.join(os.path.dirname(__file__), 'data/qplib_1832.lp')
 
 
     class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         __test__ = True
+
         def setUp(self):
             self.var = Variable('test')
             self.model = Model()
@@ -94,7 +96,11 @@ try:
             self.assertRaises(ValueError, setattr, model.variables[0], 'lb', 10000000000.)
 
         def test_changing_variable_names_is_reflected_in_the_solver(self):
-            1 / 0
+            model = Model(problem=cplex.Cplex(TESTMODELPATH))
+            for i, variable in enumerate(model.variables):
+                variable.name = "var" + str(i)
+                self.assertEqual(variable.name, "var" + str(i))
+                self.assertEqual(model.problem.variables.get_names(i), "var" + str(i))
 
         def test_setting_nonnumerical_bounds_raises(self):
             problem = cplex.Cplex()
@@ -216,24 +222,6 @@ try:
             model = Model(problem=problem)
             self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
-        def test_setting_bounds(self):
-            constraint = self.model.constraints[0]
-            value = 42
-            constraint.ub = value
-            self.assertEqual(constraint.ub, value)
-            constraint.lb = value
-            self.assertEqual(constraint.lb, value)
-            self.assertEqual(self.model.problem.linear_constraints.get_senses(constraint.name), "E")
-            self.assertEqual(self.model.problem.linear_constraints.get_range_values(constraint.name), 0)
-
-        def test_remove_constraint(self):
-            constraint = self.model.constraints[0]
-            expr = constraint.expression
-            self.model.remove(constraint)
-            self.model.update()
-            self.assertTrue(constraint.problem is None)
-            self.assertEqual(expr, constraint._expression)
-
         def test_set_constraint_bounds_to_none(self):
             model = Model()
             var = Variable("test")
@@ -267,9 +255,6 @@ try:
             self.obj.direction = "max"
             self.assertEqual(self.obj.direction, "max")
             self.assertEqual(self.model.problem.objective.get_sense(), self.model.problem.objective.sense.maximize)
-
-        def test_set_linear_objective_coefficients(self):
-            1/0
 
 
     class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
@@ -391,7 +376,11 @@ try:
             self.assertEqual(var.problem, None)
 
         def test_remove_variable_str(self):
-            1/0
+            var = self.model.variables.values()[0]
+            self.model.remove(var.name)
+            self.assertNotIn(var, self.model.variables.values())
+            self.assertNotIn(var.name, self.model.problem.variables.get_names())
+            self.assertEqual(var.problem, None)
 
         def test_add_constraints(self):
             x = Variable('x', type='binary')
@@ -522,45 +511,103 @@ try:
                     self.assertEqual(coeff, 0.)
 
         def test_change_variable_bounds(self):
-            1/0
+            inner_prob = self.model.problem
+            inner_problem_bounds = zip(inner_prob.variables.get_lower_bounds(), inner_prob.variables.get_upper_bounds())
+            bounds = [(var.lb, var.ub) for var in self.model.variables.values()]
+            self.assertEqual(bounds, inner_problem_bounds)
+            for var in self.model.variables.values():
+                var.lb = random.uniform(-1000, 1000)
+                var.ub = random.uniform(var.lb, 1000)
+            self.model.update()
+            inner_problem_bounds_new = zip(inner_prob.variables.get_lower_bounds(),
+                                           inner_prob.variables.get_upper_bounds())
+            bounds_new = [(var.lb, var.ub) for var in self.model.variables.values()]
+            self.assertNotEqual(bounds, bounds_new)
+            self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
+            self.assertEqual(bounds_new, inner_problem_bounds_new)
 
         def test_change_variable_type(self):
-            1/0
+            for variable in self.model.variables:
+                variable.type = 'integer'
+            self.assertEqual(set(self.model.problem.variables.get_types()), {'I'})
 
         def test_change_constraint_bounds(self):
-            1/0
+            constraint = self.model.constraints[0]
+            value = 42
+            constraint.ub = value
+            self.assertEqual(constraint.ub, value)
+            constraint.lb = value
+            self.assertEqual(constraint.lb, value)
+            self.assertEqual(self.model.problem.linear_constraints.get_senses(constraint.name), "E")
+            self.assertEqual(self.model.problem.linear_constraints.get_range_values(constraint.name), 0)
 
         def test_initial_objective(self):
-            1/0
+            self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
 
         def test_optimize(self):
-            1/0
+            self.model.optimize()
+            self.assertEqual(self.model.status, 'optimal')
+            self.assertAlmostEqual(self.model.objective.value, 0.8739215069684303)
 
         def test_optimize_milp(self):
-            1/0
+            problem = cplex.Cplex(TESTMILPMODELPATH)
+            milp_model = Model(problem=problem)
+            milp_model.optimize()
+            self.assertEqual(milp_model.status, 'optimal')
+            self.assertAlmostEqual(milp_model.objective.value, 122.5)
+            for variable in milp_model.variables:
+                if variable.type == 'integer':
+                    self.assertEqual(variable.primal % 1, 0)
 
         def test_change_objective(self):
-            1/0
+            """Test that all different kinds of linear objective specification work."""
+            print(self.model.variables.values()[0:2])
+            v1, v2 = self.model.variables.values()[0:2]
+            self.model.objective = Objective(1. * v1 + 1. * v2)
+            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+            self.model.objective = Objective(v1 + v2)
+            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
 
         def test_number_objective(self):
             self.model.objective = Objective(0.)
             self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
-            obj_coeff = list()
-            for i in range(1, + 1):
-                obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
-            self.assertEqual(set(obj_coeff), {0.})
+            self.assertEqual(set(self.model.problem.objective.get_linear()), {0.})
 
         def test_raise_on_non_linear_objective(self):
-            1/0
+            """Test that an exception is raised when a non-linear objective is added to the model."""
+            v1, v2 = self.model.variables.values()[0:2]
+            self.assertRaises(ValueError, Objective, v1 * v2 ** 3)
 
         def test_iadd_objective(self):
-            1/0
+            v2, v3 = self.model.variables.values()[1:3]
+            self.model.objective += 2. * v2 - 3. * v3
+            obj_coeff = self.model.problem.objective.get_linear()
+            self.assertEqual(obj_coeff,
+                             [1.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0]
+                             )
 
         def test_imul_objective(self):
-            1/0
+            self.model.objective *= 2.
+            obj_coeff = self.model.problem.objective.get_linear()
+            print(obj_coeff)
+            self.assertEqual(obj_coeff,
+                             [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0]
+                             )
 
         def test_set_copied_objective(self):
-            1/0
+            obj_copy = copy.copy(self.model.objective)
+            self.model.objective = obj_copy
+            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_Biomass_Ecoli_core_w_GAM')
 
         def test_timeout(self):
             self.model.configuration.timeout = 0
@@ -572,7 +619,7 @@ try:
             self.assertEqual(self.model.problem.objective.get_linear(self.model.variables.R_TPI.name), 666.)
 
         def test_instantiating_model_with_different_solver_problem_raises(self):
-            1/0
+            self.assertRaises(TypeError, Model, problem='Chicken soup')
 
         def test_set_linear_coefficients_constraint(self):
             constraint = self.model.constraints.M_atp_c
@@ -610,8 +657,14 @@ try:
             self.model.remove(self.model.variables[1])
             self.model.objective = Objective(self.model.variables[2])
 
-        def test_clone_solver(self):
-            pass
+        def test_clone_model(self):
+            self.assertEquals(self.model.configuration.verbosity, 0)
+            self.model.configuration.verbosity = 3
+            cloned_model = Model.clone(self.model)
+            self.assertEquals(cloned_model.configuration.verbosity, 3)
+            self.assertEquals(len(cloned_model.variables), len(self.model.variables))
+            self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+
 
     class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
         def setUp(self):

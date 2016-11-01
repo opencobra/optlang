@@ -3,6 +3,8 @@
 
 import unittest
 
+from optlang import interface
+
 try:
     import gurobipy
 except ImportError as e:
@@ -35,6 +37,7 @@ else:
     class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         def setUp(self):
             self.var = Variable('test')
+            self.model = Model()
 
         def test_internal_variable(self):
             self.assertEqual(self.var._internal_variable, None)
@@ -43,7 +46,10 @@ else:
             self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
 
         def test_change_name(self):
-            1/0
+            self.model.add(self.var)
+            self.model.update()
+            self.var.name = "test_2"
+            self.assertEqual(self.var.name, "test_2")
 
         def test_get_primal(self):
             self.assertEqual(self.var.primal, None)
@@ -93,23 +99,26 @@ else:
             self.assertEqual(var._internal_variable.getAttr('UB'), 2)
 
         def test_set_bounds_to_none(self):
-            1/0
+            model = Model()
+            var = Variable("test_var")
+            obj = Objective(var)
+            model.objective = obj
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+            var.ub = 10
+            self.assertEqual(model.optimize(), interface.OPTIMAL)
+            var.ub = None
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+            obj.direction = "min"
+            var.lb = -10
+            self.assertEqual(model.optimize(), interface.OPTIMAL)
+            var.lb = None
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
 
     class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
         def setUp(self):
             self.model = Model(problem=gurobipy.read(TESTMODELPATH))
             self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
-
-        def test_set_linear_coefficients(self):
-            constraint = self.model.constraints.M_atp_c
-            constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
-            self.model.update()
-            row = self.model.problem.getRow(self.model.problem.getConstrByName(constraint.name))
-            for i in range(row.size()):
-                col_name = row.getVar(i).getAttr('VarName')
-                if col_name == 'R_Biomass_Ecoli_core_w_GAM':
-                    self.assertEqual(row.getCoeff(i), 666.)
 
         def test_indicator_constraint_support(self):
             pass
@@ -147,14 +156,22 @@ else:
             model = Model(problem=problem)
             self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
-        def test_setting_bounds(self):
-            1/0
-
-        def test_remove_constraint(self):
-            1/0
-
         def test_set_constraint_bounds_to_none(self):
-            1/0
+            model = Model()
+            var = Variable("test")
+            const = Constraint(var, lb=-10, ub=10)
+            obj = Objective(var)
+            model.add(const)
+            model.objective = obj
+            self.assertEqual(model.optimize(), interface.OPTIMAL)
+            const.ub = None
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+            const.ub = 10
+            const.lb = None
+            obj.direction = "min"
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+            const.lb = -10
+            self.assertEqual(model.optimize(), interface.OPTIMAL)
 
 
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
@@ -175,14 +192,6 @@ else:
             self.assertEqual(self.model.problem.getAttr('ModelSense'), gurobipy.GRB.MINIMIZE)
             self.model.update()
             self.assertEqual(self.model.problem.getAttr('ModelSense'), gurobipy.GRB.MAXIMIZE)
-
-        def test_set_linear_objective_coefficients(self):
-            self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
-            self.model.update()
-            grb_obj = self.model.problem.getObjective()
-            for i in range(grb_obj.size()):
-                if 'R_TPI' == grb_obj.getVar(i).getAttr('VarName'):
-                    self.assertEqual(grb_obj.getCoeff(i), 666.)
 
 
     class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
@@ -211,6 +220,18 @@ else:
                              [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
             self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
+
+        def test_pickle_empty_model(self):
+            model = Model()
+            self.assertEquals(model.objective, None)
+            self.assertEquals(len(model.variables), 0)
+            self.assertEquals(len(model.constraints), 0)
+            pickle_string = pickle.dumps(model)
+            from_pickle = pickle.loads(pickle_string)
+            print(from_pickle.objective)
+            self.assertEquals(from_pickle.objective, None)
+            self.assertEquals(len(from_pickle.variables), 0)
+            self.assertEquals(len(from_pickle.constraints), 0)
 
         def test_copy(self):
             self.model.optimize()
@@ -411,6 +432,16 @@ else:
             self.assertEqual(z._internal_variable, self.model.problem.getVarByName('z'))
             self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
 
+        def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
+            x = Variable('x', lb=-83.3, ub=1324422.)
+            y = Variable('y', lb=-181133.3, ub=12000.)
+            constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
+            self.model.add(constraint)
+            z = Variable('z', lb=2, ub=5, type='integer')
+            constraint += 77. * z
+            self.model.remove(constraint)
+            self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
+
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
             y = Variable('y', lb=-181133.3, ub=12000.)
@@ -557,13 +588,25 @@ else:
             self.assertEqual(status, 'time_limit')
 
         def test_set_linear_coefficients_objective(self):
-            1/0
+            self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
+            self.model.update()
+            grb_obj = self.model.problem.getObjective()
+            for i in range(grb_obj.size()):
+                if 'R_TPI' == grb_obj.getVar(i).getAttr('VarName'):
+                    self.assertEqual(grb_obj.getCoeff(i), 666.)
 
         def test_instantiating_model_with_different_solver_problem_raises(self):
             self.assertRaises(TypeError, Model, problem='Chicken soup')
 
         def test_set_linear_coefficients_constraint(self):
-            1/0
+            constraint = self.model.constraints.M_atp_c
+            constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
+            self.model.update()
+            row = self.model.problem.getRow(self.model.problem.getConstrByName(constraint.name))
+            for i in range(row.size()):
+                col_name = row.getVar(i).getAttr('VarName')
+                if col_name == 'R_Biomass_Ecoli_core_w_GAM':
+                    self.assertEqual(row.getCoeff(i), 666.)
 
         def test_primal_values(self):
                 self.model.optimize()
@@ -585,7 +628,15 @@ else:
             for k, v in self.model.shadow_prices.items():
                 self.assertEquals(v, self.model.constraints[k].dual)
 
-        def test_clone_solver(self):
+        def test_change_objective_can_handle_removed_vars(self):
+            self.model.objective = Objective(self.model.variables[0])
+            self.model.remove(self.model.variables[0])
+            self.model.update()
+            self.model.objective = Objective(self.model.variables[1] ** 2)
+            self.model.remove(self.model.variables[1])
+            self.model.objective = Objective(self.model.variables[2])
+
+        def test_clone_model(self):
             self.assertEquals(self.model.configuration.verbosity, 0)
             self.model.configuration.verbosity = 3
             cloned_model = Model.clone(self.model)

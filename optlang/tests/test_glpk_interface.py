@@ -23,6 +23,7 @@ TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp
 class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
     def setUp(self):
         self.var = Variable('test')
+        self.model = Model()
 
     def test_variable_without_problem_returns_None_index(self):
         self.assertEqual(self.var.index, None)
@@ -31,7 +32,10 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
 
     def test_change_name(self):
-        1/0
+        self.model.add(self.var)
+        self.model.update()
+        self.var.name = "test_2"
+        self.assertEqual(self.var.name, "test_2")
 
     def test_get_primal(self):
         self.assertEqual(self.var.primal, None)
@@ -122,19 +126,6 @@ class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
         self.model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
 
-    def test_set_linear_coefficients(self):
-        self.model.add(self.constraint)
-        self.constraint.set_linear_coefficients({Variable('chip'): 33., self.model.variables.R_PGK: -33})
-        ia = intArray(glp_get_num_cols(self.model.problem) + 1)
-        da = doubleArray(glp_get_num_cols(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, self.constraint.index, ia, da)
-        self.assertEqual(nnz, 3)
-        self.assertEqual(
-            dict(zip([glp_get_col_name(self.model.problem, ia[i]) for i in range(1, nnz + 1)],
-                [da[i] for i in range(1, nnz + 1)])),
-            dict([('chap', 1.0), ('R_PGK', -33.0), ('chip', 33.0)])
-        )
-
     def test_indicator_constraint_support(self):
         self.assertRaises(optlang.exceptions.IndicatorConstraintsNotSupported, Constraint,
                           Variable('chip') + Variable('chap'), indicator_variable=Variable('indicator', type='binary'))
@@ -211,12 +202,6 @@ class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
         model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
-    def test_setting_bounds(self):
-        1/0
-
-    def test_remove_constraint(self):
-        1/0
-
     def test_set_constraint_bounds_to_none(self):
         model = Model()
         var = Variable("test")
@@ -249,9 +234,6 @@ class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
         self.assertEqual(self.obj.direction, "max")
         self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MAX)
 
-    def test_set_linear_objective_coefficients(self):
-        1/0
-
 
 class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     def setUp(self):
@@ -278,6 +260,17 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
                          [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
         self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                          [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
+
+    def test_pickle_empty_model(self):
+        model = Model()
+        self.assertEquals(model.objective, None)
+        self.assertEquals(len(model.variables), 0)
+        self.assertEquals(len(model.constraints), 0)
+        pickle_string = pickle.dumps(model)
+        from_pickle = pickle.loads(pickle_string)
+        self.assertEquals(from_pickle.objective, None)
+        self.assertEquals(len(from_pickle.variables), 0)
+        self.assertEquals(len(from_pickle.constraints), 0)
 
     def test_copy(self):
         model_copy = copy.copy(self.model)
@@ -488,6 +481,16 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         print(self.model)
         self.assertEqual(constraint.index, 73)
 
+    def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
+        x = Variable('x', lb=-83.3, ub=1324422.)
+        y = Variable('y', lb=-181133.3, ub=12000.)
+        constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
+        self.model.add(constraint)
+        z = Variable('z', lb=2, ub=5, type='integer')
+        constraint += 77. * z
+        self.model.remove(constraint)
+        self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
+
     def test_change_of_objective_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
         y = Variable('y', lb=-181133.3, ub=12000.)
@@ -627,7 +630,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(status, 'time_limit')
 
     def test_set_linear_coefficients_objective(self):
-        self.model.objective.set_linear_coefficients({self.model.variables.R_TPI, 666.})
+        self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
         self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
 
     def test_instantiating_model_with_different_solver_problem_raises(self):
@@ -666,7 +669,13 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         for k, v in self.model.shadow_prices.items():
             self.assertEquals(v, self.model.constraints[k].dual)
 
-    def test_clone_solver(self):
+    def test_change_objective_can_handle_removed_vars(self):
+        self.model.objective = Objective(self.model.variables[0])
+        self.model.remove(self.model.variables[0])
+        self.model.update()
+        self.model.objective = Objective(self.model.variables[2])
+
+    def test_clone_model(self):
         self.assertEquals(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
         cloned_model = Model.clone(self.model)

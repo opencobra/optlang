@@ -74,10 +74,6 @@ class AbstractConstraintTestCase(unittest.TestCase):
         pass
 
     @abc.abstractmethod
-    def test_set_linear_coefficients(self):
-        pass
-
-    @abc.abstractmethod
     def test_indicator_constraint_support(self):
         pass
 
@@ -102,14 +98,6 @@ class AbstractConstraintTestCase(unittest.TestCase):
         pass
 
     @abc.abstractmethod
-    def test_setting_bounds(self):
-        pass
-
-    @abc.abstractmethod
-    def test_remove_constraint(self):
-        pass
-
-    @abc.abstractmethod
     def test_set_constraint_bounds_to_none(self):
         pass
 
@@ -122,10 +110,6 @@ class AbstractObjectiveTestCase(unittest.TestCase):
 
     @abc.abstractmethod
     def test_change_direction(self):
-        pass
-
-    @abc.abstractmethod
-    def test_set_linear_objective_coefficients(self):
         pass
 
 
@@ -292,7 +276,7 @@ class AbstractModelTestCase(unittest.TestCase):
         pass
 
     @abc.abstractmethod
-    def test_clone_solver(self):
+    def test_clone_model(self):
         pass
 
 

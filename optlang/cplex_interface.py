@@ -588,7 +588,7 @@ class Model(interface.Model):
                     name=objective_name
                 )
         else:
-            raise Exception("Provided problem is not a valid CPLEX model.")
+            raise TypeError("Provided problem is not a valid CPLEX model.")
         self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
