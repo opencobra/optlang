@@ -1,19 +1,18 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import unittest
-import pickle
-import tempfile
 import glob
+import logging
+import os
+import pickle
 import tarfile
+import tempfile
+import unittest
 from functools import partial
 
-import os
 import nose
-
 import six
 
-import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
@@ -24,7 +23,6 @@ else:
         import gurobipy
 
         from optlang.gurobi_interface import Model
-
 
         with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl'), 'rb') as fhandle:
             THE_FINAL_NETLIB_RESULTS = pickle.load(fhandle)
@@ -108,7 +106,8 @@ else:
                     model.configuration.presolve = True
                     model.configuration.verbosity = 3
                     func = partial(check_dimensions, problem, model)
-                    func.description = "test_netlib_check_dimensions_%s (%s)" % (netlib_id, os.path.basename(str(__file__)))
+                    func.description = "test_netlib_check_dimensions_%s (%s)" % (
+                        netlib_id, os.path.basename(str(__file__)))
                     yield func
 
                     model.optimize()

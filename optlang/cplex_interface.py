@@ -310,6 +310,8 @@ class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
         self._expression_expired = False
+        if not (self.is_Linear or self.is_Quadratic):
+            raise ValueError("Cplex only supports linear and quadratic objectives.")
 
     @property
     def value(self):
@@ -588,7 +590,7 @@ class Model(interface.Model):
                     name=objective_name
                 )
         else:
-            raise Exception("Provided problem is not a valid CPLEX model.")
+            raise TypeError("Provided problem is not a valid CPLEX model.")
         self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
