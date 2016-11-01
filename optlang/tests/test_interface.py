@@ -29,7 +29,7 @@ class TestModel(TestCase):
         model = Model()
         self.assertEqual(len(model.constraints), 0)
         self.assertEqual(len(model.variables), 0)
-        self.assertEqual(model.objective, None)
+        self.assertEqual(model.objective.expression, 0)
 
     def test_add_variable(self):
         var = Variable('z')

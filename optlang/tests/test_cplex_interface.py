@@ -278,7 +278,7 @@ else:
             model = Model()
             self.assertEqual(len(model.constraints), 0)
             self.assertEqual(len(model.variables), 0)
-            self.assertEqual(model.objective, None)
+            self.assertEqual(model.objective.expression, 0)
 
         def test_pickle_ability(self):
             self.model.optimize()
@@ -294,12 +294,12 @@ else:
 
         def test_pickle_empty_model(self):
             model = Model()
-            self.assertEquals(model.objective, None)
+            self.assertEquals(model.objective.expression, 0)
             self.assertEquals(len(model.variables), 0)
             self.assertEquals(len(model.constraints), 0)
             pickle_string = pickle.dumps(model)
             from_pickle = pickle.loads(pickle_string)
-            self.assertEquals(from_pickle.objective, None)
+            self.assertEquals(from_pickle.objective.expression, 0)
             self.assertEquals(len(from_pickle.variables), 0)
             self.assertEquals(len(from_pickle.constraints), 0)
 
