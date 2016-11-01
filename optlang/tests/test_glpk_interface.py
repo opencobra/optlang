@@ -7,13 +7,15 @@ import random
 import unittest
 
 import nose
-from swiglpk import *
-
 import optlang
 from optlang import glpk_interface, interface
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
-from optlang.util import glpk_read_cplex
 from optlang.tests import abstract_test_cases
+from optlang.util import glpk_read_cplex
+from swiglpk import glp_get_num_rows, glp_get_col_name, glp_get_num_cols, glp_get_prob_name, glp_get_row_name, \
+    glp_get_col_kind, glp_find_col, intArray, doubleArray, glp_get_mat_row, glp_get_row_type, glp_get_row_lb, \
+    glp_get_row_ub, glp_get_obj_coef, GLP_UP, GLP_DB, GLP_LO, GLP_CV, GLP_IV, GLP_FX, GLP_FR, glp_get_col_lb, \
+    glp_get_col_ub
 
 random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
@@ -351,12 +353,12 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     def test_remove_variable(self):
         var = self.model.variables.values()[0]
         self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
-                         'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 59.81*R_Biomass_Ecoli_core_w_GAM - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')
+                         'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 59.81*R_Biomass_Ecoli_core_w_GAM - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')  # noqa: E501
         self.assertEqual(var.problem, self.model)
         self.model.remove(var)
         self.model.update()
         self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
-                         'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')
+                         'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')  # noqa: E501
         self.assertNotIn(var, self.model.variables.values())
         self.assertEqual(glp_find_col(self.model.problem, var.name), 0)
         self.assertEqual(var.problem, None)

@@ -20,6 +20,7 @@ import six
 
 __test__ = False
 
+
 @six.add_metaclass(abc.ABCMeta)
 class AbstractVariableTestCase(unittest.TestCase):
     @unittest.skip('Abstract test method not implemented.')
@@ -285,7 +286,6 @@ class AbstractConfigurationTestCase(unittest.TestCase):
     @abc.abstractmethod
     def setUp(self):
         pass
-
 
 
 @six.add_metaclass(abc.ABCMeta)

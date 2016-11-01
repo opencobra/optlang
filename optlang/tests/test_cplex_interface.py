@@ -1,19 +1,32 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
+
 import copy
 import os
 import pickle
 import random
 import unittest
 
-import nose
-from optlang import interface
-from optlang.tests import abstract_test_cases
+try:  # noqa: C901
+    import cplex
+except ImportError as e:
 
-try:
+    if str(e).find('cplex') >= 0:
+        class TestMissingDependency(unittest.TestCase):
+
+            @unittest.skip('Missing dependency - ' + str(e))
+            def test_fail(self):
+                pass
+    else:
+        raise
+else:
+
+    import nose
+    from optlang import interface
+    from optlang.tests import abstract_test_cases
+
     from optlang.cplex_interface import Variable, Constraint, Model, Objective
     from optlang import cplex_interface
-    import cplex
 
     CplexSolverError = cplex.exceptions.CplexSolverError
 
@@ -82,8 +95,6 @@ try:
             self.assertEqual(model.status, 'optimal')
             self.assertEqual(model.objective.value, 0.8739215069684305)
             print([var.dual for var in model.variables])
-            # for i, j in zip([var.dual for var in model.variables], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.022916186593776235, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, -0.007638728864592075, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.005092485909728057, 0.0, 0.0, 0.0, 0.0, -0.005092485909728046, 0.0, 0.0, -0.005092485909728045, 0.0, 0.0, 0.0, -0.0611098309167366, -0.005092485909728045, 0.0, -0.003819364432296033, -0.00509248590972805, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03946676580039239, 0.0, 0.0, -0.005092485909728042, -0.0, -0.0012731214774320113, 0.0, -0.0916647463751049, 0.0, 0.0, 0.0, -0.0, -0.04583237318755246, 0.0, 0.0, -0.0916647463751049, -0.005092485909728045, -0.07002168125876067, 0.0, -0.06874855978132867, -0.0012731214774320113, 0.0, 0.0, 0.0, -0.001273121477432006, -0.0038193644322960392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.040739887277824405, -0.04583237318755245, -0.0012731214774320163, 0.0, 0.0, 0.0, 0.0, 0.0, -0.03437427989066435, 0.0, 0.0, -0.04837861614241648]):
-            #    self.assertAlmostEqual(i, j)
             self.var.type = "integer"
             model.add(self.var)
             model.optimize()
@@ -181,8 +192,6 @@ try:
             self.assertEqual(self.model.status, 'optimal')
             self.assertEqual(self.model.objective.value, 0.8739215069684305)
             print([constraint.dual for constraint in self.model.constraints])
-            # for i, j in zip([constraint.dual for constraint in self.model.constraints], [-0.047105494664984454, -0.042013008755256404, -0.042013008755256404, -0.09166474637510487, -0.09039162489767286, -0.02418930807120824, -0.022916186593776228, -0.034374279890664335, -0.034374279890664335, -0.028008672503504275, -0.07129480273619268, -0.029281793980936287, 0.005092485909728047, -0.06238295239416859, -0.06110983091673658, 0.010184971819456094, -0.0, -0.07129480273619268, -0.0, 0.0, -0.0, -0.0521979805747125, -0.06747543830389663, -0.0407398872778244, -0.039466765800392385, -0.09803035376226493, -0.104395961149425, 0.0, 0.0, -0.09166474637510488, -0.04837861614241646, -0.045832373187552435, -0.0521979805747125, -0.09803035376226493, -0.09166474637510488, -0.07511416716848872, -0.07002168125876067, -0.07002168125876067, -0.06874855978132866, -0.019096822161480172, -0.0, 0.0, 0.001273121477432012, 0.0, -0.07129480273619268, -0.042013008755256404, -0.04073988727782439, -0.04837861614241646, -0.045832373187552435, 0.007638728864592072, -0.0, 0.008911850342024089, -0.0, -0.0, 0.0, -0.0, 0.0, -0.042013008755256404, -0.042013008755256404, -0.001273121477432012, 0.0, -0.03564740136809635, -0.034374279890664335, 0.002546242954864024, -0.0, -0.08275289603308078, -0.08275289603308078, -0.11330781149144906, -0.050924859097280485, -0.04837861614241646, -0.054744223529576516, -0.08275289603308078]):
-            #    self.assertAlmostEqual(i, j)
 
         def test_change_constraint_name(self):
             constraint = copy.copy(self.constraint)
@@ -366,7 +375,7 @@ try:
             repickled = pickle.loads(pickle.dumps(self.model))
             print(repickled.variables)
             var_from_pickle = repickled.variables['12x!!@#5_3']
-            # self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle.index))
+            self.assertEqual(var_from_pickle.name, self.model.problem.variables.get_names()[-1])
 
         def test_remove_variable(self):
             var = self.model.variables.values()[0]
@@ -801,16 +810,6 @@ try:
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 2441.999999971)
 
-except ImportError as e:
-
-    if str(e).find('cplex') >= 0:
-        class TestMissingDependency(unittest.TestCase):
-
-            @unittest.skip('Missing dependency - ' + str(e))
-            def test_fail(self):
-                pass
-    else:
-        raise
 
 if __name__ == '__main__':
     nose.runmodule()
