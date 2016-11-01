@@ -531,8 +531,7 @@ else:
                 var.ub = random.uniform(var.lb, 1000)
             self.model.update()
             inner_problem_bounds_new = list(
-                zip(inner_prob.variables.get_lower_bounds(),
-                                           inner_prob.variables.get_upper_bounds())
+                zip(inner_prob.variables.get_lower_bounds(), inner_prob.variables.get_upper_bounds())
             )
             bounds_new = [(var.lb, var.ub) for var in self.model.variables.values()]
             self.assertNotEqual(bounds, bounds_new)
