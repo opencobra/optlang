@@ -88,7 +88,7 @@ def _parse_quadratic_expression(expression, expanded=False):
     linear_coefficients = {}
     quadratic_coefficients = {}
 
-    if expression.is_Number: # Constant expression, no coefficients
+    if expression.is_Number:  # Constant expression, no coefficients
         return linear_coefficients, quadratic_coefficients
 
     if expression.is_Mul:

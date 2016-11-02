@@ -743,7 +743,7 @@ class Model(interface.Model):
 
         linear_constraints = dict(lin_expr=[], senses=[], rhs=[], range_values=[], names=[])
         for constraint in constraints:
-            constraint._problem = None # This needs to be done in order to not trigger constraint._get_expression()
+            constraint._problem = None  # This needs to be done in order to not trigger constraint._get_expression()
             if constraint.is_Linear:
                 coeff_dict, _ = parse_optimization_expression(constraint)
 
