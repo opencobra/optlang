@@ -133,7 +133,14 @@ class Variable(sympy.Symbol):
 
     @classmethod
     def clone(cls, variable, **kwargs):
-        """Clone another variable (for example from another solver interface)."""
+        """
+        Make a copy of another variable. The variable being copied can be of the same type or belong to
+        a different solver interface.
+
+        Example
+        ----------
+        >>> var_copy = Variable.clone(old_var)
+        """
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
 
     # def __new__(cls, name, **assumptions):
@@ -374,7 +381,7 @@ class OptimizationExpression(object):
         ----------
         expression: Constraint, Objective
             An optimization expression.
-        problem: Model or None, optional
+        model: Model or None, optional
             A reference to an optimization model that should be searched for appropriate variables first.
         """
         interface = sys.modules[cls.__module__]
@@ -585,7 +592,22 @@ class Constraint(OptimizationExpression):
 
     @classmethod
     def clone(cls, constraint, model=None, **kwargs):
-        """Clone another constraint (for example from another solver interface)."""
+        """
+        Make a copy of another constraint. The constraint being copied can be of the same type or belong to
+        a different solver interface.
+
+        Parameters
+        ----------
+        constraint: interface.Constraint (or subclass)
+            The constraint to copy
+        model: Model or None
+            The variables of the new constraint will be taken from this model. If None, new variables will be
+            constructed.
+
+        Example
+        ----------
+        >>> const_copy = Constraint.clone(old_constraint)
+        """
         return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
                    indicator_variable=constraint.indicator_variable, active_when=constraint.active_when,
                    name=constraint.name, sloppy=True, **kwargs)
@@ -768,7 +790,14 @@ class Objective(OptimizationExpression):
 
     @classmethod
     def clone(cls, objective, model=None, **kwargs):
-        """Clone another objective (for example from another solver interface)."""
+        """
+        Make a copy of an objective. The objective being copied can be of the same type or belong to
+        a different solver interface.
+
+        Example
+        ----------
+        >>> new_objective = Objective.clone(old_objective)
+        """
         return cls(cls._substitute_variables(objective, model=model), name=objective.name,
                    direction=objective.direction, sloppy=True, **kwargs)
 
@@ -992,7 +1021,14 @@ class Model(object):
 
     @classmethod
     def clone(cls, model):
-        """Clone another model (for example from another solver interface)."""
+        """
+        Make a copy of a model. The model being copied can be of the same type or belong to
+        a different solver interface. This is the preferred way of copying models.
+
+        Example
+        ----------
+        >>> new_model = Model.clone(old_model)
+        """
         model.update()
         interface = sys.modules[cls.__module__]
         new_model = cls()
