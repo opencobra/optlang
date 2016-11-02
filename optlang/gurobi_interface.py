@@ -26,6 +26,7 @@ import six
 import tempfile
 from optlang import interface
 from optlang.util import inheritdocstring
+from optlang.expression_parsing import parse_optimization_expression
 import sympy
 from sympy.core.add import _unevaluated_Add
 
@@ -501,38 +502,24 @@ class Model(interface.Model):
     def objective(self, value):
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective._expression
-        if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
-            pass
-        else:
-            if expression.is_Mul:
-                terms = (expression,)
-            elif expression.is_Add:
-                terms = expression.args
-            else:
-                raise ValueError(
-                    "Provided objective %s doesn't seem to be appropriate." %
-                    self._objective)
 
-            grb_terms = []
-            for term in terms:
-                factors = term.args
-                coeff = factors[0]
-                vars = factors[1:]
-                assert len(vars) <= 2
-                if len(vars) == 2:
-                    var1 = self.problem.getVarByName(vars[0].name)
-                    var2 = self.problem.getVarByName(vars[1].name)
-                    grb_terms.append(coeff * var1 * var2)
-                else:
-                    if vars[0].is_Symbol:
-                        var = self.problem.getVarByName(vars[0].name)
-                        grb_terms.append(coeff * var)
-                    elif vars[0].is_Pow:
-                        var = self.problem.getVarByName(vars[0].args[0].name)
-                        exponent = vars[0].args[1]
-                        if exponent > 2:
-                            raise Exception("{} is not a quadratic term.".format(vars))
-                        grb_terms.append(coeff * var * var)
+        linear_coefficients, quadratic_coefficients = parse_optimization_expression(
+            value, quadratic=True, expression=expression
+        )
+        grb_terms = []
+        for var, coef in linear_coefficients.items():
+            var = self.problem.getVarByName(var.name)
+            grb_terms.append(coef * var)
+        for key, coef in quadratic_coefficients.items():
+            if len(key) == 1:
+                var = six.next(iter(key))
+                var = self.problem.getVarByName(var.name)
+                grb_terms.append(coef * var * var)
+            else:
+                var1, var2 = key
+                var1 = self.problem.getVarByName(var1.name)
+                var2 = self.problem.getVarByName(var2.name)
+                grb_terms.append(coef, var1, var2)
 
         grb_expression = gurobipy.quicksum(grb_terms)
 
@@ -585,23 +572,9 @@ class Model(interface.Model):
             self.problem.update()
             constraint._problem = None
             if constraint.is_Linear:
-                if constraint.expression.is_Add:
-                    coeff_dict = constraint.expression.as_coefficients_dict()
-                    variables = [self.problem.getVarByName(variable.name) for variable in coeff_dict.keys()]
-                    coefficients = [float(val) for val in coeff_dict.values()]
-                elif constraint.expression.is_Mul:
-                    variable = list(constraint.expression.atoms(sympy.Symbol))[0]
-                    variables = [self.problem.getVarByName(variable.name)]
-                    coefficients = [float(constraint.expression.coeff(variable))]
-                elif constraint.expression.is_Atom and constraint.expression.is_Symbol:
-                    variables = [self.problem.getVarByName(constraint.expression.name)]
-                    coefficients = [1.]
-                elif constraint.expression.is_Number:
-                    variables = []
-                    coefficients = []
-                else:
-                    raise ValueError('Something is fishy with constraint %s' % constraint)
-                lhs = gurobipy.quicksum([coeff * var for coeff, var in zip(coefficients, variables)])
+                coef_dict, _ = parse_optimization_expression(constraint, linear=True)
+
+                lhs = gurobipy.quicksum([coef * var._internal_variable for var, coef in coef_dict.items()])
                 sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(constraint.lb,
                                                                                                     constraint.ub)
                 if range_value != 0.:
