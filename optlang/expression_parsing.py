@@ -104,12 +104,12 @@ def _parse_quadratic_expression(expression, expanded=False):
                 term = 1.0 * term
             assert term.is_Mul, "What is this? {}".format(type(term))
             factors = term.args
-            coeff = factors[0]
+            coef = factors[0]
             vars = factors[1:]
             assert len(vars) <= 2, "This should not happen. Is this expression quadratic?"
             if len(vars) == 2:
                 key = frozenset(vars)
-                quadratic_coefficients[key] = quadratic_coefficients.get(key, 0) + coeff
+                quadratic_coefficients[key] = quadratic_coefficients.get(key, 0) + coef
             else:
                 var = vars[0]
                 if var.is_Symbol:
@@ -118,8 +118,8 @@ def _parse_quadratic_expression(expression, expanded=False):
                     var, exponent = var.args
                     if exponent != 2:
                         raise ValueError("The expression is not quadratic")
-                    key = frozenset((var))
-                    quadratic_coefficients[var] = quadratic_coefficients.get(key, 0) + coef
+                    key = frozenset((var,))
+                    quadratic_coefficients[key] = quadratic_coefficients.get(key, 0) + coef
     except Exception as e:
         if expanded:
             raise e
