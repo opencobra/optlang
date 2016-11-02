@@ -14,6 +14,13 @@
 # limitations under the License.
 
 
+"""
+Solver interface for the Gurobi (MI)LP/QP solver.
+
+To use this interface, install the gurobi solver and the bundled python interface
+and make sure that 'import gurobipy' runs without error.
+"""
+
 from warnings import warn
 
 warn("Be careful! The GUROBI interface is still under construction ...")

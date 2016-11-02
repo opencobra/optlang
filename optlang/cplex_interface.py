@@ -15,8 +15,11 @@
 
 """Solver interface for the IBM ILOG CPLEX Optimization Studio solver.
 
-Wraps the GLPK solver by subclassing and extending :class:`Model`,
+Wraps the cplex solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
+
+To use this interface, install the cplex solver and the bundled python interface.
+Make sure that 'import cplex' runs without error.
 """
 import collections
 import logging

@@ -21,7 +21,8 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 
 GLPK is an open source LP solver, with MILP capabilities.
-To use GLPK you need the 'swiglpk' python package.
+To use GLPK you need to install the 'swiglpk' python package (with pip or from http://github.com/biosustain/swiglpk)
+and make sure that 'import swiglpk' runs without error.
 """
 
 import collections

@@ -79,7 +79,16 @@ statuses = {
 class Variable(sympy.Symbol):
     """Optimization variables.
 
-    Extends sympy Symbol with optimization specific attributes and methods.
+    Variable objects are used to represents each variable of the optimization problem. When the optimization is
+    performed, the combination of variable values that optimizes the objective function, while not violating any
+    constraints will be identified. The type of a variable ('continuous', 'integer' or 'binary') can be set using
+    the type keyword of the constructor or it can be changed after initialization by :code:`var.type = 'binary'`.
+
+    The variable class subclasses the :code:`sympy.Symbol` class, which means that symbolic expressions of variables
+    can be constructed by using regular python syntax, e.g. :code:`my_expression = 2 * var1 + 3 * var2 ** 2`.
+    Expressions like this are used when constructing Constraint and Objective objects.
+    Once a problem has been optimized, the primal and dual values of a variable can be accessed from the
+    primal and dual attributes, respectively.
 
     Attributes
     ----------
@@ -520,9 +529,17 @@ class OptimizationExpression(object):
 
 
 class Constraint(OptimizationExpression):
-    """Optimization constraint.
+    """
+    Constraint objects represent the mathematical (in-)equalities that constrain an optimization problem.
+    A constraint is formulated by a symbolic expression of variables and a lower and/or upper bound.
+    Equality constraints can be formulated by setting the upper and lower bounds to the same value.
 
-    Wraps sympy expressions and extends them with optimization specific attributes and methods.
+    Some solvers support indicator variables. This lets a binary variable act as a switch that decides whether
+    the constraint should be active (cannot be violated) or inactive (can be violated).
+
+    The constraint expression can be an arbitrary combination of variables, however the individual solvers
+    have limits to the forms of constraints they allow. Most solvers only allow linear constraints, meaning that
+    the expression should be of the form :code:`a * var1 + b * var2 + c * var3 ...`
 
     Attributes
     ----------
@@ -540,7 +557,16 @@ class Constraint(OptimizationExpression):
         When the constraint should
     problem: Model or None, optional
         A reference to the optimization model the variable belongs to.
+
+    Examples
+    ----------
+    >>> expr = 2.4 * var1 - 3.8 * var2
+    >>> c1 = Constraint(expr, lb=0, ub=10)
+
+    >>> indicator_var = Variable("var3", type="binary") # Only possible with some solvers
+    >>> c2 = Constraint(var2, lb=0, ub=0, indicator_variable=indicator_var, active_when=1) # When the indicator is 1, var2 is constrained to be 0
     """
+
 
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
@@ -717,7 +743,13 @@ class Constraint(OptimizationExpression):
 
 
 class Objective(OptimizationExpression):
-    """Objective function.
+    """
+    Objective objects are used to represent the objective function of an optimization problem.
+    An objective consists of a symbolic expression of variables in the problem and a direction. The direction
+    can be either 'min' or 'max' and specifies whether the problem is a minimization or a maximization problem.
+
+    After a problem has been optimized, the optimal objective value can be accessed from the 'value' attribute
+    of the model's objective, i.e. :code:`obj_val = model.objective.value`.
 
     Attributes
     ----------
@@ -919,7 +951,14 @@ class EvolutionaryOptimizationConfiguration(Configuration):
 
 
 class Model(object):
-    """Optimization problem.
+    """
+    The model object represents an optimization problem and contains the variables, constraints an objective that
+    make up the problem. Variables and constraints can be added and removed using the :code:`.add` and :code:`.remove` methods,
+    while the objective can be changed by setting the objective attribute,
+    e.g. :code:`model.objective = Objective(expr, direction="max")`.
+
+    Once the problem has been formulated the optimization can be performed by calling the :code:`.optimize` method.
+    This will return the status of the optimization, most commonly 'optimal', 'infeasible' or 'unbounded'.
 
     Attributes
     ----------
@@ -938,7 +977,16 @@ class Model(object):
 
     Examples
     --------
-
+    >>> model = Model(name="my_model")
+    >>> x1 = Variable("x1", lb=0, ub=20)
+    >>> x2 = Variable("x2", lb=0, ub=10)
+    >>> c1 = Constraint(2 * x1 - x2, lb=0, ub=0) # Equality constraint
+    >>> model.add([x1, x2, c1])
+    >>> model.objective = Objective(x1 + x2, direction="max")
+    >>> model.optimize()
+    'optimal'
+    >>> x1.primal, x2.primal
+    '(5.0, 10.0)'
 
     """
 
