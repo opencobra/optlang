@@ -11,7 +11,14 @@ optlang
 =======
 
 ### Vision
-__optlang__ provides a common interface to a series of optimization solvers (linear & non-linear) and relies on [sympy](http://sympy.org/en/index.html) for problem formulation (constraints, objectives, variables, etc.). Adding new solvers is easy: just sub-class the high-level interface and implement the necessary solver specific routines.
+
+__optlang__ is a Python package for solving mathematical optimization problems, i.e. maximizing or minimizing an
+objective function over a set of variables subject to a number of constraints. Optlang provides a common
+interface to a series of optimization tools, so different solver backends can be changed in a transparent way.
+
+Optlang takes advantage of the symbolic math library [sympy](http://sympy.org/en/index.html) to allow objective
+functions and constraints to be easily formulated from symbolic expressions of variables (see examples).
+
 
 ### Installation
 
@@ -36,14 +43,20 @@ The documentation for __optlang__ is provided at [readthedocs.org](http://optlan
 ### Dependencies
 
 * [sympy >= 0.7.5](http://sympy.org/en/index.html)
+* [six >= 1.9.0](https://pypi.python.org/pypi/six)
+
+And at least one of the following
+
 * [swiglpk >= 0.1.0](https://pypi.python.org/pypi/swiglpk)
-* [glpk >= 4.45](https://www.gnu.org/software/glpk/)
+* [cplex](https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/)
+* [gurobipy](http://www.gurobi.com)
+* [scipy](http://www.scipy.org)
 
 ### Example
 
 Formulating and solving the problem is straightforward (example taken from [GLPK documentation](http://www.gnu.org/software/glpk)):
 
-    from optlang import Model, Variable, Constraint, Objective
+    from optlang.glpk_interface import Model, Variable, Constraint, Objective
  
     x1 = Variable('x1', lb=0)
     x2 = Variable('x2', lb=0)
@@ -76,8 +89,6 @@ Formulating and solving the problem is straightforward (example taken from [GLPK
     
 ### Future outlook
 
-* [Gurobi][gurobi_url] interface (very efficient MILP solver)
-* [CPLEX][cplex_url] interface (very efficient MILP solver)
 * [Mosek][mosek_url] interface (provides academic licenses)
 * [GAMS][gams_url] output (support non-linear problem formulation)
 * [DEAP][deap_url] (support for heuristic optimization)
@@ -89,7 +100,7 @@ The optlang [trello board](https://trello.com/b/aiwfbVKO/optlang) also provides 
 ### Requirements
 
 * Models should always be serializable to common problem formulation languages ([CPLEX][cplex_url], [GAMS][gams_url], etc.)
-* Models should be pickable
+* Models should be picklable
 * Common solver configuration interface (presolver, MILP gap, etc.)
 
 [cplex_url]: http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/ "CPLEX"
