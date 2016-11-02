@@ -77,6 +77,17 @@ You should see the following output::
   x3 = 0.0
   x1 = 33.3333333333
 
+Quadratic programming
+----------
+A QP problem can be generated in the same way by creating an objective with a quadratic expression. In the above example
+the objective could be :code:`obj = Objective(x1 ** 2 + x2 ** 2 - 10 * x1, direction="min")` to specify a quadratic minimization
+problem.
+
+Integer programming
+----------
+Integer (or mixed integer) problems can be specified by assigning the type of one or more variables to 'integer' or 'binary'.
+If the solver supports integer problems it will automatically use the relevant optimization algorithm and return an integer solution.
+
 Users's guide
 =============
 
