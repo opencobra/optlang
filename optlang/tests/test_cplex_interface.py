@@ -40,23 +40,25 @@ else:
     class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         __test__ = True
 
-        def setUp(self):
-            self.var = Variable('test')
-            self.model = Model()
+        interface = cplex_interface
 
-        def test_set_wrong_type_raises(self):
-            self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
-            self.model.add(self.var)
-            self.model.update()
-            self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
-            self.var.type = "integer"
-            self.assertEqual(self.var.type, "integer")
+        # def setUp(self):
+        #     self.var = Variable('test')
+        #     self.model = Model()
 
-        def test_change_name(self):
-            self.model.add(self.var)
-            self.model.update()
-            self.var.name = "test_2"
-            self.assertEqual(self.var.name, "test_2")
+        # def test_set_wrong_type_raises(self):
+        #     self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+        #     self.model.add(self.var)
+        #     self.model.update()
+        #     self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
+        #     self.var.type = "integer"
+        #     self.assertEqual(self.var.type, "integer")
+
+        # def test_change_name(self):
+        #     self.model.add(self.var)
+        #     self.model.update()
+        #     self.var.name = "test_2"
+        #     self.assertEqual(self.var.name, "test_2")
 
         def test_get_primal(self):
             self.assertEqual(self.var.primal, None)
@@ -100,11 +102,11 @@ else:
             model.optimize()
             self.assertTrue(self.var.dual is None)  # Cannot find reduced cost for MILP
 
-        def test_setting_lower_bound_higher_than_upper_bound_raises(self):
-            problem = cplex.Cplex()
-            problem.read(TESTMODELPATH)
-            model = Model(problem=problem)
-            self.assertRaises(ValueError, setattr, model.variables[0], 'lb', 10000000000.)
+        # def test_setting_lower_bound_higher_than_upper_bound_raises(self):
+        #     problem = cplex.Cplex()
+        #     problem.read(TESTMODELPATH)
+        #     model = Model(problem=problem)
+        #     self.assertRaises(ValueError, setattr, model.variables[0], 'lb', 10000000000.)
 
         def test_changing_variable_names_is_reflected_in_the_solver(self):
             model = Model(problem=cplex.Cplex(TESTMODELPATH))
@@ -113,13 +115,13 @@ else:
                 self.assertEqual(variable.name, "var" + str(i))
                 self.assertEqual(model.problem.variables.get_names(i), "var" + str(i))
 
-        def test_setting_nonnumerical_bounds_raises(self):
-            problem = cplex.Cplex()
-            problem.read(TESTMODELPATH)
-            model = Model(problem=problem)
-            self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
+        # def test_setting_nonnumerical_bounds_raises(self):
+        #     problem = cplex.Cplex()
+        #     problem.read(TESTMODELPATH)
+        #     model = Model(problem=problem)
+        #     self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
 
-        def test_setting_bounds(self):
+        def test_cplex_setting_bounds(self):
             problem = cplex.Cplex()
             problem.read(TESTMODELPATH)
             model = Model(problem=problem)
@@ -133,21 +135,21 @@ else:
             model.update()
             self.assertEqual(model.problem.variables.get_upper_bounds(var.name), 2)
 
-        def test_set_bounds_to_none(self):
-            model = Model()
-            var = Variable("test_var")
-            obj = Objective(var)
-            model.objective = obj
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
-            var.ub = 10
-            self.assertEqual(model.optimize(), interface.OPTIMAL)
-            var.ub = None
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
-            obj.direction = "min"
-            var.lb = -10
-            self.assertEqual(model.optimize(), interface.OPTIMAL)
-            var.lb = None
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        # def test_set_bounds_to_none(self):
+        #     model = Model()
+        #     var = Variable("test_var")
+        #     obj = Objective(var)
+        #     model.objective = obj
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        #     var.ub = 10
+        #     self.assertEqual(model.optimize(), interface.OPTIMAL)
+        #     var.ub = None
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        #     obj.direction = "min"
+        #     var.lb = -10
+        #     self.assertEqual(model.optimize(), interface.OPTIMAL)
+        #     var.lb = None
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
 
     class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
@@ -777,6 +779,7 @@ else:
             self.assertAlmostEqual(self.x1.primal, 0.0)
             self.assertGreaterEqual(self.x2.primal, 1.0)
 
+        @unittest.skip("")
         def test_qp_convex(self):
             problem = cplex.Cplex()
             problem.read(CONVEX_QP_PATH)

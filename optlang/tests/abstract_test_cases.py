@@ -17,6 +17,7 @@ import abc
 import unittest
 
 import six
+from optlang import interface
 
 __test__ = False
 
@@ -27,17 +28,23 @@ class AbstractVariableTestCase(unittest.TestCase):
     def test_magic(self):
         pass
 
-    @abc.abstractmethod
     def setUp(self):
-        pass
+        self.var = self.interface.Variable('test')
+        self.model = self.interface.Model()
 
-    @abc.abstractmethod
     def test_set_wrong_type_raises(self):
-        pass
+        self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+        self.model.add(self.var)
+        self.model.update()
+        self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
+        self.var.type = "integer"
+        self.assertEqual(self.var.type, "integer")
 
-    @abc.abstractmethod
     def test_change_name(self):
-        pass
+        self.model.add(self.var)
+        self.model.update()
+        self.var.name = "test_2"
+        self.assertEqual(self.var.name, "test_2")
 
     @abc.abstractmethod
     def test_get_primal(self):
@@ -47,25 +54,43 @@ class AbstractVariableTestCase(unittest.TestCase):
     def test_get_dual(self):
         pass
 
-    @abc.abstractmethod
     def test_setting_lower_bound_higher_than_upper_bound_raises(self):
-        pass
+        self.model.add(self.var)
+        self.var.ub = 0
+        self.assertRaises(ValueError, setattr, self.model.variables[0], 'lb', 100.)
 
-    @abc.abstractmethod
     def test_setting_nonnumerical_bounds_raises(self):
-        pass
+        self.model.add(self.var)
+        self.assertRaises(TypeError, setattr, self.model.variables[0], 'lb', 'Chicken soup')
 
     @abc.abstractmethod
     def test_changing_variable_names_is_reflected_in_the_solver(self):
         pass
 
-    @abc.abstractmethod
     def test_setting_bounds(self):
-        pass
+        self.model.objective = self.interface.Objective(self.var)
+        self.var.ub = 5
+        self.model.optimize()
+        self.assertEqual(self.var.primal, 5)
+        self.var.lb = -3
+        self.model.objective.direction = "min"
+        self.model.optimize()
+        self.assertEqual(self.var.primal, -3)
 
-    @abc.abstractmethod
     def test_set_bounds_to_none(self):
-        pass
+        model = self.model
+        var = self.var
+        model.objective = self.interface.Objective(var)
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        var.ub = 10
+        self.assertEqual(model.optimize(), interface.OPTIMAL)
+        var.ub = None
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        self.model.objective.direction = "min"
+        var.lb = -10
+        self.assertEqual(model.optimize(), interface.OPTIMAL)
+        var.lb = None
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
 
 @six.add_metaclass(abc.ABCMeta)
