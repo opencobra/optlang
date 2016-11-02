@@ -88,6 +88,8 @@ class Variable(sympy.Symbol):
 
     @staticmethod
     def __test_valid_lower_bound(type, value, name):
+        if not (value is None or isinstance(value, (float, int))):
+            raise TypeError("Variable bounds must be numeric or None.")
         if value is not None:
             if type == 'integer' and value % 1 != 0.:
                 raise ValueError(
@@ -99,6 +101,8 @@ class Variable(sympy.Symbol):
 
     @staticmethod
     def __test_valid_upper_bound(type, value, name):
+        if not (value is None or isinstance(value, (float, int))):
+            raise TypeError("Variable bounds must be numeric or None.")
         if value is not None:
             if type == 'integer' and value % 1 != 0.:
                 raise ValueError(
