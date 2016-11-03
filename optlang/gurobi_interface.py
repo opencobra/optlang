@@ -159,11 +159,6 @@ class Constraint(interface.Constraint):
 
     def __init__(self, expression, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
-        if self.ub is not None and self.lb is not None and self.lb > self.ub:
-            raise ValueError(
-                "Lower bound %f is larger than upper bound %f in constraint %s" %
-                (self.lb, self.ub, self)
-            )
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
@@ -238,6 +233,7 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.lb.setter
     def lb(self, value):
+        super(Constraint, Constraint).lb.fset(self, value)
         if getattr(self, 'problem', None) is not None:
             if value is None:
                 value = -gurobipy.GRB.INFINITY
@@ -263,10 +259,10 @@ class Constraint(interface.Constraint):
                     self.problem.problem.addConstr(updated_row, sense, rhs, self.name)
                 else:
                     aux_var.setAttr("UB", range_value)
-        self._lb = value
 
     @interface.Constraint.ub.setter
     def ub(self, value):
+        super(Constraint, Constraint).ub.fset(self, value)
         if getattr(self, 'problem', None) is not None:
             if value is None:
                 value = gurobipy.GRB.INFINITY
@@ -292,7 +288,6 @@ class Constraint(interface.Constraint):
                     self.problem.problem.addConstr(updated_row, sense, rhs, self.name)
                 else:
                     aux_var.setAttr("UB", range_value)
-        self._ub = value
 
     def __iadd__(self, other):
         if self.problem is not None:
@@ -307,9 +302,11 @@ class Constraint(interface.Constraint):
 
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
-    def __init__(self, *args, **kwargs):
-        super(Objective, self).__init__(*args, **kwargs)
+    def __init__(self, expression, sloppy=False, *args, **kwargs):
+        super(Objective, self).__init__(expression, *args, **kwargs)
         self._expression_expired = False
+        if not sloppy and not self.is_Linear:  # or self.is_Quadratic: # QP is not yet supported
+            raise ValueError("The given objective is invalid. Must be linear or quadratic (not yet supported")
 
     @property
     def value(self):
