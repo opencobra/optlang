@@ -88,12 +88,14 @@ class Variable(interface.Variable):
     @interface.Variable.lb.setter
     def lb(self, value):
         interface.Variable.lb.fset(self, value)
-        self.problem._glpk_set_col_bounds(self)
+        if self.problem is not None:
+            self.problem._glpk_set_col_bounds(self)
 
     @interface.Variable.ub.setter
     def ub(self, value):
         interface.Variable.ub.fset(self, value)
-        self.problem._glpk_set_col_bounds(self)
+        if self.problem is not None:
+            self.problem._glpk_set_col_bounds(self)
 
     @interface.Variable.type.setter
     def type(self, value):

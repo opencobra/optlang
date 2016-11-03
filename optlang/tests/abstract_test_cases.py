@@ -69,10 +69,13 @@ class AbstractVariableTestCase(unittest.TestCase):
         pass
 
     def test_setting_bounds(self):
-        self.model.objective = self.interface.Objective(self.var)
         self.var.ub = 5
+        self.model.objective = self.interface.Objective(self.var)
         self.model.optimize()
         self.assertEqual(self.var.primal, 5)
+        self.var.ub = 4
+        self.model.optimize()
+        self.assertEqual(self.var.primal, 4)
         self.var.lb = -3
         self.model.objective.direction = "min"
         self.model.optimize()
