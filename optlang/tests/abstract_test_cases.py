@@ -340,13 +340,6 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertIn(constr4.name, self.model.constraints)
         self.assertIn(constr5.name, self.model.constraints)
         self.assertIn(constr6.name, self.model.constraints)
-        self.assertEqual(
-            self.model.problem.linear_constraints.get_coefficients((('test', 'y'), ('test', 'z'), ('test', 'x'))),
-            [0.4, 66, 0.3])
-        self.assertEqual(self.model.problem.linear_constraints.get_coefficients((('test2', 'y'), ('test2', 'x'))),
-                         [1., 2.333])
-        self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Mul_constraint', 'x'), 77.)
-        self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Only_var_constraint', 'x'), 1.)
 
     def test_remove_constraints(self):
         x = self.interface.Variable('x', type='binary')

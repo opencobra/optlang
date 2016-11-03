@@ -3,8 +3,6 @@
 
 import unittest
 
-from optlang import interface
-
 try:  # noqa: C901
     import gurobipy
 except ImportError as e:
@@ -38,15 +36,8 @@ else:
     class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         interface = gurobi_interface
 
-        # def setUp(self):
-        #     self.var = Variable('test')
-        #     self.model = Model()
-
         def test_internal_variable(self):
             self.assertEqual(self.var._internal_variable, None)
-
-        # def test_set_wrong_type_raises(self):
-        #     self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
 
         def test_gurobi_change_name(self):
             self.model.add(self.var)
@@ -77,25 +68,25 @@ else:
                              -2.281503094067127, 2.6784818505075303, 0.0]):
                 self.assertAlmostEqual(i, j)
 
-        def test_get_dual(self):
-            self.assertEqual(self.var.dual, None)
-            model = Model(problem=gurobipy.read(TESTMODELPATH))
-            model.optimize()
-            print([var.dual for var in model.variables])
-            for i, j in zip([var.dual for var in model.variables],
-                            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.022916186593776214, 0.0, 0.0, 0.0,
-                             -0.03437427989066433, 0.0, -0.007638728864592076, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                             -0.005092485909728051, 0.0, 0.0, 0.0, 0.0, -0.005092485909728049, 0.0, 0.0,
-                             -0.005092485909728071, 0.0, 0.0, 0.0, -0.06110983091673658, -0.005092485909728054, 0.0,
-                             -0.003819364432296038, -0.005092485909728044, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                             -0.03946676580039238, 0.0, 0.0, -0.005092485909728051, 0.0, -0.0012731214774320122, 0.0,
-                             -0.09166474637510488, 0.0, 0.0, 0.0, -0.0, -0.045832373187552435, 0.0, 0.0,
-                             -0.09166474637510488, -0.005092485909728051, -0.07002168125876065, 0.0,
-                             -0.06874855978132864, -0.0012731214774320126, 0.0, 0.0, 0.0, -0.0012731214774320161,
-                             -0.003819364432296038, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.04073988727782439,
-                             -0.045832373187552435, -0.0012731214774320083, 0.0, 0.0, 0.0, 0.0, 0.0,
-                             -0.03437427989066433, 0.0, 0.0, -0.04837861614241646]):
-                self.assertAlmostEqual(i, j)
+        # def test_get_dual(self):
+        #     self.assertEqual(self.var.dual, None)
+        #     model = Model(problem=gurobipy.read(TESTMODELPATH))
+        #     model.optimize()
+        #     print([var.dual for var in model.variables])
+        #     for i, j in zip([var.dual for var in model.variables],
+        #                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.022916186593776214, 0.0, 0.0, 0.0,
+        #                      -0.03437427989066433, 0.0, -0.007638728864592076, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        #                      -0.005092485909728051, 0.0, 0.0, 0.0, 0.0, -0.005092485909728049, 0.0, 0.0,
+        #                      -0.005092485909728071, 0.0, 0.0, 0.0, -0.06110983091673658, -0.005092485909728054, 0.0,
+        #                      -0.003819364432296038, -0.005092485909728044, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        #                      -0.03946676580039238, 0.0, 0.0, -0.005092485909728051, 0.0, -0.0012731214774320122, 0.0,
+        #                      -0.09166474637510488, 0.0, 0.0, 0.0, -0.0, -0.045832373187552435, 0.0, 0.0,
+        #                      -0.09166474637510488, -0.005092485909728051, -0.07002168125876065, 0.0,
+        #                      -0.06874855978132864, -0.0012731214774320126, 0.0, 0.0, 0.0, -0.0012731214774320161,
+        #                      -0.003819364432296038, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.04073988727782439,
+        #                      -0.045832373187552435, -0.0012731214774320083, 0.0, 0.0, 0.0, 0.0, 0.0,
+        #                      -0.03437427989066433, 0.0, 0.0, -0.04837861614241646]):
+        #         self.assertAlmostEqual(i, j)
 
         # def test_setting_lower_bound_higher_than_upper_bound_raises(self):
         #     model = Model(problem=gurobipy.read(TESTMODELPATH))
@@ -149,12 +140,14 @@ else:
 
 
     class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
-        def setUp(self):
-            self.model = Model(problem=gurobipy.read(TESTMODELPATH))
-            self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
+        interface = gurobi_interface
 
-        def test_indicator_constraint_support(self):
-            pass
+        # def setUp(self):
+        #     self.model = Model(problem=gurobipy.read(TESTMODELPATH))
+        #     self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
+
+        # def test_indicator_constraint_support(self):
+        #     pass
 
         def test_get_primal(self):
             self.assertEqual(self.constraint.primal, None)
@@ -168,75 +161,75 @@ else:
                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
                 self.assertAlmostEqual(i, j)
 
-        def test_get_dual(self):
-            self.assertEqual(self.constraint.dual, None)
-            self.model.optimize()
-            for i, j in zip([constraint.dual for constraint in self.model.constraints],
-                            [-0.04710549466498445, -0.0420130087552564, -0.0420130087552564, -0.09166474637510486,
-                             -0.09039162489767284, -0.024189308071208226, -0.022916186593776214, -0.03437427989066433,
-                             -0.03437427989066433, -0.028008672503504264, -0.07129480273619268, -0.029281793980936277,
-                             0.0, -0.06238295239416859, -0.06110983091673658, 0.005092485909728049,
-                             -0.005092485909728049, -0.07129480273619268, -0.0, -0.0, 0.0, -0.0521979805747125,
-                             -0.06747543830389663, -0.04073988727782439, -0.03946676580039238, -0.09803035376226493,
-                             -0.104395961149425, -0.0, -0.0, -0.09166474637510488, -0.04837861614241646,
-                             -0.045832373187552435, -0.0521979805747125, -0.09803035376226493, -0.09166474637510488,
-                             -0.0751141671684887, -0.07002168125876065, -0.07002168125876065, -0.06874855978132864,
-                             -0.019096822161480183, -0.0, -0.0, 0.0012731214774320122, -0.0, -0.07129480273619268,
-                             -0.042013008755256404, -0.04073988727782439, -0.04837861614241646, -0.045832373187552435,
-                             0.007638728864592073, 0.0, 0.008911850342024082, 0.0, -0.0, -0.0, -0.0, -0.0,
-                             -0.0420130087552564, -0.0420130087552564, -0.0012731214774320122, -0.0,
-                             -0.03564740136809634, -0.03437427989066433, 0.0, -0.0025462429548640244,
-                             -0.08275289603308078, -0.08275289603308078, -0.11330781149144906, -0.050924859097280485,
-                             -0.04837861614241646, -0.054744223529576516, -0.08275289603308078]):
-                self.assertAlmostEqual(i, j)
+        # def test_get_dual(self):
+        #     self.assertEqual(self.constraint.dual, None)
+        #     self.model.optimize()
+        #     for i, j in zip([constraint.dual for constraint in self.model.constraints],
+        #                     [-0.04710549466498445, -0.0420130087552564, -0.0420130087552564, -0.09166474637510486,
+        #                      -0.09039162489767284, -0.024189308071208226, -0.022916186593776214, -0.03437427989066433,
+        #                      -0.03437427989066433, -0.028008672503504264, -0.07129480273619268, -0.029281793980936277,
+        #                      0.0, -0.06238295239416859, -0.06110983091673658, 0.005092485909728049,
+        #                      -0.005092485909728049, -0.07129480273619268, -0.0, -0.0, 0.0, -0.0521979805747125,
+        #                      -0.06747543830389663, -0.04073988727782439, -0.03946676580039238, -0.09803035376226493,
+        #                      -0.104395961149425, -0.0, -0.0, -0.09166474637510488, -0.04837861614241646,
+        #                      -0.045832373187552435, -0.0521979805747125, -0.09803035376226493, -0.09166474637510488,
+        #                      -0.0751141671684887, -0.07002168125876065, -0.07002168125876065, -0.06874855978132864,
+        #                      -0.019096822161480183, -0.0, -0.0, 0.0012731214774320122, -0.0, -0.07129480273619268,
+        #                      -0.042013008755256404, -0.04073988727782439, -0.04837861614241646, -0.045832373187552435,
+        #                      0.007638728864592073, 0.0, 0.008911850342024082, 0.0, -0.0, -0.0, -0.0, -0.0,
+        #                      -0.0420130087552564, -0.0420130087552564, -0.0012731214774320122, -0.0,
+        #                      -0.03564740136809634, -0.03437427989066433, 0.0, -0.0025462429548640244,
+        #                      -0.08275289603308078, -0.08275289603308078, -0.11330781149144906, -0.050924859097280485,
+        #                      -0.04837861614241646, -0.054744223529576516, -0.08275289603308078]):
+        #         self.assertAlmostEqual(i, j)
 
-        def test_change_constraint_name(self):
-            constraint = copy.copy(self.constraint)
-            self.assertEqual(constraint.name, 'woodchips')
-            constraint.name = 'ketchup'
-            self.assertEqual(constraint.name, 'ketchup')
-            self.assertEqual([constraint.name for constraint in self.model.constraints],
-                             ['M_13dpg_c', 'M_2pg_c', 'M_3pg_c', 'M_6pgc_c', 'M_6pgl_c', 'M_ac_c', 'M_ac_e',
-                              'M_acald_c', 'M_acald_e', 'M_accoa_c', 'M_acon_C_c', 'M_actp_c', 'M_adp_c', 'M_akg_c',
-                              'M_akg_e', 'M_amp_c', 'M_atp_c', 'M_cit_c', 'M_co2_c', 'M_co2_e', 'M_coa_c', 'M_dhap_c',
-                              'M_e4p_c', 'M_etoh_c', 'M_etoh_e', 'M_f6p_c', 'M_fdp_c', 'M_for_c', 'M_for_e', 'M_fru_e',
-                              'M_fum_c', 'M_fum_e', 'M_g3p_c', 'M_g6p_c', 'M_glc_D_e', 'M_gln_L_c', 'M_gln_L_e',
-                              'M_glu_L_c', 'M_glu_L_e', 'M_glx_c', 'M_h2o_c', 'M_h2o_e', 'M_h_c', 'M_h_e', 'M_icit_c',
-                              'M_lac_D_c', 'M_lac_D_e', 'M_mal_L_c', 'M_mal_L_e', 'M_nad_c', 'M_nadh_c', 'M_nadp_c',
-                              'M_nadph_c', 'M_nh4_c', 'M_nh4_e', 'M_o2_c', 'M_o2_e', 'M_oaa_c', 'M_pep_c', 'M_pi_c',
-                              'M_pi_e', 'M_pyr_c', 'M_pyr_e', 'M_q8_c', 'M_q8h2_c', 'M_r5p_c', 'M_ru5p_D_c', 'M_s7p_c',
-                              'M_succ_c', 'M_succ_e', 'M_succoa_c', 'M_xu5p_D_c']
-                             )
-            for i, constraint in enumerate(self.model.constraints):
-                constraint.name = 'c' + str(i)
-            self.assertEqual([constraint.name for constraint in self.model.constraints],
-                             ['c' + str(i) for i in range(0, len(self.model.constraints))])
+        # def test_change_constraint_name(self):
+        #     constraint = copy.copy(self.constraint)
+        #     self.assertEqual(constraint.name, 'woodchips')
+        #     constraint.name = 'ketchup'
+        #     self.assertEqual(constraint.name, 'ketchup')
+        #     self.assertEqual([constraint.name for constraint in self.model.constraints],
+        #                      ['M_13dpg_c', 'M_2pg_c', 'M_3pg_c', 'M_6pgc_c', 'M_6pgl_c', 'M_ac_c', 'M_ac_e',
+        #                       'M_acald_c', 'M_acald_e', 'M_accoa_c', 'M_acon_C_c', 'M_actp_c', 'M_adp_c', 'M_akg_c',
+        #                       'M_akg_e', 'M_amp_c', 'M_atp_c', 'M_cit_c', 'M_co2_c', 'M_co2_e', 'M_coa_c', 'M_dhap_c',
+        #                       'M_e4p_c', 'M_etoh_c', 'M_etoh_e', 'M_f6p_c', 'M_fdp_c', 'M_for_c', 'M_for_e', 'M_fru_e',
+        #                       'M_fum_c', 'M_fum_e', 'M_g3p_c', 'M_g6p_c', 'M_glc_D_e', 'M_gln_L_c', 'M_gln_L_e',
+        #                       'M_glu_L_c', 'M_glu_L_e', 'M_glx_c', 'M_h2o_c', 'M_h2o_e', 'M_h_c', 'M_h_e', 'M_icit_c',
+        #                       'M_lac_D_c', 'M_lac_D_e', 'M_mal_L_c', 'M_mal_L_e', 'M_nad_c', 'M_nadh_c', 'M_nadp_c',
+        #                       'M_nadph_c', 'M_nh4_c', 'M_nh4_e', 'M_o2_c', 'M_o2_e', 'M_oaa_c', 'M_pep_c', 'M_pi_c',
+        #                       'M_pi_e', 'M_pyr_c', 'M_pyr_e', 'M_q8_c', 'M_q8h2_c', 'M_r5p_c', 'M_ru5p_D_c', 'M_s7p_c',
+        #                       'M_succ_c', 'M_succ_e', 'M_succoa_c', 'M_xu5p_D_c']
+        #                      )
+        #     for i, constraint in enumerate(self.model.constraints):
+        #         constraint.name = 'c' + str(i)
+        #     self.assertEqual([constraint.name for constraint in self.model.constraints],
+        #                      ['c' + str(i) for i in range(0, len(self.model.constraints))])
 
-        def test_setting_lower_bound_higher_than_upper_bound_raises(self):
-            model = Model(problem=gurobipy.read(TESTMODELPATH))
-            self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
+        # def test_setting_lower_bound_higher_than_upper_bound_raises(self):
+        #     model = Model(problem=gurobipy.read(TESTMODELPATH))
+        #     self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
 
-        def test_setting_nonnumerical_bounds_raises(self):
-            problem = gurobipy.read(TESTMODELPATH)
-            model = Model(problem=problem)
-            self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
+        # def test_setting_nonnumerical_bounds_raises(self):
+        #     problem = gurobipy.read(TESTMODELPATH)
+        #     model = Model(problem=problem)
+        #     self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
-        def test_set_constraint_bounds_to_none(self):
-            model = Model()
-            var = Variable("test")
-            const = Constraint(var, lb=-10, ub=10)
-            obj = Objective(var)
-            model.add(const)
-            model.objective = obj
-            self.assertEqual(model.optimize(), interface.OPTIMAL)
-            const.ub = None
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
-            const.ub = 10
-            const.lb = None
-            obj.direction = "min"
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
-            const.lb = -10
-            self.assertEqual(model.optimize(), interface.OPTIMAL)
+        # def test_set_constraint_bounds_to_none(self):
+        #     model = Model()
+        #     var = Variable("test")
+        #     const = Constraint(var, lb=-10, ub=10)
+        #     obj = Objective(var)
+        #     model.add(const)
+        #     model.objective = obj
+        #     self.assertEqual(model.optimize(), interface.OPTIMAL)
+        #     const.ub = None
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        #     const.ub = 10
+        #     const.lb = None
+        #     obj.direction = "min"
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        #     const.lb = -10
+        #     self.assertEqual(model.optimize(), interface.OPTIMAL)
 
 
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
@@ -260,12 +253,14 @@ else:
 
 
     class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
-        def setUp(self):
-            # problem = gurobipy.Model()
-            problem = gurobipy.read(TESTMODELPATH)
-            self.model = Model(problem=problem)
+        interface = gurobi_interface
 
-        def test_create_empty_model(self):
+        # def setUp(self):
+        #     # problem = gurobipy.Model()
+        #     problem = gurobipy.read(TESTMODELPATH)
+        #     self.model = Model(problem=problem)
+
+        def test_gurobi_create_empty_model(self):
             model = Model()
             self.assertEqual(model.problem.getAttr('NumVars'), 0)
             self.assertEqual(model.problem.getAttr('NumConstrs'), 0)
@@ -286,35 +281,35 @@ else:
             self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        def test_pickle_empty_model(self):
-            model = Model()
-            self.assertEquals(model.objective, None)
-            self.assertEquals(len(model.variables), 0)
-            self.assertEquals(len(model.constraints), 0)
-            pickle_string = pickle.dumps(model)
-            from_pickle = pickle.loads(pickle_string)
-            print(from_pickle.objective)
-            self.assertEquals(from_pickle.objective, None)
-            self.assertEquals(len(from_pickle.variables), 0)
-            self.assertEquals(len(from_pickle.constraints), 0)
+        # def test_pickle_empty_model(self):
+        #     model = Model()
+        #     self.assertEquals(model.objective, None)
+        #     self.assertEquals(len(model.variables), 0)
+        #     self.assertEquals(len(model.constraints), 0)
+        #     pickle_string = pickle.dumps(model)
+        #     from_pickle = pickle.loads(pickle_string)
+        #     print(from_pickle.objective)
+        #     self.assertEquals(from_pickle.objective, None)
+        #     self.assertEquals(len(from_pickle.variables), 0)
+        #     self.assertEquals(len(from_pickle.constraints), 0)
 
-        def test_copy(self):
-            self.model.optimize()
-            value = self.model.objective.value
-            model_copy = copy.copy(self.model)
-            self.assertNotEqual(id(self.model), id(model_copy))
-            self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
-            model_copy.optimize()
-            self.assertAlmostEqual(value, model_copy.objective.value)
-            self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
-                             [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
-                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
+        # def test_copy(self):
+        #     self.model.optimize()
+        #     value = self.model.objective.value
+        #     model_copy = copy.copy(self.model)
+        #     self.assertNotEqual(id(self.model), id(model_copy))
+        #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+        #     model_copy.optimize()
+        #     self.assertAlmostEqual(value, model_copy.objective.value)
+        #     self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
+        #                      [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+        #     self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
+        #                      [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        def test_deepcopy(self):
-            model_copy = copy.deepcopy(self.model)
-            self.assertNotEqual(id(self.model), id(model_copy))
-            self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+        # def test_deepcopy(self):
+        #     model_copy = copy.deepcopy(self.model)
+        #     self.assertNotEqual(id(self.model), id(model_copy))
+        #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
 
         def test_config_gets_copied_too(self):
             self.assertEquals(self.model.configuration.verbosity, 0)
@@ -331,7 +326,7 @@ else:
             self.assertEqual(self.model.constraints.keys(),
                              [constr.ConstrName for constr in self.model.problem.getConstrs()])
 
-        def test_add_variable(self):
+        def test_gurobi_add_variable(self):
             var = Variable('x')
             self.model.add(var)
             print(self.model._pending_modifications)
@@ -362,7 +357,7 @@ else:
             # self.assertRaises(Exception, self.model.add, var)
             # self.assertEqual(len(self.model.variables), len(self.model.problem.getVars()))
 
-        def test_add_integer_var(self):
+        def test_gurobi_add_integer_var(self):
             var = Variable('int_var', lb=-13, ub=500, type='integer')
             self.model.add(var)
             self.assertEqual(self.model.variables['int_var'].type, 'integer')
@@ -382,28 +377,28 @@ else:
             var_from_pickle = repickled.variables['12x!!@#5_3']
             self.assertEqual(var_from_pickle.name, repickled.problem.getVarByName(var.name).VarName)
 
-        def test_remove_variable(self):
-            var = self.model.variables.values()[0]
-            self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
-                             'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 59.81*R_Biomass_Ecoli_core_w_GAM - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')  # noqa: E501
-            self.assertEqual(var.problem, self.model)
-            self.model.remove(var)
-            self.model.problem.update()
-            self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
-                             'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')  # noqa: E501
-            self.assertNotIn(var, self.model.variables.values())
-            self.assertEqual(self.model.problem.getVarByName(var.name), None)
-            self.assertEqual(var.problem, None)
+        # def test_remove_variable(self):
+        #     var = self.model.variables.values()[0]
+        #     self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
+        #                      'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 59.81*R_Biomass_Ecoli_core_w_GAM - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')  # noqa: E501
+        #     self.assertEqual(var.problem, self.model)
+        #     self.model.remove(var)
+        #     self.model.problem.update()
+        #     self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
+        #                      'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')  # noqa: E501
+        #     self.assertNotIn(var, self.model.variables.values())
+        #     self.assertEqual(self.model.problem.getVarByName(var.name), None)
+        #     self.assertEqual(var.problem, None)
 
-        def test_remove_variable_str(self):
-            var = self.model.variables.values()[0]
-            self.model.remove(var.name)
-            self.model.problem.update()
-            self.assertNotIn(var, self.model.variables.values())
-            self.assertEqual(self.model.problem.getVarByName(var.name), None)
-            self.assertEqual(var.problem, None)
+        # def test_remove_variable_str(self):
+        #     var = self.model.variables.values()[0]
+        #     self.model.remove(var.name)
+        #     self.model.problem.update()
+        #     self.assertNotIn(var, self.model.variables.values())
+        #     self.assertEqual(self.model.problem.getVarByName(var.name), None)
+        #     self.assertEqual(var.problem, None)
 
-        def test_add_constraints(self):
+        def test_gurobi_add_constraints(self):
             x = Variable('x', lb=0, ub=1, type='binary')
             y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
             z = Variable('z', lb=0., ub=10., type='integer')
@@ -459,29 +454,29 @@ else:
             self.assertEqual(internal_constraint.RHS, -300)
             self.assertEqual(internal_constraint.Sense, '=')
 
-        def test_remove_constraints(self):
-            x = Variable('x', type='binary')
-            y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-            z = Variable('z', lb=3, ub=3, type='integer')
-            constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-            self.assertEqual(constr1.problem, None)
-            self.model.add(constr1)
-            self.model.update()
-            self.assertEqual(constr1.problem, self.model)
-            self.assertIn(constr1.name, self.model.constraints)
-            print('test', constr1.name in self.model.constraints.keys())
-            self.model.remove(constr1.name)
-            self.model.update()
-            self.assertEqual(constr1.problem, None)
-            self.assertNotIn(constr1, self.model.constraints)
+        # def test_remove_constraints(self):
+        #     x = Variable('x', type='binary')
+        #     y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        #     z = Variable('z', lb=3, ub=3, type='integer')
+        #     constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
+        #     self.assertEqual(constr1.problem, None)
+        #     self.model.add(constr1)
+        #     self.model.update()
+        #     self.assertEqual(constr1.problem, self.model)
+        #     self.assertIn(constr1.name, self.model.constraints)
+        #     print('test', constr1.name in self.model.constraints.keys())
+        #     self.model.remove(constr1.name)
+        #     self.model.update()
+        #     self.assertEqual(constr1.problem, None)
+        #     self.assertNotIn(constr1, self.model.constraints)
 
-        def test_add_nonlinear_constraint_raises(self):
-            x = Variable('x', type='binary')
-            y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-            z = Variable('z', lb=10, type='integer')
-            c = Constraint(0.3 * x + 0.4 * y ** 2 + 66. * z, lb=-100, ub=0., name='test')
-            self.model.add(c)
-            self.assertRaisesRegexp(ValueError, 'GUROBI currently only supports linear constraint.*', self.model.update)
+        # def test_add_nonlinear_constraint_raises(self):
+        #     x = Variable('x', type='binary')
+        #     y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        #     z = Variable('z', lb=10, type='integer')
+        #     c = Constraint(0.3 * x + 0.4 * y ** 2 + 66. * z, lb=-100, ub=0., name='test')
+        #     self.model.add(c)
+        #     self.assertRaisesRegexp(ValueError, 'GUROBI currently only supports linear constraint.*', self.model.update)
 
         def test_change_of_constraint_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -541,7 +536,7 @@ else:
             self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
             self.assertEqual(bounds_new, inner_problem_bounds_new)
 
-        def test_change_variable_type(self):
+        def test_gurobi_change_variable_type(self):
             for variable in self.model.variables:
                 variable.type = 'integer'
             self.model.update()
@@ -567,47 +562,47 @@ else:
         def test_initial_objective(self):
             self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
 
-        def test_optimize(self):
-            self.model.optimize()
-            self.assertEqual(self.model.status, 'optimal')
-            self.assertAlmostEqual(self.model.objective.value, 0.8739215069684303)
+        # def test_optimize(self):
+        #     self.model.optimize()
+        #     self.assertEqual(self.model.status, 'optimal')
+        #     self.assertAlmostEqual(self.model.objective.value, 0.8739215069684303)
 
-        def test_optimize_milp(self):
-            problem = gurobipy.read(TESTMILPMODELPATH)
-            milp_model = Model(problem=problem)
-            milp_model.optimize()
-            self.assertEqual(milp_model.status, 'optimal')
-            self.assertAlmostEqual(milp_model.objective.value, 122.5)
-            for variable in milp_model.variables:
-                if variable.type == 'integer':
-                    self.assertEqual(variable.primal % 1, 0)
+        # def test_optimize_milp(self):
+        #     problem = gurobipy.read(TESTMILPMODELPATH)
+        #     milp_model = Model(problem=problem)
+        #     milp_model.optimize()
+        #     self.assertEqual(milp_model.status, 'optimal')
+        #     self.assertAlmostEqual(milp_model.objective.value, 122.5)
+        #     for variable in milp_model.variables:
+        #         if variable.type == 'integer':
+        #             self.assertEqual(variable.primal % 1, 0)
 
-        def test_change_objective(self):
-            """Test that all different kinds of linear objective specification work."""
-            print(self.model.variables.values()[0:2])
-            v1, v2 = self.model.variables.values()[0:2]
-            self.model.objective = Objective(1. * v1 + 1. * v2)
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
-            self.model.objective = Objective(v1 + v2)
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+        # def test_change_objective(self):
+        #     """Test that all different kinds of linear objective specification work."""
+        #     print(self.model.variables.values()[0:2])
+        #     v1, v2 = self.model.variables.values()[0:2]
+        #     self.model.objective = Objective(1. * v1 + 1. * v2)
+        #     self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+        #     self.model.objective = Objective(v1 + v2)
+        #     self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
 
-        @unittest.skip('Incomplete')
-        def test_number_objective(self):
-            self.model.objective = Objective(0.)
-            self.model.update()
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
-            obj_coeff = list()
-            print(self.model.problem.getObjective().size())
-            print(self.model.problem.getObjective().getVar(0))
-            # for i in range(1, glp_get_num_cols(self.model.problem) + 1):
-            #     obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
-            self.assertEqual(set(obj_coeff), {0.})
+        # @unittest.skip('Incomplete')
+        # def test_number_objective(self):
+        #     self.model.objective = Objective(0.)
+        #     self.model.update()
+        #     self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
+        #     obj_coeff = list()
+        #     print(self.model.problem.getObjective().size())
+        #     print(self.model.problem.getObjective().getVar(0))
+        #     # for i in range(1, glp_get_num_cols(self.model.problem) + 1):
+        #     #     obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
+        #     self.assertEqual(set(obj_coeff), {0.})
 
-        @unittest.skip('Incomplete')
-        def test_raise_on_non_linear_objective(self):
-            """Test that an exception is raised when a non-linear objective is added to the model."""
-            v1, v2 = self.model.variables.values()[0:2]
-            self.assertRaises(ValueError, Objective, v1 * v2)
+        # @unittest.skip('Incomplete')
+        # def test_raise_on_non_linear_objective(self):
+        #     """Test that an exception is raised when a non-linear objective is added to the model."""
+        #     v1, v2 = self.model.variables.values()[0:2]
+        #     self.assertRaises(ValueError, Objective, v1 * v2)
 
         @unittest.skip('Not supported yet')
         def test_iadd_objective(self):
@@ -661,8 +656,8 @@ else:
                 if 'R_TPI' == grb_obj.getVar(i).getAttr('VarName'):
                     self.assertEqual(grb_obj.getCoeff(i), 666.)
 
-        def test_instantiating_model_with_different_solver_problem_raises(self):
-            self.assertRaises(TypeError, Model, problem='Chicken soup')
+        # def test_instantiating_model_with_different_solver_problem_raises(self):
+        #     self.assertRaises(TypeError, Model, problem='Chicken soup')
 
         def test_set_linear_coefficients_constraint(self):
             constraint = self.model.constraints.M_atp_c
@@ -674,41 +669,41 @@ else:
                 if col_name == 'R_Biomass_Ecoli_core_w_GAM':
                     self.assertEqual(row.getCoeff(i), 666.)
 
-        def test_primal_values(self):
-            self.model.optimize()
-            for k, v in self.model.primal_values.items():
-                self.assertEquals(v, self.model.variables[k].primal)
+        # def test_primal_values(self):
+        #     self.model.optimize()
+        #     for k, v in self.model.primal_values.items():
+        #         self.assertEquals(v, self.model.variables[k].primal)
 
-        def test_reduced_costs(self):
-            self.model.optimize()
-            for k, v in self.model.reduced_costs.items():
-                self.assertEquals(v, self.model.variables[k].dual)
+        # def test_reduced_costs(self):
+        #     self.model.optimize()
+        #     for k, v in self.model.reduced_costs.items():
+        #         self.assertEquals(v, self.model.variables[k].dual)
 
-        def test_dual_values(self):
-            self.model.optimize()
-            for k, v in self.model.dual_values.items():
-                self.assertEquals(v, self.model.constraints[k].primal)
+        # def test_dual_values(self):
+        #     self.model.optimize()
+        #     for k, v in self.model.dual_values.items():
+        #         self.assertEquals(v, self.model.constraints[k].primal)
 
-        def test_shadow_prices(self):
-            self.model.optimize()
-            for k, v in self.model.shadow_prices.items():
-                self.assertEquals(v, self.model.constraints[k].dual)
+        # def test_shadow_prices(self):
+        #     self.model.optimize()
+        #     for k, v in self.model.shadow_prices.items():
+        #         self.assertEquals(v, self.model.constraints[k].dual)
 
-        def test_change_objective_can_handle_removed_vars(self):
-            self.model.objective = Objective(self.model.variables[0])
-            self.model.remove(self.model.variables[0])
-            self.model.update()
-            self.model.objective = Objective(self.model.variables[1] ** 2)
-            self.model.remove(self.model.variables[1])
-            self.model.objective = Objective(self.model.variables[2])
+        # def test_change_objective_can_handle_removed_vars(self):
+        #     self.model.objective = Objective(self.model.variables[0])
+        #     self.model.remove(self.model.variables[0])
+        #     self.model.update()
+        #     self.model.objective = Objective(self.model.variables[1] ** 2)
+        #     self.model.remove(self.model.variables[1])
+        #     self.model.objective = Objective(self.model.variables[2])
 
-        def test_clone_model(self):
-            self.assertEquals(self.model.configuration.verbosity, 0)
-            self.model.configuration.verbosity = 3
-            cloned_model = Model.clone(self.model)
-            self.assertEquals(cloned_model.configuration.verbosity, 3)
-            self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-            self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        # def test_clone_model(self):
+        #     self.assertEquals(self.model.configuration.verbosity, 0)
+        #     self.model.configuration.verbosity = 3
+        #     cloned_model = Model.clone(self.model)
+        #     self.assertEquals(cloned_model.configuration.verbosity, 3)
+        #     self.assertEquals(len(cloned_model.variables), len(self.model.variables))
+        #     self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
 
 if __name__ == '__main__':
     nose.runmodule()
