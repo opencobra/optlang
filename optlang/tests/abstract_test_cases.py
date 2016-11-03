@@ -63,9 +63,17 @@ class AbstractVariableTestCase(unittest.TestCase):
     def test_get_primal(self):
         pass
 
-    @abc.abstractmethod
     def test_get_dual(self):
-        pass
+        with open(TESTMODELPATH) as infile:
+            model = self.interface.Model.from_json(json.load(infile))
+        model.optimize()
+        self.assertEqual(model.status, 'optimal')
+        self.assertAlmostEqual(model.objective.value, 0.8739215069684305)
+        self.assertTrue(isinstance(model.variables[0].dual, float))
+        self.var.type = "integer"
+        model.add(self.var)
+        model.optimize()
+        self.assertTrue(self.var.dual is None)  # Cannot find reduced cost for MILP
 
     def test_setting_lower_bound_higher_than_upper_bound_raises(self):
         self.model.add(self.var)
@@ -118,9 +126,17 @@ class AbstractConstraintTestCase(unittest.TestCase):
             self.model = self.interface.Model.from_json(json.load(infile))
         self.constraint = self.interface.Constraint(self.interface.Variable('chip') + self.interface.Variable('chap'), name='woodchips', lb=100)
 
-    @abc.abstractmethod
+    @unittest.skipIf(not interface.Constraint._INDICATOR_CONSTRAINT_SUPPORT, "Interface doesn't support indicators")
     def test_indicator_constraint_support(self):
-        pass
+        constraint = self.interface.Constraint(
+            self.interface.Variable('chip_2'),
+            indicator_variable=self.interface.Variable('chip', type='binary'), active_when=0, lb=0,
+            ub=0,
+            name='indicator_constraint_fwd_1'
+        )
+        model = self.interface.Model()
+        model.add(constraint)
+        model.update()
 
     @abc.abstractmethod
     def test_get_primal(self):
@@ -131,7 +147,7 @@ class AbstractConstraintTestCase(unittest.TestCase):
         pass
 
     def test_change_constraint_name(self):
-        constraint = self.interface.clone(self.constraint)
+        constraint = self.interface.Constraint.clone(self.constraint)
         self.assertEqual(constraint.name, 'woodchips')
         constraint.name = 'ketchup'
         self.assertEqual(constraint.name, 'ketchup')
@@ -151,17 +167,34 @@ class AbstractConstraintTestCase(unittest.TestCase):
         self.assertEqual([constraint.name for constraint in self.model.constraints],
                          ['c' + str(i) for i in range(0, len(self.model.constraints))])
 
-    @abc.abstractmethod
     def test_setting_lower_bound_higher_than_upper_bound_raises(self):
-        pass
+        self.assertRaises(ValueError, setattr, self.model.constraints[0], 'lb', 10000000000.)
+        self.assertRaises(ValueError, setattr, self.model.constraints[0], "ub", -1000000000.)
 
-    @abc.abstractmethod
+        self.assertRaises(ValueError, self.interface.Constraint, 0, lb=0, ub=-1)
+
     def test_setting_nonnumerical_bounds_raises(self):
-        pass
+        var = self.interface.Variable("test")
+        constraint = self.interface.Constraint(var, lb=0)
+        self.assertRaises(TypeError, setattr, constraint, "lb", "noodle soup")
+        self.assertRaises(TypeError, setattr, self.model.constraints[0], 'lb', 'Chicken soup')
 
-    @abc.abstractmethod
     def test_set_constraint_bounds_to_none(self):
-        pass
+        model = self.interface.Model()
+        var = self.interface.Variable("test")
+        const = self.interface.Constraint(var, lb=-10, ub=10)
+        obj = self.interface.Objective(var)
+        model.add(const)
+        model.objective = obj
+        self.assertEqual(model.optimize(), interface.OPTIMAL)
+        const.ub = None
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        const.ub = 10
+        const.lb = None
+        obj.direction = "min"
+        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        const.lb = -10
+        self.assertEqual(model.optimize(), interface.OPTIMAL)
 
 
 @six.add_metaclass(abc.ABCMeta)

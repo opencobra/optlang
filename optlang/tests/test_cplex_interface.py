@@ -22,7 +22,6 @@ except ImportError as e:
 else:
 
     import nose
-    from optlang import interface
     from optlang.tests import abstract_test_cases
 
     from optlang.cplex_interface import Variable, Constraint, Model, Objective
@@ -88,19 +87,19 @@ else:
                              -2.281503094067127, 2.6784818505075303, 0.0]):
                 self.assertAlmostEqual(i, j)
 
-        def test_get_dual(self):
-            self.assertEqual(self.var.dual, None)
-            problem = cplex.Cplex()
-            problem.read(TESTMODELPATH)
-            model = Model(problem=problem)
-            model.optimize()
-            self.assertEqual(model.status, 'optimal')
-            self.assertEqual(model.objective.value, 0.8739215069684305)
-            print([var.dual for var in model.variables])
-            self.var.type = "integer"
-            model.add(self.var)
-            model.optimize()
-            self.assertTrue(self.var.dual is None)  # Cannot find reduced cost for MILP
+        # def test_get_dual(self):
+        #     self.assertEqual(self.var.dual, None)
+        #     problem = cplex.Cplex()
+        #     problem.read(TESTMODELPATH)
+        #     model = Model(problem=problem)
+        #     model.optimize()
+        #     self.assertEqual(model.status, 'optimal')
+        #     self.assertEqual(model.objective.value, 0.8739215069684305)
+        #     self.assertTrue(isinstance(model.variables[0].dual, float))
+        #     self.var.type = "integer"
+        #     model.add(self.var)
+        #     model.optimize()
+        #     self.assertTrue(self.var.dual is None)  # Cannot find reduced cost for MILP
 
         # def test_setting_lower_bound_higher_than_upper_bound_raises(self):
         #     problem = cplex.Cplex()
@@ -168,13 +167,13 @@ else:
             self.assertEqual(dict(zip(self.model.problem.variables.get_names(sparse_pair.ind), sparse_pair.val)),
                              dict([('R_PGK', -33.0), ('chap', 1.0), ('chip', 33.0)]))
 
-        def test_indicator_constraint_support(self):
-            Constraint(
-                Variable('chip_2'),
-                indicator_variable=Variable('chip', type='binary'), active_when=0, lb=0,
-                ub=0,
-                name='indicator_constraint_fwd_1'
-            )
+        # def test_indicator_constraint_support(self):
+        #     Constraint(
+        #         Variable('chip_2'),
+        #         indicator_variable=Variable('chip', type='binary'), active_when=0, lb=0,
+        #         ub=0,
+        #         name='indicator_constraint_fwd_1'
+        #     )
 
         def test_get_primal(self):
             self.assertEqual(self.constraint.primal, None)
@@ -218,39 +217,39 @@ else:
         #     self.assertEqual([constraint.name for constraint in self.model.constraints],
         #                      ['c' + str(i) for i in range(0, len(self.model.constraints))])
 
-        def test_setting_lower_bound_higher_than_upper_bound_raises(self):
-            problem = cplex.Cplex()
-            problem.read(TESTMODELPATH)
-            model = Model(problem=problem)
-            print(model.constraints[0].lb)
-            print(model.constraints[0].ub)
-            self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
-            self.assertRaises(ValueError, setattr, model.constraints[0], "ub", -1000000000.)
+        # def test_setting_lower_bound_higher_than_upper_bound_raises(self):
+        #     problem = cplex.Cplex()
+        #     problem.read(TESTMODELPATH)
+        #     model = Model(problem=problem)
+        #     print(model.constraints[0].lb)
+        #     print(model.constraints[0].ub)
+        #     self.assertRaises(ValueError, setattr, model.constraints[0], 'lb', 10000000000.)
+        #     self.assertRaises(ValueError, setattr, model.constraints[0], "ub", -1000000000.)
+        #
+        #     self.assertRaises(ValueError, Constraint, 0, lb=0, ub=-1)
 
-            self.assertRaises(ValueError, Constraint, 0, lb=0, ub=-1)
+        # def test_setting_nonnumerical_bounds_raises(self):
+        #     problem = cplex.Cplex()
+        #     problem.read(TESTMODELPATH)
+        #     model = Model(problem=problem)
+        #     self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
-        def test_setting_nonnumerical_bounds_raises(self):
-            problem = cplex.Cplex()
-            problem.read(TESTMODELPATH)
-            model = Model(problem=problem)
-            self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
-
-        def test_set_constraint_bounds_to_none(self):
-            model = Model()
-            var = Variable("test")
-            const = Constraint(var, lb=-10, ub=10)
-            obj = Objective(var)
-            model.add(const)
-            model.objective = obj
-            self.assertEqual(model.optimize(), interface.OPTIMAL)
-            const.ub = None
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
-            const.ub = 10
-            const.lb = None
-            obj.direction = "min"
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
-            const.lb = -10
-            self.assertEqual(model.optimize(), interface.OPTIMAL)
+        # def test_set_constraint_bounds_to_none(self):
+        #     model = Model()
+        #     var = Variable("test")
+        #     const = Constraint(var, lb=-10, ub=10)
+        #     obj = Objective(var)
+        #     model.add(const)
+        #     model.objective = obj
+        #     self.assertEqual(model.optimize(), interface.OPTIMAL)
+        #     const.ub = None
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        #     const.ub = 10
+        #     const.lb = None
+        #     obj.direction = "min"
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        #     const.lb = -10
+        #     self.assertEqual(model.optimize(), interface.OPTIMAL)
 
 
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
