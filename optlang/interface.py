@@ -514,6 +514,18 @@ class Constraint(OptimizationExpression):
 
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
+    def _check_valid_lower_bound(self, value):
+        if not (value is None or isinstance(value, (int, float))):
+            raise TypeError("Constraint bounds must be numeric or None, not {}".format(type(value)))
+        if value is not None and getattr(self, "ub", None) is not None and value > self.ub:
+            raise ValueError("Cannot set a lower bound that is greater than the upper bound.")
+
+    def _check_valid_upper_bound(self, value):
+        if not (value is None or isinstance(value, (int, float))):
+            raise TypeError("Constraint bounds must be numeric or None, not {}".format(type(value)))
+        if value is not None and getattr(self, "lb", None) is not None and value < self.lb:
+            raise ValueError("Cannot set an upper bound that is less than the lower bound.")
+
     @classmethod
     def __check_valid_indicator_variable(cls, variable):
         if variable is not None and not cls._INDICATOR_CONSTRAINT_SUPPORT:
@@ -535,8 +547,9 @@ class Constraint(OptimizationExpression):
                    name=constraint.name, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=1, *args, **kwargs):
-        self._lb = lb
-        self._ub = ub
+        self._problem = None
+        self.lb = lb
+        self.ub = ub
         super(Constraint, self).__init__(expression, *args, **kwargs)
         self.__check_valid_indicator_variable(indicator_variable)
         self.__check_valid_active_when(active_when)
@@ -550,6 +563,7 @@ class Constraint(OptimizationExpression):
 
     @lb.setter
     def lb(self, value):
+        self._check_valid_lower_bound(value)
         self._lb = value
 
     @property
@@ -559,6 +573,7 @@ class Constraint(OptimizationExpression):
 
     @ub.setter
     def ub(self, value):
+        self._check_valid_upper_bound(value)
         self._ub = value
 
     @property
@@ -606,9 +621,9 @@ class Constraint(OptimizationExpression):
         else:
             expression = expression - coeff
             if self.lb is not None:
-                self.lb = self.lb - coeff
+                self.lb = self.lb - float(coeff)
             if self.ub is not None:
-                self.ub = self.ub - coeff
+                self.ub = self.ub - float(coeff)
         return expression
 
     @property
