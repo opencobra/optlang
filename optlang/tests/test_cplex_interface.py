@@ -147,32 +147,6 @@ else:
             self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        # def test_copy(self):
-        #     self.model.optimize()
-        #     value = self.model.objective.value
-        #     model_copy = copy.copy(self.model)
-        #     self.assertNotEqual(id(self.model), id(model_copy))
-        #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
-        #     model_copy.optimize()
-        #     self.assertAlmostEqual(value, model_copy.objective.value)
-        #     self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
-        #                      [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-        #     self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
-        #                      [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
-
-        # def test_deepcopy(self):
-        #     self.model.optimize()
-        #     value = self.model.objective.value
-        #     model_copy = copy.deepcopy(self.model)
-        #     self.assertNotEqual(id(self.model), id(model_copy))
-        #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
-        #     model_copy.optimize()
-        #     self.assertAlmostEqual(value, model_copy.objective.value)
-        #     self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
-        #                      [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-        #     self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
-        #                      [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
-
         def test_config_gets_copied_too(self):
             self.assertEquals(self.model.configuration.verbosity, 0)
             self.model.configuration.verbosity = 3
