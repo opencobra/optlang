@@ -147,31 +147,31 @@ else:
             self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        def test_copy(self):
-            self.model.optimize()
-            value = self.model.objective.value
-            model_copy = copy.copy(self.model)
-            self.assertNotEqual(id(self.model), id(model_copy))
-            self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
-            model_copy.optimize()
-            self.assertAlmostEqual(value, model_copy.objective.value)
-            self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
-                             [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
-                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
+        # def test_copy(self):
+        #     self.model.optimize()
+        #     value = self.model.objective.value
+        #     model_copy = copy.copy(self.model)
+        #     self.assertNotEqual(id(self.model), id(model_copy))
+        #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+        #     model_copy.optimize()
+        #     self.assertAlmostEqual(value, model_copy.objective.value)
+        #     self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
+        #                      [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+        #     self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
+        #                      [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        def test_deepcopy(self):
-            self.model.optimize()
-            value = self.model.objective.value
-            model_copy = copy.deepcopy(self.model)
-            self.assertNotEqual(id(self.model), id(model_copy))
-            self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
-            model_copy.optimize()
-            self.assertAlmostEqual(value, model_copy.objective.value)
-            self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
-                             [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
-            self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
-                             [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
+        # def test_deepcopy(self):
+        #     self.model.optimize()
+        #     value = self.model.objective.value
+        #     model_copy = copy.deepcopy(self.model)
+        #     self.assertNotEqual(id(self.model), id(model_copy))
+        #     self.assertNotEqual(id(self.model.problem), id(model_copy.problem))
+        #     model_copy.optimize()
+        #     self.assertAlmostEqual(value, model_copy.objective.value)
+        #     self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
+        #                      [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+        #     self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
+        #                      [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
         def test_config_gets_copied_too(self):
             self.assertEquals(self.model.configuration.verbosity, 0)
@@ -198,6 +198,14 @@ else:
             print(repickled.variables)
             var_from_pickle = repickled.variables['12x!!@#5_3']
             self.assertEqual(var_from_pickle.name, self.model.problem.variables.get_names()[-1])
+
+        def test_cplex_remove_variable(self):
+            var = self.model.variables[0]
+            self.assertEqual(var.problem, self.model)
+            self.model.remove(var)
+            self.model.update()
+            self.assertNotIn(var.name, self.model.problem.variables.get_names())
+            self.assertEqual(var.problem, None)
 
         @unittest.skip('Skipping for now')
         def test_add_quadratic_constraints(self):

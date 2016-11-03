@@ -18,6 +18,7 @@ import unittest
 
 import six
 from optlang import interface
+import optlang
 import pickle
 import json
 import copy
@@ -70,10 +71,6 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.assertEqual(model.status, 'optimal')
         self.assertAlmostEqual(model.objective.value, 0.8739215069684305)
         self.assertTrue(isinstance(model.variables[0].dual, float))
-        self.var.type = "integer"
-        model.add(self.var)
-        model.optimize()
-        self.assertTrue(self.var.dual is None)  # Cannot find reduced cost for MILP
 
     def test_setting_lower_bound_higher_than_upper_bound_raises(self):
         self.model.add(self.var)
@@ -126,17 +123,24 @@ class AbstractConstraintTestCase(unittest.TestCase):
             self.model = self.interface.Model.from_json(json.load(infile))
         self.constraint = self.interface.Constraint(self.interface.Variable('chip') + self.interface.Variable('chap'), name='woodchips', lb=100)
 
-    @unittest.skipIf(not interface.Constraint._INDICATOR_CONSTRAINT_SUPPORT, "Interface doesn't support indicators")
     def test_indicator_constraint_support(self):
-        constraint = self.interface.Constraint(
-            self.interface.Variable('chip_2'),
-            indicator_variable=self.interface.Variable('chip', type='binary'), active_when=0, lb=0,
-            ub=0,
-            name='indicator_constraint_fwd_1'
-        )
-        model = self.interface.Model()
-        model.add(constraint)
-        model.update()
+        if self.interface.Constraint._INDICATOR_CONSTRAINT_SUPPORT:
+            constraint = self.interface.Constraint(
+                self.interface.Variable('chip_2'),
+                indicator_variable=self.interface.Variable('chip', type='binary'), active_when=0, lb=0,
+                ub=0,
+                name='indicator_constraint_fwd_1'
+            )
+            model = self.interface.Model()
+            model.add(constraint)
+            model.update()
+        else:
+            self.assertRaises(
+                optlang.exceptions.IndicatorConstraintsNotSupported,
+                self.interface.Constraint,
+                self.interface.Variable('chip') + self.interface.Variable('chap'),
+                indicator_variable=self.interface.Variable('indicator', type='binary')
+            )
 
     @abc.abstractmethod
     def test_get_primal(self):
@@ -146,7 +150,7 @@ class AbstractConstraintTestCase(unittest.TestCase):
         self.assertEqual(self.constraint.dual, None)
         self.model.optimize()
         self.assertEqual(self.model.status, 'optimal')
-        self.assertEqual(self.model.objective.value, 0.8739215069684305)
+        self.assertAlmostEqual(self.model.objective.value, 0.8739215069684305)
         self.assertTrue(isinstance(self.model.constraints[0].dual, float))
 
     def test_change_constraint_name(self):
@@ -239,13 +243,30 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertEquals(len(from_pickle.variables), 0)
         self.assertEquals(len(from_pickle.constraints), 0)
 
-    @abc.abstractmethod
     def test_copy(self):
-        pass
+        self.model.optimize()
+        value = self.model.objective.value
+        model_copy = copy.copy(self.model)
+        self.assertIsNot(self.model, model_copy)
+        model_copy.optimize()
+        self.assertAlmostEqual(value, model_copy.objective.value)
+        self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
+                         [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+        self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
+                         [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-    @abc.abstractmethod
     def test_deepcopy(self):
-        pass
+        self.model.optimize()
+        value = self.model.objective.value
+        model_copy = copy.deepcopy(self.model)
+        self.assertIsNot(self.model, model_copy)
+        self.assertIsNot(self.model.problem, model_copy.problem)
+        model_copy.optimize()
+        self.assertAlmostEqual(value, model_copy.objective.value)
+        self.assertEqual([(var.lb, var.ub, var.name, var.type) for var in model_copy.variables.values()],
+                         [(var.lb, var.ub, var.name, var.type) for var in self.model.variables.values()])
+        self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in model_copy.constraints],
+                         [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
     @abc.abstractmethod
     def test_config_gets_copied_too(self):
@@ -283,17 +304,16 @@ class AbstractModelTestCase(unittest.TestCase):
         pass
 
     def test_remove_variable(self):
-        var = self.model.variables.values()[0]
+        var = self.model.variables[0]
         self.assertEqual(var.problem, self.model)
         self.model.remove(var)
-        self.assertNotIn(var, self.model.variables.values())
+        self.assertNotIn(var, self.model.variables)
         self.assertEqual(var.problem, None)
 
     def test_remove_variable_str(self):
         var = self.model.variables.values()[0]
         self.model.remove(var.name)
-        self.assertNotIn(var, self.model.variables.values())
-        self.assertNotIn(var.name, self.model.problem.variables.get_names())
+        self.assertNotIn(var, self.model.variables)
         self.assertEqual(var.problem, None)
 
     def test_add_constraints(self):
@@ -347,9 +367,10 @@ class AbstractModelTestCase(unittest.TestCase):
         x = self.interface.Variable('x', type='binary')
         y = self.interface.Variable('y', lb=-181133.3, ub=12000., type='continuous')
         z = self.interface.Variable('z', lb=3, ub=3, type='integer')
-        constraint = self.interface.Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
-        self.model.add(constraint)
-        self.assertRaises(ValueError, self.model.update)
+        with self.assertRaises(ValueError):
+            constraint = self.interface.Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
+            self.model.add(constraint)
+            self.model.update()
 
     @abc.abstractmethod
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):

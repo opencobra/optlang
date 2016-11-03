@@ -162,13 +162,13 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.lb.setter
     def lb(self, value):
-        self._lb = value
+        super(Constraint, Constraint).lb.fset(self, value)
         if self.problem is not None:
             self.problem._glpk_set_row_bounds(self)
 
     @interface.Constraint.ub.setter
     def ub(self, value):
-        self._ub = value
+        super(Constraint, Constraint).ub.fset(self, value)
         if self.problem is not None:
             self.problem._glpk_set_row_bounds(self)
 

@@ -188,13 +188,8 @@ class Variable(interface.Variable):
 class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
-    def __init__(self, expression, *args, **kwargs):
+    def __init__(self, expression, sloppy=False, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
-        if self.ub is not None and self.lb is not None and self.lb > self.ub:
-            raise ValueError(
-                "Lower bound %f is larger than upper bound %f in constraint %s" %
-                (self.lb, self.ub, self)
-            )
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
