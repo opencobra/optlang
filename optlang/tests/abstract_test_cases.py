@@ -20,6 +20,7 @@ import six
 from optlang import interface
 import pickle
 import json
+import copy
 import os
 
 __test__ = False
@@ -111,9 +112,10 @@ class AbstractVariableTestCase(unittest.TestCase):
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractConstraintTestCase(unittest.TestCase):
-    @abc.abstractmethod
+
     def setUp(self):
-        pass
+        self.model = self.interface.Model.from_json(json.load(TESTMODELPATH))
+        self.constraint = self.interface.Constraint(self.interface.Variable('chip') + self.interface.Variable('chap'), name='woodchips', lb=100)
 
     @abc.abstractmethod
     def test_indicator_constraint_support(self):
@@ -127,9 +129,26 @@ class AbstractConstraintTestCase(unittest.TestCase):
     def test_get_dual(self):
         pass
 
-    @abc.abstractmethod
     def test_change_constraint_name(self):
-        pass
+        constraint = self.interface.clone(self.constraint)
+        self.assertEqual(constraint.name, 'woodchips')
+        constraint.name = 'ketchup'
+        self.assertEqual(constraint.name, 'ketchup')
+        self.assertEqual([constraint.name for constraint in self.model.constraints],
+                         ['M_13dpg_c', 'M_2pg_c', 'M_3pg_c', 'M_6pgc_c', 'M_6pgl_c', 'M_ac_c', 'M_ac_e',
+                          'M_acald_c', 'M_acald_e', 'M_accoa_c', 'M_acon_C_c', 'M_actp_c', 'M_adp_c', 'M_akg_c',
+                          'M_akg_e', 'M_amp_c', 'M_atp_c', 'M_cit_c', 'M_co2_c', 'M_co2_e', 'M_coa_c', 'M_dhap_c',
+                          'M_e4p_c', 'M_etoh_c', 'M_etoh_e', 'M_f6p_c', 'M_fdp_c', 'M_for_c', 'M_for_e', 'M_fru_e',
+                          'M_fum_c', 'M_fum_e', 'M_g3p_c', 'M_g6p_c', 'M_glc_D_e', 'M_gln_L_c', 'M_gln_L_e',
+                          'M_glu_L_c', 'M_glu_L_e', 'M_glx_c', 'M_h2o_c', 'M_h2o_e', 'M_h_c', 'M_h_e', 'M_icit_c',
+                          'M_lac_D_c', 'M_lac_D_e', 'M_mal_L_c', 'M_mal_L_e', 'M_nad_c', 'M_nadh_c', 'M_nadp_c',
+                          'M_nadph_c', 'M_nh4_c', 'M_nh4_e', 'M_o2_c', 'M_o2_e', 'M_oaa_c', 'M_pep_c', 'M_pi_c',
+                          'M_pi_e', 'M_pyr_c', 'M_pyr_e', 'M_q8_c', 'M_q8h2_c', 'M_r5p_c', 'M_ru5p_D_c', 'M_s7p_c',
+                          'M_succ_c', 'M_succ_e', 'M_succoa_c', 'M_xu5p_D_c'])
+        for i, constraint in enumerate(self.model.constraints):
+            constraint.name = 'c' + str(i)
+        self.assertEqual([constraint.name for constraint in self.model.constraints],
+                         ['c' + str(i) for i in range(0, len(self.model.constraints))])
 
     @abc.abstractmethod
     def test_setting_lower_bound_higher_than_upper_bound_raises(self):
