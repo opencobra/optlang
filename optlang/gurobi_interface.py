@@ -127,9 +127,9 @@ class Variable(interface.Variable):
 
     @interface.Variable.type.setter
     def type(self, value):
+        super(Variable, Variable).type.fset(self, value)
         if self.problem:
             return self._internal_variable.setAttr('VType', _VTYPE_TO_GUROBI_VTYPE[value])
-        super(Variable, Variable).type.fset(self, value)
 
     @property
     def primal(self):
