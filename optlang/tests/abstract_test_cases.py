@@ -114,7 +114,8 @@ class AbstractVariableTestCase(unittest.TestCase):
 class AbstractConstraintTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.model = self.interface.Model.from_json(json.load(TESTMODELPATH))
+        with open(TESTMODELPATH) as infile:
+            self.model = self.interface.Model.from_json(json.load(infile))
         self.constraint = self.interface.Constraint(self.interface.Variable('chip') + self.interface.Variable('chap'), name='woodchips', lb=100)
 
     @abc.abstractmethod
