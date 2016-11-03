@@ -28,6 +28,7 @@ else:
 
     from optlang.gurobi_interface import Variable, Constraint, Model, Objective
     from optlang.tests import abstract_test_cases
+    from optlang import gurobi_interface
 
     random.seed(666)
     TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
@@ -35,21 +36,23 @@ else:
 
 
     class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
-        def setUp(self):
-            self.var = Variable('test')
-            self.model = Model()
+        interface = gurobi_interface
+
+        # def setUp(self):
+        #     self.var = Variable('test')
+        #     self.model = Model()
 
         def test_internal_variable(self):
             self.assertEqual(self.var._internal_variable, None)
 
-        def test_set_wrong_type_raises(self):
-            self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+        # def test_set_wrong_type_raises(self):
+        #     self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
 
-        def test_change_name(self):
+        def test_gurobi_change_name(self):
             self.model.add(self.var)
             self.model.update()
             self.var.name = "test_2"
-            self.assertEqual(self.var.name, "test_2")
+            self.assertEqual(self.var._internal_variable.getAttr("VarName"), "test_2")
 
         def test_get_primal(self):
             self.assertEqual(self.var.primal, None)
@@ -94,13 +97,13 @@ else:
                              -0.03437427989066433, 0.0, 0.0, -0.04837861614241646]):
                 self.assertAlmostEqual(i, j)
 
-        def test_setting_lower_bound_higher_than_upper_bound_raises(self):
-            model = Model(problem=gurobipy.read(TESTMODELPATH))
-            self.assertRaises(ValueError, setattr, model.variables[0], 'lb', 10000000000.)
+        # def test_setting_lower_bound_higher_than_upper_bound_raises(self):
+        #     model = Model(problem=gurobipy.read(TESTMODELPATH))
+        #     self.assertRaises(ValueError, setattr, model.variables[0], 'lb', 10000000000.)
 
-        def test_setting_nonnumerical_bounds_raises(self):
-            model = Model(problem=gurobipy.read(TESTMODELPATH))
-            self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
+        # def test_setting_nonnumerical_bounds_raises(self):
+        #     model = Model(problem=gurobipy.read(TESTMODELPATH))
+        #     self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
 
         def test_changing_variable_names_is_reflected_in_the_solver(self):
             model = Model(problem=gurobipy.read(TESTMODELPATH))
@@ -114,9 +117,11 @@ else:
                 self.assertEqual(variable.name, "var" + str(i))
                 self.assertEqual(variable._internal_variable.getAttr('VarName'), "var" + str(i))
 
-        def test_setting_bounds(self):
-            model = Model(problem=gurobipy.read(TESTMODELPATH))
-            var = model.variables[0]
+        def test_gurobi_setting_bounds(self):
+            var = self.var
+            model = self.model
+            model.add(var)
+            model.update()
             var.lb = 1
             self.assertEqual(var.lb, 1)
             model.problem.update()
@@ -126,21 +131,21 @@ else:
             model.problem.update()
             self.assertEqual(var._internal_variable.getAttr('UB'), 2)
 
-        def test_set_bounds_to_none(self):
-            model = Model()
-            var = Variable("test_var")
-            obj = Objective(var)
-            model.objective = obj
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
-            var.ub = 10
-            self.assertEqual(model.optimize(), interface.OPTIMAL)
-            var.ub = None
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
-            obj.direction = "min"
-            var.lb = -10
-            self.assertEqual(model.optimize(), interface.OPTIMAL)
-            var.lb = None
-            self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        # def test_set_bounds_to_none(self):
+        #     model = Model()
+        #     var = Variable("test_var")
+        #     obj = Objective(var)
+        #     model.objective = obj
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        #     var.ub = 10
+        #     self.assertEqual(model.optimize(), interface.OPTIMAL)
+        #     var.ub = None
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+        #     obj.direction = "min"
+        #     var.lb = -10
+        #     self.assertEqual(model.optimize(), interface.OPTIMAL)
+        #     var.lb = None
+        #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
 
     class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
