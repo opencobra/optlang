@@ -23,21 +23,23 @@ TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp
 
 
 class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
-    def setUp(self):
-        self.var = Variable('test')
-        self.model = Model()
+    interface = glpk_interface
+
+    # def setUp(self):
+    #     self.var = Variable('test')
+    #     self.model = Model()
 
     def test_variable_without_problem_returns_None_index(self):
         self.assertEqual(self.var.index, None)
 
-    def test_set_wrong_type_raises(self):
-        self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+    # def test_set_wrong_type_raises(self):
+    #     self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
 
-    def test_change_name(self):
-        self.model.add(self.var)
-        self.model.update()
-        self.var.name = "test_2"
-        self.assertEqual(self.var.name, "test_2")
+    # def test_change_name(self):
+    #     self.model.add(self.var)
+    #     self.model.update()
+    #     self.var.name = "test_2"
+    #     self.assertEqual(self.var.name, "test_2")
 
     def test_get_primal(self):
         self.assertEqual(self.var.primal, None)
@@ -81,13 +83,13 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
                          0.0, 0.0, 0.0, -0.03437427989066435, 0.0, 0.0, -0.04837861614241648]):
             self.assertAlmostEqual(i, j)
 
-    def test_setting_lower_bound_higher_than_upper_bound_raises(self):
-        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
-        self.assertRaises(ValueError, setattr, model.variables[0], 'lb', 10000000000.)
+    # def test_setting_lower_bound_higher_than_upper_bound_raises(self):
+    #     model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+    #     self.assertRaises(ValueError, setattr, model.variables[0], 'lb', 10000000000.)
 
-    def test_setting_nonnumerical_bounds_raises(self):
-        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
-        self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
+    # def test_setting_nonnumerical_bounds_raises(self):
+    #     model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+    #     self.assertRaises(Exception, setattr, model.variables[0], 'lb', 'Chicken soup')
 
     def test_changing_variable_names_is_reflected_in_the_solver(self):
         model = Model(problem=glpk_read_cplex(TESTMODELPATH))
@@ -96,9 +98,11 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
             self.assertEqual(variable.name, "var" + str(i))
             self.assertEqual(glp_get_col_name(model.problem, variable.index), "var" + str(i))
 
-    def test_setting_bounds(self):
-        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
-        var = model.variables[0]
+    def test_glpk_setting_bounds(self):
+        self.model.add(self.var)
+        self.model.update()
+        var = self.var
+        model = self.model
         var.lb = 1
         self.assertEqual(var.lb, 1)
         self.assertEqual(glpk_interface.glp_get_col_lb(model.problem, var.index), 1)
@@ -106,21 +110,21 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         self.assertEqual(var.ub, 2)
         self.assertEqual(glpk_interface.glp_get_col_ub(model.problem, var.index), 2)
 
-    def test_set_bounds_to_none(self):
-        model = Model()
-        var = Variable("test_var")
-        obj = Objective(var)
-        model.objective = obj
-        self.assertEqual(model.optimize(), interface.UNBOUNDED)
-        var.ub = 10
-        self.assertEqual(model.optimize(), interface.OPTIMAL)
-        var.ub = None
-        self.assertEqual(model.optimize(), interface.UNBOUNDED)
-        obj.direction = "min"
-        var.lb = -10
-        self.assertEqual(model.optimize(), interface.OPTIMAL)
-        var.lb = None
-        self.assertEqual(model.optimize(), interface.UNBOUNDED)
+    # def test_set_bounds_to_none(self):
+    #     model = Model()
+    #     var = Variable("test_var")
+    #     obj = Objective(var)
+    #     model.objective = obj
+    #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+    #     var.ub = 10
+    #     self.assertEqual(model.optimize(), interface.OPTIMAL)
+    #     var.ub = None
+    #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
+    #     obj.direction = "min"
+    #     var.lb = -10
+    #     self.assertEqual(model.optimize(), interface.OPTIMAL)
+    #     var.lb = None
+    #     self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
 
 class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
