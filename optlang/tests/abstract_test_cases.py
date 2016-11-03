@@ -27,6 +27,7 @@ __test__ = False
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.json')
 TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.json')
 
+
 @six.add_metaclass(abc.ABCMeta)
 class AbstractVariableTestCase(unittest.TestCase):
     @unittest.skip('Abstract test method not implemented.')
