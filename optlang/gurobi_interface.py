@@ -231,34 +231,39 @@ class Constraint(interface.Constraint):
             grb_constraint.setAttr('ConstrName', value)
         self._name = value
 
+    def _set_constraint_bounds(self, sense, rhs, range_value):
+        gurobi_constraint = self.problem.problem.getConstrByName(self.name)
+        gurobi_constraint.setAttr('Sense', sense)
+        gurobi_constraint.setAttr('RHS', rhs)
+
+        aux_var = self.problem.problem.getVarByName(gurobi_constraint.getAttr('ConstrName') + '_aux')
+        if range_value == 0.:
+            if aux_var is not None:
+                aux_var.setAttr("UB", 0)
+        if range_value != 0:
+            if aux_var is None:
+                aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0,
+                                                      ub=range_value)
+                row = self.problem.problem.getRow(gurobi_constraint)
+                updated_row = row - aux_var
+                self.problem.problem.remove(gurobi_constraint)
+                self.problem.problem.update()
+                self.problem.problem.addConstr(updated_row, sense, rhs, self.name)
+            aux_var.setAttr("UB", range_value)
+
     @interface.Constraint.lb.setter
     def lb(self, value):
         super(Constraint, Constraint).lb.fset(self, value)
         if getattr(self, 'problem', None) is not None:
             if value is None:
                 value = -gurobipy.GRB.INFINITY
-            if self.ub is not None and value > self.ub:
+            if value is not None and self.ub is not None and value > self.ub:
                 raise ValueError(
                     "Lower bound %f is larger than upper bound %f in constraint %s" %
                     (value, self.ub, self)
                 )
-            gurobi_constraint = self.problem.problem.getConstrByName(self.name)
             sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(value, self.ub)
-            if range_value == 0.:
-                gurobi_constraint.setAttr('Sense', sense)
-                gurobi_constraint.setAttr('RHS', rhs)
-            else:
-                aux_var = self.problem.problem.getVarByName(gurobi_constraint.getAttr('ConstrName') + '_aux')
-                if aux_var is None:
-                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0,
-                                                          ub=range_value)
-                    row = self.problem.problem.getRow(gurobi_constraint)
-                    updated_row = row - aux_var
-                    self.problem.problem.remove(gurobi_constraint)
-                    self.problem.problem.update()
-                    self.problem.problem.addConstr(updated_row, sense, rhs, self.name)
-                else:
-                    aux_var.setAttr("UB", range_value)
+            self._set_constraint_bounds(sense, rhs, range_value)
 
     @interface.Constraint.ub.setter
     def ub(self, value):
@@ -266,28 +271,13 @@ class Constraint(interface.Constraint):
         if getattr(self, 'problem', None) is not None:
             if value is None:
                 value = gurobipy.GRB.INFINITY
-            if self.lb is not None and value < self.lb:
+            if value is not None and self.lb is not None and value < self.lb:
                 raise ValueError(
                     "Upper bound %f is less than lower bound %f in constraint %s" %
                     (value, self.lb, self)
                 )
-            gurobi_constraint = self.problem.problem.getConstrByName(self.name)
             sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(self.lb, value)
-            if range_value == 0.:
-                gurobi_constraint.setAttr('Sense', sense)
-                gurobi_constraint.setAttr('RHS', rhs)
-            else:
-                aux_var = self.problem.problem.getVarByName(gurobi_constraint.getAttr('ConstrName') + '_aux')
-                if aux_var is None:
-                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0,
-                                                          ub=range_value)
-                    row = self.problem.problem.getRow(gurobi_constraint)
-                    updated_row = row - aux_var
-                    self.problem.problem.remove(gurobi_constraint)
-                    self.problem.problem.update()
-                    self.problem.problem.addConstr(updated_row, sense, rhs, self.name)
-                else:
-                    aux_var.setAttr("UB", range_value)
+            self._set_constraint_bounds(sense, rhs, range_value)
 
     def __iadd__(self, other):
         if self.problem is not None:
@@ -543,6 +533,9 @@ class Model(interface.Model):
     def _optimize(self):
         self.problem.optimize()
         self._status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
+        # Weird bug where unbounded is not recognized
+        if self.status == interface.OPTIMAL and abs(self.objective.value) == gurobipy.GRB.INFINITY:
+            self._status = interface.UNBOUNDED
         return self.status
 
     def _add_variables(self, variables):
