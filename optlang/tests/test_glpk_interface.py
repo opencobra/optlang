@@ -8,7 +8,7 @@ import unittest
 
 import nose
 import optlang
-from optlang import glpk_interface, interface
+from optlang import glpk_interface
 from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from optlang.tests import abstract_test_cases
 from optlang.util import glpk_read_cplex
