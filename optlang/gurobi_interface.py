@@ -104,15 +104,31 @@ class Variable(interface.Variable):
         else:
             return None
 
+    def _set_variable_bounds_on_problem(self, var_lb, var_ub):
+        lb = [
+            (var.name, -gurobipy.GRB.INFINITY) if val is None else (var.name, val) for var, val in var_lb
+            ]
+        if len(lb) > 0:
+            self.problem.variables.set_lower_bounds(lb)
+        ub = [
+            (var.name, gurobipy.GRB.INFINITY) if val is None else (var.name, val) for var, val in var_ub
+            ]
+        if len(ub) > 0:
+            self.problem.variables.set_upper_bounds(ub)
+
     @interface.Variable.lb.setter
     def lb(self, value):
         super(Variable, self.__class__).lb.fset(self, value)
+        if value is None:
+            value = -gurobipy.GRB.INFINITY
         if self.problem:
             return self._internal_variable.setAttr('LB', value)
 
     @interface.Variable.ub.setter
     def ub(self, value):
         super(Variable, self.__class__).ub.fset(self, value)
+        if value is None:
+            value = gurobipy.GRB.INFINITY
         if self.problem:
             return self._internal_variable.setAttr('UB', value)
 
@@ -230,6 +246,8 @@ class Constraint(interface.Constraint):
     @interface.Constraint.lb.setter
     def lb(self, value):
         if getattr(self, 'problem', None) is not None:
+            if value is None:
+                value = -gurobipy.GRB.INFINITY
             if self.ub is not None and value > self.ub:
                 raise ValueError(
                     "Lower bound %f is larger than upper bound %f in constraint %s" %
@@ -243,7 +261,8 @@ class Constraint(interface.Constraint):
             else:
                 aux_var = self.problem.problem.getVarByName(gurobi_constraint.getAttr('ConstrName') + '_aux')
                 if aux_var is None:
-                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0, ub=range_value)
+                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0,
+                                                          ub=range_value)
                     row = self.problem.problem.getRow(gurobi_constraint)
                     updated_row = row - aux_var
                     self.problem.problem.remove(gurobi_constraint)
@@ -256,6 +275,8 @@ class Constraint(interface.Constraint):
     @interface.Constraint.ub.setter
     def ub(self, value):
         if getattr(self, 'problem', None) is not None:
+            if value is None:
+                value = gurobipy.GRB.INFINITY
             if self.lb is not None and value < self.lb:
                 raise ValueError(
                     "Upper bound %f is less than lower bound %f in constraint %s" %
@@ -269,7 +290,8 @@ class Constraint(interface.Constraint):
             else:
                 aux_var = self.problem.problem.getVarByName(gurobi_constraint.getAttr('ConstrName') + '_aux')
                 if aux_var is None:
-                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0, ub=range_value)
+                    aux_var = self.problem.problem.addVar(name=gurobi_constraint.getAttr('ConstrName') + '_aux', lb=0,
+                                                          ub=range_value)
                     row = self.problem.problem.getRow(gurobi_constraint)
                     updated_row = row - aux_var
                     self.problem.problem.remove(gurobi_constraint)
@@ -503,20 +525,25 @@ class Model(interface.Model):
                 coeff = factors[0]
                 vars = factors[1:]
                 assert len(vars) <= 2
-                var1 = self.problem.getVarByName(vars[0].name)
                 if len(vars) == 2:
+                    var1 = self.problem.getVarByName(vars[0].name)
                     var2 = self.problem.getVarByName(vars[1].name)
                     grb_terms.append(coeff * var1 * var2)
                 else:
                     if vars[0].is_Symbol:
-                        grb_terms.append(coeff * var1)
+                        var = self.problem.getVarByName(vars[0].name)
+                        grb_terms.append(coeff * var)
                     elif vars[0].is_Pow:
-                        grb_terms.append(coeff * var1**2)
-
+                        var = self.problem.getVarByName(vars[0].args[0].name)
+                        exponent = vars[0].args[1]
+                        if exponent > 2:
+                            raise Exception("{} is not a quadratic term.".format(vars))
+                        grb_terms.append(coeff * var * var)
 
         grb_expression = gurobipy.quicksum(grb_terms)
 
-        self.problem.setObjective(grb_expression, {'min': gurobipy.GRB.MINIMIZE, 'max': gurobipy.GRB.MAXIMIZE}[value.direction])
+        self.problem.setObjective(grb_expression,
+                                  {'min': gurobipy.GRB.MINIMIZE, 'max': gurobipy.GRB.MAXIMIZE}[value.direction])
         value.problem = self
 
     def update(self):

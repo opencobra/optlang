@@ -1,17 +1,18 @@
 # Copyright (c) 2016 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-from optlang.glpk_interface import Variable, Constraint, Objective, Model
-import jsonschema
 import json
 import unittest
 
+import jsonschema
+from optlang.glpk_interface import Variable, Constraint, Objective, Model
+
 bound_schema = {
-            "oneOf": [
-                {"type": "number"},
-                {"type": "null"}
-            ]
-        }
+    "oneOf": [
+        {"type": "number"},
+        {"type": "null"}
+    ]
+}
 
 variable_schema = {
     "$schema": "variable",
@@ -96,7 +97,6 @@ objective_schema = {
     }
 }
 
-
 model_schema = {
     "type": "object",
     "properties": {
@@ -150,6 +150,8 @@ class JsonTest(unittest.TestCase):
             (model.objective.expression - sum(model.variables)).simplify(), 0
         )
 
+
 if __name__ == "__main__":
     import nose
+
     nose.runmodule()

@@ -1,18 +1,19 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import pickle
-import tempfile
 import glob
+import os
+import pickle
 import tarfile
+import tempfile
 from functools import partial
 
-import os
 import nose
-from swiglpk import *
 import six
-
 from optlang.glpk_interface import Model
+from swiglpk import glp_create_prob, GLP_MPS_DECK, glp_read_mps, glp_get_num_cols, glp_smcp, glp_simplex, \
+    glp_get_status, \
+    GLP_OPT, glp_get_obj_val
 
 
 def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/netlib_lp_problems.tar.gz')):
@@ -37,14 +38,12 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
             # glp_read_mps(problem, GLP_MPS_FILE, None, tmp_file)
             return problem
 
-
         def check_dimensions(glpk_problem, model):
             """
             Tests that the glpk problem and the interface model have the same
             number of rows (constraints) and columns (variables).
             """
             assert glp_get_num_cols(glpk_problem) == len(model.variables)
-
 
         def check_objval(glpk_problem, model_objval):
             """
@@ -60,13 +59,11 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
                 glpk_problem_objval = None
             nose.tools.assert_almost_equal(glpk_problem_objval, model_objval, places=4)
 
-
         def check_objval_against_the_final_netlib_results(netlib_id, model_objval):
             relative_error = abs(1 - (model_objval / float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue'])))
             print(relative_error)
             nose.tools.assert_true(relative_error < 0.01)
             # nose.tools.assert_almost_equal(model_objval, float(THE_FINAL_NETLIB_RESULTS[netlib_id]['Objvalue']), places=4)
-
 
         tar = tarfile.open(netlib_tar_path)
         model_paths_in_tar = glob.fnmatch.filter(tar.getnames(), '*.SIF')

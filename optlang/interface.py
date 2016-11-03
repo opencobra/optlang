@@ -1045,6 +1045,8 @@ class Model(object):
 
     def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
+        if objective is None:
+            objective = self.interface.Objective(0)
         self._objective = objective
         self._variables = Container()
         self._constraints = Container()

@@ -1,19 +1,19 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
+import sys
 from unittest import TestCase
 
 from optlang.exceptions import ContainerAlreadyContains
 from optlang.interface import Model, Variable, Constraint, Objective
-import sys
 
 
-class TestSolver(TestCase):
+class TestModel(TestCase):
     def setUp(self):
         self.model = Model()
         x = Variable('x', lb=0, ub=10)
         y = Variable('y', lb=0, ub=10)
-        constr = Constraint(1.*x + y, lb=3, name="constr1")
+        constr = Constraint(1. * x + y, lb=3, name="constr1")
         obj = Objective(2 * x + y)
         self.model.add(x)
         self.model.add(y)
@@ -29,7 +29,7 @@ class TestSolver(TestCase):
         model = Model()
         self.assertEqual(len(model.constraints), 0)
         self.assertEqual(len(model.variables), 0)
-        self.assertEqual(model.objective, None)
+        self.assertEqual(model.objective.expression, 0)
 
     def test_add_variable(self):
         var = Variable('z')
@@ -42,19 +42,15 @@ class TestSolver(TestCase):
         self.assertTrue(var in self.model.variables.values())
         self.assertEqual(self.model.variables['z'].lb, None)
         self.assertEqual(self.model.variables['z'].ub, None)
-        self.assertEqual(self.model.variables['asdfasdflkjasdflkjasdlkjsadflkjasdflkjasdlfkjasdlfkjasdlkfjasdf'].lb, -13)
-        self.assertEqual(self.model.variables['asdfasdflkjasdflkjasdlkjsadflkjasdflkjasdlfkjasdlfkjasdlkfjasdf'].ub, None)
+        self.assertEqual(self.model.variables['asdfasdflkjasdflkjasdlkjsadflkjasdflkjasdlfkjasdlfkjasdlkfjasdf'].lb,
+                         -13)
+        self.assertEqual(self.model.variables['asdfasdflkjasdflkjasdlkjsadflkjasdflkjasdlfkjasdlfkjasdlkfjasdf'].ub,
+                         None)
 
     def test_add_variable_twice_raises(self):
         var = Variable('x')
         self.model.add(var)
         self.assertRaises(ContainerAlreadyContains, self.model.update)
-
-    def test_remove_add_variable(self):
-        var = self.model.variables[0]
-        self.model.remove(var)
-        self.model.add(var)
-        self.model.update()
 
     def test_remove_add_variable(self):
         var = self.model.variables[0]
@@ -87,7 +83,7 @@ class TestSolver(TestCase):
 
     def test_add_remove_collection(self):
         c = Constraint(self.model.variables.x + self.model.variables.y, lb=10)
-        c2 = Constraint(3.* self.model.variables.x + self.model.variables.y, lb=10)
+        c2 = Constraint(3. * self.model.variables.x + self.model.variables.y, lb=10)
         self.model.add([c, c2])
         self.assertEqual(list(self.model.constraints), [self.model.constraints['constr1'], c, c2])
         self.model.remove([c, 'constr1', c2])
@@ -113,8 +109,8 @@ class TestSolver(TestCase):
     def test_add_differing_interface_type_raises(self):
         from optlang import glpk_interface as glpk
         x, y = glpk.Variable('x'), glpk.Variable('y')
-        constraint = glpk.Constraint(x+y)
-        objective = glpk.Objective(1.*x)
+        constraint = glpk.Constraint(x + y)
+        objective = glpk.Objective(1. * x)
         self.assertRaises(TypeError, self.model.add, x)
         self.assertRaises(TypeError, self.model.add, constraint)
         self.assertRaises(TypeError, self.model.add, objective)
@@ -147,7 +143,7 @@ class TestSolver(TestCase):
         x = Variable('x', lb=0, ub=20)
         self.assertNotEqual(id(x), id(self.model.variables['x']))
         y = Variable('y', lb=0, ub=10)
-        constr = Constraint(1.*x + y, lb=3, name="constr1")
+        constr = Constraint(1. * x + y, lb=3, name="constr1")
         model.add(constr)
         self.assertNotEqual(id(self.model.variables['x']), id(model.variables['x']))
         self.assertNotEqual(id(self.model.variables['y']), id(model.variables['y']))
