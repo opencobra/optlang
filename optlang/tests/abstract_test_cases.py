@@ -60,6 +60,7 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.assertRaises(ValueError, setattr, self.model.variables[0], 'lb', 100.)
 
     def test_setting_nonnumerical_bounds_raises(self):
+        self.assertRaises(TypeError, setattr, self.var, "lb", "Ministrone")
         self.model.add(self.var)
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'lb', 'Chicken soup')
 
