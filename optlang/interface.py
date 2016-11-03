@@ -165,7 +165,8 @@ class Variable(sympy.Symbol):
             self._ub = 1.
         self.__test_valid_lower_bound(type, self._lb, name)
         self.__test_valid_upper_bound(type, self._ub, name)
-        self._type = type
+        self.problem = None
+        self.type = type
         self.problem = problem
 
     @property
