@@ -102,7 +102,7 @@ class Variable(interface.Variable):
         try:
             glpk_kind = _VTYPE_TO_GLPK_VTYPE[value]
         except KeyError:
-            raise Exception("GLPK cannot handle variables of type %s. \
+            raise ValueError("GLPK cannot handle variables of type %s. \
                         The following variable types are available:\n" +
                             " ".join(_VTYPE_TO_GLPK_VTYPE.keys()))
         glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
