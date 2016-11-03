@@ -518,10 +518,10 @@ class Model(interface.Model):
             zipped_var_args = zip(self.problem.variables.get_names(),
                                   self.problem.variables.get_lower_bounds(),
                                   self.problem.variables.get_upper_bounds(),
-                                  #self.problem.variables.get_types(), # TODO uncomment when cplex is fixed
+                                  # self.problem.variables.get_types(), # TODO uncomment when cplex is fixed
                                   )
             for name, lb, ub in zipped_var_args:
-                var = Variable(name, lb=lb, ub=ub, problem=self) # Type should also be in there
+                var = Variable(name, lb=lb, ub=ub, problem=self)  # Type should also be in there
                 super(Model, self)._add_variables([var])  # This avoids adding the variable to the glpk problem
             zipped_constr_args = zip(self.problem.linear_constraints.get_names(),
                                      self.problem.linear_constraints.get_rows(),
