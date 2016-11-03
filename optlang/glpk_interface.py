@@ -106,7 +106,8 @@ class Variable(interface.Variable):
                 "GLPK cannot handle variables of type %s. The following variable types are available:\n" +
                 " ".join(_VTYPE_TO_GLPK_VTYPE.keys())
             )
-        glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
+        if self.problem is not None:
+            glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
         interface.Variable.type.fset(self, value)
 
     def _get_primal(self):
