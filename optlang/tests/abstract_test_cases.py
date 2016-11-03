@@ -142,9 +142,12 @@ class AbstractConstraintTestCase(unittest.TestCase):
     def test_get_primal(self):
         pass
 
-    @abc.abstractmethod
     def test_get_dual(self):
-        pass
+        self.assertEqual(self.constraint.dual, None)
+        self.model.optimize()
+        self.assertEqual(self.model.status, 'optimal')
+        self.assertEqual(self.model.objective.value, 0.8739215069684305)
+        self.assertTrue(isinstance(self.model.constraints[0].dual, float))
 
     def test_change_constraint_name(self):
         constraint = self.interface.Constraint.clone(self.constraint)
