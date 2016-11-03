@@ -269,18 +269,19 @@ else:
 
 
     class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
+        interface = cplex_interface
 
-        def setUp(self):
-            problem = cplex.Cplex()
-            problem.read(TESTMODELPATH)
-            assert problem.variables.get_num() > 0
-            self.model = Model(problem=problem)
+        # def setUp(self):
+        #     problem = cplex.Cplex()
+        #     problem.read(TESTMODELPATH)
+        #     assert problem.variables.get_num() > 0
+        #     self.model = Model(problem=problem)
 
-        def test_create_empty_model(self):
-            model = Model()
-            self.assertEqual(len(model.constraints), 0)
-            self.assertEqual(len(model.variables), 0)
-            self.assertEqual(model.objective.expression, 0)
+        # def test_create_empty_model(self):
+        #     model = Model()
+        #     self.assertEqual(len(model.constraints), 0)
+        #     self.assertEqual(len(model.variables), 0)
+        #     self.assertEqual(model.objective.expression, 0)
 
         def test_pickle_ability(self):
             self.model.optimize()
@@ -294,16 +295,16 @@ else:
             self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        def test_pickle_empty_model(self):
-            model = Model()
-            self.assertEquals(model.objective.expression, 0)
-            self.assertEquals(len(model.variables), 0)
-            self.assertEquals(len(model.constraints), 0)
-            pickle_string = pickle.dumps(model)
-            from_pickle = pickle.loads(pickle_string)
-            self.assertEquals(from_pickle.objective.expression, 0)
-            self.assertEquals(len(from_pickle.variables), 0)
-            self.assertEquals(len(from_pickle.constraints), 0)
+        # def test_pickle_empty_model(self):
+        #     model = Model()
+        #     self.assertEquals(model.objective.expression, 0)
+        #     self.assertEquals(len(model.variables), 0)
+        #     self.assertEquals(len(model.constraints), 0)
+        #     pickle_string = pickle.dumps(model)
+        #     from_pickle = pickle.loads(pickle_string)
+        #     self.assertEquals(from_pickle.objective.expression, 0)
+        #     self.assertEquals(len(from_pickle.variables), 0)
+        #     self.assertEquals(len(from_pickle.constraints), 0)
 
         def test_copy(self):
             self.model.optimize()
@@ -345,27 +346,27 @@ else:
             self.assertEqual(self.model.variables.keys(), inner_prob.variables.get_names())
             self.assertEqual(self.model.constraints.keys(), inner_prob.linear_constraints.get_names())
 
-        def test_add_variable(self):
-            var = Variable('x')
-            self.assertEqual(var.problem, None)
-            self.model.add(var)
-            self.assertTrue(var in self.model.variables.values())
-            self.assertEqual(self.model.variables['x'].problem, var.problem)
-            self.assertEqual(self.model.variables['x'].problem, self.model)
-            var = Variable('y', lb=-13)
-            self.model.add(var)
-            self.assertTrue(var in self.model.variables.values())
-            self.assertEqual(self.model.variables['x'].lb, None)
-            self.assertEqual(self.model.variables['x'].ub, None)
-            self.assertEqual(self.model.variables['y'].lb, -13)
-            self.assertEqual(self.model.variables['x'].ub, None)
+        # def test_add_variable(self):
+        #     var = Variable('x')
+        #     self.assertEqual(var.problem, None)
+        #     self.model.add(var)
+        #     self.assertTrue(var in self.model.variables.values())
+        #     self.assertEqual(self.model.variables['x'].problem, var.problem)
+        #     self.assertEqual(self.model.variables['x'].problem, self.model)
+        #     var = Variable('y', lb=-13)
+        #     self.model.add(var)
+        #     self.assertTrue(var in self.model.variables.values())
+        #     self.assertEqual(self.model.variables['x'].lb, None)
+        #     self.assertEqual(self.model.variables['x'].ub, None)
+        #     self.assertEqual(self.model.variables['y'].lb, -13)
+        #     self.assertEqual(self.model.variables['x'].ub, None)
 
-        def test_add_integer_var(self):
-            var = Variable('int_var', lb=-13, ub=499., type='integer')
-            self.model.add(var)
-            self.assertEqual(self.model.variables['int_var'].type, 'integer')
-            self.assertEqual(self.model.variables['int_var'].ub, 499.)
-            self.assertEqual(self.model.variables['int_var'].lb, -13)
+        # def test_add_integer_var(self):
+        #     var = Variable('int_var', lb=-13, ub=499., type='integer')
+        #     self.model.add(var)
+        #     self.assertEqual(self.model.variables['int_var'].type, 'integer')
+        #     self.assertEqual(self.model.variables['int_var'].ub, 499.)
+        #     self.assertEqual(self.model.variables['int_var'].lb, -13)
 
         def test_add_non_cplex_conform_variable(self):
             var = Variable('12x!!@#5_3', lb=-666, ub=666)
@@ -379,19 +380,19 @@ else:
             var_from_pickle = repickled.variables['12x!!@#5_3']
             self.assertEqual(var_from_pickle.name, self.model.problem.variables.get_names()[-1])
 
-        def test_remove_variable(self):
-            var = self.model.variables.values()[0]
-            self.assertEqual(var.problem, self.model)
-            self.model.remove(var)
-            self.assertNotIn(var, self.model.variables.values())
-            self.assertEqual(var.problem, None)
+        # def test_remove_variable(self):
+        #     var = self.model.variables.values()[0]
+        #     self.assertEqual(var.problem, self.model)
+        #     self.model.remove(var)
+        #     self.assertNotIn(var, self.model.variables.values())
+        #     self.assertEqual(var.problem, None)
 
-        def test_remove_variable_str(self):
-            var = self.model.variables.values()[0]
-            self.model.remove(var.name)
-            self.assertNotIn(var, self.model.variables.values())
-            self.assertNotIn(var.name, self.model.problem.variables.get_names())
-            self.assertEqual(var.problem, None)
+        # def test_remove_variable_str(self):
+        #     var = self.model.variables.values()[0]
+        #     self.model.remove(var.name)
+        #     self.assertNotIn(var, self.model.variables.values())
+        #     self.assertNotIn(var.name, self.model.problem.variables.get_names())
+        #     self.assertEqual(var.problem, None)
 
         def test_add_constraints(self):
             x = Variable('x', type='binary')
@@ -425,20 +426,20 @@ else:
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Mul_constraint', 'x'), 77.)
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients('Only_var_constraint', 'x'), 1.)
 
-        def test_remove_constraints(self):
-            x = Variable('x', type='binary')
-            y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-            z = Variable('z', lb=4, ub=4, type='integer')
-            constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-            self.assertEqual(constr1.problem, None)
-            self.model.add(constr1)
-            self.model.update()
-            self.assertEqual(constr1.problem, self.model)
-            self.assertIn(constr1, self.model.constraints)
-            self.model.remove(constr1.name)
-            self.model.update()
-            self.assertEqual(constr1.problem, None)
-            self.assertNotIn(constr1, self.model.constraints)
+        # def test_remove_constraints(self):
+        #     x = Variable('x', type='binary')
+        #     y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        #     z = Variable('z', lb=4, ub=4, type='integer')
+        #     constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
+        #     self.assertEqual(constr1.problem, None)
+        #     self.model.add(constr1)
+        #     self.model.update()
+        #     self.assertEqual(constr1.problem, self.model)
+        #     self.assertIn(constr1, self.model.constraints)
+        #     self.model.remove(constr1.name)
+        #     self.model.update()
+        #     self.assertEqual(constr1.problem, None)
+        #     self.assertNotIn(constr1, self.model.constraints)
 
         @unittest.skip('Skipping for now')
         def test_add_quadratic_constraints(self):
@@ -461,13 +462,13 @@ else:
             self.assertRegexpMatches(str(self.model), '\s*Dummy_\d+:\s*y \+ z \+ 2\.333 x - .*  = -300')
             print(self.model)
 
-        def test_add_nonlinear_constraint_raises(self):
-            x = Variable('x', type='binary')
-            y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-            z = Variable('z', lb=3, ub=3, type='integer')
-            constraint = Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
-            self.model.add(constraint)
-            self.assertRaises(ValueError, self.model.update)
+        # def test_add_nonlinear_constraint_raises(self):
+        #     x = Variable('x', type='binary')
+        #     y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        #     z = Variable('z', lb=3, ub=3, type='integer')
+        #     constraint = Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
+        #     self.model.add(constraint)
+        #     self.assertRaises(ValueError, self.model.update)
 
         def test_change_of_constraint_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -540,11 +541,13 @@ else:
             self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
             self.assertEqual(bounds_new, inner_problem_bounds_new)
 
-        def test_change_variable_type(self):
+        @unittest.skip("The cplex get_types function seems to be broken.")
+        def test_cplex_change_variable_type(self):
             for variable in self.model.variables:
                 variable.type = 'integer'
             # There seems to be a bug in the get_types function TODO Fix this
-            # self.assertEqual(set(self.model.problem.variables.get_types()), {'I'})
+            # It doesn't behave according to cplex docs
+            self.assertEqual(set(self.model.problem.variables.get_types()), {'I'})
 
         def test_change_constraint_bounds(self):
             constraint = self.model.constraints[0]
@@ -559,39 +562,39 @@ else:
         def test_initial_objective(self):
             self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
 
-        def test_optimize(self):
-            self.model.optimize()
-            self.assertEqual(self.model.status, 'optimal')
-            self.assertAlmostEqual(self.model.objective.value, 0.8739215069684303)
+        # def test_optimize(self):
+        #     self.model.optimize()
+        #     self.assertEqual(self.model.status, 'optimal')
+        #     self.assertAlmostEqual(self.model.objective.value, 0.8739215069684303)
 
-        def test_optimize_milp(self):
-            problem = cplex.Cplex(TESTMILPMODELPATH)
-            milp_model = Model(problem=problem)
-            milp_model.optimize()
-            self.assertEqual(milp_model.status, 'optimal')
-            self.assertAlmostEqual(milp_model.objective.value, 122.5)
-            for variable in milp_model.variables:
-                if variable.type == 'integer':
-                    self.assertEqual(variable.primal % 1, 0)
+        # def test_optimize_milp(self):
+        #     problem = cplex.Cplex(TESTMILPMODELPATH)
+        #     milp_model = Model(problem=problem)
+        #     milp_model.optimize()
+        #     self.assertEqual(milp_model.status, 'optimal')
+        #     self.assertAlmostEqual(milp_model.objective.value, 122.5)
+        #     for variable in milp_model.variables:
+        #         if variable.type == 'integer':
+        #             self.assertEqual(variable.primal % 1, 0)
 
-        def test_change_objective(self):
-            """Test that all different kinds of linear objective specification work."""
-            print(self.model.variables.values()[0:2])
-            v1, v2 = self.model.variables.values()[0:2]
-            self.model.objective = Objective(1. * v1 + 1. * v2)
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
-            self.model.objective = Objective(v1 + v2)
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+        # def test_change_objective(self):
+        #     """Test that all different kinds of linear objective specification work."""
+        #     print(self.model.variables.values()[0:2])
+        #     v1, v2 = self.model.variables.values()[0:2]
+        #     self.model.objective = Objective(1. * v1 + 1. * v2)
+        #     self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+        #     self.model.objective = Objective(v1 + v2)
+        #     self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
 
-        def test_number_objective(self):
-            self.model.objective = Objective(0.)
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
-            self.assertEqual(set(self.model.problem.objective.get_linear()), {0.})
+        # def test_number_objective(self):
+        #     self.model.objective = Objective(0.)
+        #     self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
+        #     self.assertEqual(set(self.model.problem.objective.get_linear()), {0.})
 
-        def test_raise_on_non_linear_objective(self):
-            """Test that an exception is raised when a non-linear objective is added to the model."""
-            v1, v2 = self.model.variables.values()[0:2]
-            self.assertRaises(ValueError, Objective, v1 * v2 ** 3)
+        # def test_raise_on_non_linear_objective(self):
+        #     """Test that an exception is raised when a non-linear objective is added to the model."""
+        #     v1, v2 = self.model.variables.values()[0:2]
+        #     self.assertRaises(ValueError, Objective, v1 * v2 ** 3)
 
         def test_iadd_objective(self):
             v2, v3 = self.model.variables.values()[1:3]
@@ -633,8 +636,8 @@ else:
             self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
             self.assertEqual(self.model.problem.objective.get_linear(self.model.variables.R_TPI.name), 666.)
 
-        def test_instantiating_model_with_different_solver_problem_raises(self):
-            self.assertRaises(TypeError, Model, problem='Chicken soup')
+        # def test_instantiating_model_with_different_solver_problem_raises(self):
+        #     self.assertRaises(TypeError, Model, problem='Chicken soup')
 
         def test_set_linear_coefficients_constraint(self):
             constraint = self.model.constraints.M_atp_c
@@ -644,41 +647,42 @@ else:
             coeff_dict = constraint.expression.as_coefficients_dict()
             self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], 666.)
 
-        def test_primal_values(self):
-            self.model.optimize()
-            for k, v in self.model.primal_values.items():
-                self.assertEquals(v, self.model.variables[k].primal)
+        # def test_primal_values(self):
+        #     self.model.optimize()
+        #     for k, v in self.model.primal_values.items():
+        #         self.assertEquals(v, self.model.variables[k].primal)
 
-        def test_reduced_costs(self):
-            self.model.optimize()
-            for k, v in self.model.reduced_costs.items():
-                self.assertEquals(v, self.model.variables[k].dual)
+        # def test_reduced_costs(self):
+        #     self.model.optimize()
+        #     for k, v in self.model.reduced_costs.items():
+        #         self.assertEquals(v, self.model.variables[k].dual)
 
-        def test_dual_values(self):
-            self.model.optimize()
-            for k, v in self.model.dual_values.items():
-                self.assertEquals(v, self.model.constraints[k].primal)
+        # def test_dual_values(self):
+        #     self.model.optimize()
+        #     for k, v in self.model.dual_values.items():
+        #         self.assertEquals(v, self.model.constraints[k].primal)
 
-        def test_shadow_prices(self):
-            self.model.optimize()
-            for k, v in self.model.shadow_prices.items():
-                self.assertEquals(v, self.model.constraints[k].dual)
+        # def test_shadow_prices(self):
+        #     self.model.optimize()
+        #     for k, v in self.model.shadow_prices.items():
+        #         self.assertEquals(v, self.model.constraints[k].dual)
 
-        def test_change_objective_can_handle_removed_vars(self):
+        def test_cplex_change_objective_can_handle_removed_vars(self):
             self.model.objective = Objective(self.model.variables[0])
             self.model.remove(self.model.variables[0])
             self.model.update()
             self.model.objective = Objective(self.model.variables[1] ** 2)
             self.model.remove(self.model.variables[1])
+            self.model.update()
             self.model.objective = Objective(self.model.variables[2])
 
-        def test_clone_model(self):
-            self.assertEquals(self.model.configuration.verbosity, 0)
-            self.model.configuration.verbosity = 3
-            cloned_model = Model.clone(self.model)
-            self.assertEquals(cloned_model.configuration.verbosity, 3)
-            self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-            self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        # def test_clone_model(self):
+        #     self.assertEquals(self.model.configuration.verbosity, 0)
+        #     self.model.configuration.verbosity = 3
+        #     cloned_model = Model.clone(self.model)
+        #     self.assertEquals(cloned_model.configuration.verbosity, 3)
+        #     self.assertEquals(len(cloned_model.variables), len(self.model.variables))
+        #     self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
 
 
     class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
@@ -741,8 +745,6 @@ else:
         def test_convex_obj(self):
             model = self.model
             obj = Objective(self.x1 ** 2 + self.x2 ** 2, direction="min")
-            print(obj.expression)
-            print(obj.is_Quadratic)
             model.objective = obj
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 0.5)
@@ -750,9 +752,7 @@ else:
             self.assertAlmostEqual(self.x2.primal, 0.5)
 
             obj_2 = Objective(self.x1, direction="min")
-            print(model.__str__()[0:1000])
             model.objective = obj_2
-            print(model.__str__()[0:1000])
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 0.0)
             self.assertAlmostEqual(self.x1.primal, 0.0)
