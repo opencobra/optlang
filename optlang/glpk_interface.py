@@ -94,22 +94,26 @@ class Variable(interface.Variable):
     @interface.Variable.lb.setter
     def lb(self, value):
         interface.Variable.lb.fset(self, value)
-        self.problem._glpk_set_col_bounds(self)
+        if self.problem is not None:
+            self.problem._glpk_set_col_bounds(self)
 
     @interface.Variable.ub.setter
     def ub(self, value):
         interface.Variable.ub.fset(self, value)
-        self.problem._glpk_set_col_bounds(self)
+        if self.problem is not None:
+            self.problem._glpk_set_col_bounds(self)
 
     @interface.Variable.type.setter
     def type(self, value):
         try:
             glpk_kind = _VTYPE_TO_GLPK_VTYPE[value]
         except KeyError:
-            raise Exception("GLPK cannot handle variables of type %s. \
-                        The following variable types are available:\n" +
-                            " ".join(_VTYPE_TO_GLPK_VTYPE.keys()))
-        glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
+            raise ValueError(
+                "GLPK cannot handle variables of type %s. The following variable types are available:\n" +
+                " ".join(_VTYPE_TO_GLPK_VTYPE.keys())
+            )
+        if self.problem is not None:
+            glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
         interface.Variable.type.fset(self, value)
 
     def _get_primal(self):
@@ -164,13 +168,13 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.lb.setter
     def lb(self, value):
-        self._lb = value
+        super(Constraint, Constraint).lb.fset(self, value)
         if self.problem is not None:
             self.problem._glpk_set_row_bounds(self)
 
     @interface.Constraint.ub.setter
     def ub(self, value):
-        self._ub = value
+        super(Constraint, Constraint).ub.fset(self, value)
         if self.problem is not None:
             self.problem._glpk_set_row_bounds(self)
 

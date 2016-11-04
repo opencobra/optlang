@@ -191,13 +191,8 @@ class Variable(interface.Variable):
 class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
-    def __init__(self, expression, *args, **kwargs):
+    def __init__(self, expression, sloppy=False, *args, **kwargs):
         super(Constraint, self).__init__(expression, *args, **kwargs)
-        if self.ub is not None and self.lb is not None and self.lb > self.ub:
-            raise ValueError(
-                "Lower bound %f is larger than upper bound %f in constraint %s" %
-                (self.lb, self.ub, self)
-            )
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
@@ -259,15 +254,11 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.lb.setter
     def lb(self, value):
+        self._check_valid_lower_bound(value)
         if getattr(self, 'problem', None) is not None:
             if self.indicator_variable is not None:
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds"
-                )
-            if self.ub is not None and value is not None and value > self.ub:
-                raise ValueError(
-                    "Lower bound %f is larger than upper bound %f in constraint %s" %
-                    (value, self.ub, self)
                 )
             sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(value, self.ub)
             if self.is_Linear:
@@ -278,15 +269,11 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.ub.setter
     def ub(self, value):
+        self._check_valid_upper_bound(value)
         if getattr(self, 'problem', None) is not None:
             if self.indicator_variable is not None:
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's bounds"
-                )
-            if self.lb is not None and value is not None and value < self.lb:
-                raise ValueError(
-                    "Upper bound %f is less than lower bound %f in constraint %s" %
-                    (value, self.lb, self)
                 )
             sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(self.lb, value)
             if self.is_Linear:
@@ -524,10 +511,11 @@ class Model(interface.Model):
             self.problem = problem
             zipped_var_args = zip(self.problem.variables.get_names(),
                                   self.problem.variables.get_lower_bounds(),
-                                  self.problem.variables.get_upper_bounds()
+                                  self.problem.variables.get_upper_bounds(),
+                                  # self.problem.variables.get_types(), # TODO uncomment when cplex is fixed
                                   )
             for name, lb, ub in zipped_var_args:
-                var = Variable(name, lb=lb, ub=ub, problem=self)
+                var = Variable(name, lb=lb, ub=ub, problem=self)  # Type should also be in there
                 super(Model, self)._add_variables([var])  # This avoids adding the variable to the glpk problem
             zipped_constr_args = zip(self.problem.linear_constraints.get_names(),
                                      self.problem.linear_constraints.get_rows(),
