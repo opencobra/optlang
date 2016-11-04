@@ -59,7 +59,7 @@ def parse_optimization_expression(obj, linear=True, quadratic=False, expression=
     return linear_coefficients, quadratic_coefficients
 
 
-def _parse_linear_expression(expression, **kwargs):
+def _parse_linear_expression(expression, expanded=False, **kwargs):
     """
     Parse the coefficients of a linear expression (linearity is assumed).
 
@@ -75,6 +75,12 @@ def _parse_linear_expression(expression, **kwargs):
         coefficients = {}
     else:
         raise ValueError("Expression {} seems to be invalid".format(expression))
+    for var in coefficients:
+        if not var.is_Symbol:
+            if expanded:
+                raise ValueError("Expression {} seems to be invalid".format(expression))
+            else:
+                coefficients = _parse_linear_expression(expression, expanded=True, **kwargs)
     return coefficients
 
 
@@ -100,6 +106,8 @@ def _parse_quadratic_expression(expression, expanded=False):
 
     try:
         for term in terms:
+            if term.is_Number:
+                continue
             if term.is_Pow:
                 term = 1.0 * term
             assert term.is_Mul, "What is this? {}".format(type(term))
@@ -120,6 +128,10 @@ def _parse_quadratic_expression(expression, expanded=False):
                         raise ValueError("The expression is not quadratic")
                     key = frozenset((var,))
                     quadratic_coefficients[key] = quadratic_coefficients.get(key, 0) + coef
+        if quadratic_coefficients:
+            assert all(var.is_Symbol for var in frozenset.union(*quadratic_coefficients))  # Raise an exception to trigger expand
+        if linear_coefficients:
+            assert all(var.is_Symbol for var in linear_coefficients)
     except Exception as e:
         if expanded:
             raise e
