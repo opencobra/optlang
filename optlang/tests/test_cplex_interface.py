@@ -777,7 +777,6 @@ else:
             self.assertAlmostEqual(self.x1.primal, 0.0)
             self.assertGreaterEqual(self.x2.primal, 1.0)
 
-        @unittest.skip("slow")
         def test_qp_convex(self):
             problem = cplex.Cplex()
             problem.read(CONVEX_QP_PATH)
