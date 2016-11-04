@@ -7,12 +7,16 @@ optlang
 Vision
 ~~~~~~
 
-**optlang** provides a common interface to a series of optimization
-solvers (linear & non-linear) and relies on
-`sympy <http://sympy.org/en/index.html>`__ for problem formulation
-(constraints, objectives, variables, etc.). Adding new solvers is easy:
-just sub-class the high-level interface and implement the necessary
-solver specific routines.
+**optlang** is a Python package for solving mathematical optimization
+problems, i.e. maximizing or minimizing an objective function over a set
+of variables subject to a number of constraints. Optlang provides a
+common interface to a series of optimization tools, so different solver
+backends can be changed in a transparent way.
+
+Optlang takes advantage of the symbolic math library
+`sympy <http://sympy.org/en/index.html>`__ to allow objective functions
+and constraints to be easily formulated from symbolic expressions of
+variables (see examples).
 
 Installation
 ~~~~~~~~~~~~
@@ -49,8 +53,14 @@ Dependencies
 ~~~~~~~~~~~~
 
 -  `sympy >= 0.7.5 <http://sympy.org/en/index.html>`__
+-  `six >= 1.9.0 <https://pypi.python.org/pypi/six>`__
+
+And at least one of the following
+
 -  `swiglpk >= 0.1.0 <https://pypi.python.org/pypi/swiglpk>`__
--  `glpk >= 4.45 <https://www.gnu.org/software/glpk/>`__
+-  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
+-  `gurobipy <http://www.gurobi.com>`__
+-  `scipy <http://www.scipy.org>`__
 
 Example
 ~~~~~~~
@@ -60,7 +70,7 @@ from `GLPK documentation <http://www.gnu.org/software/glpk>`__):
 
 ::
 
-    from optlang import Model, Variable, Constraint, Objective
+    from optlang.glpk_interface import Model, Variable, Constraint, Objective
 
     x1 = Variable('x1', lb=0)
     x2 = Variable('x2', lb=0)
@@ -96,10 +106,6 @@ The example will produce the following output:
 Future outlook
 ~~~~~~~~~~~~~~
 
--  `Gurobi <http://www.gurobi.com/>`__ interface (very efficient MILP
-   solver)
--  `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
-   interface (very efficient MILP solver)
 -  `Mosek <http://www.mosek.com/>`__ interface (provides academic
    licenses)
 -  `GAMS <http://www.gams.com/>`__ output (support non-linear problem
@@ -123,7 +129,7 @@ Requirements
    languages
    (`CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__,
    `GAMS <http://www.gams.com/>`__, etc.)
--  Models should be pickable
+-  Models should be picklable
 -  Common solver configuration interface (presolver, MILP gap, etc.)
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000
