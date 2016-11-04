@@ -771,7 +771,6 @@ class Model(interface.Model):
                 raise ValueError(
                     "CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
             constraint.problem = self
-        print(len(linear_constraints["lin_expr"]))
         self.problem.linear_constraints.add(**linear_constraints)
 
     def _remove_constraints(self, constraints):
