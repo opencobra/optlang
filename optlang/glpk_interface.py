@@ -35,6 +35,7 @@ from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
 from optlang.util import inheritdocstring
+from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
 
 log = logging.getLogger(__name__)
@@ -534,23 +535,12 @@ class Model(interface.Model):
                     glp_set_obj_coef(self.problem, variable.index, 0.)
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
-        expression = self._objective.expression
-        if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
-            pass
-        else:
-            if expression.is_Symbol:
-                glp_set_obj_coef(self.problem, expression.index, 1.)
-            if expression.is_Mul:
-                coeff, var = expression.args
-                glp_set_obj_coef(self.problem, var.index, float(coeff))
-            elif expression.is_Add:
-                for term in expression.args:
-                    coeff, var = term.args
-                    glp_set_obj_coef(self.problem, var.index, float(coeff))
-            else:
-                raise ValueError(
-                    "Provided objective %s doesn't seem to be appropriate." %
-                    self._objective)
+
+        coef_dict, _ = parse_optimization_expression(value, linear=True)
+
+        for var, coef in coef_dict.items():
+            glp_set_obj_coef(self.problem, var.index, float(coef))
+
         glp_set_obj_dir(
             self.problem,
             {'min': GLP_MIN, 'max': GLP_MAX}[self._objective.direction]
@@ -696,7 +686,7 @@ class Model(interface.Model):
     def _add_constraints(self, constraints, sloppy=False):
         super(Model, self)._add_constraints(constraints, sloppy=sloppy)
         for constraint in constraints:
-            constraint._problem = None  # This needs to be dones in order to not trigger constraint._get_expression()
+            constraint._problem = None  # This needs to be done in order to not trigger constraint._get_expression()
             glp_add_rows(self.problem, 1)
             index = glp_get_num_rows(self.problem)
             glp_set_row_name(self.problem, index, str(constraint.name))
@@ -704,39 +694,14 @@ class Model(interface.Model):
             index_array = intArray(num_cols + 1)
             value_array = doubleArray(num_cols + 1)
             num_vars = 0  # constraint.variables is too expensive for large problems
-            if constraint.expression.is_Atom and constraint.expression.is_Symbol:
-                var = constraint.expression
-                index_array[1] = var.index
-                value_array[1] = 1
-                num_vars += 1
-            elif constraint.expression.is_Mul:
-                args = constraint.expression.args
-                if len(args) > 2:
-                    raise Exception(
-                        "Term(s) %s from constraint %s is not a proper linear term." % (args, constraint))
-                coeff = float(args[0])
-                var = args[1]
-                index_array[1] = var.index
-                value_array[1] = coeff
-                num_vars += 1
-            else:
-                for i, term in enumerate(constraint.expression.args):
-                    args = term.args
-                    if args == ():
-                        assert term.is_Symbol
-                        coeff = 1
-                        var = term
-                    elif len(args) == 2:
-                        assert args[0].is_Number
-                        assert args[1].is_Symbol
-                        var = args[1]
-                        coeff = float(args[0])
-                    elif len(args) > 2:
-                        raise Exception(
-                            "Term %s from constraint %s is not a proper linear term." % (term, constraint))
-                    index_array[i + 1] = var.index
-                    value_array[i + 1] = coeff
-                    num_vars += 1
+
+            coef_dict, _ = parse_optimization_expression(constraint, linear=True)
+
+            num_vars = len(coef_dict)
+            for i, (var, coef) in enumerate(coef_dict.items()):
+                index_array[i + 1] = var.index
+                value_array[i + 1] = float(coef)
+
             glp_set_mat_row(self.problem, index, num_vars,
                             index_array, value_array)
             constraint._problem = self

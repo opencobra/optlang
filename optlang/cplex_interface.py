@@ -38,6 +38,7 @@ from sympy.core.singleton import S
 import cplex
 from optlang import interface
 from optlang.util import inheritdocstring
+from optlang.expression_parsing import parse_optimization_expression
 
 Zero = S.Zero
 One = S.One
@@ -629,41 +630,27 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
         expression = self._objective._expression
-        if isinstance(expression, float) or isinstance(expression, int) or expression.is_Number:
-            pass
-        else:
-            if expression.is_Mul:
-                terms = (expression,)
-            elif expression.is_Add:
-                terms = expression.args
+        linear_coefficients, quadratic_coeffients = parse_optimization_expression(value, quadratic=True, expression=expression)
+        if linear_coefficients:
+            self.problem.objective.set_linear([var.name, float(coef)] for var, coef in linear_coefficients.items())
+
+        for key, coef in quadratic_coeffients.items():
+            if len(key) == 1:
+                var = six.next(iter(key))
+                self.problem.objective.set_quadratic_coefficients(var.name, var.name, float(coef) * 2)
             else:
-                raise ValueError(
-                    "Provided objective %s doesn't seem to be appropriate." %
-                    self._objective)
+                var1, var2 = key
+                self.problem.objective.set_quadratic_coefficients(var1.name, var2.name, float(coef))
 
-            for term in terms:
-                factors = term.args
-                coeff = factors[0]
-                vars = factors[1:]
-                assert len(vars) <= 2
-                if len(vars) == 2:
-                    if vars[0].name == vars[1].name:
-                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, 2 * float(coeff))
-                    else:
-                        self.problem.objective.set_quadratic_coefficients(vars[0].name, vars[1].name, float(coeff))
-                else:
-                    if vars[0].is_Symbol:
-                        self.problem.objective.set_linear(vars[0].name, float(coeff))
-                    elif vars[0].is_Pow:
-                        var = vars[0].args[0]
-                        self.problem.objective.set_quadratic_coefficients(var.name, var.name, 2 * float(
-                            coeff))  # Multiply by 2 because it's on diagonal
 
-        self.problem.objective.set_sense(
-            {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
-                value.direction])
+        self._set_objective_direction(value.direction)
         self.problem.objective.set_name(value.name)
         value.problem = self
+
+    def _set_objective_direction(self, direction):
+        self.problem.objective.set_sense(
+            {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
+                direction])
 
     @property
     def primal_values(self):
@@ -749,29 +736,18 @@ class Model(interface.Model):
     def _add_constraints(self, constraints, sloppy=False):
         super(Model, self)._add_constraints(constraints, sloppy=sloppy)
 
+        linear_constraints = dict(lin_expr=[], senses=[], rhs=[], range_values=[], names=[])
         for constraint in constraints:
-            constraint._problem = None
-            linear_constraints = dict(lin_expr=[], senses=[], rhs=[], range_values=[], names=[])
+            constraint._problem = None  # This needs to be done in order to not trigger constraint._get_expression()
             if constraint.is_Linear:
-                if constraint.expression.is_Add:
-                    coeff_dict = constraint.expression.as_coefficients_dict()
-                    indices = [var.name for var in coeff_dict.keys()]
-                    values = [float(val) for val in coeff_dict.values()]
-                elif constraint.expression.is_Mul:
-                    variable = list(constraint.expression.atoms(sympy.Symbol))[0]
-                    indices = [variable.name]
-                    values = [float(constraint.expression.coeff(variable))]
-                elif constraint.expression.is_Atom and constraint.expression.is_Symbol:
-                    indices = [constraint.expression.name]
-                    values = [1.]
-                elif constraint.expression.is_Number:
-                    indices = []
-                    values = []
-                else:
-                    raise ValueError('Something is fishy with constraint %s' % constraint)
+                coeff_dict, _ = parse_optimization_expression(constraint)
 
-                sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(constraint.lb,
-                                                                                                   constraint.ub)
+                sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(
+                    constraint.lb,
+                    constraint.ub
+                )
+                indices = [var.name for var in coeff_dict]
+                values = [float(val) for val in coeff_dict.values()]
                 if constraint.indicator_variable is None:
                     linear_constraints['lin_expr'].append(cplex.SparsePair(ind=indices, val=values))
                     linear_constraints['senses'].append(sense)
@@ -788,13 +764,14 @@ class Model(interface.Model):
                             lin_expr=cplex.SparsePair(ind=indices, val=values), sense=sense, rhs=rhs,
                             name=constraint.name,
                             indvar=constraint.indicator_variable.name, complemented=abs(constraint.active_when) - 1)
+
             elif constraint.is_Quadratic:
                 raise NotImplementedError('Quadratic constraints (like %s) are not supported yet.' % constraint)
             else:
                 raise ValueError(
                     "CPLEX only supports linear or quadratic constraints. %s is neither linear nor quadratic." % constraint)
-            self.problem.linear_constraints.add(**linear_constraints)
             constraint.problem = self
+        self.problem.linear_constraints.add(**linear_constraints)
 
     def _remove_constraints(self, constraints):
         super(Model, self)._remove_constraints(constraints)
