@@ -54,16 +54,14 @@ def solve_with_glpsol(glp_prob):
 
     col_ids = [glp_get_col_name(glp_prob, i) for i in range(1, glp_get_num_cols(glp_prob) + 1)]
 
-    tmp_file = tempfile.mktemp(suffix='.lp')
-    # glp_write_mps(glp_prob, GLP_MPS_DECK, None, tmp_file)
-    glp_write_lp(glp_prob, None, tmp_file)
-    # with open(tmp_file, 'w') as tmp_handle:
-    # tmp_handle.write(mps_string)
-    cmd = ['glpsol', '--lp', tmp_file, '-w', tmp_file + '.sol', '--log', '/dev/null']
-    term = check_output(cmd)
-    log.info(term)
+    with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
+        tmp_file_name = tmp_file.name
+        glp_write_lp(glp_prob, None, tmp_file_name)
+        cmd = ['glpsol', '--lp', tmp_file, '-w', tmp_file + '.sol', '--log', '/dev/null']
+        term = check_output(cmd)
+        log.info(term)
 
-    with open(tmp_file + '.sol') as sol_handle:
+    with open(tmp_file_name + '.sol') as sol_handle:
         # print sol_handle.read()
         solution = dict()
         for i, line in enumerate(sol_handle.readlines()):
