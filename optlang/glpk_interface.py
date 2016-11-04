@@ -35,11 +35,8 @@ from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
 from optlang.util import inheritdocstring
-<<<<<<< HEAD
 from optlang.expression_parsing import parse_optimization_expression
-=======
 from optlang import interface
->>>>>>> devel
 
 log = logging.getLogger(__name__)
 
