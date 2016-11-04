@@ -14,10 +14,15 @@
 # limitations under the License.
 
 
-"""Interface for the GNU Linear Programming Kit (GLPK)
+"""
+Interface for the GNU Linear Programming Kit (GLPK)
 
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
+
+GLPK is an open source LP solver, with MILP capabilities.
+To use GLPK you need to install the 'swiglpk' python package (with pip or from http://github.com/biosustain/swiglpk)
+and make sure that 'import swiglpk' runs without error.
 """
 
 import collections
@@ -30,7 +35,11 @@ from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
 from optlang.util import inheritdocstring
+<<<<<<< HEAD
 from optlang.expression_parsing import parse_optimization_expression
+=======
+from optlang import interface
+>>>>>>> devel
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +56,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
     glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis
 
-from optlang import interface
+
 
 _GLPK_STATUS_TO_STATUS = {
     GLP_UNDEF: interface.UNDEFINED,
@@ -89,22 +98,26 @@ class Variable(interface.Variable):
     @interface.Variable.lb.setter
     def lb(self, value):
         interface.Variable.lb.fset(self, value)
-        self.problem._glpk_set_col_bounds(self)
+        if self.problem is not None:
+            self.problem._glpk_set_col_bounds(self)
 
     @interface.Variable.ub.setter
     def ub(self, value):
         interface.Variable.ub.fset(self, value)
-        self.problem._glpk_set_col_bounds(self)
+        if self.problem is not None:
+            self.problem._glpk_set_col_bounds(self)
 
     @interface.Variable.type.setter
     def type(self, value):
         try:
             glpk_kind = _VTYPE_TO_GLPK_VTYPE[value]
         except KeyError:
-            raise Exception("GLPK cannot handle variables of type %s. \
-                        The following variable types are available:\n" +
-                            " ".join(_VTYPE_TO_GLPK_VTYPE.keys()))
-        glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
+            raise ValueError(
+                "GLPK cannot handle variables of type %s. The following variable types are available:\n" +
+                " ".join(_VTYPE_TO_GLPK_VTYPE.keys())
+            )
+        if self.problem is not None:
+            glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
         interface.Variable.type.fset(self, value)
 
     def _get_primal(self):
@@ -159,13 +172,13 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.lb.setter
     def lb(self, value):
-        self._lb = value
+        super(Constraint, Constraint).lb.fset(self, value)
         if self.problem is not None:
             self.problem._glpk_set_row_bounds(self)
 
     @interface.Constraint.ub.setter
     def ub(self, value):
-        self._ub = value
+        super(Constraint, Constraint).ub.fset(self, value)
         if self.problem is not None:
             self.problem._glpk_set_row_bounds(self)
 

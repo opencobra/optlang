@@ -14,9 +14,14 @@
 # limitations under the License.
 
 
-"""Abstract solver interface definitions (:class:`Model`, :class:`Variable`,
+"""
+Abstract solver interface definitions (:class:`Model`, :class:`Variable`,
 :class:`Constraint`, :class:`Objective`) intended to be subclassed and
 extended for individual solvers.
+
+This module defines the API of optlang objects and indicates which methods need to be implemented in
+subclassed solver interfaces.
+The classes in this module can be used to construct and modify problems, but no optimizations can be done.
 """
 import collections
 import inspect
@@ -45,7 +50,7 @@ FEASIBLE = 'feasible'
 INFEASIBLE = 'infeasible'
 NOFEASIBLE = 'nofeasible'
 UNBOUNDED = 'unbounded'
-INFEASIBLE_OR_UNBOUNDED = 'infeasible_or_unbouned'
+INFEASIBLE_OR_UNBOUNDED = 'infeasible_or_unbounded'
 LOADED = 'loaded'
 CUTOFF = 'cutoff'
 ITERATION_LIMIT = 'iteration_limit'
@@ -60,12 +65,30 @@ INPROGRESS = 'in_progress'
 ABORTED = 'aborted'
 SPECIAL = 'check_original_solver_status'
 
+statuses = {
+    OPTIMAL: "An optimal solution as been found.",
+    INFEASIBLE: "The problem has no feasible solutions.",
+    UNBOUNDED: "The objective can be optimized infinitely.",
+    SPECIAL: "The status returned by the solver could not be interpreted. Please refer to the solver's documentation to find the status.",
+    UNDEFINED: "The solver determined that the problem is ill-formed. "
+    # TODO Add the rest
+}
+
 
 # noinspection PyShadowingBuiltins
 class Variable(sympy.Symbol):
     """Optimization variables.
 
-    Extends sympy Symbol with optimization specific attributes and methods.
+    Variable objects are used to represents each variable of the optimization problem. When the optimization is
+    performed, the combination of variable values that optimizes the objective function, while not violating any
+    constraints will be identified. The type of a variable ('continuous', 'integer' or 'binary') can be set using
+    the type keyword of the constructor or it can be changed after initialization by :code:`var.type = 'binary'`.
+
+    The variable class subclasses the :code:`sympy.Symbol` class, which means that symbolic expressions of variables
+    can be constructed by using regular python syntax, e.g. :code:`my_expression = 2 * var1 + 3 * var2 ** 2`.
+    Expressions like this are used when constructing Constraint and Objective objects.
+    Once a problem has been optimized, the primal and dual values of a variable can be accessed from the
+    primal and dual attributes, respectively.
 
     Attributes
     ----------
@@ -88,6 +111,8 @@ class Variable(sympy.Symbol):
 
     @staticmethod
     def __test_valid_lower_bound(type, value, name):
+        if not (value is None or isinstance(value, (float, int))):
+            raise TypeError("Variable bounds must be numeric or None.")
         if value is not None:
             if type == 'integer' and value % 1 != 0.:
                 raise ValueError(
@@ -99,6 +124,8 @@ class Variable(sympy.Symbol):
 
     @staticmethod
     def __test_valid_upper_bound(type, value, name):
+        if not (value is None or isinstance(value, (float, int))):
+            raise TypeError("Variable bounds must be numeric or None.")
         if value is not None:
             if type == 'integer' and value % 1 != 0.:
                 raise ValueError(
@@ -110,7 +137,14 @@ class Variable(sympy.Symbol):
 
     @classmethod
     def clone(cls, variable, **kwargs):
-        """Clone another variable (for example from another solver interface)."""
+        """
+        Make a copy of another variable. The variable being copied can be of the same type or belong to
+        a different solver interface.
+
+        Example
+        ----------
+        >>> var_copy = Variable.clone(old_var)
+        """
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
 
     # def __new__(cls, name, **assumptions):
@@ -161,7 +195,8 @@ class Variable(sympy.Symbol):
             self._ub = 1.
         self.__test_valid_lower_bound(type, self._lb, name)
         self.__test_valid_upper_bound(type, self._ub, name)
-        self._type = type
+        self.problem = None
+        self.type = type
         self.problem = problem
 
     @property
@@ -285,6 +320,15 @@ class Variable(sympy.Symbol):
         self.__dict__ = state
 
     def to_json(self):
+        """
+        Returns a json-compatible object from the Variable that can be saved using the json module.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json", "w") as outfile:
+        >>>     json.dump(var.to_json(), outfile)
+        """
         json_obj = {
             "name": self.name,
             "lb": self.lb,
@@ -295,6 +339,15 @@ class Variable(sympy.Symbol):
 
     @classmethod
     def from_json(cls, json_obj):
+        """
+        Constructs a Variable from the provided json-object.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json") as infile:
+        >>>     var = Variable.from_json(json.load(infile))
+        """
         return cls(json_obj["name"], lb=json_obj["lb"], ub=json_obj["ub"], type=json_obj["type"])
 
     def _round_primal_to_bounds(self, primal, tolerance=1e-5):
@@ -333,7 +386,7 @@ class OptimizationExpression(object):
         ----------
         expression: Constraint, Objective
             An optimization expression.
-        problem: Model or None, optional
+        model: Model or None, optional
             A reference to an optimization model that should be searched for appropriate variables first.
         """
         interface = sys.modules[cls.__module__]
@@ -365,6 +418,7 @@ class OptimizationExpression(object):
 
     @property
     def name(self):
+        """The name of the object"""
         return self._name
 
     @name.setter
@@ -373,6 +427,7 @@ class OptimizationExpression(object):
 
     @property
     def problem(self):
+        """A reference to the model that the object belongs to (or None)"""
         return self._problem
 
     @problem.setter
@@ -389,7 +444,7 @@ class OptimizationExpression(object):
 
     @property
     def variables(self):
-        """Variables in constraint."""
+        """Variables in constraint/objective's expression."""
         return self.expression.atoms(sympy.Symbol)
 
     def _canonicalize(self, expression):
@@ -403,7 +458,7 @@ class OptimizationExpression(object):
 
     @property
     def is_Linear(self):
-        """Returns True if constraint is linear (read-only)."""
+        """Returns True if expression is linear (a polynomial with degree 1 or 0) (read-only)."""
         coeff_dict = self.expression.as_coefficients_dict()
         if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
             return True
@@ -416,7 +471,7 @@ class OptimizationExpression(object):
 
     @property
     def is_Quadratic(self):
-        """Returns True if constraint is quadratic (read-only)."""
+        """Returns True if the expression is a polynomial with degree exactly 2 (read-only)."""
         if self.expression.is_Atom:
             return False
         if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom)
@@ -470,7 +525,8 @@ class OptimizationExpression(object):
         return self
 
     def set_linear_coefficients(self, coefficients):
-        """Set coefficients of linear terms in constraint.
+        """Set coefficients of linear terms in constraint or objective.
+        Existing coefficients for linear or non-linear terms will not be modified.
 
         Parameters
         ----------
@@ -485,9 +541,17 @@ class OptimizationExpression(object):
 
 
 class Constraint(OptimizationExpression):
-    """Optimization constraint.
+    """
+    Constraint objects represent the mathematical (in-)equalities that constrain an optimization problem.
+    A constraint is formulated by a symbolic expression of variables and a lower and/or upper bound.
+    Equality constraints can be formulated by setting the upper and lower bounds to the same value.
 
-    Wraps sympy expressions and extends them with optimization specific attributes and methods.
+    Some solvers support indicator variables. This lets a binary variable act as a switch that decides whether
+    the constraint should be active (cannot be violated) or inactive (can be violated).
+
+    The constraint expression can be an arbitrary combination of variables, however the individual solvers
+    have limits to the forms of constraints they allow. Most solvers only allow linear constraints, meaning that
+    the expression should be of the form :code:`a * var1 + b * var2 + c * var3 ...`
 
     Attributes
     ----------
@@ -505,9 +569,30 @@ class Constraint(OptimizationExpression):
         When the constraint should
     problem: Model or None, optional
         A reference to the optimization model the variable belongs to.
+
+    Examples
+    ----------
+    >>> expr = 2.4 * var1 - 3.8 * var2
+    >>> c1 = Constraint(expr, lb=0, ub=10)
+
+    >>> indicator_var = Variable("var3", type="binary") # Only possible with some solvers
+    >>> c2 = Constraint(var2, lb=0, ub=0, indicator_variable=indicator_var, active_when=1) # When the indicator is 1, var2 is constrained to be 0
     """
 
+
     _INDICATOR_CONSTRAINT_SUPPORT = True
+
+    def _check_valid_lower_bound(self, value):
+        if not (value is None or isinstance(value, (int, float))):
+            raise TypeError("Constraint bounds must be numeric or None, not {}".format(type(value)))
+        if value is not None and getattr(self, "ub", None) is not None and value > self.ub:
+            raise ValueError("Cannot set a lower bound that is greater than the upper bound.")
+
+    def _check_valid_upper_bound(self, value):
+        if not (value is None or isinstance(value, (int, float))):
+            raise TypeError("Constraint bounds must be numeric or None, not {}".format(type(value)))
+        if value is not None and getattr(self, "lb", None) is not None and value < self.lb:
+            raise ValueError("Cannot set an upper bound that is less than the lower bound.")
 
     @classmethod
     def __check_valid_indicator_variable(cls, variable):
@@ -524,14 +609,30 @@ class Constraint(OptimizationExpression):
 
     @classmethod
     def clone(cls, constraint, model=None, **kwargs):
-        """Clone another constraint (for example from another solver interface)."""
+        """
+        Make a copy of another constraint. The constraint being copied can be of the same type or belong to
+        a different solver interface.
+
+        Parameters
+        ----------
+        constraint: interface.Constraint (or subclass)
+            The constraint to copy
+        model: Model or None
+            The variables of the new constraint will be taken from this model. If None, new variables will be
+            constructed.
+
+        Example
+        ----------
+        >>> const_copy = Constraint.clone(old_constraint)
+        """
         return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
                    indicator_variable=constraint.indicator_variable, active_when=constraint.active_when,
                    name=constraint.name, sloppy=True, **kwargs)
 
     def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=1, *args, **kwargs):
-        self._lb = lb
-        self._ub = ub
+        self._problem = None
+        self.lb = lb
+        self.ub = ub
         super(Constraint, self).__init__(expression, *args, **kwargs)
         self.__check_valid_indicator_variable(indicator_variable)
         self.__check_valid_active_when(active_when)
@@ -545,6 +646,7 @@ class Constraint(OptimizationExpression):
 
     @lb.setter
     def lb(self, value):
+        self._check_valid_lower_bound(value)
         self._lb = value
 
     @property
@@ -554,6 +656,7 @@ class Constraint(OptimizationExpression):
 
     @ub.setter
     def ub(self, value):
+        self._check_valid_upper_bound(value)
         self._ub = value
 
     @property
@@ -601,9 +704,9 @@ class Constraint(OptimizationExpression):
         else:
             expression = expression - coeff
             if self.lb is not None:
-                self.lb = self.lb - coeff
+                self.lb = self.lb - float(coeff)
             if self.ub is not None:
-                self.ub = self.ub - coeff
+                self.ub = self.ub - float(coeff)
         return expression
 
     @property
@@ -630,6 +733,15 @@ class Constraint(OptimizationExpression):
                         primal, self.name, self.lb, self.ub))
 
     def to_json(self):
+        """
+        Returns a json-compatible object from the constraint that can be saved using the json module.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json", "w") as outfile:
+        >>>     json.dump(constraint.to_json(), outfile)
+        """
         if self.indicator_variable is None:
             indicator = None
         else:
@@ -646,6 +758,15 @@ class Constraint(OptimizationExpression):
 
     @classmethod
     def from_json(cls, json_obj, variables=None):
+        """
+        Constructs a Variable from the provided json-object.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json") as infile:
+        >>>     constraint = Constraint.from_json(json.load(infile))
+        """
         if variables is None:
             variables = {}
         expression = parse_expr(json_obj["expression"], variables)
@@ -664,7 +785,13 @@ class Constraint(OptimizationExpression):
 
 
 class Objective(OptimizationExpression):
-    """Objective function.
+    """
+    Objective objects are used to represent the objective function of an optimization problem.
+    An objective consists of a symbolic expression of variables in the problem and a direction. The direction
+    can be either 'min' or 'max' and specifies whether the problem is a minimization or a maximization problem.
+
+    After a problem has been optimized, the optimal objective value can be accessed from the 'value' attribute
+    of the model's objective, i.e. :code:`obj_val = model.objective.value`.
 
     Attributes
     ----------
@@ -683,7 +810,14 @@ class Objective(OptimizationExpression):
 
     @classmethod
     def clone(cls, objective, model=None, **kwargs):
-        """Clone another objective (for example from another solver interface)."""
+        """
+        Make a copy of an objective. The objective being copied can be of the same type or belong to
+        a different solver interface.
+
+        Example
+        ----------
+        >>> new_objective = Objective.clone(old_objective)
+        """
         return cls(cls._substitute_variables(objective, model=model), name=objective.name,
                    direction=objective.direction, sloppy=True, **kwargs)
 
@@ -737,6 +871,15 @@ class Objective(OptimizationExpression):
         raise NotImplementedError("Child class should implement this.")
 
     def to_json(self):
+        """
+        Returns a json-compatible object from the objective that can be saved using the json module.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json", "w") as outfile:
+        >>>     json.dump(obj.to_json(), outfile)
+        """
         json_obj = {
             "name": self.name,
             "expression": expr_to_json(self.expression),
@@ -746,6 +889,15 @@ class Objective(OptimizationExpression):
 
     @classmethod
     def from_json(cls, json_obj, variables=None):
+        """
+        Constructs an Objective from the provided json-object.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json") as infile:
+        >>>     obj = Objective.from_json(json.load(infile))
+        """
         if variables is None:
             variables = {}
         expression = parse_expr(json_obj["expression"], variables)
@@ -757,7 +909,28 @@ class Objective(OptimizationExpression):
 
 
 class Configuration(object):
-    """Optimization solver configuration."""
+    """
+    Optimization solver configuration.
+    This object allows the user to change certain parameters and settings in the solver.
+    It is meant to allow easy access to a few common and important parameters. For information on changing
+    other solver parameters, please consult the documentation from the solver provider.
+    Some changeable parameters are listed below. Note that some solvers might not implement all of these
+    and might also implement additional parameters.
+
+    Attributes
+    ----------
+    verbosity: int from 0 to 3
+        Changes the level of output.
+    timeout: int or None
+        The time limit in second the solver will use to optimize the problem.
+    presolve: Boolean or 'auto'
+        Tells the solver whether to use (solver-specific) pre-processing to simplify the problem.
+        This can decrease solution time, but also introduces overhead. If set to 'auto' the solver will
+        first try to solve without pre-processing, and only turn in on in case no optimal solution can be found.
+    lp_method: str
+        Select which algorithm the LP solver uses, e.g. simplex, barrier, etc.
+
+    """
 
     @classmethod
     def clone(cls, config, problem=None, **kwargs):
@@ -776,7 +949,7 @@ class Configuration(object):
         0: no output
         1: error and warning messages only
         2: normal output
-        4: full output
+        3: full output
         """
         raise NotImplementedError
 
@@ -791,6 +964,17 @@ class Configuration(object):
 
     @timeout.setter
     def timeout(self):
+        raise NotImplementedError
+
+    @property
+    def presolve(self):
+        """
+        Turn pre-processing on or off. Set to 'auto' to only use presolve if no optimal solution can be found.
+        """
+        raise NotImplementedError
+
+    @presolve.setter
+    def presolve(self):
         raise NotImplementedError
 
 
@@ -816,7 +1000,14 @@ class EvolutionaryOptimizationConfiguration(Configuration):
 
 
 class Model(object):
-    """Optimization problem.
+    """
+    The model object represents an optimization problem and contains the variables, constraints an objective that
+    make up the problem. Variables and constraints can be added and removed using the :code:`.add` and :code:`.remove` methods,
+    while the objective can be changed by setting the objective attribute,
+    e.g. :code:`model.objective = Objective(expr, direction="max")`.
+
+    Once the problem has been formulated the optimization can be performed by calling the :code:`.optimize` method.
+    This will return the status of the optimization, most commonly 'optimal', 'infeasible' or 'unbounded'.
 
     Attributes
     ----------
@@ -835,13 +1026,29 @@ class Model(object):
 
     Examples
     --------
-
+    >>> model = Model(name="my_model")
+    >>> x1 = Variable("x1", lb=0, ub=20)
+    >>> x2 = Variable("x2", lb=0, ub=10)
+    >>> c1 = Constraint(2 * x1 - x2, lb=0, ub=0) # Equality constraint
+    >>> model.add([x1, x2, c1])
+    >>> model.objective = Objective(x1 + x2, direction="max")
+    >>> model.optimize()
+    'optimal'
+    >>> x1.primal, x2.primal
+    '(5.0, 10.0)'
 
     """
 
     @classmethod
     def clone(cls, model):
-        """Clone another model (for example from another solver interface)."""
+        """
+        Make a copy of a model. The model being copied can be of the same type or belong to
+        a different solver interface. This is the preferred way of copying models.
+
+        Example
+        ----------
+        >>> new_model = Model.clone(old_model)
+        """
         model.update()
         interface = sys.modules[cls.__module__]
         new_model = cls()
@@ -892,7 +1099,7 @@ class Model(object):
     def interface(self):
         """Provides access to the solver interface the model belongs to
 
-        For example optlang.glpk_interface
+        Returns a Python module, for example optlang.glpk_interface
         """
         return sys.modules[self.__module__]
 
@@ -1105,7 +1312,14 @@ class Model(object):
             self._pending_modifications.rm_constr = []
 
     def optimize(self):
-        """Solve the optimization problem.
+        """
+        Solve the optimization problem using the relevant solver back-end.
+        The status returned by this method tells whether an optimal solution was found,
+        if the problem is infeasible etc. Consult optlang.statuses for more elaborate explanations
+        of each status.
+
+        The objective value can be accessed from 'model.objective.value', while the solution can be
+        retrieved by 'model.primal_values'.
 
         Returns
         -------
@@ -1201,6 +1415,17 @@ class Model(object):
         self._remove_constraints([constraint])
 
     def to_json(self):
+        """
+        Returns a json-compatible object from the model that can be saved using the json module.
+        Variables, constraints and objective contained in the model will be saved. Configurations
+        will not be saved.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json", "w") as outfile:
+        >>>     json.dump(model.to_json(), outfile)
+        """
         json_obj = {
             "name": self.name,
             "variables": [var.to_json() for var in self.variables],
@@ -1211,6 +1436,15 @@ class Model(object):
 
     @classmethod
     def from_json(cls, json_obj):
+        """
+        Constructs a Model from the provided json-object.
+
+        Example
+        --------
+        >>> import json
+        >>> with open("path_to_file.json") as infile:
+        >>>     model = Model.from_json(json.load(infile))
+        """
         model = cls(name=json_obj["name"])
         interface = model.interface
         variables = [interface.Variable.from_json(var_json) for var_json in json_obj["variables"]]
