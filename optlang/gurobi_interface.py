@@ -255,8 +255,6 @@ class Constraint(interface.Constraint):
     def lb(self, value):
         super(Constraint, Constraint).lb.fset(self, value)
         if getattr(self, 'problem', None) is not None:
-            if value is None:
-                value = -gurobipy.GRB.INFINITY
             if value is not None and self.ub is not None and value > self.ub:
                 raise ValueError(
                     "Lower bound %f is larger than upper bound %f in constraint %s" %
@@ -269,8 +267,6 @@ class Constraint(interface.Constraint):
     def ub(self, value):
         super(Constraint, Constraint).ub.fset(self, value)
         if getattr(self, 'problem', None) is not None:
-            if value is None:
-                value = gurobipy.GRB.INFINITY
             if value is not None and self.lb is not None and value < self.lb:
                 raise ValueError(
                     "Upper bound %f is less than lower bound %f in constraint %s" %
@@ -533,9 +529,6 @@ class Model(interface.Model):
     def _optimize(self):
         self.problem.optimize()
         self._status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
-        # Weird bug where unbounded is not recognized
-        if self.status == interface.OPTIMAL and abs(self.objective.value) == gurobipy.GRB.INFINITY:
-            self._status = interface.UNBOUNDED
         return self.status
 
     def _add_variables(self, variables):
