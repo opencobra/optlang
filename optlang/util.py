@@ -54,29 +54,30 @@ def solve_with_glpsol(glp_prob):
 
     col_ids = [glp_get_col_name(glp_prob, i) for i in range(1, glp_get_num_cols(glp_prob) + 1)]
 
-    tmp_file = tempfile.mktemp(suffix='.lp')
-    # glp_write_mps(glp_prob, GLP_MPS_DECK, None, tmp_file)
-    glp_write_lp(glp_prob, None, tmp_file)
-    # with open(tmp_file, 'w') as tmp_handle:
-    # tmp_handle.write(mps_string)
-    cmd = ['glpsol', '--lp', tmp_file, '-w', tmp_file + '.sol', '--log', '/dev/null']
-    term = check_output(cmd)
-    log.info(term)
+    with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
+        tmp_file_name = tmp_file.name
+        glp_write_lp(glp_prob, None, tmp_file_name)
+        cmd = ['glpsol', '--lp', tmp_file_name, '-w', tmp_file_name + '.sol', '--log', '/dev/null']
+        term = check_output(cmd)
+        log.info(term)
 
-    with open(tmp_file + '.sol') as sol_handle:
-        # print sol_handle.read()
-        solution = dict()
-        for i, line in enumerate(sol_handle.readlines()):
-            if i <= 1 or line == '\n':
-                pass
-            elif i <= len(row_ids):
-                solution[row_ids[i - 2]] = line.strip().split(' ')
-            elif i <= len(row_ids) + len(col_ids) + 1:
-                solution[col_ids[i - 2 - len(row_ids)]] = line.strip().split(' ')
-            else:
-                print(i)
-                print(line)
-                raise Exception("Argggh!")
+    try:
+        with open(tmp_file_name + '.sol') as sol_handle:
+            # print sol_handle.read()
+            solution = dict()
+            for i, line in enumerate(sol_handle.readlines()):
+                if i <= 1 or line == '\n':
+                    pass
+                elif i <= len(row_ids):
+                    solution[row_ids[i - 2]] = line.strip().split(' ')
+                elif i <= len(row_ids) + len(col_ids) + 1:
+                    solution[col_ids[i - 2 - len(row_ids)]] = line.strip().split(' ')
+                else:
+                    print(i)
+                    print(line)
+                    raise Exception("Argggh!")
+    finally:
+        os.remove(tmp_file_name + ".sol")
     return solution
 
 
