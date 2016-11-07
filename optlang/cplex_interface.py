@@ -592,25 +592,23 @@ class Model(interface.Model):
     def __getstate__(self):
         self.update()
         with tempfile.NamedTemporaryFile(suffix=".sav", delete=True) as tmp_file:
-            tmp_file_name = tmp_file.name
-            self.problem.write(tmp_file_name)
-            with open(tmp_file_name, 'rb') as tmp_file:
+            self.problem.write(tmp_file.name)
+            with open(tmp_file.name, 'rb') as tmp_file:
                 cplex_binary = tmp_file.read()
         repr_dict = {'cplex_binary': cplex_binary, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        with tempfile.NamedTemporaryFile(suffix=".sav", delete=True) as tmp_file:
-            tmp_file_name = tmp_file.name
-            with open(tmp_file_name, 'wb') as tmp_file:
-                tmp_file.write(repr_dict['cplex_binary'])
+        with tempfile.NamedTemporaryFile(suffix=".sav", delete=True, mode='wb') as tmp_file:
+            tmp_file.write(repr_dict['cplex_binary'])
             problem = cplex.Cplex()
             # turn off logging completely, get's configured later
             problem.set_error_stream(None)
             problem.set_warning_stream(None)
             problem.set_log_stream(None)
             problem.set_results_stream(None)
-            problem.read(tmp_file_name)
+            tmp_file.flush()
+            problem.read(tmp_file.name)
         if repr_dict['status'] == 'optimal':
             problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
@@ -679,9 +677,8 @@ class Model(interface.Model):
 
     def __str__(self):
         with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
-            tmp_file_name = tmp_file.name
-            self.problem.write(tmp_file_name)
-            with open(tmp_file_name) as tmp_file:
+            self.problem.write(tmp_file.name)
+            with open(tmp_file.name) as tmp_file:
                 cplex_form = tmp_file.read()
         return cplex_form
 

@@ -464,10 +464,8 @@ class Model(interface.Model):
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
-            tmp_file_name = tmp_file.name
-            with open(tmp_file_name, "wb") as tmp_file:
-                tmp_file.write(repr_dict['lp'])
+        with tempfile.NamedTemporaryFile(suffix=".lp", delete=True, mode='wb') as tmp_file:
+            tmp_file.write(repr_dict['lp'])
             problem = gurobipy.read(tmp_file_name)
         # if repr_dict['status'] == 'optimal':  # TODO: uncomment this
         #     # turn off logging completely, get's configured later

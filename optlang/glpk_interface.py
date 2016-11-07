@@ -511,12 +511,10 @@ class Model(interface.Model):
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        with tempfile.NamedTemporaryFile(suffix=".glpk", delete=True) as tmp_file:
-            tmp_file_name = tmp_file.name
-            with open(tmp_file_name, 'w') as tmp_file:
-                tmp_file.write(repr_dict['glpk_repr'])
-                problem = glp_create_prob()
-            glp_read_prob(problem, 0, tmp_file_name)
+        with tempfile.NamedTemporaryFile(suffix=".glpk", delete=True, mode='w') as tmp_file:
+            tmp_file.write(repr_dict['glpk_repr'])
+            problem = glp_create_prob()
+            glp_read_prob(problem, 0, tmp_file.name)
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
