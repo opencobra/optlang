@@ -80,7 +80,7 @@ class AbstractVariableTestCase(unittest.TestCase):
 
     def test_setting_nonnumerical_bounds_raises(self):
         self.assertRaises(TypeError, setattr, self.var, "lb", "Ministrone")
-        elf.assertRaises(TypeError, setattr, self.var, "ub", "Ministrone")
+        self.assertRaises(TypeError, setattr, self.var, "ub", "Ministrone")
         self.model.add(self.var)
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'lb', 'Chicken soup')
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'ub', 'Chicken soup')
