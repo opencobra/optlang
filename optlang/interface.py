@@ -38,7 +38,7 @@ import sympy
 from sympy.core.assumptions import _assume_rules
 from sympy.core.facts import FactKB
 from sympy.core.expr import Expr
-from optlang.util import parse_expr, expr_to_json
+from optlang.util import parse_expr, expr_to_json, is_numeric
 
 from .container import Container
 
@@ -111,7 +111,7 @@ class Variable(sympy.Symbol):
 
     @staticmethod
     def __test_valid_lower_bound(type, value, name):
-        if not (value is None or isinstance(value, (float, int))):
+        if not (value is None or is_numeric(value)):
             raise TypeError("Variable bounds must be numeric or None.")
         if value is not None:
             if type == 'integer' and value % 1 != 0.:
@@ -124,7 +124,7 @@ class Variable(sympy.Symbol):
 
     @staticmethod
     def __test_valid_upper_bound(type, value, name):
-        if not (value is None or isinstance(value, (float, int))):
+        if not (value is None or is_numeric(value)):
             raise TypeError("Variable bounds must be numeric or None.")
         if value is not None:
             if type == 'integer' and value % 1 != 0.:
@@ -583,13 +583,13 @@ class Constraint(OptimizationExpression):
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
     def _check_valid_lower_bound(self, value):
-        if not (value is None or isinstance(value, (int, float))):
+        if not (value is None or is_numeric(value)):
             raise TypeError("Constraint bounds must be numeric or None, not {}".format(type(value)))
         if value is not None and getattr(self, "ub", None) is not None and value > self.ub:
             raise ValueError("Cannot set a lower bound that is greater than the upper bound.")
 
     def _check_valid_upper_bound(self, value):
-        if not (value is None or isinstance(value, (int, float))):
+        if not (value is None or is_numeric(value)):
             raise TypeError("Constraint bounds must be numeric or None, not {}".format(type(value)))
         if value is not None and getattr(self, "lb", None) is not None and value < self.lb:
             raise ValueError("Cannot set an upper bound that is less than the lower bound.")

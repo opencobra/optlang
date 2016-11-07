@@ -23,6 +23,7 @@ import pickle
 import json
 import copy
 import os
+import sympy
 
 __test__ = False
 
@@ -98,6 +99,10 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.model.objective.direction = "min"
         self.model.optimize()
         self.assertEqual(self.var.primal, -3)
+        self.var.lb = sympy.Number(-4)  # Sympy numbers should be valid bounds
+        self.model.optimize()
+        self.assertEqual(self.var.primal, -4)
+
 
     def test_set_bounds_to_none(self):
         model = self.model
@@ -179,6 +184,28 @@ class AbstractConstraintTestCase(unittest.TestCase):
         self.assertRaises(ValueError, setattr, self.model.constraints[0], "ub", -1000000000.)
 
         self.assertRaises(ValueError, self.interface.Constraint, 0, lb=0, ub=-1)
+
+    def test_setting_bounds(self):
+        var = self.interface.Variable("test", lb=-10)
+        c = self.interface.Constraint(var, lb=0)
+        model = self.interface.Model()
+        obj = self.interface.Objective(var)
+        model.add(c)
+        model.objective = obj
+
+        c.ub = 5
+        model.optimize()
+        self.assertEqual(var.primal, 5)
+        c.ub = 4
+        model.optimize()
+        self.assertEqual(var.primal, 4)
+        c.lb = -3
+        model.objective.direction = "min"
+        model.optimize()
+        self.assertEqual(var.primal, -3)
+        c.lb = sympy.Number(-4)  # Sympy numbers should be valid bounds
+        model.optimize()
+        self.assertEqual(var.primal, -4)
 
     def test_setting_nonnumerical_bounds_raises(self):
         var = self.interface.Variable("test")
