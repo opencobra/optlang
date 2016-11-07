@@ -80,8 +80,10 @@ class AbstractVariableTestCase(unittest.TestCase):
 
     def test_setting_nonnumerical_bounds_raises(self):
         self.assertRaises(TypeError, setattr, self.var, "lb", "Ministrone")
+        elf.assertRaises(TypeError, setattr, self.var, "ub", "Ministrone")
         self.model.add(self.var)
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'lb', 'Chicken soup')
+        self.assertRaises(TypeError, setattr, self.model.variables[0], 'ub', 'Chicken soup')
 
     @abc.abstractmethod
     def test_changing_variable_names_is_reflected_in_the_solver(self):
@@ -212,6 +214,8 @@ class AbstractConstraintTestCase(unittest.TestCase):
         constraint = self.interface.Constraint(var, lb=0)
         self.assertRaises(TypeError, setattr, constraint, "lb", "noodle soup")
         self.assertRaises(TypeError, setattr, self.model.constraints[0], 'lb', 'Chicken soup')
+        self.assertRaises(TypeError, setattr, constraint, "ub", "noodle soup")
+        self.assertRaises(TypeError, setattr, self.model.constraints[0], 'ub', 'Chicken soup')
 
     def test_set_constraint_bounds_to_none(self):
         model = self.interface.Model()
