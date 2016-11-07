@@ -511,7 +511,7 @@ class Model(interface.Model):
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        with tempfile.NamedTemporaryFile(suffix=".glpk", delete=True, mode='w') as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".glpk", delete=True, mode='wb') as tmp_file:
             tmp_file.write(repr_dict['glpk_repr'])
             tmp_file.flush()
             problem = glp_create_prob()
@@ -590,17 +590,16 @@ class Model(interface.Model):
         return shadow_prices
 
     def __str__(self):
-        with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True) as tmp_file:
             glp_write_lp(self.problem, None, tmp_file.name)
-            with open(tmp_file.name) as tmp_file:
-                cplex_form = tmp_file.read()
+            tmp_file.flush()
+            cplex_form = tmp_file.read()
         return cplex_form
 
     def _glpk_representation(self):
         with tempfile.NamedTemporaryFile(suffix=".glpk", delete=True) as tmp_file:
             glp_write_prob(self.problem, 0, tmp_file.name)
-            with open(tmp_file.name) as tmp_file:
-                glpk_form = tmp_file.read()
+            glpk_form = tmp_file.read()
         return glpk_form
 
     def _run_glp_simplex(self):

@@ -593,8 +593,7 @@ class Model(interface.Model):
         self.update()
         with tempfile.NamedTemporaryFile(suffix=".sav", delete=True) as tmp_file:
             self.problem.write(tmp_file.name)
-            with open(tmp_file.name, 'rb') as tmp_file:
-                cplex_binary = tmp_file.read()
+            cplex_binary = tmp_file.read()
         repr_dict = {'cplex_binary': cplex_binary, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
@@ -676,10 +675,9 @@ class Model(interface.Model):
             zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
 
     def __str__(self):
-        with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True) as tmp_file:
             self.problem.write(tmp_file.name)
-            with open(tmp_file.name) as tmp_file:
-                cplex_form = tmp_file.read()
+            cplex_form = tmp_file.read()
         return cplex_form
 
     def _optimize(self):

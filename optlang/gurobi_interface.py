@@ -479,11 +479,10 @@ class Model(interface.Model):
 
     def __str__(self):
         self.problem.update()
-        with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True) as tmp_file:
             self.problem.update()
             self.problem.write(tmp_file.name)
-            with open(tmp_file.name) as tmp_file:
-                cplex_form = tmp_file.read()
+            cplex_form = tmp_file.read()
         return cplex_form
 
     @property
