@@ -694,12 +694,12 @@ class Model(interface.Model):
 
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):
         lb = [
-            (var.name, -cplex.infinity) if val is None else (var.name, val) for var, val in var_lb
+            (var.name, -cplex.infinity) if val is None else (var.name, float(val)) for var, val in var_lb
         ]
         if len(lb) > 0:
             self.problem.variables.set_lower_bounds(lb)
         ub = [
-            (var.name, cplex.infinity) if val is None else (var.name, val) for var, val in var_ub
+            (var.name, cplex.infinity) if val is None else (var.name, float(val)) for var, val in var_ub
         ]
         if len(ub) > 0:
             self.problem.variables.set_upper_bounds(ub)

@@ -170,6 +170,13 @@ def method_inheritdocstring(mthd):
         pass
 
 
+def is_numeric(obj):
+    if isinstance(obj, (int, float)) or getattr(obj, "is_Number", False):
+        return True
+    else:
+        return False
+
+
 def expr_to_json(expr):
     """
     Converts a Sympy expression to a json-compatible tree-structure.
