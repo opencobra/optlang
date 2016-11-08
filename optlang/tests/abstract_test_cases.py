@@ -23,6 +23,7 @@ import pickle
 import json
 import copy
 import os
+import sympy
 
 __test__ = False
 
@@ -79,8 +80,10 @@ class AbstractVariableTestCase(unittest.TestCase):
 
     def test_setting_nonnumerical_bounds_raises(self):
         self.assertRaises(TypeError, setattr, self.var, "lb", "Ministrone")
+        self.assertRaises(TypeError, setattr, self.var, "ub", "Ministrone")
         self.model.add(self.var)
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'lb', 'Chicken soup')
+        self.assertRaises(TypeError, setattr, self.model.variables[0], 'ub', 'Chicken soup')
 
     @abc.abstractmethod
     def test_changing_variable_names_is_reflected_in_the_solver(self):
@@ -98,6 +101,10 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.model.objective.direction = "min"
         self.model.optimize()
         self.assertEqual(self.var.primal, -3)
+        self.var.lb = sympy.Number(-4)  # Sympy numbers should be valid bounds
+        self.model.optimize()
+        self.assertEqual(self.var.primal, -4)
+
 
     def test_set_bounds_to_none(self):
         model = self.model
@@ -180,11 +187,35 @@ class AbstractConstraintTestCase(unittest.TestCase):
 
         self.assertRaises(ValueError, self.interface.Constraint, 0, lb=0, ub=-1)
 
+    def test_setting_bounds(self):
+        var = self.interface.Variable("test", lb=-10)
+        c = self.interface.Constraint(var, lb=0)
+        model = self.interface.Model()
+        obj = self.interface.Objective(var)
+        model.add(c)
+        model.objective = obj
+
+        c.ub = 5
+        model.optimize()
+        self.assertEqual(var.primal, 5)
+        c.ub = 4
+        model.optimize()
+        self.assertEqual(var.primal, 4)
+        c.lb = -3
+        model.objective.direction = "min"
+        model.optimize()
+        self.assertEqual(var.primal, -3)
+        c.lb = sympy.Number(-4)  # Sympy numbers should be valid bounds
+        model.optimize()
+        self.assertEqual(var.primal, -4)
+
     def test_setting_nonnumerical_bounds_raises(self):
         var = self.interface.Variable("test")
         constraint = self.interface.Constraint(var, lb=0)
         self.assertRaises(TypeError, setattr, constraint, "lb", "noodle soup")
         self.assertRaises(TypeError, setattr, self.model.constraints[0], 'lb', 'Chicken soup')
+        self.assertRaises(TypeError, setattr, constraint, "ub", "noodle soup")
+        self.assertRaises(TypeError, setattr, self.model.constraints[0], 'ub', 'Chicken soup')
 
     def test_set_constraint_bounds_to_none(self):
         model = self.interface.Model()
