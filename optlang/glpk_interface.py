@@ -514,6 +514,7 @@ class Model(interface.Model):
         with tempfile.NamedTemporaryFile(suffix=".glpk", delete=True, mode='wb') as tmp_file:
             tmp_file.write(repr_dict['glpk_repr'])
             tmp_file.flush()
+            tmp_file.seek(0)
             problem = glp_create_prob()
             glp_read_prob(problem, 0, tmp_file.name)
         self.__init__(problem=problem)
@@ -593,12 +594,14 @@ class Model(interface.Model):
         with tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True) as tmp_file:
             glp_write_lp(self.problem, None, tmp_file.name)
             tmp_file.flush()
+            tmp_file.seek(0)
             cplex_form = tmp_file.read()
         return cplex_form
 
     def _glpk_representation(self):
         with tempfile.NamedTemporaryFile(suffix=".glpk", delete=True) as tmp_file:
             glp_write_prob(self.problem, 0, tmp_file.name)
+            tmp_file.seek(0)
             glpk_form = tmp_file.read()
         return glpk_form
 
