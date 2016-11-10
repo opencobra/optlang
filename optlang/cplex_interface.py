@@ -593,6 +593,8 @@ class Model(interface.Model):
         self.update()
         with tempfile.NamedTemporaryFile(suffix=".sav", delete=True) as tmp_file:
             self.problem.write(tmp_file.name)
+            tmp_file.flush()
+            tmp_file.seek(0)
             cplex_binary = tmp_file.read()
         repr_dict = {'cplex_binary': cplex_binary, 'status': self.status, 'config': self.configuration}
         return repr_dict
@@ -607,6 +609,7 @@ class Model(interface.Model):
             problem.set_log_stream(None)
             problem.set_results_stream(None)
             tmp_file.flush()
+            tmp_file.seek(0)
             problem.read(tmp_file.name)
         if repr_dict['status'] == 'optimal':
             problem.solve()  # since the start is an optimal solution, nothing will happen here
@@ -677,6 +680,8 @@ class Model(interface.Model):
     def __str__(self):
         with tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True) as tmp_file:
             self.problem.write(tmp_file.name)
+            tmp_file.flush()
+            tmp_file.seek(0)
             cplex_form = tmp_file.read()
         return cplex_form
 
