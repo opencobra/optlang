@@ -597,7 +597,7 @@ class Model(interface.Model):
         tmp_file.close()
         try:
             self.problem.write(tmp_file_name)
-            with open(tmp_file_name):
+            with open(tmp_file_name, "rb") as tmp_file:
                 cplex_binary = tmp_file.read()
         finally:
             os.remove(tmp_file_name)
@@ -609,7 +609,7 @@ class Model(interface.Model):
         tmp_file_name = tmp_file.name
         tmp_file.close()
         try:
-            with open(tmp_file_name, "w") as tmp_file:
+            with open(tmp_file_name, "wb") as tmp_file:
                 tmp_file.write(repr_dict['cplex_binary'])
             problem = cplex.Cplex()
             # turn off logging completely, get's configured later

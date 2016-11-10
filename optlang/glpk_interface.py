@@ -596,7 +596,7 @@ class Model(interface.Model):
         return shadow_prices
 
     def __str__(self):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True)
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=False)
         tmp_file_name = tmp_file.name
         tmp_file.close()
         try:
@@ -608,7 +608,7 @@ class Model(interface.Model):
         return cplex_form
 
     def _glpk_representation(self):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".glpk", delete=True)
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".glpk", delete=False)
         tmp_file_name = tmp_file.name
         tmp_file.close()
         try:
