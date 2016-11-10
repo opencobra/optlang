@@ -592,7 +592,7 @@ class Model(interface.Model):
 
     def __getstate__(self):
         self.update()
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".sav", delete=True)
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".sav", delete=False)
         tmp_file_name = tmp_file.name
         tmp_file.close()
         try:
@@ -605,7 +605,7 @@ class Model(interface.Model):
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".sav", delete=True, mode='wb')
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".sav", delete=False, mode='wb')
         tmp_file_name = tmp_file.name
         tmp_file.close()
         try:
@@ -687,7 +687,7 @@ class Model(interface.Model):
             zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
 
     def __str__(self):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True)
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=False)
         tmp_file_name = tmp_file.name
         tmp_file.close()
         try:
