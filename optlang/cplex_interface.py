@@ -26,6 +26,7 @@ import logging
 import sys
 
 import six
+import os
 from six.moves import StringIO
 
 log = logging.getLogger(__name__)
@@ -591,26 +592,34 @@ class Model(interface.Model):
 
     def __getstate__(self):
         self.update()
-        with tempfile.NamedTemporaryFile(suffix=".sav", delete=True) as tmp_file:
-            self.problem.write(tmp_file.name)
-            tmp_file.flush()
-            tmp_file.seek(0)
-            cplex_binary = tmp_file.read()
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".sav", delete=True)
+        tmp_file_name = tmp_file.name
+        tmp_file.close()
+        try:
+            self.problem.write(tmp_file_name)
+            with open(tmp_file_name):
+                cplex_binary = tmp_file.read()
+        finally:
+            os.remove(tmp_file_name)
         repr_dict = {'cplex_binary': cplex_binary, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        with tempfile.NamedTemporaryFile(suffix=".sav", delete=True, mode='wb') as tmp_file:
-            tmp_file.write(repr_dict['cplex_binary'])
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".sav", delete=True, mode='wb')
+        tmp_file_name = tmp_file.name
+        tmp_file.close()
+        try:
+            with open(tmp_file_name, "w") as tmp_file:
+                tmp_file.write(repr_dict['cplex_binary'])
             problem = cplex.Cplex()
             # turn off logging completely, get's configured later
             problem.set_error_stream(None)
             problem.set_warning_stream(None)
             problem.set_log_stream(None)
             problem.set_results_stream(None)
-            tmp_file.flush()
-            tmp_file.seek(0)
-            problem.read(tmp_file.name)
+            problem.read(tmp_file_name)
+        finally:
+            os.remove(tmp_file_name)
         if repr_dict['status'] == 'optimal':
             problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
@@ -678,11 +687,15 @@ class Model(interface.Model):
             zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
 
     def __str__(self):
-        with tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True) as tmp_file:
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True)
+        tmp_file_name = tmp_file.name
+        tmp_file.close()
+        try:
             self.problem.write(tmp_file.name)
-            tmp_file.flush()
-            tmp_file.seek(0)
-            cplex_form = tmp_file.read()
+            with open(tmp_file_name) as tmp_file:
+                cplex_form = tmp_file.read()
+        finally:
+            os.remove(tmp_file_name)
         return cplex_form
 
     def _optimize(self):
