@@ -457,8 +457,9 @@ class Model(interface.Model):
     def __getstate__(self):
         with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
             self.problem.write(tmp_file.name)
-            with open(tmp_file.name, 'rb') as tmp_file:
-                lp = tmp_file.read()
+            tmp_file.flush()
+            tmp_file.seek(0)
+            lp = tmp_file.read()
         repr_dict = {'lp': lp, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
@@ -466,6 +467,7 @@ class Model(interface.Model):
         with tempfile.NamedTemporaryFile(suffix=".lp", delete=True, mode='wb') as tmp_file:
             tmp_file.write(repr_dict['lp'])
             tmp_file.flush()
+            tmp_file.seek(0)
             problem = gurobipy.read(tmp_file.name)
         # if repr_dict['status'] == 'optimal':  # TODO: uncomment this
         #     # turn off logging completely, get's configured later
@@ -480,8 +482,9 @@ class Model(interface.Model):
     def __str__(self):
         self.problem.update()
         with tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=True) as tmp_file:
-            self.problem.update()
             self.problem.write(tmp_file.name)
+            tmp_file.flush()
+            tmp_file.seek(0)
             cplex_form = tmp_file.read()
         return cplex_form
 
