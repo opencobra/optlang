@@ -577,7 +577,7 @@ class Model(interface.Model):
             else:
                 raise AssertionError("Unknown variable type")
             reduced_costs[variable.name] = value
-            return reduced_costs
+        return reduced_costs
 
     @property
     def dual_values(self):
