@@ -27,7 +27,6 @@ and make sure that 'import swiglpk' runs without error.
 
 import collections
 import logging
-import tempfile
 
 import os
 import six
@@ -35,7 +34,7 @@ import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
-from optlang.util import inheritdocstring
+from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
 
@@ -512,16 +511,9 @@ class Model(interface.Model):
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".glpk", delete=False, mode='wb')
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            with open(tmp_file_name, "w") as tmp_file:
-                tmp_file.write(repr_dict['glpk_repr'])
+        with TemporaryFilename(suffix=".glpk", content=repr_dict["glpk_repr"]) as tmp_file_name:
             problem = glp_create_prob()
             glp_read_prob(problem, 0, tmp_file_name)
-        finally:
-            os.remove(tmp_file_name)
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
@@ -596,27 +588,17 @@ class Model(interface.Model):
         return shadow_prices
 
     def __str__(self):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=False)
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            glp_write_lp(self.problem, None, tmp_file.name)
+        with TemporaryFilename(suffix=".lp") as tmp_file_name:
+            glp_write_lp(self.problem, None, tmp_file_name)
             with open(tmp_file_name) as tmp_file:
-                cplex_form = tmp_file.read()
-        finally:
-            os.remove(tmp_file_name)
-        return cplex_form
+                lp_form = tmp_file.read()
+        return lp_form
 
     def _glpk_representation(self):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".glpk", delete=False)
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            glp_write_prob(self.problem, 0, tmp_file.name)
+        with TemporaryFilename(suffix=".glpk") as tmp_file_name:
+            glp_write_prob(self.problem, 0, tmp_file_name)
             with open(tmp_file_name) as tmp_file:
                 glpk_form = tmp_file.read()
-        finally:
-            os.remove(tmp_file_name)
         return glpk_form
 
     def _run_glp_simplex(self):

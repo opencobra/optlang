@@ -31,9 +31,8 @@ log = logging.getLogger(__name__)
 
 import os
 import six
-import tempfile
 from optlang import interface
-from optlang.util import inheritdocstring
+from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 import sympy
 from sympy.core.add import _unevaluated_Add
@@ -456,28 +455,17 @@ class Model(interface.Model):
         self.configuration = Configuration(problem=self, verbosity=0)
 
     def __getstate__(self):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", delete=False)
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            self.problem.write(tmp_file.name)
+        self.update()
+        with TemporaryFilename(suffix=".lp") as tmp_file_name:
+            self.problem.write(tmp_file_name)
             with open(tmp_file_name) as tmp_file:
-                lp = tmp_file.read()
-        finally:
-            os.remove(tmp_file_name)
-        repr_dict = {'lp': lp, 'status': self.status, 'config': self.configuration}
+                lp_form = tmp_file.read()
+        repr_dict = {'lp': lp_form, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", delete=False, mode='wb')
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            with open(tmp_file_name, "w") as tmp_file:
-                tmp_file.write(repr_dict['lp'])
+        with TemporaryFilename(suffix=".lp", content=repr_dict["lp"]) as tmp_file_name:
             problem = gurobipy.read(tmp_file.name)
-        finally:
-            os.remove(tmp_file_name)
         # if repr_dict['status'] == 'optimal':  # TODO: uncomment this
         #     # turn off logging completely, get's configured later
         #     problem.set_error_stream(None)
@@ -490,16 +478,11 @@ class Model(interface.Model):
 
     def __str__(self):
         self.problem.update()
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=False)
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            self.problem.write(tmp_file.name)
+        with TemporaryFilename(suffix=".lp") as tmp_file_name:
+            self.problem.write(tmp_file_name)
             with open(tmp_file_name) as tmp_file:
-                cplex_form = tmp_file.read()
-        finally:
-            os.remove(tmp_file_name)
-        return cplex_form
+                lp_form = tmp_file.read()
+        return lp_form
 
     @property
     def objective(self):
