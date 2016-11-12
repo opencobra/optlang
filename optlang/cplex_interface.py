@@ -684,6 +684,7 @@ class Model(interface.Model):
             zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
 
     def to_lp(self):
+        self.update()
         with TemporaryFilename(suffix=".lp") as tmp_file_name:
             self.problem.write(tmp_file_name)
             with open(tmp_file_name) as tmp_file:

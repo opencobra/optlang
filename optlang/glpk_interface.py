@@ -513,7 +513,6 @@ class Model(interface.Model):
         return model
 
     def __getstate__(self):
-        self.update()
         glpk_repr = self._glpk_representation()
         repr_dict = {'glpk_repr': glpk_repr, 'glpk_status': self.status, 'config': self.configuration}
         return repr_dict
@@ -596,6 +595,7 @@ class Model(interface.Model):
         return shadow_prices
 
     def to_lp(self):
+        self.update()
         with TemporaryFilename(suffix=".lp") as tmp_file_name:
             glp_write_lp(self.problem, None, tmp_file_name)
             with open(tmp_file_name) as tmp_file:
@@ -603,6 +603,7 @@ class Model(interface.Model):
         return lp_form
 
     def _glpk_representation(self):
+        self.update()
         with TemporaryFilename(suffix=".glpk") as tmp_file_name:
             glp_write_prob(self.problem, 0, tmp_file_name)
             with open(tmp_file_name) as tmp_file:
