@@ -1100,12 +1100,6 @@ class Model(object):
         if constraints is not None:
             self.add(constraints)
 
-    def __str__(self):
-        if hasattr(self, "to_lp"):
-            return self.to_lp()
-        else:
-            return repr(self)
-
     @property
     def interface(self):
         """Provides access to the solver interface the model belongs to
@@ -1199,6 +1193,8 @@ class Model(object):
         return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraints])
 
     def __str__(self):
+        if hasattr(self, "to_lp"):
+            return self.to_lp()
         self.update()
         return '\n'.join((
             str(self.objective),
