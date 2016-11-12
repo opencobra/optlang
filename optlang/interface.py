@@ -1051,6 +1051,11 @@ class Model(object):
         """
         model.update()
         interface = sys.modules[cls.__module__]
+        if hasattr(cls, "from_lp") and hasattr(model, "to_lp"):
+            new_model = cls.from_lp(model.to_lp())
+            new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
+            return new_model
+
         new_model = cls()
         for variable in model.variables:
             new_variable = interface.Variable.clone(variable)
@@ -1094,6 +1099,12 @@ class Model(object):
             self.add(variables)
         if constraints is not None:
             self.add(constraints)
+
+    def __str__(self):
+        if hasattr(self, "to_lp"):
+            return self.to_lp()
+        else:
+            return repr(self)
 
     @property
     def interface(self):

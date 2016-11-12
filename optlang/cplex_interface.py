@@ -589,6 +589,14 @@ class Model(interface.Model):
             raise TypeError("Provided problem is not a valid CPLEX model.")
         self.configuration = Configuration(problem=self, verbosity=0)
 
+    @classmethod
+    def from_lp(cls, lp_form):
+        problem = cplex.Cplex()
+        with TemporaryFilename(suffix=".lp", content=lp_form) as tmp_file_name:
+            problem.read(tmp_file_name)
+        model = cls(problem=problem)
+        return model
+
     def __getstate__(self):
         self.update()
         with TemporaryFilename(suffix=".sav") as tmp_file_name:
@@ -675,7 +683,7 @@ class Model(interface.Model):
         return collections.OrderedDict(
             zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
 
-    def __str__(self):
+    def to_lp(self):
         with TemporaryFilename(suffix=".lp") as tmp_file_name:
             self.problem.write(tmp_file_name)
             with open(tmp_file_name) as tmp_file:

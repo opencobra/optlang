@@ -454,6 +454,13 @@ class Model(interface.Model):
 
         self.configuration = Configuration(problem=self, verbosity=0)
 
+    @classmethod
+    def from_lp(cls, lp_form):
+        with TemporaryFilename(suffix=".lp", content=lp_form) as tmp_file_name:
+            problem = gurobipy.read(tmp_file_name)
+        model = cls(problem=problem)
+        return model
+
     def __getstate__(self):
         self.update()
         with TemporaryFilename(suffix=".lp") as tmp_file_name:
@@ -476,7 +483,7 @@ class Model(interface.Model):
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)  # TODO: make configuration work
 
-    def __str__(self):
+    def to_lp(self):
         self.problem.update()
         with TemporaryFilename(suffix=".lp") as tmp_file_name:
             self.problem.write(tmp_file_name)
