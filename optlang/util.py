@@ -225,6 +225,39 @@ def parse_expr(expr, local_dict=None):
         raise NotImplementedError(expr["type"] + " is not implemented")
 
 
+class TemporaryFilename(object):
+    """
+    Use context manager to create a temporary file that can be opened and closed, and will be deleted in the end.
+
+    Parameters
+    ----------
+    suffix : str
+        The file ending. Default is 'tmp'
+    content : str or None
+        If str, the content will be written to the file upon creation
+
+    Example
+    ----------
+    >>> with TemporaryFilename() as tmp_file_name:
+    >>>     with open(tmp_file_name, "w") as tmp_file:
+    >>>         tmp_file.write(stuff)
+    >>>     with open(tmp_file) as tmp_file:
+    >>>         stuff = tmp_file.read()
+    """
+    def __init__(self, suffix="tmp", content=None):
+        tmp_file = tempfile.NamedTemporaryFile(suffix=suffix, delete=False, mode="w")
+        if content is not None:
+            tmp_file.write(content)
+        self.name = tmp_file.name
+        tmp_file.close()
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, type, value, traceback):
+        os.remove(self.name)
+
+
 if __name__ == '__main__':
     from swiglpk import glp_create_prob, glp_read_lp, glp_get_num_rows
 
