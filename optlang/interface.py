@@ -1053,7 +1053,8 @@ class Model(object):
         model.update()
         interface = sys.modules[cls.__module__]
 
-        if use_lp and hasattr(cls, "from_lp") and hasattr(model, "to_lp"):
+        if use_lp:
+            warnings.warn("Cloning with LP formats can change variable and constraint ID's.")
             new_model = cls.from_lp(model.to_lp())
             new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
             return new_model
