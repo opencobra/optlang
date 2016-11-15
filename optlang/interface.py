@@ -460,14 +460,15 @@ class OptimizationExpression(object):
     def is_Linear(self):
         """Returns True if expression is linear (a polynomial with degree 1 or 0) (read-only)."""
         coeff_dict = self.expression.as_coefficients_dict()
-        if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
-            return True
-        else:
-            poly = self.expression.as_poly(*self.variables)
-            if poly is not None:
-                return poly.is_linear
+        for key in coeff_dict.keys():
+            if len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom):
+                pass
             else:
                 return False
+            if key.is_Pow and key.args[1] != 1:
+                return False
+        else:
+            return True
 
     @property
     def is_Quadratic(self):
@@ -1463,6 +1464,7 @@ class Model(object):
         model.objective = objective
         model.update()
         return model
+
 
 if __name__ == '__main__':
     # Example workflow

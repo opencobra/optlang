@@ -298,10 +298,10 @@ class Constraint(interface.Constraint):
 
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
-    def __init__(self, *args, **kwargs):
-        super(Objective, self).__init__(*args, **kwargs)
+    def __init__(self, expression, sloppy=False, **kwargs):
+        super(Objective, self).__init__(expression, **kwargs)
         self._expression_expired = False
-        if not (self.is_Linear or self.is_Quadratic):
+        if not (sloppy or self.is_Linear or self.is_Quadratic):
             raise ValueError("Cplex only supports linear and quadratic objectives.")
 
     @property
