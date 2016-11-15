@@ -27,7 +27,6 @@ and make sure that 'import swiglpk' runs without error.
 
 import collections
 import logging
-import tempfile
 
 import os
 import six
@@ -35,7 +34,7 @@ import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 
-from optlang.util import inheritdocstring
+from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
 
@@ -52,7 +51,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
-    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis
+    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp
 
 
 
@@ -505,23 +504,23 @@ class Model(interface.Model):
                 direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
         glp_scale_prob(self.problem, GLP_SF_AUTO)
 
+    @classmethod
+    def from_lp(cls, lp_form):
+        problem = glp_create_prob()
+        with TemporaryFilename(suffix=".lp", content=lp_form) as tmp_file_name:
+            glp_read_lp(problem, None, tmp_file_name)
+        model = cls(problem=problem)
+        return model
+
     def __getstate__(self):
-        self.update()
         glpk_repr = self._glpk_representation()
         repr_dict = {'glpk_repr': glpk_repr, 'glpk_status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".glpk", delete=False, mode='wb')
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            with open(tmp_file_name, "w") as tmp_file:
-                tmp_file.write(repr_dict['glpk_repr'])
+        with TemporaryFilename(suffix=".glpk", content=repr_dict["glpk_repr"]) as tmp_file_name:
             problem = glp_create_prob()
             glp_read_prob(problem, 0, tmp_file_name)
-        finally:
-            os.remove(tmp_file_name)
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
@@ -595,28 +594,20 @@ class Model(interface.Model):
             shadow_prices[constraint.name] = value
         return shadow_prices
 
-    def __str__(self):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".lp", mode='r', delete=False)
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            glp_write_lp(self.problem, None, tmp_file.name)
+    def to_lp(self):
+        self.update()
+        with TemporaryFilename(suffix=".lp") as tmp_file_name:
+            glp_write_lp(self.problem, None, tmp_file_name)
             with open(tmp_file_name) as tmp_file:
-                cplex_form = tmp_file.read()
-        finally:
-            os.remove(tmp_file_name)
-        return cplex_form
+                lp_form = tmp_file.read()
+        return lp_form
 
     def _glpk_representation(self):
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".glpk", delete=False)
-        tmp_file_name = tmp_file.name
-        tmp_file.close()
-        try:
-            glp_write_prob(self.problem, 0, tmp_file.name)
+        self.update()
+        with TemporaryFilename(suffix=".glpk") as tmp_file_name:
+            glp_write_prob(self.problem, 0, tmp_file_name)
             with open(tmp_file_name) as tmp_file:
                 glpk_form = tmp_file.read()
-        finally:
-            os.remove(tmp_file_name)
         return glpk_form
 
     def _run_glp_simplex(self):
@@ -808,8 +799,6 @@ if __name__ == '__main__':
         print(var_name, "=", var.primal)
 
     print(model)
-
-    from swiglpk import glp_read_lp
 
     problem = glp_create_prob()
     glp_read_lp(problem, None, "../tests/data/model.lp")

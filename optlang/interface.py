@@ -1041,7 +1041,7 @@ class Model(object):
     """
 
     @classmethod
-    def clone(cls, model):
+    def clone(cls, model, use_lp=True):
         """
         Make a copy of a model. The model being copied can be of the same type or belong to
         a different solver interface. This is the preferred way of copying models.
@@ -1052,6 +1052,11 @@ class Model(object):
         """
         model.update()
         interface = sys.modules[cls.__module__]
+        if use_lp and hasattr(cls, "from_lp") and hasattr(model, "to_lp"):
+            new_model = cls.from_lp(model.to_lp())
+            new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
+            return new_model
+
         new_model = cls()
         for variable in model.variables:
             new_variable = interface.Variable.clone(variable)
@@ -1189,6 +1194,8 @@ class Model(object):
         return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraints])
 
     def __str__(self):
+        if hasattr(self, "to_lp"):
+            return self.to_lp()
         self.update()
         return '\n'.join((
             str(self.objective),
