@@ -1041,7 +1041,7 @@ class Model(object):
     """
 
     @classmethod
-    def clone(cls, model, use_lp=True):
+    def clone(cls, model, use_json=True, use_lp=False):
         """
         Make a copy of a model. The model being copied can be of the same type or belong to
         a different solver interface. This is the preferred way of copying models.
@@ -1052,8 +1052,14 @@ class Model(object):
         """
         model.update()
         interface = sys.modules[cls.__module__]
+
         if use_lp and hasattr(cls, "from_lp") and hasattr(model, "to_lp"):
             new_model = cls.from_lp(model.to_lp())
+            new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
+            return new_model
+
+        if use_json:
+            new_model = cls.from_json(model.to_json())
             new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
             return new_model
 
