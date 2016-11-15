@@ -300,7 +300,7 @@ class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, *args, **kwargs):
         super(Objective, self).__init__(expression, *args, **kwargs)
         self._expression_expired = False
-        if not sloppy and not self.is_Linear:  # or self.is_Quadratic: # QP is not yet supported
+        if not (sloppy or self.is_Linear):  # or self.is_Quadratic: # QP is not yet supported
             raise ValueError("The given objective is invalid. Must be linear or quadratic (not yet supported")
 
     @property
