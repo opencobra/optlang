@@ -1,26 +1,28 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import unittest
-import pickle
-import tempfile
 import glob
+import logging
+import os
+import pickle
 import tarfile
+import tempfile
+import unittest
 from functools import partial
 
-import os
 import nose
-
 import six
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 if six.PY3:
     nose.SkipTest('Skipping because py3')
 else:
     try:
-        import cplex
+        import gurobipy
 
-        from optlang.cplex_interface import Model
-
+        from optlang.gurobi_interface import Model
 
         with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl'), 'rb') as fhandle:
             THE_FINAL_NETLIB_RESULTS = pickle.load(fhandle)
@@ -35,15 +37,14 @@ else:
 
 
         # noinspection PyShadowingNames
-        def read_netlib_sif_cplex(fhandle):
-            tmp_file = tempfile.mktemp(suffix='.sif')
+        def read_netlib_sif_gurobi(fhandle):
+            tmp_file = tempfile.mktemp(suffix='.mps')
             with open(tmp_file, 'w') as tmp_handle:
                 content = ''.join([str(s) for s in fhandle if str(s).strip()])
                 tmp_handle.write(content)
                 fhandle.close()
-            problem = cplex.Cplex()
-            problem.read(tmp_file)
-            # glp_read_mps(problem, GLP_MPS_FILE, None, tmp_file)
+                log.debug(tmp_file)
+            problem = gurobipy.read(tmp_file)
             return problem
 
 
@@ -52,15 +53,15 @@ else:
             Tests that the glpk problem and the interface model have the same
             number of rows (constraints) and columns (variables).
             """
-            assert problem.variables.get_num() == len(model.variables)
+            assert len(problem.getVars()) == len(model.variables)
 
 
         def check_objval(problem, model_objval):
             """
             Check that ...
             """
-            if problem.solution.get_status() == cplex.Cplex.solution.status.optimal:
-                problem_objval = problem.solution.get_objective_value()
+            if problem.getAttr('Status') == gurobipy.GRB.OPTIMAL:
+                problem_objval = problem.getAttr('ObjVal')
             else:
                 problem_objval = None
             nose.tools.assert_almost_equal(problem_objval, model_objval, places=4)
@@ -100,12 +101,13 @@ else:
                     if netlib_id not in THE_FINAL_NETLIB_RESULTS.keys():
                         continue
                     fhandle = tar.extractfile(model_path_in_tar)
-                    problem = read_netlib_sif_cplex(fhandle)
+                    problem = read_netlib_sif_gurobi(fhandle)
                     model = Model(problem=problem)
                     model.configuration.presolve = True
-                    # model.configuration.verbosity = 3
+                    model.configuration.verbosity = 3
                     func = partial(check_dimensions, problem, model)
-                    func.description = "test_netlib_check_dimensions_%s (%s)" % (netlib_id, os.path.basename(str(__file__)))
+                    func.description = "test_netlib_check_dimensions_%s (%s)" % (
+                        netlib_id, os.path.basename(str(__file__)))
                     yield func
 
                     model.optimize()
@@ -126,7 +128,7 @@ else:
 
     except ImportError as e:
 
-        if str(e).find('cplex') >= 0:
+        if str(e).find('gurobipy') >= 0:
             class TestMissingDependency(unittest.TestCase):
 
                 @unittest.skip('Missing dependency - ' + str(e))

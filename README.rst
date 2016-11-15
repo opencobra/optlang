@@ -1,4 +1,5 @@
-|Build Status| |Coverage Status| |PyPI version| |Documentation Status|
+|PyPI| |License| |Travis| |Coverage Status| |Code Climate|
+|Documentation Status| |DOI|
 
 optlang
 =======
@@ -6,12 +7,16 @@ optlang
 Vision
 ~~~~~~
 
-**optlang** provides a common interface to a series of optimization
-solvers (linear & non-linear) and relies on
-`sympy <http://sympy.org/en/index.html>`__ for problem formulation
-(constraints, objectives, variables, etc.). Adding new solvers is easy:
-just sub-class the high-level interface and implement the necessary
-solver specific routines.
+**optlang** is a Python package for solving mathematical optimization
+problems, i.e. maximizing or minimizing an objective function over a set
+of variables subject to a number of constraints. Optlang provides a
+common interface to a series of optimization tools, so different solver
+backends can be changed in a transparent way.
+
+Optlang takes advantage of the symbolic math library
+`sympy <http://sympy.org/en/index.html>`__ to allow objective functions
+and constraints to be easily formulated from symbolic expressions of
+variables (see examples).
 
 Installation
 ~~~~~~~~~~~~
@@ -48,8 +53,14 @@ Dependencies
 ~~~~~~~~~~~~
 
 -  `sympy >= 0.7.5 <http://sympy.org/en/index.html>`__
+-  `six >= 1.9.0 <https://pypi.python.org/pypi/six>`__
+
+And at least one of the following
+
 -  `swiglpk >= 0.1.0 <https://pypi.python.org/pypi/swiglpk>`__
--  `glpk >= 4.45 <https://www.gnu.org/software/glpk/>`__
+-  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
+-  `gurobipy <http://www.gurobi.com>`__
+-  `scipy <http://www.scipy.org>`__
 
 Example
 ~~~~~~~
@@ -59,7 +70,7 @@ from `GLPK documentation <http://www.gnu.org/software/glpk>`__):
 
 ::
 
-    from optlang import Model, Variable, Constraint, Objective
+    from optlang.glpk_interface import Model, Variable, Constraint, Objective
 
     x1 = Variable('x1', lb=0)
     x2 = Variable('x2', lb=0)
@@ -95,10 +106,6 @@ The example will produce the following output:
 Future outlook
 ~~~~~~~~~~~~~~
 
--  `Gurobi <http://www.gurobi.com/>`__ interface (very efficient MILP
-   solver)
--  `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
-   interface (very efficient MILP solver)
 -  `Mosek <http://www.mosek.com/>`__ interface (provides academic
    licenses)
 -  `GAMS <http://www.gams.com/>`__ output (support non-linear problem
@@ -112,6 +119,9 @@ Future outlook
    `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
    etc.)
 
+The optlang `trello board <https://trello.com/b/aiwfbVKO/optlang>`__
+also provides a good overview of the project's roadmap.
+
 Requirements
 ~~~~~~~~~~~~
 
@@ -119,14 +129,20 @@ Requirements
    languages
    (`CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__,
    `GAMS <http://www.gams.com/>`__, etc.)
--  Models should be pickable
+-  Models should be picklable
 -  Common solver configuration interface (presolver, MILP gap, etc.)
 
-.. |Build Status| image:: https://travis-ci.org/biosustain/optlang.png?branch=master
+.. |PyPI| image:: https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000
+   :target: https://pypi.python.org/pypi/optlang
+.. |License| image:: http://img.shields.io/badge/license-APACHE2-blue.svg
+   :target: http://img.shields.io/badge/license-APACHE2-blue.svg
+.. |Travis| image:: https://img.shields.io/travis/biosustain/optlang/master.svg
    :target: https://travis-ci.org/biosustain/optlang
-.. |Coverage Status| image:: https://coveralls.io/repos/biosustain/optlang/badge.png?branch=master
-   :target: https://coveralls.io/r/biosustain/optlang?branch=master
-.. |PyPI version| image:: https://badge.fury.io/py/optlang.svg
-   :target: http://badge.fury.io/py/optlang
+.. |Coverage Status| image:: https://img.shields.io/codecov/c/github/biosustain/optlang/master.svg
+   :target: https://codecov.io/gh/biosustain/optlang/branch/master
+.. |Code Climate| image:: https://codeclimate.com/github/biosustain/optlang/badges/gpa.svg
+   :target: https://codeclimate.com/github/biosustain/optlang
 .. |Documentation Status| image:: https://readthedocs.org/projects/optlang/badge/?version=latest
    :target: https://readthedocs.org/projects/optlang/?badge=latest
+.. |DOI| image:: https://zenodo.org/badge/5031/biosustain/optlang.svg
+   :target: https://zenodo.org/badge/latestdoi/5031/biosustain/optlang

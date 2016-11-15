@@ -14,14 +14,17 @@
 # limitations under the License.
 
 import os
+
 from setuptools import setup, find_packages
+from itertools import chain
 
 import versioneer
+
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'optlang/_version.py'
 versioneer.versionfile_build = 'optlang/_version.py'
-versioneer.tag_prefix = '' # tags are like 1.2.0
-versioneer.parentdir_prefix = 'optlang-' # dirname like 'myproject-1.2.0'
+versioneer.tag_prefix = ''  # tags are like 1.2.0
+versioneer.parentdir_prefix = 'optlang-'  # dirname like 'myproject-1.2.0'
 
 # Run
 # pandoc --from=markdown --to=rst README.md -o README.rst
@@ -33,7 +36,13 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
     requirements = []
 else:
-    requirements = ['sympy>=0.7.5', 'swiglpk>=1.0.0', 'six>=1.9.0']
+    requirements = ['sympy>=1.0.0', 'six>=1.9.0']
+
+
+extra_requirements = {
+    'test': ['nose>=1.3.7', 'rednose>=0.4.3', 'coverage>=4.0.3', 'jsonschema>=2.5'],
+}
+extra_requirements['all'] = list(set(chain(*extra_requirements.values())))
 
 setup(
     name='optlang',
@@ -41,6 +50,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
     install_requires=requirements,  # from requirements.txt
+    extras_require=extra_requirements,
     test_suite='nose.collector',
     author='Nikolaus Sonnenschein',
     author_email='niko.sonnenschein@gmail.com',
@@ -58,4 +68,3 @@ setup(
         'License :: OSI Approved :: Apache Software License',
     ],
 )
-

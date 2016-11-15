@@ -1,3 +1,2 @@
-sympy==0.7.5
-swiglpk==1.0.0
-six==1.9.0
+sympy>=1.0.0
+six>=1.9.0

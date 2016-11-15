@@ -1,15 +1,24 @@
-[![Build Status](https://travis-ci.org/biosustain/optlang.png?branch=master)](https://travis-ci.org/biosustain/optlang)
-[![Coverage Status](https://coveralls.io/repos/biosustain/optlang/badge.png?branch=master)](https://coveralls.io/r/biosustain/optlang?branch=master)
-[![PyPI version](https://badge.fury.io/py/optlang.svg)](http://badge.fury.io/py/optlang)
+[![PyPI](https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000)](https://pypi.python.org/pypi/optlang)
+[![License](http://img.shields.io/badge/license-APACHE2-blue.svg)](http://img.shields.io/badge/license-APACHE2-blue.svg)
+[![Travis](https://img.shields.io/travis/biosustain/optlang/master.svg)](https://travis-ci.org/biosustain/optlang)
+[![Coverage Status](https://img.shields.io/codecov/c/github/biosustain/optlang/master.svg)](https://codecov.io/gh/biosustain/optlang/branch/master)
+[![Code Climate](https://codeclimate.com/github/biosustain/optlang/badges/gpa.svg)](https://codeclimate.com/github/biosustain/optlang)
 [![Documentation Status](https://readthedocs.org/projects/optlang/badge/?version=latest)](https://readthedocs.org/projects/optlang/?badge=latest)
-
+[![DOI](https://zenodo.org/badge/5031/biosustain/optlang.svg)](https://zenodo.org/badge/latestdoi/5031/biosustain/optlang)
 
 
 optlang
 =======
 
 ### Vision
-__optlang__ provides a common interface to a series of optimization solvers (linear & non-linear) and relies on [sympy](http://sympy.org/en/index.html) for problem formulation (constraints, objectives, variables, etc.). Adding new solvers is easy: just sub-class the high-level interface and implement the necessary solver specific routines.
+
+__optlang__ is a Python package for solving mathematical optimization problems, i.e. maximizing or minimizing an
+objective function over a set of variables subject to a number of constraints. Optlang provides a common
+interface to a series of optimization tools, so different solver backends can be changed in a transparent way.
+
+Optlang takes advantage of the symbolic math library [sympy](http://sympy.org/en/index.html) to allow objective
+functions and constraints to be easily formulated from symbolic expressions of variables (see examples).
+
 
 ### Installation
 
@@ -34,14 +43,20 @@ The documentation for __optlang__ is provided at [readthedocs.org](http://optlan
 ### Dependencies
 
 * [sympy >= 0.7.5](http://sympy.org/en/index.html)
+* [six >= 1.9.0](https://pypi.python.org/pypi/six)
+
+And at least one of the following
+
 * [swiglpk >= 0.1.0](https://pypi.python.org/pypi/swiglpk)
-* [glpk >= 4.45](https://www.gnu.org/software/glpk/)
+* [cplex](https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/)
+* [gurobipy](http://www.gurobi.com)
+* [scipy](http://www.scipy.org)
 
 ### Example
 
 Formulating and solving the problem is straightforward (example taken from [GLPK documentation](http://www.gnu.org/software/glpk)):
 
-    from optlang import Model, Variable, Constraint, Objective
+    from optlang.glpk_interface import Model, Variable, Constraint, Objective
  
     x1 = Variable('x1', lb=0)
     x2 = Variable('x2', lb=0)
@@ -74,18 +89,18 @@ Formulating and solving the problem is straightforward (example taken from [GLPK
     
 ### Future outlook
 
-* [Gurobi][gurobi_url] interface (very efficient MILP solver)
-* [CPLEX][cplex_url] interface (very efficient MILP solver)
 * [Mosek][mosek_url] interface (provides academic licenses)
 * [GAMS][gams_url] output (support non-linear problem formulation)
 * [DEAP][deap_url] (support for heuristic optimization)
 * Interface to [NEOS][neos_url] optimization server (for testing purposes and solver evaluation)
 * Automatically handle fractional and absolute value problems when dealing with LP/MILP/QP solvers (like GLPK, [CPLEX][cplex_url] etc.)
 
+The optlang [trello board](https://trello.com/b/aiwfbVKO/optlang) also provides a good overview of the project's roadmap.
+
 ### Requirements
 
 * Models should always be serializable to common problem formulation languages ([CPLEX][cplex_url], [GAMS][gams_url], etc.)
-* Models should be pickable
+* Models should be picklable
 * Common solver configuration interface (presolver, MILP gap, etc.)
 
 [cplex_url]: http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/ "CPLEX"
