@@ -518,7 +518,7 @@ class AbstractModelTestCase(unittest.TestCase):
         self.model.update()
         self.model.objective = self.interface.Objective(self.model.variables[1] * 2)
 
-    def test_clone_model_with_lp(self):
+    def test_clone_model_with_json(self):
         self.assertEquals(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
         cloned_model = self.interface.Model.clone(self.model)
@@ -526,10 +526,10 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertEquals(len(cloned_model.variables), len(self.model.variables))
         self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
 
-    def test_clone_model_without_lp(self):
+    def test_clone_model_without_json(self):
         self.assertEquals(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
-        cloned_model = self.interface.Model.clone(self.model, use_lp=False)
+        cloned_model = self.interface.Model.clone(self.model, use_json=False)
         self.assertEquals(cloned_model.configuration.verbosity, 3)
         self.assertEquals(len(cloned_model.variables), len(self.model.variables))
         self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
