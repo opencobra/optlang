@@ -16,20 +16,26 @@
 
 """Interface for GAMS"""
 
-import subprocess
-import sqlite3
-import tempfile
 import logging
 
+import gams
 import six
+from optlang import interface
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-from optlang import interface
-
-
 # TODO: invalidate any results if model changes
+
+# https://www.gams.com/help/index.jsp?topic=%2Fgams.doc%2Fapis%2Fpython%2Findex.html
+_GAMS_STATUS_TO_STATUS = {
+    gams.ModelStat.Feasible: interface.FEASIBLE,
+    gams.ModelStat.InfeasibleLocal: interface.INFEASIBLE,
+    gams.ModelStat.InfeasibleGlobal: interface.INFEASIBLE,
+    gams.ModelStat.OptimalGlobal: interface.OPTIMAL,
+    gams.ModelStat.Unbounded: interface.UNBOUNDED,
+    gams.ModelStat.UnboundedNoSolution: interface.UNBOUNDED
+}
 
 
 class Variable(interface.Variable):
@@ -85,6 +91,13 @@ class Constraint(interface.Constraint):
 class Objective(interface.Objective):
     def __init__(self, *args, **kwargs):
         super(Objective, self).__init__(*args, **kwargs)
+
+    @property
+    def value(self):
+        if not hasattr(self.problem, '_out_db', None):
+            return self.problem._out_db['Z'].value
+        else:
+            return None
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
@@ -195,63 +208,27 @@ Solve problem {direction} Z USING {problem_type};
         # TODO: make this functional.
         return 'LP'
 
-    def __execute_gams(self):
-        gdx_file = tempfile.mktemp(suffix='.gdx')
-        log.debug('gdx_file', gdx_file)
-        problem = self.__str__() + '\nExecute_Unload "{}";'.format(gdx_file)
-        tmp_file = tempfile.mktemp(suffix=".gms")
-        with open(tmp_file, 'w') as f:
-            f.write(problem)
-        try:
-            print(subprocess.check_call(
-                ['/Applications/GAMS24.5/GAMS Terminal.app/../sysdir/gams', tmp_file, '-o /dev/stdout']))
-        except subprocess.CalledProcessError as e:
-            print(e)
-            raise e
-        else:
-            try:
-                # print(subprocess.check_output(['/Applications/GAMS24.5/GAMS Terminal.app/../sysdir/gdxdump', gdx_file, ]))
-                subprocess.check_output(
-                    ['/Applications/GAMS24.5/GAMS Terminal.app/../sysdir/gdx2sqlite', '-i', gdx_file, '-o',
-                     gdx_file + '.db'])
-            except subprocess.CalledProcessError as e:
-                print(e)
-                raise e
-        variables, equations = self.__read_results_from_sqlite(gdx_file + '.db')
-
-        print(variables)
-        self._column_primals = {elem['name']: elem['level'] for elem in variables}
-        self._column_duals = {elem['name']: elem['marginal'] for elem in variables}
-        self._row_primals = {elem['name']: elem['level'] for elem in equations}
-        self._row_duals = {elem['name']: elem['marginal'] for elem in equations}
-        return 1
-
-    @staticmethod
-    def __read_results_from_sqlite(db_path):
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type = 'table';")
-        cursor.fetchall()
-        cursor.execute('SELECT * FROM scalarvariables')
-        columns = [elem[0] for elem in cursor.description]
-        variables = list()
-        for row in cursor.fetchall():
-            variables.append(dict(zip(columns, row)))
-
-        cursor.execute('SELECT * FROM scalarequations')
-        columns = [elem[0] for elem in cursor.description]
-        equations = list()
-        for row in cursor.fetchall():
-            equations.append(dict(zip(columns, row)))
-        return variables, equations
-
     def __str__(self):
         return self.__to_gams()
 
-    def optimize(self):
-        print(self.__str__())
-        self.__execute_gams()
-        return self.__str__()
+    def _optimize(self):
+        workspace = gams.GamsWorkspace(system_directory='/Applications/GAMS24.7/sysdir', debug=3)
+        problem_string = self.__str__() + "\nScalar MODELSTATUS;\n MODELSTATUS = problem.modelstat;"
+        job = workspace.add_job_from_string(problem_string)
+        job.run()
+        self._out_db = job.out_db
+        self._column_primals = {variable.name: job.out_db[variable.name].find_record().level for variable in
+                                self.variables}
+        self._column_duals = {variable.name: job.out_db[variable.name].find_record().marginal for variable in
+                              self.variables}
+        # need to deal with range constraints here ...
+        # self._row_primals = {constraint: job.out_db.get_symbol(constraint.name).find_record().level for constraint in self.constraints}
+        # self._row_duals = {constraint: job.out_db.get_symbol(constraint.name).find_record().marginal for constraint in
+        #                      self.constraints}
+        print(problem_string)
+        self._original_status = int(job.out_db['MODELSTATUS'].find_record().value)
+        self._status = _GAMS_STATUS_TO_STATUS[self._original_status]
+        return self.status
 
 
 if __name__ == '__main__':
@@ -271,5 +248,3 @@ if __name__ == '__main__':
     print(model.variables)
     for var_name, var in six.iteritems(model.variables):
         print(var_name, "=", var.primal)
-
-    print(model)

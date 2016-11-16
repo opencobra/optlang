@@ -12,7 +12,10 @@ import six
 
 from optlang import glpk_interface
 from optlang.gams_interface import Variable, Constraint, Objective, Model
+from optlang import gams_interface
 from optlang.util import glpk_read_cplex
+
+from optlang.tests import abstract_test_cases
 
 
 random.seed(666)
@@ -24,12 +27,9 @@ def read_test_model():
     model = Model.clone(model)
     return model
 
-class VariableTestCase(unittest.TestCase):
-    def setUp(self):
-        self.var = Variable('test')
 
-    def test_set_wrong_type_raises(self):
-        self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
+class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
+    interface = gams_interface
 
     def test_get_primal(self):
         self.assertEqual(self.var.primal, None)
@@ -62,10 +62,8 @@ class VariableTestCase(unittest.TestCase):
             self.assertEqual(variable.name, "var"+str(i))
 
 
-class ConstraintTestCase(unittest.TestCase):
-    def setUp(self):
-        self.model = read_test_model()
-        self.constraint = Constraint(Variable('chip') + Variable('chap'), name='woodchips', lb=100)
+class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
+    interface = gams_interface
 
     def test_get_primal(self):
         self.assertEqual(self.constraint.primal, None)
@@ -99,9 +97,9 @@ class ConstraintTestCase(unittest.TestCase):
         model = self.model
         self.assertRaises(Exception, setattr, model.constraints[0], 'lb', 'Chicken soup')
 
-class SolverTestCase(unittest.TestCase):
-    def setUp(self):
-        self.model = read_test_model()
+
+class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
+    interface = gams_interface
 
     def test_pickle_ability(self):
         self.model.optimize()
@@ -121,34 +119,6 @@ class SolverTestCase(unittest.TestCase):
         model_copy = copy.copy(self.model)
         self.assertEquals(model_copy.configuration.verbosity, 3)
 
-    def test_add_variable(self):
-        var = Variable('x')
-        self.assertEqual(var.index, None)
-        self.model.add(var)
-        self.assertTrue(var in self.model.variables.values())
-        self.assertEqual(self.model.variables.values().count(var), 1)
-        self.assertEqual(self.model.variables['x'].problem, var.problem)
-        var = Variable('y', lb=-13)
-        self.model.add(var)
-        self.assertTrue(var in self.model.variables.values())
-        self.assertEqual(self.model.variables['x'].lb, None)
-        self.assertEqual(self.model.variables['x'].ub, None)
-        self.assertEqual(self.model.variables['y'].lb, -13)
-        self.assertEqual(self.model.variables['x'].ub, None)
-        var = Variable('x_with_ridiculously_long_variable_name_asdffffffffasdfasdfasdfasdfasdfasdfasdf')
-        self.model.add(var)
-        self.assertTrue(var in self.model.variables.values())
-        self.assertEqual(self.model.variables.values().count(var), 1)
-        var = Variable('x_with_ridiculously_long_variable_name_asdffffffffasdfasdfasdfasdfasdfasdfasdf')
-        self.assertRaises(Exception, self.model.add, var)
-
-    def test_add_integer_var(self):
-        var = Variable('int_var', lb=-13, ub=500, type='integer')
-        self.model.add(var)
-        self.assertEqual(self.model.variables['int_var'].type, 'integer')
-        self.assertEqual(self.model.variables['int_var'].ub, 500)
-        self.assertEqual(self.model.variables['int_var'].lb, -13)
-
     def test_add_non_cplex_conform_variable(self):
         var = Variable('12x!!@#5_3', lb=-666, ub=666)
         self.model.add(var)
@@ -157,56 +127,6 @@ class SolverTestCase(unittest.TestCase):
         self.assertEqual(self.model.variables['12x!!@#5_3'].ub, 666)
         repickled = pickle.loads(pickle.dumps(self.model))
         var_from_pickle = repickled.variables['12x!!@#5_3']
-
-    def test_remove_variable(self):
-        var = self.model.variables.values()[0]
-        self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
-                         'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 59.81*R_Biomass_Ecoli_core_w_GAM - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')
-        self.assertEqual(var.problem, self.model)
-        self.model.remove(var)
-        self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
-                         'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')
-        self.assertNotIn(var, self.model.variables.values())
-        self.assertEqual(var.problem, None)
-
-    def test_remove_variable_str(self):
-        var = self.model.variables.values()[0]
-        self.model.remove(var.name)
-        self.assertNotIn(var, self.model.variables.values())
-        self.assertEqual(var.problem, None)
-
-    def test_add_constraints(self):
-        x = Variable('x', lb=0, ub=1, type='binary')
-        y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        z = Variable('z', lb=0., ub=10., type='integer')
-        constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-        constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
-        constr3 = Constraint(2.333 * x + y + z, lb=-300)
-        constr4 = Constraint(x, lb=-300, ub=-300)
-        constr5 = Constraint(3*x)
-        self.model.add(constr1)
-        self.model.add(constr2)
-        self.model.add(constr3)
-        self.model.add([constr4, constr5])
-        self.assertIn(constr1.name, self.model.constraints)
-        self.assertIn(constr2.name, self.model.constraints)
-        self.assertIn(constr3.name, self.model.constraints)
-        self.assertIn(constr4.name, self.model.constraints)
-        self.assertIn(constr5.name, self.model.constraints)
-
-    def test_remove_constraints(self):
-        x = Variable('x', type='binary')
-        y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        z = Variable('z', lb=3, ub=3, type='integer')
-        constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-        self.assertEqual(constr1.problem, None)
-        self.model.add(constr1)
-        self.assertEqual(constr1.problem, self.model)
-        self.assertIn(constr1.name, self.model.constraints)
-        print(constr1.index)
-        self.model.remove(constr1.name)
-        self.assertEqual(constr1.problem, None)
-        self.assertNotIn(constr1, self.model.constraints)
 
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
@@ -246,36 +166,6 @@ class SolverTestCase(unittest.TestCase):
     def test_initial_objective(self):
         self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
 
-    def test_optimize(self):
-        self.model.optimize()
-        self.assertEqual(self.model.status, 'optimal')
-        self.assertAlmostEqual(self.model.objective.value, 0.8739215069684303)
-
-    def test_optimize_milp(self):
-        problem = glpk_read_cplex(TESTMILPMODELPATH)
-        milp_model = Model(problem=problem)
-        milp_model.optimize()
-        self.assertEqual(milp_model.status, 'optimal')
-        self.assertAlmostEqual(milp_model.objective.value, 122.5)
-        for variable in milp_model.variables:
-            if variable.type == 'integer':
-                self.assertEqual(variable.primal % 1, 0)
-
-    def test_change_objective(self):
-        """Test that all different kinds of linear objective specification work."""
-        print(self.model.variables.values()[0:2])
-        v1, v2 = self.model.variables.values()[0:2]
-        self.model.objective = Objective(1. * v1 + 1. * v2)
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
-        self.model.objective = Objective(v1 + v2)
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
-
-    def test_number_objective(self):
-        self.model.objective = Objective(0.)
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
-        obj_coeff = list()
-        self.assertEqual(set(obj_coeff), {0.})
-
     def test_raise_on_non_linear_objective(self):
         """Test that an exception is raised when a non-linear objective is added to the model."""
         v1, v2 = self.model.variables.values()[0:2]
@@ -291,25 +181,10 @@ class SolverTestCase(unittest.TestCase):
         status = self.model.optimize()
         self.assertEqual(status, 'time_limit')
 
-    # def test_set_linear_objective_term(self):
-    #     self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)
-    #     self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
-
-    def test_instantiating_model_with_non_glpk_problem_raises(self):
-        self.assertRaises(TypeError, Model, problem='Chicken soup')
-
-    # def test__set_coefficients_low_level(self):
-    #     constraint = self.model.constraints.M_atp_c
-    #     constraint._set_coefficients_low_level({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
-    #     num_cols = glp_get_num_cols(self.model.problem)
-    #     ia = intArray(num_cols + 1)
-    #     da = doubleArray(num_cols + 1)
-    #     index = constraint.index
-    #     num = glp_get_mat_row(self.model.problem, index, ia, da)
-    #     for i in range(1, num +1):
-    #         col_name = glp_get_col_name(self.model.problem, ia[i])
-    #         if col_name == 'R_Biomass_Ecoli_core_w_GAM':
-    #             self.assertEqual(da[i], 666.)
+    def test_set_linear_coefficients_objective(self):
+        1 / 0
+        # self.model._set_linear_objective_term(self.model.variables.R_TPI, 666.)
+        # self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
 
     def test_primal_values(self):
             self.model.optimize()
@@ -331,13 +206,27 @@ class SolverTestCase(unittest.TestCase):
         for k, v in self.model.shadow_prices.items():
             self.assertEquals(v, self.model.constraints[k].dual)
 
-    def test_clone_solver(self):
-        self.assertEquals(self.model.configuration.verbosity, 0)
-        self.model.configuration.verbosity = 3
-        cloned_model = Model.clone(self.model)
-        self.assertEquals(cloned_model.configuration.verbosity, 3)
-        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+    def test_change_constraint_bounds(self):
+        1 / 0
+
+    def test_change_variable_bounds(self):
+        1 / 0
+
+    def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
+        1 / 0
+
+    def test_iadd_objective(self):
+        1 / 0
+
+    def test_imul_objective(self):
+        1 / 0
+
+    def test_init_from_existing_problem(self):
+        1 / 0
+
+    def test_set_linear_coefficients_constraint(self):
+        1 / 0
+
 
 
 if __name__ == '__main__':

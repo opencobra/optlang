@@ -33,8 +33,3 @@ elif available_solvers['GLPK']:
     from optlang.glpk_interface import Model, Variable, Constraint, Objective
 else:
     log.error('No solvers available.')
-
-if available_solvers['GLPK']:
-    from optlang import glpk_interface
-if available_solvers['CPLEX']:
-    from optlang import cplex_interface
