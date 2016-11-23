@@ -369,26 +369,32 @@ class Constraint(interface.Constraint):
         else:
             return None
 
-    def __setattr__(self, name, value):  # TODO: Change this to properties when PR #11 is merged
+    @interface.Constraint.lb.setter
+    def lb(self, value):
+        self._check_valid_lower_bound(value)
         if getattr(self, "problem", None) is not None:
-            if name == "lb":
-                if self.lb is None and value is not None:
-                    negative_coefficient_dict = {name: -coef for name, coef in self.coefficient_dict().items()}
-                    self.problem.problem.add_constraint(self.lower_constraint_name, negative_coefficient_dict,
-                                                        ub=-value)
-                elif value is None and self.lb is not None:
-                    self.problem.problem.remove_constraint(self.lower_constraint_name)
-                elif value is not None and self.lb is not None:
-                    self.problem.problem.set_constraint_bound(self.lower_constraint_name, -value)
-            if name == "ub":
-                if self.ub is None and value is not None:
-                    self.problem.problem.add_constraint(self.upper_constraint_name, self.coefficient_dict(), ub=value)
-                elif value is None and self.ub is not None:
-                    self.problem.problem.remove_constraint(self.upper_constraint_name)
-                elif value is not None and self.ub is not None:
-                    self.problem.problem.set_constraint_bound(self.upper_constraint_name, value)
+            if self.lb is None and value is not None:
+                negative_coefficient_dict = {name: -coef for name, coef in self.coefficient_dict().items()}
+                self.problem.problem.add_constraint(
+                    self.lower_constraint_name, negative_coefficient_dict, ub=-value
+                )
+            elif value is None and self.lb is not None:
+                self.problem.problem.remove_constraint(self.lower_constraint_name)
+            elif value is not None and self.lb is not None:
+                self.problem.problem.set_constraint_bound(self.lower_constraint_name, -value)
+        self._lb = value
 
-        super(Constraint, self).__setattr__(name, value)
+    @interface.Constraint.ub.setter
+    def ub(self, value):
+        self._check_valid_upper_bound(value)
+        if getattr(self, "problem", None) is not None:
+            if self.ub is None and value is not None:
+                self.problem.problem.add_constraint(self.upper_constraint_name, self.coefficient_dict(), ub=value)
+            elif value is None and self.ub is not None:
+                self.problem.problem.remove_constraint(self.upper_constraint_name)
+            elif value is not None and self.ub is not None:
+                self.problem.problem.set_constraint_bound(self.upper_constraint_name, value)
+        self._ub = value
 
     def coefficient_dict(self):
         if self.expression.is_Add:
