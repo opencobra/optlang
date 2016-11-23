@@ -509,10 +509,9 @@ class Model(interface.Model):
 
             super(Model, self)._remove_constraints(constraints)
 
-    def optimize(self):
+    def _optimize(self):
         self.problem.optimize(verbosity=self.configuration.verbosity)
         status = self.problem.status
-        self._status = status
         return status
 
     @interface.Model.objective.setter

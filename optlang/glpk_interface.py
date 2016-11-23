@@ -656,7 +656,6 @@ class Model(interface.Model):
                 self.configuration.presolve = True
                 status = self._run_glp_mip()
                 self.configuration.presolve = original_presolve_setting
-        self._status = status
         return status
 
     def _add_variables(self, variables):

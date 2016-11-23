@@ -1348,6 +1348,7 @@ class Model(object):
             self.configuration.presolve = True
             status = self._optimize()
             self.configuration.presolve = "auto"
+        self._status = status
         return status
 
     def _optimize(self):

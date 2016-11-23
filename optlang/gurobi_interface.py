@@ -529,8 +529,8 @@ class Model(interface.Model):
 
     def _optimize(self):
         self.problem.optimize()
-        self._status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
-        return self.status
+        status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
+        return status
 
     def _add_variables(self, variables):
         super(Model, self)._add_variables(variables)
