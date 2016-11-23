@@ -74,10 +74,10 @@ Formulating and solving the problem is straightforward (example taken from [GLPK
  
     status = model.optimize()
  
-    print "status:", model.status
-    print "objective value:", model.objective.value
+    print("status:", model.status)
+    print("objective value:", model.objective.value)
     for var_name, var in model.variables.iteritems():
-        print var_name, "=", var.primal
+        print(var_name, "=", var.primal)
  
  The example will produce the following output:
  
