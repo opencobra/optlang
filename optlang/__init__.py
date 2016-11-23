@@ -27,14 +27,24 @@ log = logging.getLogger(__name__)
 
 available_solvers = list_available_solvers()
 
+# Load classes from preferred solver interface
 if available_solvers['CPLEX']:
     from optlang.cplex_interface import Model, Variable, Constraint, Objective
+elif available_solvers["GUROBI"]:
+    from optlang.gurobi_interface import Model, Variable, Constraint, Objective
 elif available_solvers['GLPK']:
     from optlang.glpk_interface import Model, Variable, Constraint, Objective
+elif available_solvers['SCIPY']:
+    from optlang.scipy_interface import Model, Variable, Constraint, Objective
 else:
     log.error('No solvers available.')
 
+# Import all available solver interfaces
 if available_solvers['GLPK']:
     from optlang import glpk_interface
 if available_solvers['CPLEX']:
     from optlang import cplex_interface
+if available_solvers['GUROBI']:
+    from optlang import gurobi_interface
+if available_solvers['SCIPY']:
+    from optlang import scipy_interface
