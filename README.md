@@ -1,6 +1,7 @@
 [![PyPI](https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000)](https://pypi.python.org/pypi/optlang)
 [![License](http://img.shields.io/badge/license-APACHE2-blue.svg)](http://img.shields.io/badge/license-APACHE2-blue.svg)
 [![Travis](https://img.shields.io/travis/biosustain/optlang/master.svg)](https://travis-ci.org/biosustain/optlang)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/3o8f2v5rhtn28lxk/branch/master?svg=true)](https://ci.appveyor.com/project/hredestig/optlang-hhs92/branch/master)
 [![Coverage Status](https://img.shields.io/codecov/c/github/biosustain/optlang/master.svg)](https://codecov.io/gh/biosustain/optlang/branch/master)
 [![Code Climate](https://codeclimate.com/github/biosustain/optlang/badges/gpa.svg)](https://codeclimate.com/github/biosustain/optlang)
 [![Documentation Status](https://readthedocs.org/projects/optlang/badge/?version=latest)](https://readthedocs.org/projects/optlang/?badge=latest)
