@@ -135,11 +135,9 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
-        old_name = getattr(self, 'name', None)
-        self._name = value
         if getattr(self, 'problem', None) is not None:
             glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
-            self.problem.variables.update_key(old_name)
+        super(Variable, Variable).name.fset(self, value)
 
 
 @six.add_metaclass(inheritdocstring)

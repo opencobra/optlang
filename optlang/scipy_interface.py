@@ -137,6 +137,17 @@ class Problem(object):
         self._add_row_to_A(new_row)
         self._reset_solution()
 
+    def change_var_name(self, name, value):
+        if name != value and value in self._variables:
+            raise ValueError("A variable with that name already exists")
+        self._variables = OrderedDict(((value if k == name else k), v) for k, v in self._variables.items())
+        self._objective = OrderedDict(((value if k == name else k), v) for k, v in self._objective.items())
+
+    def change_constraint_name(self, name, value):
+        if name != value and value in self._constraints:
+            raise ValueError("A constraint with that name already exists")
+        self._constraints = OrderedDict(((value if k == name else k), v) for k, v in self._constraints.items())
+
     def remove_variable(self, name):
         """Remove a variable from the problem."""
         index = self._get_var_index(name)
@@ -308,6 +319,12 @@ class Variable(interface.Variable):
             return dual
         else:
             return None
+
+    @interface.Variable.name.setter
+    def name(self, value):
+        if getattr(self, "problem", None) is not None:
+            self.problem.problem.change_var_name(self.name, value)
+        super(Variable, Variable).name.fset(self, value)
 
 
 @six.add_metaclass(inheritdocstring)
