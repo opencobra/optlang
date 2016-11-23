@@ -136,7 +136,7 @@ class Variable(interface.Variable):
     @interface.Variable.name.setter
     def name(self, value):
         if getattr(self, 'problem', None) is not None:
-            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
+            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
         super(Variable, Variable).name.fset(self, value)
 
 
