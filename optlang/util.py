@@ -136,7 +136,7 @@ def list_available_solvers():
         log.debug('CPLEX python bindings not available.')
     try:
         from scipy import optimize
-        linprog = optimize.linprog
+        optimize.linprog
 
         solvers["SCIPY"] = True
         log.debug("Scipy linprog function found at %s" % optimize.__file__)
