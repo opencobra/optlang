@@ -28,6 +28,7 @@ import inspect
 import logging
 import sys
 import uuid
+import warnings
 
 import six
 
@@ -460,14 +461,15 @@ class OptimizationExpression(object):
     def is_Linear(self):
         """Returns True if expression is linear (a polynomial with degree 1 or 0) (read-only)."""
         coeff_dict = self.expression.as_coefficients_dict()
-        if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom) for key in coeff_dict.keys())):
-            return True
-        else:
-            poly = self.expression.as_poly(*self.variables)
-            if poly is not None:
-                return poly.is_linear
+        for key in coeff_dict.keys():
+            if len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom):
+                pass
             else:
                 return False
+            if key.is_Pow and key.args[1] != 1:
+                return False
+        else:
+            return True
 
     @property
     def is_Quadratic(self):
@@ -1040,7 +1042,7 @@ class Model(object):
     """
 
     @classmethod
-    def clone(cls, model):
+    def clone(cls, model, use_json=True, use_lp=False):
         """
         Make a copy of a model. The model being copied can be of the same type or belong to
         a different solver interface. This is the preferred way of copying models.
@@ -1051,6 +1053,18 @@ class Model(object):
         """
         model.update()
         interface = sys.modules[cls.__module__]
+
+        if use_lp:
+            warnings.warn("Cloning with LP formats can change variable and constraint ID's.")
+            new_model = cls.from_lp(model.to_lp())
+            new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
+            return new_model
+
+        if use_json:
+            new_model = cls.from_json(model.to_json())
+            new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
+            return new_model
+
         new_model = cls()
         for variable in model.variables:
             new_variable = interface.Variable.clone(variable)
@@ -1188,6 +1202,8 @@ class Model(object):
         return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraints])
 
     def __str__(self):
+        if hasattr(self, "to_lp"):
+            return self.to_lp()
         self.update()
         return '\n'.join((
             str(self.objective),
@@ -1456,6 +1472,7 @@ class Model(object):
         model.objective = objective
         model.update()
         return model
+
 
 if __name__ == '__main__':
     # Example workflow

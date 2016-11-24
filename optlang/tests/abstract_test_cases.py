@@ -486,23 +486,31 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_primal_values(self):
         self.model.optimize()
-        for k, v in self.model.primal_values.items():
-            self.assertEquals(v, self.model.variables[k].primal)
+        primals = self.model.primal_values
+        for var in self.model.variables:
+            self.assertEqual(var.primal, primals[var.name])
+        self.assertEqual(set(var.name for var in self.model.variables), set(primals))
 
     def test_reduced_costs(self):
         self.model.optimize()
-        for k, v in self.model.reduced_costs.items():
-            self.assertEquals(v, self.model.variables[k].dual)
+        reduced_costs = self.model.reduced_costs
+        for var in self.model.variables:
+            self.assertEqual(var.dual, reduced_costs[var.name])
+        self.assertEqual(set(var.name for var in self.model.variables), set(reduced_costs))
 
     def test_dual_values(self):
         self.model.optimize()
-        for k, v in self.model.dual_values.items():
-            self.assertEquals(v, self.model.constraints[k].primal)
+        constraint_primals = self.model.dual_values  # TODO Fix this method name
+        for constraint in self.model.constraints:
+            self.assertEqual(constraint.primal, constraint_primals[constraint.name])
+        self.assertEqual(set(const.name for const in self.model.constraints), set(constraint_primals))
 
     def test_shadow_prices(self):
         self.model.optimize()
-        for k, v in self.model.shadow_prices.items():
-            self.assertEquals(v, self.model.constraints[k].dual)
+        shadow_prices = self.model.shadow_prices
+        for constraint in self.model.constraints:
+            self.assertEqual(constraint.dual, shadow_prices[constraint.name])
+        self.assertEqual(set(const.name for const in self.model.constraints), set(shadow_prices))
 
     def test_change_objective_can_handle_removed_vars(self):
         self.model.objective = self.interface.Objective(self.model.variables[0])
@@ -510,13 +518,41 @@ class AbstractModelTestCase(unittest.TestCase):
         self.model.update()
         self.model.objective = self.interface.Objective(self.model.variables[1] * 2)
 
-    def test_clone_model(self):
+    def test_clone_model_with_json(self):
         self.assertEquals(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
+        self.model.optimize()
+        opt = self.model.objective.value
         cloned_model = self.interface.Model.clone(self.model)
         self.assertEquals(cloned_model.configuration.verbosity, 3)
         self.assertEquals(len(cloned_model.variables), len(self.model.variables))
         self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        cloned_model.optimize()
+        self.assertAlmostEqual(cloned_model.objective.value, opt)
+
+    def test_clone_model_with_lp(self):
+        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.model.configuration.verbosity = 3
+        self.model.optimize()
+        opt = self.model.objective.value
+        cloned_model = self.interface.Model.clone(self.model, use_lp=True)
+        self.assertEquals(cloned_model.configuration.verbosity, 3)
+        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
+        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        cloned_model.optimize()
+        self.assertAlmostEqual(cloned_model.objective.value, opt)
+
+    def test_clone_model_without_json(self):
+        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.model.configuration.verbosity = 3
+        self.model.optimize()
+        opt = self.model.objective.value
+        cloned_model = self.interface.Model.clone(self.model, use_json=False)
+        self.assertEquals(cloned_model.configuration.verbosity, 3)
+        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
+        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        cloned_model.optimize()
+        self.assertAlmostEqual(cloned_model.objective.value, opt)
 
 
 @six.add_metaclass(abc.ABCMeta)

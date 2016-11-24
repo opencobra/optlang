@@ -26,18 +26,18 @@ import logging
 import sys
 
 import six
+import os
 from six.moves import StringIO
 
 log = logging.getLogger(__name__)
 
-import tempfile
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 from sympy.core.singleton import S
 import cplex
 from optlang import interface
-from optlang.util import inheritdocstring
+from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 
 Zero = S.Zero
@@ -298,10 +298,10 @@ class Constraint(interface.Constraint):
 
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
-    def __init__(self, *args, **kwargs):
-        super(Objective, self).__init__(*args, **kwargs)
+    def __init__(self, expression, sloppy=False, **kwargs):
+        super(Objective, self).__init__(expression, **kwargs)
         self._expression_expired = False
-        if not (self.is_Linear or self.is_Quadratic):
+        if not (sloppy or self.is_Linear or self.is_Quadratic):
             raise ValueError("Cplex only supports linear and quadratic objectives.")
 
     @property
@@ -589,21 +589,27 @@ class Model(interface.Model):
             raise TypeError("Provided problem is not a valid CPLEX model.")
         self.configuration = Configuration(problem=self, verbosity=0)
 
+    @classmethod
+    def from_lp(cls, lp_form):
+        problem = cplex.Cplex()
+        with TemporaryFilename(suffix=".lp", content=lp_form) as tmp_file_name:
+            problem.read(tmp_file_name)
+        model = cls(problem=problem)
+        return model
+
     def __getstate__(self):
         self.update()
-        with tempfile.NamedTemporaryFile(suffix=".sav", delete=True) as tmp_file:
-            tmp_file_name = tmp_file.name
+        with TemporaryFilename(suffix=".sav") as tmp_file_name:
             self.problem.write(tmp_file_name)
-            with open(tmp_file_name, 'rb') as tmp_file:
+            with open(tmp_file_name, "rb") as tmp_file:
                 cplex_binary = tmp_file.read()
         repr_dict = {'cplex_binary': cplex_binary, 'status': self.status, 'config': self.configuration}
         return repr_dict
 
     def __setstate__(self, repr_dict):
-        with tempfile.NamedTemporaryFile(suffix=".sav", delete=True) as tmp_file:
-            tmp_file_name = tmp_file.name
-            with open(tmp_file_name, 'wb') as tmp_file:
-                tmp_file.write(repr_dict['cplex_binary'])
+        with TemporaryFilename(suffix=".sav") as tmp_file_name:
+            with open(tmp_file_name, "wb") as tmp_file:
+                tmp_file.write(repr_dict["cplex_binary"])
             problem = cplex.Cplex()
             # turn off logging completely, get's configured later
             problem.set_error_stream(None)
@@ -677,13 +683,13 @@ class Model(interface.Model):
         return collections.OrderedDict(
             zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
 
-    def __str__(self):
-        with tempfile.NamedTemporaryFile(suffix=".lp", delete=True) as tmp_file:
-            tmp_file_name = tmp_file.name
+    def to_lp(self):
+        self.update()
+        with TemporaryFilename(suffix=".lp") as tmp_file_name:
             self.problem.write(tmp_file_name)
             with open(tmp_file_name) as tmp_file:
-                cplex_form = tmp_file.read()
-        return cplex_form
+                lp_form = tmp_file.read()
+        return lp_form
 
     def _optimize(self):
         self.problem.solve()
