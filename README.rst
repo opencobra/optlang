@@ -33,7 +33,7 @@ Then you could install `swiglpk <https://github.com/biosustain/swiglpk>`_
 
     pip install swiglpk
     
-to solve your optimization problems (see below for further supported solvers).
+to solve your optimization problems using `GLPK <https://www.gnu.org/software/glpk/>`_ (see below for further supported solvers).
 
 Example
 ~~~~~~~
