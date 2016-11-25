@@ -5,18 +5,19 @@ import unittest
 import json
 import os
 import optlang.interface
+import pickle
+import copy
 
 try:
     import scipy
 except ImportError as e:
-    if str(e).find('scipy') >= 0:
-        class TestMissingDependency(unittest.TestCase):
+    class TestMissingDependency(unittest.TestCase):
 
-            @unittest.skip('Missing dependency - ' + str(e))
-            def test_fail(self):
-                pass
-    else:
-        raise
+        @unittest.skip('Missing dependency - ' + str(e))
+        def test_fail(self):
+            pass
+
+
 else:
     from optlang import scipy_interface
     from optlang.tests import abstract_test_cases
@@ -46,8 +47,6 @@ else:
             self.model.add(self.var)
             self.model.update()
             self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
-            # self.var.type = "integer"
-            # self.assertEqual(self.var.type, "integer")
 
         @unittest.skip("Scipy doesn't support duals")
         def test_get_dual(self):
@@ -141,26 +140,19 @@ else:
 
         @unittest.skip("Not implemented yet")
         def test_init_from_existing_problem(self):
-            inner_prob = self.model.problem
-            self.assertEqual(len(self.model.variables), glp_get_num_cols(inner_prob))
-            self.assertEqual(len(self.model.constraints), glp_get_num_rows(inner_prob))
-            self.assertEqual(self.model.variables.keys(),
-                             [glp_get_col_name(inner_prob, i) for i in range(1, glp_get_num_cols(inner_prob) + 1)])
-            self.assertEqual(self.model.constraints.keys(),
-                             [glp_get_row_name(inner_prob, j) for j in range(1, glp_get_num_rows(inner_prob) + 1)])
+            pass
 
         @unittest.skip("Not implemented yet")
         def test_add_non_cplex_conform_variable(self):
-            var = Variable('12x!!@#5_3', lb=-666, ub=666)
+            var = self.interface.Variable('12x!!@#5_3', lb=-666, ub=666)
             self.assertEqual(var.index, None)
             self.model.add(var)
             self.assertTrue(var in self.model.variables.values())
-            self.assertEqual(var.name, glp_get_col_name(self.model.problem, var.index))
             self.assertEqual(self.model.variables['12x!!@#5_3'].lb, -666)
             self.assertEqual(self.model.variables['12x!!@#5_3'].ub, 666)
-            repickled = pickle.loads(pickle.dumps(self.model))
-            var_from_pickle = repickled.variables['12x!!@#5_3']
-            self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle.index))
+            # repickled = pickle.loads(pickle.dumps(self.model))
+            # var_from_pickle = repickled.variables['12x!!@#5_3']
+            # self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle.index))
 
         def test_add_constraints(self):
             x = self.interface.Variable('x', lb=0, ub=1, type='continuous')
@@ -183,129 +175,34 @@ else:
 
         @unittest.skip("")
         def test_change_of_constraint_is_reflected_in_low_level_solver(self):
-            x = Variable('x', lb=-83.3, ub=1324422.)
-            y = Variable('y', lb=-181133.3, ub=12000.)
-            constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
-            self.assertEqual(constraint.index, None)
-            self.model.add(constraint)
-            self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
-            self.assertEqual(constraint.index, 73)
-            z = Variable('z', lb=3, ub=10, type='integer')
-            self.assertEqual(z.index, None)
-            constraint += 77. * z
-            self.assertEqual(z.index, 98)
-            self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
-            print(self.model)
-            self.assertEqual(constraint.index, 73)
+            pass
 
         @unittest.skip("")
         def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
-            x = Variable('x', lb=-83.3, ub=1324422.)
-            y = Variable('y', lb=-181133.3, ub=12000.)
-            constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
-            self.model.add(constraint)
-            z = Variable('z', lb=2, ub=5, type='integer')
-            constraint += 77. * z
-            self.model.remove(constraint)
-            self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
+            pass
 
         @unittest.skip("")
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
-            x = Variable('x', lb=-83.3, ub=1324422.)
-            y = Variable('y', lb=-181133.3, ub=12000.)
-            objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
-            self.model.objective = objective
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-            self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
-            self.assertEqual(glp_get_obj_coef(self.model.problem, y.index), 0.4)
-            for i in range(1, glp_get_num_cols(self.model.problem) + 1):
-                if i != x.index and i != y.index:
-                    self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
-            z = Variable('z', lb=4, ub=4, type='integer')
-            self.model.objective += 77. * z
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-            self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
-            self.assertEqual(glp_get_obj_coef(self.model.problem, y.index), 0.4)
-            self.assertEqual(glp_get_obj_coef(self.model.problem, z.index), 77.)
-            for i in range(1, glp_get_num_cols(self.model.problem) + 1):
-                if i != x.index and i != y.index and i != z.index:
-                    self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
+            pass
 
         @unittest.skip("")
         def test_change_variable_bounds(self):
-            inner_prob = self.model.problem
-            inner_problem_bounds = [(glp_get_col_lb(inner_prob, i), glp_get_col_ub(inner_prob, i)) for i in
-                                    range(1, glp_get_num_cols(inner_prob) + 1)]
-            bounds = [(var.lb, var.ub) for var in self.model.variables.values()]
-            self.assertEqual(bounds, inner_problem_bounds)
-            for var in self.model.variables.values():
-                var.lb = random.uniform(-1000, 1000)
-                var.ub = random.uniform(var.lb, 1000)
-            inner_problem_bounds_new = [(glp_get_col_lb(inner_prob, i), glp_get_col_ub(inner_prob, i)) for i in
-                                        range(1, glp_get_num_cols(inner_prob) + 1)]
-            bounds_new = [(var.lb, var.ub) for var in self.model.variables.values()]
-            self.assertNotEqual(bounds, bounds_new)
-            self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
-            self.assertEqual(bounds_new, inner_problem_bounds_new)
+            pass
 
         @unittest.skip("")
         def test_change_constraint_bounds(self):
-            inner_prob = self.model.problem
-            inner_problem_bounds = [(glp_get_row_lb(inner_prob, i), glp_get_row_ub(inner_prob, i)) for i in
-                                    range(1, glp_get_num_rows(inner_prob) + 1)]
-            bounds = [(constr.lb, constr.ub) for constr in self.model.constraints]
-            self.assertEqual(bounds, inner_problem_bounds)
-            for constr in self.model.constraints:
-                constr.lb = random.uniform(-1000, constr.ub)
-                constr.ub = random.uniform(constr.lb, 1000)
-            inner_problem_bounds_new = [(glp_get_row_lb(inner_prob, i), glp_get_row_ub(inner_prob, i)) for i in
-                                        range(1, glp_get_num_rows(inner_prob) + 1)]
-            bounds_new = [(constr.lb, constr.ub) for constr in self.model.constraints]
-            self.assertNotEqual(bounds, bounds_new)
-            self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
-            self.assertEqual(bounds_new, inner_problem_bounds_new)
+            pass
 
         def test_initial_objective(self):
             self.assertIn('1.0*BIOMASS_Ecoli_core_w_GAM', self.model.objective.expression.__str__(), )
 
-        @unittest.skip("")
+        @unittest.skip("Not implemented yet")
         def test_iadd_objective(self):
-            v2, v3 = self.model.variables.values()[1:3]
-            self.model.objective += 2. * v2 - 3. * v3
-            obj_coeff = list()
-            for i in range(len(self.model.variables)):
-                obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
-            self.assertEqual(obj_coeff,
-                             [0.0, 1.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0,
-                              0.0]
-                             )
+            pass
 
-        @unittest.skip("")
+        @unittest.skip("Not implemented yet")
         def test_imul_objective(self):
-            self.model.objective *= 2.
-            obj_coeff = list()
-            for i in range(len(self.model.variables)):
-                obj_coeff.append(glp_get_obj_coef(self.model.problem, i))
-            self.assertEqual(obj_coeff,
-                             [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0,
-                              0.0]
-                             )
+            pass
 
         @unittest.skip("Not implemented yet")
         def test_set_copied_objective(self):
@@ -319,28 +216,18 @@ else:
             status = self.model.optimize()
             self.assertEqual(status, 'time_limit')
 
-        @unittest.skip("")
+        @unittest.skip("Not implemented yet")
         def test_set_linear_coefficients_objective(self):
             self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
-            self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
+            # self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
 
         @unittest.skip("")
         def test_instantiating_model_with_different_solver_problem_raises(self):
-            self.assertRaises(TypeError, Model, problem='Chicken soup')
+            self.assertRaises(TypeError, self.interface.Model, problem='Chicken soup')
 
-        @unittest.skip("")
+        @unittest.skip("Not implemented yet")
         def test_set_linear_coefficients_constraint(self):
-            constraint = self.model.constraints.M_atp_c
-            constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
-            num_cols = glp_get_num_cols(self.model.problem)
-            ia = intArray(num_cols + 1)
-            da = doubleArray(num_cols + 1)
-            index = constraint.index
-            num = glp_get_mat_row(self.model.problem, index, ia, da)
-            for i in range(1, num + 1):
-                col_name = glp_get_col_name(self.model.problem, ia[i])
-                if col_name == 'R_Biomass_Ecoli_core_w_GAM':
-                    self.assertEqual(da[i], 666.)
+            pass
 
         def test_shadow_prices(self):
             self.model.optimize()
@@ -384,4 +271,4 @@ else:
             self.assertRaises(ValueError, setattr, self.model.variables[-1], "type", "integer")
 
         def test_add_integer_var(self):
-            self.assertRaises(ValueError, self.interface.Variable,'int_var', lb=-13, ub=499., type='integer')
+            self.assertRaises(ValueError, self.interface.Variable, 'int_var', lb=-13, ub=499., type='integer')
