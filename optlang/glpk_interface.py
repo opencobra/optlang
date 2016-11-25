@@ -135,11 +135,9 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
-        old_name = getattr(self, 'name', None)
-        self._name = value
         if getattr(self, 'problem', None) is not None:
-            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
-            self.problem.variables.update_key(old_name)
+            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
+        super(Variable, Variable).name.fset(self, value)
 
 
 @six.add_metaclass(inheritdocstring)
@@ -658,7 +656,6 @@ class Model(interface.Model):
                 self.configuration.presolve = True
                 status = self._run_glp_mip()
                 self.configuration.presolve = original_presolve_setting
-        self._status = status
         return status
 
     def _add_variables(self, variables):

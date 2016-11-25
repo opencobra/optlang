@@ -695,8 +695,8 @@ class Model(interface.Model):
         self.problem.solve()
         cplex_status = self.problem.solution.get_status()
         self._original_status = self.problem.solution.get_status_string()
-        self._status = _CPLEX_STATUS_TO_STATUS[cplex_status]
-        return self.status
+        status = _CPLEX_STATUS_TO_STATUS[cplex_status]
+        return status
 
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):
         lb = [

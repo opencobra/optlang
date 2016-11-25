@@ -105,7 +105,7 @@ def list_available_solvers():
     dict
         A dict like {'GLPK': True, 'GUROBI': False, ...}
     """
-    solvers = dict(GUROBI=False, GLPK=False, MOSEK=False, CPLEX=False)
+    solvers = dict(GUROBI=False, GLPK=False, MOSEK=False, CPLEX=False, SCIPY=False)
     try:
         import gurobipy
 
@@ -134,6 +134,14 @@ def list_available_solvers():
         log.debug('CPLEX python bindings found at %s' % os.path.dirname(cplex.__file__))
     except:
         log.debug('CPLEX python bindings not available.')
+    try:
+        from scipy import optimize
+        optimize.linprog
+
+        solvers["SCIPY"] = True
+        log.debug("Scipy linprog function found at %s" % optimize.__file__)
+    except (ImportError, AttributeError):
+        log.debug("Scipy solver not available")
     return solvers
 
 

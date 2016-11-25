@@ -56,6 +56,9 @@ _GUROBI_STATUS_TO_STATUS = {
     gurobipy.GRB.INPROGRESS: interface.INPROGRESS
 }
 
+_LP_METHODS = {"auto": -1, "primal": 0, "dual": 1, "barrier": 2, "concurrent": 3, "deterministic_concurrent": 4}
+_REVERSE_LP_METHODS = {v: k for k, v in _LP_METHODS.items()}
+
 _VTYPE_TO_GUROBI_VTYPE = {'continuous': gurobipy.GRB.CONTINUOUS, 'integer': gurobipy.GRB.INTEGER,
                           'binary': gurobipy.GRB.BINARY}
 _GUROBI_VTYPE_TO_VTYPE = dict((val, key) for key, val in _VTYPE_TO_GUROBI_VTYPE.items())
@@ -341,16 +344,22 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, lp_method='primal', tolerance=1e-9, presolve=False, verbosity=0, timeout=None,
-                 solution_target="auto", qp_method="primal", *args, **kwargs):
+    def __init__(self, lp_method='primal', presolve=False, verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
-        self.tolerance = tolerance
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
-        self.solution_target = solution_target
-        self.qp_method = qp_method
+
+    @property
+    def lp_method(self):
+        return _REVERSE_LP_METHODS[self.problem.problem.params.Method]
+
+    @lp_method.setter
+    def lp_method(self, value):
+        if value not in _LP_METHODS:
+            raise ValueError("Invalid LP method. Please choose among: " + str(list(_LP_METHODS)))
+        self.problem.problem.params.Method = _LP_METHODS[value]
 
     @property
     def presolve(self):
@@ -528,9 +537,10 @@ class Model(interface.Model):
         super(Model, self).update(callback=self.problem.update)
 
     def _optimize(self):
+        self.problem.update()
         self.problem.optimize()
-        self._status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
-        return self.status
+        status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
+        return status
 
     def _add_variables(self, variables):
         super(Model, self)._add_variables(variables)
