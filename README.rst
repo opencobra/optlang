@@ -15,7 +15,7 @@ Optlang takes advantage of the symbolic math library
 and constraints to be easily formulated from symbolic expressions of
 variables (see examples).
 
-Please show us some love by staring this repo if you find optlang useful!
+Show us some love by staring this repo if you find optlang useful!
 
 Installation
 ~~~~~~~~~~~~
