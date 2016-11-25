@@ -132,16 +132,6 @@ Future outlook
 The optlang `trello board <https://trello.com/b/aiwfbVKO/optlang>`__
 also provides a good overview of the project's roadmap.
 
-Requirements
-~~~~~~~~~~~~
-
--  Models should always be serializable to common problem formulation
-   languages
-   (`CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__,
-   `GAMS <http://www.gams.com/>`__, etc.)
--  Models should be picklable
--  Common solver configuration interface (presolver, MILP gap, etc.)
-
 .. |PyPI| image:: https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000
    :target: https://pypi.python.org/pypi/optlang
 .. |License| image:: http://img.shields.io/badge/license-APACHE2-blue.svg
