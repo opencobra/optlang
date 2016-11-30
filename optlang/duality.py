@@ -16,7 +16,8 @@
 from sympy import Add, Mul
 
 
-def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_standard_form=True):
+# This function is horribly complex. Should probably be refactored
+def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_standard_form=True):  # NOQA
     """
     A mathematical optimization problem can be viewed as a primal and a dual problem. If the primal problem is
     a minimization problem the dual is a maximization problem, and the optimal value of the dual is a lower bound of
