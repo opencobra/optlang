@@ -18,6 +18,7 @@ from optlang.glpk_interface import Model, Variable, Constraint, Objective
 from optlang.duality import convert_linear_problem_to_dual
 import optlang
 
+
 class DualityTestCase(unittest.TestCase):
     def setUp(self):
         x = Variable("x", lb=0)
@@ -71,7 +72,7 @@ class DualityTestCase(unittest.TestCase):
 
     def test_non_linear_raises(self):
         model = optlang.interface.Model.clone(self.model)  # GLPK interface doesn't allow non-linear constraints
-        c4 = optlang.interface.Constraint(2* model.variables["x"]**2, ub=7)
+        c4 = optlang.interface.Constraint(2 * model.variables["x"]**2, ub=7)
         model.add(c4)
         self.assertRaises(ValueError, convert_linear_problem_to_dual, model)
 
@@ -86,7 +87,3 @@ class DualityTestCase(unittest.TestCase):
         dual_2 = convert_linear_problem_to_dual(self.model, maintain_standard_form=False, infinity=1000)
         self.assertTrue(all(var.lb >= 0 for var in dual.variables))
         self.assertFalse(all(var.lb >= 0 for var in dual_2.variables))
-
-
-
-
