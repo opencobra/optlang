@@ -16,8 +16,8 @@
 from sympy import Add, Mul
 
 
-# This function is horribly complex. Should probably be refactored
-def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_standard_form=True):  # NOQA
+# This function is very complex. Should maybe be refactored
+def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_standard_form=True, prefix="dual_"):  # NOQA
     """
     A mathematical optimization problem can be viewed as a primal and a dual problem. If the primal problem is
     a minimization problem the dual is a maximization problem, and the optimal value of the dual is a lower bound of
@@ -27,8 +27,7 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
 
     This functions takes an optlang Model representing a primal linear problem and returns a new Model representing
     the dual optimization problem. The provided model must have a linear objective, linear constraints and only
-    continuous variables. Furthermore, the problem must be in standard form, i.e. all variables should be strictly
-    positive.
+    continuous variables. Furthermore, the problem must be in standard form, i.e. all variables should be non-negative.
     Both minimization and maximization problems are allowed. The objective direction of the dual will always be
     opposite of the primal.
 
@@ -43,7 +42,12 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
         If not None this value will be used as bounds instead of unbounded variables.
     maintain_standard_form: Boolean (default True)
         If False the returned dual problem will not be in standard form, but will have fewer variables and/or constraints
-    :return:
+    prefix: str
+        The string that will be prepended to all variable and constraint names in the returned dual problem.
+
+    Returns:
+    ----------
+    dual_problem: optlang.interface.Model (same solver as the primal)
     """
     dual_model = model.interface.Model()
     maximization = model.objective.direction == "max"
@@ -66,11 +70,11 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
         if constraint.expression == 0:
             continue  # Skip empty constraint
         if not (sloppy or constraint.is_Linear):
-            raise NotImplementedError("Non-linear problems are not supported: " + str(constraint))
+            raise ValueError("Non-linear problems are not supported: " + str(constraint))
         if constraint.lb is None and constraint.ub is None:
             continue  # Skip free constraint
         if not maintain_standard_form and constraint.lb == constraint.ub:
-            const_var = model.interface.Variable("dual_" + constraint.name + "_constraint", lb=neg_infinity, ub=infinity)
+            const_var = model.interface.Variable(prefix + constraint.name + "_constraint", lb=neg_infinity, ub=infinity)
             dual_model.add(const_var)
             if constraint.lb != 0:
                 dual_objective[const_var] = sign * constraint.lb
@@ -78,12 +82,12 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
                 coefficients.setdefault(variable.name, {})[const_var] = sign * coef
         else:
             if constraint.lb is not None:
-                lb_var = model.interface.Variable("dual_" + constraint.name + "_constraint_lb", lb=0, ub=infinity)
+                lb_var = model.interface.Variable(prefix + constraint.name + "_constraint_lb", lb=0, ub=infinity)
                 dual_model.add(lb_var)
                 if constraint.lb != 0:
                     dual_objective[lb_var] = -sign * constraint.lb
             if constraint.ub is not None:
-                ub_var = model.interface.Variable("dual_" + constraint.name + "_constraint_ub", lb=0, ub=infinity)
+                ub_var = model.interface.Variable(prefix + constraint.name + "_constraint_ub", lb=0, ub=infinity)
                 dual_model.add(ub_var)
                 if constraint.ub != 0:
                     dual_objective[ub_var] = sign * constraint.ub
@@ -105,22 +109,20 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
     # Add dual variables from primal bounds
     for variable in model.variables:
         if not (sloppy or variable.type == "continuous"):
-            raise NotImplementedError("Integer variables are currently not supported: " + str(variable))
-        if sloppy and (variable.lb is None or variable.lb < 0):
+            raise ValueError("Integer variables are not supported: " + str(variable))
+        if not sloppy and (variable.lb is None or variable.lb < 0):
             raise ValueError("Problem is not in standard form (" + variable.name + " can be negative)")
         if variable.lb > 0:
-            bound_var = model.interface.Variable("dual_" + variable.name + "_lb", lb=0, ub=infinity)
+            bound_var = model.interface.Variable(prefix + variable.name + "_lb", lb=0, ub=infinity)
             dual_model.add(bound_var)
             coefficients.setdefault(variable.name, {})[bound_var] = -sign * 1
             dual_objective[bound_var] = -sign * variable.lb
         if variable.ub is not None:
-            bound_var = model.interface.Variable("dual_" + variable.name + "_ub", lb=0, ub=infinity)
+            bound_var = model.interface.Variable(prefix + variable.name + "_ub", lb=0, ub=infinity)
             dual_model.add(bound_var)
             coefficients.setdefault(variable.name, {})[bound_var] = sign * 1
             if variable.ub != 0:
                 dual_objective[bound_var] = sign * variable.ub
-
-    dual_model.update()
 
     # Add dual constraints from primal objective
     primal_objective_dict = model.objective.expression.as_coefficients_dict()
@@ -128,9 +130,9 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
         expr = Add(*((coef * dual_var) for dual_var, coef in coefficients[variable.name].items()))
         obj_coef = primal_objective_dict[variable]
         if maximization:
-            const = model.interface.Constraint(expr, lb=obj_coef, name="dual_" + variable.name)
+            const = model.interface.Constraint(expr, lb=obj_coef, name=prefix + variable.name)
         else:
-            const = model.interface.Constraint(expr, ub=obj_coef, name="dual_" + variable.name)
+            const = model.interface.Constraint(expr, ub=obj_coef, name=prefix + variable.name)
         dual_model.add(const)
 
     # Make dual objective
