@@ -192,4 +192,3 @@ class DualityTestCase(unittest.TestCase):
 
         self.assertEqual(self.model.objective.value, 31)
         self.assertEqual(dual.objective.value, 31)
-
