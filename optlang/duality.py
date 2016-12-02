@@ -17,7 +17,7 @@ from sympy import Add, Mul
 
 
 # This function is very complex. Should maybe be refactored
-def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_standard_form=True, prefix="dual_"):  # NOQA
+def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_standard_form=True, prefix="dual_", dual_model=None):  # NOQA
     """
     A mathematical optimization problem can be viewed as a primal and a dual problem. If the primal problem is
     a minimization problem the dual is a maximization problem, and the optimal value of the dual is a lower bound of
@@ -44,12 +44,17 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
         If False the returned dual problem will not be in standard form, but will have fewer variables and/or constraints
     prefix: str
         The string that will be prepended to all variable and constraint names in the returned dual problem.
+    dual_model: optlang.interface.Model or None (default)
+        If not None, the dual variables and constraints will be added to this model. Note the objective will also be
+        set to the dual objective. If None a new model will be created.
 
     Returns:
     ----------
     dual_problem: optlang.interface.Model (same solver as the primal)
     """
-    dual_model = model.interface.Model()
+    if dual_model is None:
+        dual_model = model.interface.Model()
+
     maximization = model.objective.direction == "max"
 
     if infinity is not None:
@@ -92,14 +97,13 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
                 if constraint.ub != 0:
                     dual_objective[ub_var] = sign * constraint.ub
 
+            assert constraint.expression.is_Add or constraint.expression.is_Mul, \
+                "Invalid expression type: " + str(type(constraint.expression))
             if constraint.expression.is_Add:
                 coefficients_dict = constraint.expression.as_coefficients_dict()
-            elif constraint.expression.is_Mul:
+            else:  # constraint.expression.is_Mul:
                 coefficients_dict = {constraint.expression.args[1]: constraint.expression.args[0]}
-            else:
-                raise ValueError(
-                    "Expression of constraint is invalid: " + constraint.name + ", " + str(constraint.expression)
-                )
+
             for variable, coef in coefficients_dict.items():
                 if constraint.lb is not None:
                     coefficients.setdefault(variable.name, {})[lb_var] = -sign * coef
