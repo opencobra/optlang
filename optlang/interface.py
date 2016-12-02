@@ -244,6 +244,20 @@ class Variable(sympy.Symbol):
         if self.problem is not None:
             self.problem._pending_modifications.var_ub.append((self, value))
 
+    def set_bounds(self, lb, ub):
+        """
+        Change the lower and upper bounds of a variable.
+        """
+        if lb is not None and ub is not None and lb > ub:
+            raise ValueError(
+                "The provided lower bound {} is larger than the provided upper bound {}".format(lb, ub)
+            )
+        self._lb = lb
+        self._ub = ub
+        if self.problem is not None:
+            self.problem._pending_modifications.var_lb.append((self, lb))
+            self.problem._pending_modifications.var_ub.append((self, ub))
+
     @property
     def type(self):
         """Variable type ('either continuous, integer, or binary'.)"""

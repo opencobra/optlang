@@ -300,6 +300,11 @@ class Variable(interface.Variable):
         if self.problem:
             self.problem.problem.set_variable_bounds(self.name, self.lb, self.ub)
 
+    def set_bounds(self, lb, ub):
+        super(Variable, self).set_bounds(lb, ub)
+        if self.problem:
+            self.problem.problem.set_variable_bounds(self.name, lb, ub)
+
     @interface.Variable.type.setter
     def type(self, value):
         if value != "continuous":

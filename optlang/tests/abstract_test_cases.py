@@ -105,6 +105,34 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.model.optimize()
         self.assertEqual(self.var.primal, -4)
 
+    def test_set_bounds_method(self):
+        var = self.interface.Variable("test", lb=-10)
+        c = self.interface.Constraint(var, lb=-100)
+        model = self.interface.Model()
+        obj = self.interface.Objective(var)
+        model.add(c)
+        model.objective = obj
+
+        for lb, ub in ((1, 10), (-1, 5), (11, 12)):
+            obj.direction = "max"
+            var.set_bounds(lb, ub)
+            model.optimize()
+            self.assertAlmostEqual(var.primal, ub)
+            obj.direction = "min"
+            model.optimize()
+            self.assertAlmostEqual(var.primal, lb)
+
+        var.set_bounds(None, 0)
+        model.optimize()
+        self.assertAlmostEqual(var.primal, -100)
+
+        obj.direction = "max"
+        var.set_bounds(1, None)
+        self.assertEqual(model.optimize(), optlang.interface.UNBOUNDED)
+
+        self.assertRaises(ValueError, var.set_bounds, 2, 1)
+
+
 
     def test_set_bounds_to_none(self):
         model = self.model

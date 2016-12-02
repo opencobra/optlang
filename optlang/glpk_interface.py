@@ -104,6 +104,11 @@ class Variable(interface.Variable):
         if self.problem is not None:
             self.problem._glpk_set_col_bounds(self)
 
+    def set_bounds(self, lb, ub):
+        super(Variable, self).set_bounds(lb, ub)
+        if self.problem is not None:
+            self.problem._glpk_set_col_bounds(self)
+
     @interface.Variable.type.setter
     def type(self, value):
         try:
