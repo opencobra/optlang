@@ -81,7 +81,7 @@ class Variable(interface.Variable):
         super(Variable, self).__init__(name, **kwargs)
 
     @property
-    def index(self):
+    def _index(self):
         if self.problem is not None:
             i = glp_find_col(self.problem.problem, str(self.name))
             if i != 0:
@@ -114,14 +114,14 @@ class Variable(interface.Variable):
                 " ".join(_VTYPE_TO_GLPK_VTYPE.keys())
             )
         if self.problem is not None:
-            glp_set_col_kind(self.problem.problem, self.index, glpk_kind)
+            glp_set_col_kind(self.problem.problem, self._index, glpk_kind)
         interface.Variable.type.fset(self, value)
 
     def _get_primal(self):
         if self.type == "continuous":
-            primal_from_solver = glp_get_col_prim(self.problem.problem, self.index)
+            primal_from_solver = glp_get_col_prim(self.problem.problem, self._index)
         elif self.type in ("binary", "integer"):
-            primal_from_solver = glp_mip_col_val(self.problem.problem, self.index)
+            primal_from_solver = glp_mip_col_val(self.problem.problem, self._index)
         else:
             raise AssertionError("Unknown variable type")
         return primal_from_solver
@@ -129,7 +129,7 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         if self.problem:
-            return glp_get_col_dual(self.problem.problem, self.index)
+            return glp_get_col_dual(self.problem.problem, self._index)
         else:
             return None
 
@@ -156,7 +156,7 @@ class Constraint(interface.Constraint):
             col_num = glp_get_num_cols(self.problem.problem)
             ia = intArray(col_num + 1)
             da = doubleArray(col_num + 1)
-            nnz = glp_get_mat_row(self.problem.problem, self.index, ia, da)
+            nnz = glp_get_mat_row(self.problem.problem, self._index, ia, da)
             constraint_variables = [self.problem._variables[glp_get_col_name(self.problem.problem, ia[i])] for i in
                                     range(1, nnz + 1)]
             expression = sympy.Add._from_args(
@@ -199,7 +199,7 @@ class Constraint(interface.Constraint):
             self._problem = value
 
     @property
-    def index(self):
+    def _index(self):
         try:
             i = glp_find_row(self.problem.problem, str(self.name))
             if i != 0:
@@ -213,7 +213,7 @@ class Constraint(interface.Constraint):
     @property
     def primal(self):
         if self.problem is not None:
-            primal_from_solver = glp_get_row_prim(self.problem.problem, self.index)
+            primal_from_solver = glp_get_row_prim(self.problem.problem, self._index)
             # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
             return primal_from_solver
         else:
@@ -222,7 +222,7 @@ class Constraint(interface.Constraint):
     @property
     def dual(self):
         if self.problem is not None:
-            return glp_get_row_dual(self.problem.problem, self.index)
+            return glp_get_row_dual(self.problem.problem, self._index)
         else:
             return None
 
@@ -245,7 +245,7 @@ class Constraint(interface.Constraint):
             ia = intArray(num_cols + 1)
             va = doubleArray(num_cols + 1)
 
-            num_rows = glp_get_mat_row(self.problem.problem, self.index, ia, va)
+            num_rows = glp_get_mat_row(self.problem.problem, self._index, ia, va)
             variables_and_coefficients = {var.name: coeff for var, coeff in six.iteritems(coefficients)}
 
             final_variables_and_coefficients = {
@@ -257,10 +257,10 @@ class Constraint(interface.Constraint):
             va = doubleArray(num_cols + 1)
 
             for i, (name, coeff) in enumerate(six.iteritems(final_variables_and_coefficients)):
-                ia[i + 1] = self.problem._variables[name].index
+                ia[i + 1] = self.problem._variables[name]._index
                 va[i + 1] = coeff
 
-            glp_set_mat_row(problem, self.index, len(final_variables_and_coefficients), ia, va)
+            glp_set_mat_row(problem, self._index, len(final_variables_and_coefficients), ia, va)
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
@@ -318,7 +318,7 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         for variable, coefficient in coefficients.items():
-            glp_set_obj_coef(self.problem.problem, variable.index, coefficient)
+            glp_set_obj_coef(self.problem.problem, variable._index, coefficient)
         self._expression_expired = True
 
 
@@ -534,15 +534,15 @@ class Model(interface.Model):
         if self._objective is not None:
             variables = self.objective.variables
             for variable in variables:
-                if variable.index is not None:
-                    glp_set_obj_coef(self.problem, variable.index, 0.)
+                if variable._index is not None:
+                    glp_set_obj_coef(self.problem, variable._index, 0.)
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
 
         coef_dict, _ = parse_optimization_expression(value, linear=True)
 
         for var, coef in coef_dict.items():
-            glp_set_obj_coef(self.problem, var.index, float(coef))
+            glp_set_obj_coef(self.problem, var._index, float(coef))
 
         glp_set_obj_dir(
             self.problem,
@@ -665,13 +665,13 @@ class Model(interface.Model):
             glp_set_col_name(self.problem, index, str(variable.name))
             variable.problem = self
             self._glpk_set_col_bounds(variable)
-            glp_set_col_kind(self.problem, variable.index, _VTYPE_TO_GLPK_VTYPE[variable.type])
+            glp_set_col_kind(self.problem, variable._index, _VTYPE_TO_GLPK_VTYPE[variable.type])
         super(Model, self)._add_variables(variables)
 
     def _remove_variables(self, variables):
         if len(variables) > 0:
             if len(variables) > 350:
-                delete_indices = [variable.index - 1 for variable in variables]
+                delete_indices = [variable._index - 1 for variable in variables]
                 keep_indices = [i for i in range(0, len(self.variables)) if i not in delete_indices]
                 self._variables = self.variables.fromkeys(keep_indices)
             else:
@@ -680,7 +680,7 @@ class Model(interface.Model):
 
             num = intArray(len(variables) + 1)
             for i, variable in enumerate(variables):
-                num[i + 1] = variable.index
+                num[i + 1] = variable._index
             glp_del_cols(self.problem, len(variables), num)
 
             for variable in variables:
@@ -703,7 +703,7 @@ class Model(interface.Model):
 
             num_vars = len(coef_dict)
             for i, (var, coef) in enumerate(coef_dict.items()):
-                index_array[i + 1] = var.index
+                index_array[i + 1] = var._index
                 value_array[i + 1] = float(coef)
 
             glp_set_mat_row(self.problem, index, num_vars,
@@ -714,20 +714,20 @@ class Model(interface.Model):
     def _glpk_set_col_bounds(self, variable):
         if variable.lb is None and variable.ub is None:
             # 0.'s are ignored
-            glp_set_col_bnds(self.problem, variable.index, GLP_FR, 0., 0.)
+            glp_set_col_bnds(self.problem, variable._index, GLP_FR, 0., 0.)
         elif variable.lb is None:
             # 0. is ignored
-            glp_set_col_bnds(self.problem, variable.index,
+            glp_set_col_bnds(self.problem, variable._index,
                              GLP_UP, 0., float(variable.ub))
         elif variable.ub is None:
             # 0. is ignored
-            glp_set_col_bnds(self.problem, variable.index,
+            glp_set_col_bnds(self.problem, variable._index,
                              GLP_LO, float(variable.lb), 0.)
         elif variable.lb == variable.ub:
-            glp_set_col_bnds(self.problem, variable.index,
+            glp_set_col_bnds(self.problem, variable._index,
                              GLP_FX, float(variable.lb), float(variable.lb))
         elif variable.lb < variable.ub:
-            glp_set_col_bnds(self.problem, variable.index,
+            glp_set_col_bnds(self.problem, variable._index,
                              GLP_DB, float(variable.lb), float(variable.ub))
         elif variable.lb > variable.ub:
             raise ValueError(
@@ -741,20 +741,20 @@ class Model(interface.Model):
     def _glpk_set_row_bounds(self, constraint):
         if constraint.lb is None and constraint.ub is None:
             # 0.'s are ignored
-            glp_set_row_bnds(self.problem, constraint.index, GLP_FR, 0., 0.)
+            glp_set_row_bnds(self.problem, constraint._index, GLP_FR, 0., 0.)
         elif constraint.lb is None:
             # 0. is ignored
-            glp_set_row_bnds(self.problem, constraint.index,
+            glp_set_row_bnds(self.problem, constraint._index,
                              GLP_UP, 0., float(constraint.ub))
         elif constraint.ub is None:
             # 0. is ignored
-            glp_set_row_bnds(self.problem, constraint.index,
+            glp_set_row_bnds(self.problem, constraint._index,
                              GLP_LO, float(constraint.lb), 0.)
         elif constraint.lb == constraint.ub:
-            glp_set_row_bnds(self.problem, constraint.index,
+            glp_set_row_bnds(self.problem, constraint._index,
                              GLP_FX, float(constraint.lb), float(constraint.lb))
         elif constraint.lb < constraint.ub:
-            glp_set_row_bnds(self.problem, constraint.index,
+            glp_set_row_bnds(self.problem, constraint._index,
                              GLP_DB, float(constraint.lb), float(constraint.ub))
         elif constraint.lb > constraint.ub:
             raise ValueError(
@@ -767,7 +767,7 @@ class Model(interface.Model):
 
     def _remove_constraints(self, constraints):
         if len(constraints) > 0:
-            constraint_indices = [constraint.index for constraint in constraints]
+            constraint_indices = [constraint._index for constraint in constraints]
             super(Model, self)._remove_constraints(constraints)
             num = intArray(len(constraints) + 1)
             for i, constraint_index in enumerate(constraint_indices):
