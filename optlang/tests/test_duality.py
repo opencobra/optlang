@@ -76,6 +76,10 @@ class DualityTestCase(unittest.TestCase):
         model.add(c4)
         self.assertRaises(ValueError, convert_linear_problem_to_dual, model)
 
+    def test_non_continuous_raises(self):
+        self.model.variables["z"].type = "integer"
+        self.assertRaises(ValueError, convert_linear_problem_to_dual, self.model)
+
     def test_infinity(self):
         dual = convert_linear_problem_to_dual(self.model, infinity=1000)
         for var in dual.variables:
@@ -128,7 +132,7 @@ class DualityTestCase(unittest.TestCase):
         c2 = self.model.constraints[1]
         c2.ub = 1
         c2.lb = 1
-        dual = convert_linear_problem_to_dual(self.model)
+        dual = convert_linear_problem_to_dual(self.model, maintain_standard_form=False)
         primal_status = self.model.optimize()
         dual_status = dual.optimize()
 
@@ -137,3 +141,55 @@ class DualityTestCase(unittest.TestCase):
 
         self.assertEqual(self.model.objective.value, 32)
         self.assertEqual(dual.objective.value, 32)
+
+    def test_empty_constraint(self):
+        c4 = Constraint(0, lb=0, ub=13)
+        self.model.add(c4)
+        dual = convert_linear_problem_to_dual(self.model)
+        primal_status = self.model.optimize()
+        dual_status = dual.optimize()
+
+        self.assertEqual(primal_status, optlang.interface.OPTIMAL)
+        self.assertEqual(dual_status, optlang.interface.OPTIMAL)
+
+        self.assertEqual(self.model.objective.value, 31)
+        self.assertEqual(dual.objective.value, 31)
+
+    def test_free_constraint(self):
+        c4 = Constraint(self.model.variables["x"], lb=None, ub=None)
+        self.model.add(c4)
+        dual = convert_linear_problem_to_dual(self.model)
+        primal_status = self.model.optimize()
+        dual_status = dual.optimize()
+
+        self.assertEqual(primal_status, optlang.interface.OPTIMAL)
+        self.assertEqual(dual_status, optlang.interface.OPTIMAL)
+
+        self.assertEqual(self.model.objective.value, 31)
+        self.assertEqual(dual.objective.value, 31)
+
+    def test_zero_bound_variable(self):
+        w = Variable("w", lb=0, ub=0)
+        self.model.add(w)
+        dual = convert_linear_problem_to_dual(self.model)
+        primal_status = self.model.optimize()
+        dual_status = dual.optimize()
+
+        self.assertEqual(primal_status, optlang.interface.OPTIMAL)
+        self.assertEqual(dual_status, optlang.interface.OPTIMAL)
+
+        self.assertEqual(self.model.objective.value, 31)
+        self.assertEqual(dual.objective.value, 31)
+
+    def test_explicit_model(self):
+        dual = Model()
+        convert_linear_problem_to_dual(self.model, dual_model=dual)
+        primal_status = self.model.optimize()
+        dual_status = dual.optimize()
+
+        self.assertEqual(primal_status, optlang.interface.OPTIMAL)
+        self.assertEqual(dual_status, optlang.interface.OPTIMAL)
+
+        self.assertEqual(self.model.objective.value, 31)
+        self.assertEqual(dual.objective.value, 31)
+
