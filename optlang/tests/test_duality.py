@@ -87,3 +87,53 @@ class DualityTestCase(unittest.TestCase):
         dual_2 = convert_linear_problem_to_dual(self.model, maintain_standard_form=False, infinity=1000)
         self.assertTrue(all(var.lb >= 0 for var in dual.variables))
         self.assertFalse(all(var.lb >= 0 for var in dual_2.variables))
+
+    def test_variable_with_positive_lower_bound(self):
+        self.model.variables["x"].lb = 1
+        dual = convert_linear_problem_to_dual(self.model)
+        primal_status = self.model.optimize()
+        dual_status = dual.optimize()
+
+        self.assertEqual(primal_status, optlang.interface.OPTIMAL)
+        self.assertEqual(dual_status, optlang.interface.OPTIMAL)
+
+        self.assertEqual(self.model.objective.value, 31)
+        self.assertEqual(dual.objective.value, 31)
+
+    def test_variable_with_upper_bound(self):
+        self.model.variables["x"].ub = 4
+        dual = convert_linear_problem_to_dual(self.model)
+        primal_status = self.model.optimize()
+        dual_status = dual.optimize()
+
+        self.assertEqual(primal_status, optlang.interface.OPTIMAL)
+        self.assertEqual(dual_status, optlang.interface.OPTIMAL)
+
+        self.assertEqual(self.model.objective.value, 7)
+        self.assertEqual(dual.objective.value, 7)
+
+    def test_with_minimization(self):
+        self.model.objective = Objective(self.model.objective.expression * -1, direction="min")
+        dual = convert_linear_problem_to_dual(self.model)
+        primal_status = self.model.optimize()
+        dual_status = dual.optimize()
+
+        self.assertEqual(primal_status, optlang.interface.OPTIMAL)
+        self.assertEqual(dual_status, optlang.interface.OPTIMAL)
+
+        self.assertEqual(self.model.objective.value, -31)
+        self.assertEqual(dual.objective.value, -31)
+
+    def test_equality_constraint_not_zero(self):
+        c2 = self.model.constraints[1]
+        c2.ub = 1
+        c2.lb = 1
+        dual = convert_linear_problem_to_dual(self.model)
+        primal_status = self.model.optimize()
+        dual_status = dual.optimize()
+
+        self.assertEqual(primal_status, optlang.interface.OPTIMAL)
+        self.assertEqual(dual_status, optlang.interface.OPTIMAL)
+
+        self.assertEqual(self.model.objective.value, 32)
+        self.assertEqual(dual.objective.value, 32)
