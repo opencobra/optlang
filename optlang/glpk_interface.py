@@ -577,7 +577,7 @@ class Model(interface.Model):
         return reduced_costs
 
     @property
-    def dual_values(self):
+    def constraint_values(self):
         dual_values = collections.OrderedDict()
         for index, constraint in enumerate(self.constraints):
             value = glp_get_row_prim(self.problem, index + 1)

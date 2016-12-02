@@ -500,7 +500,7 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_dual_values(self):
         self.model.optimize()
-        constraint_primals = self.model.dual_values  # TODO Fix this method name
+        constraint_primals = self.model.constraint_values  # TODO Fix this method name
         for constraint in self.model.constraints:
             self.assertEqual(constraint.primal, constraint_primals[constraint.name])
         self.assertEqual(set(const.name for const in self.model.constraints), set(constraint_primals))

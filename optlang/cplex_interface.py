@@ -673,7 +673,7 @@ class Model(interface.Model):
             zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
 
     @property
-    def dual_values(self):
+    def constraint_values(self):
         return collections.OrderedDict(
             zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
 

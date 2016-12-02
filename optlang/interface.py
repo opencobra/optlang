@@ -1180,7 +1180,7 @@ class Model(object):
         return collections.OrderedDict([(variable.name, variable.dual) for variable in self.variables])
 
     @property
-    def dual_values(self):
+    def constraint_values(self):
         """The primal values of all constraints.
 
         Returns
