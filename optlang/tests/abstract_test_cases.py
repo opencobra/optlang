@@ -79,8 +79,8 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.assertRaises(ValueError, setattr, self.model.variables[0], 'lb', 100.)
 
     def test_setting_nonnumerical_bounds_raises(self):
-        self.assertRaises(TypeError, setattr, self.var, "lb", "Ministrone")
-        self.assertRaises(TypeError, setattr, self.var, "ub", "Ministrone")
+        self.assertRaises(TypeError, setattr, self.var, "lb", "Minestrone")
+        self.assertRaises(TypeError, setattr, self.var, "ub", "Minestrone")
         self.model.add(self.var)
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'lb', 'Chicken soup')
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'ub', 'Chicken soup')
@@ -132,8 +132,6 @@ class AbstractVariableTestCase(unittest.TestCase):
 
         self.assertRaises(ValueError, var.set_bounds, 2, 1)
 
-
-
     def test_set_bounds_to_none(self):
         model = self.model
         var = self.var
@@ -156,7 +154,11 @@ class AbstractConstraintTestCase(unittest.TestCase):
     def setUp(self):
         with open(TESTMODELPATH) as infile:
             self.model = self.interface.Model.from_json(json.load(infile))
-        self.constraint = self.interface.Constraint(self.interface.Variable('chip') + self.interface.Variable('chap'), name='woodchips', lb=100)
+        self.constraint = self.interface.Constraint(
+            self.interface.Variable('chip') + self.interface.Variable('chap'),
+            name='woodchips',
+            lb=100
+        )
 
     def test_indicator_constraint_support(self):
         if self.interface.Constraint._INDICATOR_CONSTRAINT_SUPPORT:
