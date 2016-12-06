@@ -1,4 +1,4 @@
-|PyPI| |License| |Travis| |Coverage Status| |Code Climate|
+|PyPI| |License| |Travis| |AppVeyor| |Coverage Status| |Code Climate|
 |Documentation Status| |DOI|
 
 optlang
@@ -146,3 +146,5 @@ Requirements
    :target: https://readthedocs.org/projects/optlang/?badge=latest
 .. |DOI| image:: https://zenodo.org/badge/5031/biosustain/optlang.svg
    :target: https://zenodo.org/badge/latestdoi/5031/biosustain/optlang
+.. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/443yp8hf25c6748h/branch/master?svg=true
+   :target: https://ci.appveyor.com/project/phantomas1234/optlang/branch/master
