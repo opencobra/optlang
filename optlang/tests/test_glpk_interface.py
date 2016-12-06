@@ -26,7 +26,7 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
     interface = glpk_interface
 
     def test_variable_without_problem_returns_None_index(self):
-        self.assertEqual(self.var.index, None)
+        self.assertEqual(self.var._index, None)
 
     def test_get_primal(self):
         self.assertEqual(self.var.primal, None)
@@ -56,7 +56,7 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         for i, variable in enumerate(model.variables):
             variable.name = "var" + str(i)
             self.assertEqual(variable.name, "var" + str(i))
-            self.assertEqual(glp_get_col_name(model.problem, variable.index), "var" + str(i))
+            self.assertEqual(glp_get_col_name(model.problem, variable._index), "var" + str(i))
 
     def test_glpk_setting_bounds(self):
         self.model.add(self.var)
@@ -65,10 +65,10 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         model = self.model
         var.lb = 1
         self.assertEqual(var.lb, 1)
-        self.assertEqual(glpk_interface.glp_get_col_lb(model.problem, var.index), 1)
+        self.assertEqual(glpk_interface.glp_get_col_lb(model.problem, var._index), 1)
         var.ub = 2
         self.assertEqual(var.ub, 2)
-        self.assertEqual(glpk_interface.glp_get_col_ub(model.problem, var.index), 2)
+        self.assertEqual(glpk_interface.glp_get_col_ub(model.problem, var._index), 2)
 
 
 class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
@@ -76,10 +76,10 @@ class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
 
     def test_constraint_index(self):
         constraint = self.model.constraints.M_atp_c
-        self.assertEqual(constraint.index, 17)
+        self.assertEqual(constraint._index, 17)
         self.model.remove(constraint)
         self.model.update()
-        self.assertEqual(constraint.index, None)
+        self.assertEqual(constraint._index, None)
 
     def test_get_primal(self):
         self.assertEqual(self.constraint.primal, None)
@@ -145,15 +145,15 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_add_non_cplex_conform_variable(self):
         var = Variable('12x!!@#5_3', lb=-666, ub=666)
-        self.assertEqual(var.index, None)
+        self.assertEqual(var._index, None)
         self.model.add(var)
         self.assertTrue(var in self.model.variables.values())
-        self.assertEqual(var.name, glp_get_col_name(self.model.problem, var.index))
+        self.assertEqual(var.name, glp_get_col_name(self.model.problem, var._index))
         self.assertEqual(self.model.variables['12x!!@#5_3'].lb, -666)
         self.assertEqual(self.model.variables['12x!!@#5_3'].ub, 666)
         repickled = pickle.loads(pickle.dumps(self.model))
         var_from_pickle = repickled.variables['12x!!@#5_3']
-        self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle.index))
+        self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle._index))
 
     def test_glpk_remove_variable(self):
         var = self.model.variables.values()[0]
@@ -189,75 +189,75 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         # constr1
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr1.index, ia, da)
+        nnz = glp_get_mat_row(self.model.problem, constr1._index, ia, da)
         coeff_dict = dict()
         for i in range(1, nnz + 1):
             coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
         self.assertDictEqual(coeff_dict, {'x': 0.3, 'y': 0.4, 'z': 66.})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr1.index), GLP_DB)
-        self.assertEqual(glp_get_row_lb(self.model.problem, constr1.index), -100)
-        self.assertEqual(glp_get_row_ub(self.model.problem, constr1.index), 0)
+        self.assertEqual(glp_get_row_type(self.model.problem, constr1._index), GLP_DB)
+        self.assertEqual(glp_get_row_lb(self.model.problem, constr1._index), -100)
+        self.assertEqual(glp_get_row_ub(self.model.problem, constr1._index), 0)
         # constr2
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr2.index, ia, da)
+        nnz = glp_get_mat_row(self.model.problem, constr2._index, ia, da)
         coeff_dict = dict()
         for i in range(1, nnz + 1):
             coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
         self.assertDictEqual(coeff_dict, {'x': 2.333, 'y': 1.})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr2.index), GLP_UP)
-        self.assertEqual(glp_get_row_lb(self.model.problem, constr2.index), -1.7976931348623157e+308)
-        self.assertEqual(glp_get_row_ub(self.model.problem, constr2.index), 96.997)
+        self.assertEqual(glp_get_row_type(self.model.problem, constr2._index), GLP_UP)
+        self.assertEqual(glp_get_row_lb(self.model.problem, constr2._index), -1.7976931348623157e+308)
+        self.assertEqual(glp_get_row_ub(self.model.problem, constr2._index), 96.997)
         # constr3
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr3.index, ia, da)
+        nnz = glp_get_mat_row(self.model.problem, constr3._index, ia, da)
         coeff_dict = dict()
         for i in range(1, nnz + 1):
             coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
         self.assertDictEqual(coeff_dict, {'x': 2.333, 'y': 1., 'z': 1.})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr3.index), GLP_LO)
-        self.assertEqual(glp_get_row_lb(self.model.problem, constr3.index), -300)
-        self.assertEqual(glp_get_row_ub(self.model.problem, constr3.index), 1.7976931348623157e+308)
+        self.assertEqual(glp_get_row_type(self.model.problem, constr3._index), GLP_LO)
+        self.assertEqual(glp_get_row_lb(self.model.problem, constr3._index), -300)
+        self.assertEqual(glp_get_row_ub(self.model.problem, constr3._index), 1.7976931348623157e+308)
         # constr4
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr4.index, ia, da)
+        nnz = glp_get_mat_row(self.model.problem, constr4._index, ia, da)
         coeff_dict = dict()
         for i in range(1, nnz + 1):
             coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
         self.assertDictEqual(coeff_dict, {'x': 1})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr4.index), GLP_FX)
-        self.assertEqual(glp_get_row_lb(self.model.problem, constr4.index), -300)
-        self.assertEqual(glp_get_row_ub(self.model.problem, constr4.index), -300)
+        self.assertEqual(glp_get_row_type(self.model.problem, constr4._index), GLP_FX)
+        self.assertEqual(glp_get_row_lb(self.model.problem, constr4._index), -300)
+        self.assertEqual(glp_get_row_ub(self.model.problem, constr4._index), -300)
 
         # constr5
         ia = intArray(glp_get_num_rows(self.model.problem) + 1)
         da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr5.index, ia, da)
+        nnz = glp_get_mat_row(self.model.problem, constr5._index, ia, da)
         coeff_dict = dict()
         for i in range(1, nnz + 1):
             coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
         self.assertDictEqual(coeff_dict, {'x': 3})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr5.index), GLP_FR)
-        self.assertLess(glp_get_row_lb(self.model.problem, constr5.index), -1e30)
-        self.assertGreater(glp_get_row_ub(self.model.problem, constr5.index), 1e30)
+        self.assertEqual(glp_get_row_type(self.model.problem, constr5._index), GLP_FR)
+        self.assertLess(glp_get_row_lb(self.model.problem, constr5._index), -1e30)
+        self.assertGreater(glp_get_row_ub(self.model.problem, constr5._index), 1e30)
 
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
         y = Variable('y', lb=-181133.3, ub=12000.)
         constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
-        self.assertEqual(constraint.index, None)
+        self.assertEqual(constraint._index, None)
         self.model.add(constraint)
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
-        self.assertEqual(constraint.index, 73)
+        self.assertEqual(constraint._index, 73)
         z = Variable('z', lb=3, ub=10, type='integer')
-        self.assertEqual(z.index, None)
+        self.assertEqual(z._index, None)
         constraint += 77. * z
-        self.assertEqual(z.index, 98)
+        self.assertEqual(z._index, 98)
         self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
         print(self.model)
-        self.assertEqual(constraint.index, 73)
+        self.assertEqual(constraint._index, 73)
 
     def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
@@ -275,19 +275,19 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
         self.model.objective = objective
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
-        self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
-        self.assertEqual(glp_get_obj_coef(self.model.problem, y.index), 0.4)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, x._index), 0.3)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, y._index), 0.4)
         for i in range(1, glp_get_num_cols(self.model.problem) + 1):
-            if i != x.index and i != y.index:
+            if i != x._index and i != y._index:
                 self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
         z = Variable('z', lb=4, ub=4, type='integer')
         self.model.objective += 77. * z
         self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
-        self.assertEqual(glp_get_obj_coef(self.model.problem, x.index), 0.3)
-        self.assertEqual(glp_get_obj_coef(self.model.problem, y.index), 0.4)
-        self.assertEqual(glp_get_obj_coef(self.model.problem, z.index), 77.)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, x._index), 0.3)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, y._index), 0.4)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, z._index), 77.)
         for i in range(1, glp_get_num_cols(self.model.problem) + 1):
-            if i != x.index and i != y.index and i != z.index:
+            if i != x._index and i != y._index and i != z._index:
                 self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
 
     def test_change_variable_bounds(self):
@@ -366,7 +366,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_set_linear_coefficients_objective(self):
         self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
-        self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI.index), 666.)
+        self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI._index), 666.)
 
     def test_instantiating_model_with_different_solver_problem_raises(self):
         self.assertRaises(TypeError, Model, problem='Chicken soup')
@@ -377,7 +377,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         num_cols = glp_get_num_cols(self.model.problem)
         ia = intArray(num_cols + 1)
         da = doubleArray(num_cols + 1)
-        index = constraint.index
+        index = constraint._index
         num = glp_get_mat_row(self.model.problem, index, ia, da)
         for i in range(1, num + 1):
             col_name = glp_get_col_name(self.model.problem, ia[i])

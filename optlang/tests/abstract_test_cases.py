@@ -79,8 +79,8 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.assertRaises(ValueError, setattr, self.model.variables[0], 'lb', 100.)
 
     def test_setting_nonnumerical_bounds_raises(self):
-        self.assertRaises(TypeError, setattr, self.var, "lb", "Ministrone")
-        self.assertRaises(TypeError, setattr, self.var, "ub", "Ministrone")
+        self.assertRaises(TypeError, setattr, self.var, "lb", "Minestrone")
+        self.assertRaises(TypeError, setattr, self.var, "ub", "Minestrone")
         self.model.add(self.var)
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'lb', 'Chicken soup')
         self.assertRaises(TypeError, setattr, self.model.variables[0], 'ub', 'Chicken soup')
@@ -105,6 +105,32 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.model.optimize()
         self.assertEqual(self.var.primal, -4)
 
+    def test_set_bounds_method(self):
+        var = self.interface.Variable("test", lb=-10)
+        c = self.interface.Constraint(var, lb=-100)
+        model = self.interface.Model()
+        obj = self.interface.Objective(var)
+        model.add(c)
+        model.objective = obj
+
+        for lb, ub in ((1, 10), (-1, 5), (11, 12)):
+            obj.direction = "max"
+            var.set_bounds(lb, ub)
+            model.optimize()
+            self.assertAlmostEqual(var.primal, ub)
+            obj.direction = "min"
+            model.optimize()
+            self.assertAlmostEqual(var.primal, lb)
+
+        var.set_bounds(None, 0)
+        model.optimize()
+        self.assertAlmostEqual(var.primal, -100)
+
+        obj.direction = "max"
+        var.set_bounds(1, None)
+        self.assertEqual(model.optimize(), optlang.interface.UNBOUNDED)
+
+        self.assertRaises(ValueError, var.set_bounds, 2, 1)
 
     def test_set_bounds_to_none(self):
         model = self.model
@@ -128,7 +154,11 @@ class AbstractConstraintTestCase(unittest.TestCase):
     def setUp(self):
         with open(TESTMODELPATH) as infile:
             self.model = self.interface.Model.from_json(json.load(infile))
-        self.constraint = self.interface.Constraint(self.interface.Variable('chip') + self.interface.Variable('chap'), name='woodchips', lb=100)
+        self.constraint = self.interface.Constraint(
+            self.interface.Variable('chip') + self.interface.Variable('chap'),
+            name='woodchips',
+            lb=100
+        )
 
     def test_indicator_constraint_support(self):
         if self.interface.Constraint._INDICATOR_CONSTRAINT_SUPPORT:
@@ -500,7 +530,7 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_dual_values(self):
         self.model.optimize()
-        constraint_primals = self.model.dual_values  # TODO Fix this method name
+        constraint_primals = self.model.constraint_values  # TODO Fix this method name
         for constraint in self.model.constraints:
             self.assertEqual(constraint.primal, constraint_primals[constraint.name])
         self.assertEqual(set(const.name for const in self.model.constraints), set(constraint_primals))
