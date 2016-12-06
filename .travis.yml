@@ -3,6 +3,7 @@ sudo: false
 python:
 - '2.7'
 - '3.4'
+- '3.5'
 cache:
 - pip: true
 addons:
@@ -19,8 +20,7 @@ before_install:
 - export SYMPY_USE_CACHE=no
 - pip install pip --upgrade
 - 'echo "this is a build for: $TRAVIS_BRANCH"'
-- # 'if [[ "$TRAVIS_BRANCH" != "devel" ]]; then bash ./.travis/install_cplex.sh; fi'
-- bash ./.travis/install_cplex.sh
+- 'if [[ "$TRAVIS_PYTHON_VERSION" == "3.5"]; then bash ./.travis/install_cplex.sh; fi'
 install:
 - pip install nose nose-progressive rednose coverage docutils flake8 codecov jsonschema
 - pip install -r requirements.txt
