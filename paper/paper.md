@@ -5,12 +5,19 @@ tags:
  - Linear programming
  - Object-oriented API
 authors:
- -
-
+ - name: Kristian Jensen
+   orcid: 0000-0002-2796-805X
+   affiliation: 1
+ - name: Joao G.R. Cardoso
+   orcid: 0000-0001-8173-2673
+   affiliation: 1
+ - name: Nikolaus Sonnenschein
+   orcid: 0000-0002-7581-4936
+   affiliation: 1
 affiliations:
- - name: Center for Biosustainability, Technical University of Denmark
+ - name: The Novo Nordisk Foundation Center for Biosustainability, Technical University of Denmark
    index: 1
-date: 8 October 2016
+date: 6 December 2016
 bibliography: paper.bib
 ---
 
@@ -21,10 +28,10 @@ objective function over a set of variables subject to a number of constraints. I
 to a series of optimization tools, so different solver backends can be changed in a transparent way.
 
 Optlang takes advantage of the symbolic math library SymPy [@Sympy] to allow objective functions and constraints
-to be easily formulated algebraically from symbolic expressions of variables. With Optlang the user can thus
+to be easily formulated algebraically from symbolic expressions of variables. With optlang the user can thus
 focus on the science of formulating a problem without worrying about how to solve it.
 
-Solver interfaces can be added by subclassing the 4 main classes of the Optlang API (Variable, Constraint, Objective
+Solver interfaces can be added by subclassing the 4 main classes of the optlang API (Variable, Constraint, Objective
 and Model) and implementing the relevant API functions.
 
 
