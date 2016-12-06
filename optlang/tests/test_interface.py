@@ -155,7 +155,7 @@ class TestModel(TestCase):
     def test_primal_and_dual_values(self):
         model = self.model
         self.assertTrue(all([primal is None for primal in model.primal_values.values()]))
-        self.assertTrue(all([constraint_primal is None for constraint_primal in model.dual_values.values()]))
+        self.assertTrue(all([constraint_primal is None for constraint_primal in model.constraint_values.values()]))
         self.assertTrue(all([sp is None for sp in model.shadow_prices.values()]))
         self.assertTrue(all([rc is None for rc in model.reduced_costs.values()]))
 

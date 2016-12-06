@@ -18,13 +18,24 @@ Solvers
 ----------
 In addition to optlang itself, it is necessary to install at least one solver. Optlang interfaces with the solvers
 through importable python modules. If the python module corresponding to the solver can be imported without errors
-the solver should be available as an Optlang interface.
+the solver interface should be available as an optlang submodule (e.g. :code:`optlang.glpk_interface`).
 
 The required python modules for the currently supported solvers are:
 
-- GLPK: :code:`swglpk`
-- Cplex: :code:`cplex`
-- Gurobi: :code:`gurobipy`
-- Scipy: :code:`scipy.optimize.linprog`
+- GLPK: :code:`swiglpk`
 
-You can call the function :code:`optlang.list_available_solvers` to verify that a solver is recognized by optlang.
+  - GLPK is an open source Linear Programming library. Swiglpk can be installed from binary wheels or from source. Installing from source requires swig and GLPK
+
+- Cplex: :code:`cplex`
+
+  - Cplex is a very efficient commercial linear and quadratic mixed-integer solver from IBM. Academic licenses are available for students and researchers.
+
+- Gurobi: :code:`gurobipy`
+
+  - Gurobi is a very efficient commercial linear and quadratic mixed-integer solver. Academic licenses are available for students and researchers.
+
+- SciPy: :code:`scipy.optimize.linprog`
+
+  - The SciPy linprog function is a very basic implementation of the simplex algorithm for solving linear optimization problems. Linprog is included in all recent versions of SciPy.
+
+After importing optlang you can check :code:`optlang.available_solvers` to verify that a solver is recognized.
