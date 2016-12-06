@@ -22,7 +22,7 @@ the solver should be available as an Optlang interface.
 
 The required python modules for the currently supported solvers are:
 
-- GLPK: :code:`swglpk`
+- GLPK: :code:`swiglpk`
 - Cplex: :code:`cplex`
 - Gurobi: :code:`gurobipy`
 - Scipy: :code:`scipy.optimize.linprog`
