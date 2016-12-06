@@ -54,7 +54,7 @@ Formulating and solving the problem is straightforward
    c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
    c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
    
-   # An objective 
+   # An objective can be formulated
    obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
    
    # Variables, constraints and objective are combined in a Model object, which can subsequently be optimized.
