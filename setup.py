@@ -36,7 +36,9 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
     requirements = []
 else:
-    requirements = ['sympy>=1.0.0', 'six>=1.9.0']
+    # requirements = ['sympy>=1.0.0', 'six>=1.9.0']
+    with open("requirements.txt") as infile:
+        requirements = infile.read().splitlines()
 
 
 extra_requirements = {
