@@ -1,17 +1,15 @@
-
-|PyPI| |License| |Travis| |AppVeyor| |Coverage Status| |Documentation Status| |DOI|
-
 optlang
 =======
 
 *Sympy based mathematical programming language*
 
+|PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |DOI|
+
 Optlang is a Python package for solving mathematical optimization
 problems, i.e. maximizing or minimizing an objective function over a set
 of variables subject to a number of constraints. Optlang provides a
 common interface to a series of optimization tools, so different solver
-backends can be used and changed in a transparent way.
-
+backends can be changed in a transparent way.
 Optlang takes advantage of the symbolic math library
 `sympy <http://sympy.org/en/index.html>`__ to allow objective functions
 and constraints to be easily formulated from symbolic expressions of
@@ -33,7 +31,7 @@ Then you could install `swiglpk <https://github.com/biosustain/swiglpk>`_
 ::
 
     pip install swiglpk
-    
+
 to solve your optimization problems using `GLPK <https://www.gnu.org/software/glpk/>`_ (see below for further supported solvers).
 
 Example
@@ -103,7 +101,7 @@ Local installations like
 ::
 
     python setup.py install
-     
+
 
 might fail installing the dependencies (unresolved issue with
 ``easy_install``). Running
