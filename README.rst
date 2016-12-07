@@ -1,22 +1,25 @@
+
 |PyPI| |License| |Travis| |AppVeyor| |Coverage Status| |Code Climate|
 |Documentation Status| |DOI|
 
 optlang
 =======
 
-Vision
-~~~~~~
+*Sympy based mathematical programming language*
 
-**optlang** is a Python package for solving mathematical optimization
+|PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |DOI|
+
+Optlang is a Python package for solving mathematical optimization
 problems, i.e. maximizing or minimizing an objective function over a set
 of variables subject to a number of constraints. Optlang provides a
 common interface to a series of optimization tools, so different solver
 backends can be changed in a transparent way.
-
 Optlang takes advantage of the symbolic math library
 `sympy <http://sympy.org/en/index.html>`__ to allow objective functions
 and constraints to be easily formulated from symbolic expressions of
 variables (see examples).
+
+Show us some love by staring this repo if you find optlang useful!
 
 Installation
 ~~~~~~~~~~~~
@@ -27,40 +30,13 @@ Install using pip
 
     pip install optlang
 
-Local installations like
+Then you could install `swiglpk <https://github.com/biosustain/swiglpk>`_
 
 ::
 
-    python setup.py install
-     
-
-might fail installing the dependencies (unresolved issue with
-``easy_install``). Running
-
-::
-
-    pip install -r requirements.txt
-
-beforehand should fix this issue.
-
-Documentation
-~~~~~~~~~~~~~
-
-The documentation for **optlang** is provided at
-`readthedocs.org <http://optlang.readthedocs.org/en/latest/>`__.
-
-Dependencies
-~~~~~~~~~~~~
-
--  `sympy >= 0.7.5 <http://sympy.org/en/index.html>`__
--  `six >= 1.9.0 <https://pypi.python.org/pypi/six>`__
-
-And at least one of the following
-
--  `swiglpk >= 0.1.0 <https://pypi.python.org/pypi/swiglpk>`__
--  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
--  `gurobipy <http://www.gurobi.com>`__
--  `scipy <http://www.scipy.org>`__
+    pip install swiglpk
+    
+to solve your optimization problems using `GLPK <https://www.gnu.org/software/glpk/>`_ (see below for further supported solvers).
 
 Example
 ~~~~~~~
@@ -103,6 +79,43 @@ The example will produce the following output:
     x3 = 0.0
     x1 = 33.3333333333
 
+Documentation
+~~~~~~~~~~~~~
+
+Documentation for optlang is provided at
+`readthedocs.org <http://optlang.readthedocs.org/en/latest/>`__.
+
+Development
+~~~~~~~~~~~
+
+The following dependencies are needed.
+
+-  `sympy >= 0.7.5 <http://sympy.org/en/index.html>`__
+-  `six >= 1.9.0 <https://pypi.python.org/pypi/six>`__
+
+And at least one of the following
+
+-  `swiglpk >= 0.1.0 <https://pypi.python.org/pypi/swiglpk>`__
+-  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
+-  `gurobipy <http://www.gurobi.com>`__
+-  `scipy <http://www.scipy.org>`__
+
+Local installations like
+
+::
+
+    python setup.py install
+     
+
+might fail installing the dependencies (unresolved issue with
+``easy_install``). Running
+
+::
+
+    pip install -r requirements.txt
+
+beforehand should fix this issue.
+
 Future outlook
 ~~~~~~~~~~~~~~
 
@@ -122,16 +135,6 @@ Future outlook
 The optlang `trello board <https://trello.com/b/aiwfbVKO/optlang>`__
 also provides a good overview of the project's roadmap.
 
-Requirements
-~~~~~~~~~~~~
-
--  Models should always be serializable to common problem formulation
-   languages
-   (`CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__,
-   `GAMS <http://www.gams.com/>`__, etc.)
--  Models should be picklable
--  Common solver configuration interface (presolver, MILP gap, etc.)
-
 .. |PyPI| image:: https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000
    :target: https://pypi.python.org/pypi/optlang
 .. |License| image:: http://img.shields.io/badge/license-APACHE2-blue.svg
@@ -140,11 +143,10 @@ Requirements
    :target: https://travis-ci.org/biosustain/optlang
 .. |Coverage Status| image:: https://img.shields.io/codecov/c/github/biosustain/optlang/master.svg
    :target: https://codecov.io/gh/biosustain/optlang/branch/master
-.. |Code Climate| image:: https://codeclimate.com/github/biosustain/optlang/badges/gpa.svg
-   :target: https://codeclimate.com/github/biosustain/optlang
 .. |Documentation Status| image:: https://readthedocs.org/projects/optlang/badge/?version=latest
    :target: https://readthedocs.org/projects/optlang/?badge=latest
 .. |DOI| image:: https://zenodo.org/badge/5031/biosustain/optlang.svg
    :target: https://zenodo.org/badge/latestdoi/5031/biosustain/optlang
 .. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/443yp8hf25c6748h/branch/master?svg=true
    :target: https://ci.appveyor.com/project/phantomas1234/optlang/branch/master
+
