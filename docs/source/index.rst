@@ -4,6 +4,8 @@ optlang
 Optlang is a Python package for solving mathematical optimization problems, i.e. maximizing or minimizing an objective function over a set of variables subject to a number of constraints.
 Optlang provides a common interface to a series of optimization tools, so different solver backends can be changed in a transparent way.
 
+In constrast to e.g. the commonly used General Algebraic Modeling System (GAMS), optlang has a simple and intuitive interface using native Python algebra syntax, and is free and open-source.
+
 Optlang takes advantage of the symbolic math library `SymPy <http://sympy.org>`_ to allow objective functions and constraints to be easily formulated from symbolic expressions of variables (see examples).
 
 Currently supported solvers are:
@@ -15,7 +17,7 @@ Currently supported solvers are:
 
 Support for the following solvers is in the works:
 
-* `GAMS <http://www.gurobi.com/>`_ (LP/MILP/QP/NLP; will included support for solving problems on `neos-server.org <https://neos-server.org/neos/>`_)
+* `GAMS <http://www.gurobi.com/>`_ (LP/MILP/QP/NLP; will include support for solving problems on `neos-server.org <https://neos-server.org/neos/>`_)
 * `SOPLEX <http://soplex.zib.de>`_ (exact LP)
 * `MOSEK <http://www.mosek.com/>`_, (LP/MILP/QP)
 
@@ -87,6 +89,102 @@ Integer programming
 ----------
 Integer (or mixed integer) problems can be specified by assigning the type of one or more variables to 'integer' or 'binary'.
 If the solver supports integer problems it will automatically use the relevant optimization algorithm and return an integer solution.
+
+Example
+============
+
+The GAMS example (http://www.gams.com/docs/example.htm) can be formulated and solved in optlang like this:
+
+.. code-block:: python
+
+    from optlang import Variable, Constraint, Objective, Model
+
+    # Define problem parameters
+    # Note this can be done using any of Python's data types. Here we have chosen dictionaries
+    supply = {"Seattle": 350, "San_Diego": 600}
+    demand = {"New_York": 325, "Chicago": 300, "Topeka": 275}
+
+    distances = {  # Distances between locations in thousands of miles
+        "Seattle": {"New_York": 2.5, "Chicago": 1.7, "Topeka": 1.8},
+        "San_Diego": {"New_York": 2.5, "Chicago": 1.8, "Topeka": 1.4}
+    }
+
+    freight_cost = 9  # Cost per case per thousand miles
+
+    # Define variables
+    variables = {}
+    for origin in supply:
+        variables[origin] = {}
+        for destination in demand:
+            # Construct a variable with a name, bounds and type
+            var = Variable(name="{}_to_{}".format(origin, destination), lb=0, type="integer")
+            variables[origin][destination] = var
+
+    # Define constraints
+    constraints = []
+    for origin in supply:
+        const = Constraint(
+            sum(variables[origin].values()),
+            ub=supply[origin],
+            name="{}_supply".format(origin)
+        )
+        constraints.append(const)
+    for destination in demand:
+        const = Constraint(
+            sum(row[destination] for row in variables.values()),
+            lb=demand[destination],
+            name="{}_demand".format(destination)
+        )
+        constraints.append(const)
+
+    # Define the objective
+    obj = Objective(
+        sum(freight_cost * distances[ori][dest] * variables[ori][dest] for ori in supply for dest in demand),
+        direction="min"
+    )
+    # We can print the objective and constraints
+    print(obj)
+    print("")
+    for const in constraints:
+        print(const)
+
+    print("")
+
+    # Put everything together in a Model
+    model = Model()
+    model.add(constraints)  # Variables are added implicitly
+    model.objective = obj
+
+    # Optimize and print the solution
+    status = model.optimize()
+    print("Status:", status)
+    print("Objective value:", model.objective.value)
+    print("")
+    for var in model.variables:
+        print(var.name, ":", var.primal)
+        
+Outputting the following:
+
+    Minimize
+    16.2*San_Diego_to_Chicago + 22.5*San_Diego_to_New_York + 12.6*San_Diego_to_Topeka + 15.3*Seattle_to_Chicago + 22.5*Seattle_to_New_York + 16.2*Seattle_to_Topeka
+
+    Seattle_supply: Seattle_to_Chicago + Seattle_to_New_York + Seattle_to_Topeka <= 350
+    San_Diego_supply: San_Diego_to_Chicago + San_Diego_to_New_York + San_Diego_to_Topeka <= 600
+    Chicago_demand: 300 <= San_Diego_to_Chicago + Seattle_to_Chicago
+    Topeka_demand: 275 <= San_Diego_to_Topeka + Seattle_to_Topeka
+    New_York_demand: 325 <= San_Diego_to_New_York + Seattle_to_New_York
+
+    Status: optimal
+    Objective value: 15367.5
+
+    Seattle_to_New_York : 50
+    Seattle_to_Chicago : 300
+    Seattle_to_Topeka : 0
+    San_Diego_to_Chicago : 0
+    San_Diego_to_Topeka : 275
+    San_Diego_to_New_York : 275
+    
+Here we forced all variables to have integer values. To allow non-integer values, leave out :code:`type="integer"` in the Variable constructor (defaults to :code:`'continuous'`).
 
 Users's guide
 =============
