@@ -31,7 +31,7 @@ Then you could install `swiglpk <https://github.com/biosustain/swiglpk>`_
 ::
 
     pip install swiglpk
-    
+
 to solve your optimization problems using `GLPK <https://www.gnu.org/software/glpk/>`_ (see below for further supported solvers).
 
 Example
@@ -101,7 +101,7 @@ Local installations like
 ::
 
     python setup.py install
-     
+
 
 might fail installing the dependencies (unresolved issue with
 ``easy_install``). Running
@@ -143,5 +143,6 @@ also provides a good overview of the project's roadmap.
    :target: https://readthedocs.org/projects/optlang/?badge=latest
 .. |DOI| image:: https://zenodo.org/badge/5031/biosustain/optlang.svg
    :target: https://zenodo.org/badge/latestdoi/5031/biosustain/optlang
-.. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/3o8f2v5rhtn28lxk/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/hredestig/optlang-hhs92/branch/master
+.. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/443yp8hf25c6748h/branch/master?svg=true
+   :target: https://ci.appveyor.com/project/phantomas1234/optlang/branch/master
+
