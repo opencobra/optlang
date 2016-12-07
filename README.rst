@@ -1,19 +1,17 @@
 
-|PyPI| |License| |Travis| |AppVeyor| |Coverage Status| |Code Climate|
-|Documentation Status| |DOI|
+|PyPI| |License| |Travis| |AppVeyor| |Coverage Status| |Documentation Status| |DOI|
 
 optlang
 =======
 
 *Sympy based mathematical programming language*
 
-|PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |DOI|
-
 Optlang is a Python package for solving mathematical optimization
 problems, i.e. maximizing or minimizing an objective function over a set
 of variables subject to a number of constraints. Optlang provides a
 common interface to a series of optimization tools, so different solver
-backends can be changed in a transparent way.
+backends can be used and changed in a transparent way.
+
 Optlang takes advantage of the symbolic math library
 `sympy <http://sympy.org/en/index.html>`__ to allow objective functions
 and constraints to be easily formulated from symbolic expressions of
