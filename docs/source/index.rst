@@ -163,7 +163,7 @@ The GAMS example (http://www.gams.com/docs/example.htm) can be formulated and so
     for var in model.variables:
         print(var.name, ":", var.primal)
         
-Outputting the following:
+Outputting the following::
 
     Minimize
     16.2*San_Diego_to_Chicago + 22.5*San_Diego_to_New_York + 12.6*San_Diego_to_Topeka + 15.3*Seattle_to_Chicago + 22.5*Seattle_to_New_York + 16.2*Seattle_to_Topeka
