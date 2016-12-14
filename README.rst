@@ -26,13 +26,7 @@ Install using pip
 
     pip install optlang
 
-Then you could install `swiglpk <https://github.com/biosustain/swiglpk>`_
-
-::
-
-    pip install swiglpk
-
-to solve your optimization problems using `GLPK <https://www.gnu.org/software/glpk/>`_ (see below for further supported solvers).
+This will also install `swiglpk <https://github.com/biosustain/swiglpk>`_, an interface to the open source LP solver `GLPK <https://www.gnu.org/software/glpk/>`_ (see below for further supported solvers).
 
 Example
 ~~~~~~~
@@ -100,10 +94,10 @@ The following dependencies are needed.
 
 -  `sympy >= 0.7.5 <http://sympy.org/en/index.html>`__
 -  `six >= 1.9.0 <https://pypi.python.org/pypi/six>`__
-
-And at least one of the following
-
 -  `swiglpk >= 0.1.0 <https://pypi.python.org/pypi/swiglpk>`__
+
+The following are optional dependencies that allow other solvers to be used.
+
 -  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
 -  `gurobipy <http://www.gurobi.com>`__
 -  `scipy <http://www.scipy.org>`__
