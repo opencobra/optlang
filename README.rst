@@ -43,8 +43,9 @@ from `GLPK documentation <http://www.gnu.org/software/glpk>`__):
 ::
 
     from __future__ import print_function
-    from optlang.glpk_interface import Model, Variable, Constraint, Objective
+    from optlang import Model, Variable, Constraint, Objective
 
+    # All the (symbolic) variables are declared, with a name and optionally a lower and/or upper bound.
     x1 = Variable('x1', lb=0)
     x2 = Variable('x2', lb=0)
     x3 = Variable('x3', lb=0)
@@ -75,6 +76,11 @@ The example will produce the following output:
     x2 = 66.6666666667
     x3 = 0.0
     x1 = 33.3333333333
+
+Using a particular solver
+-------------------------
+If you have more than one solver installed, it's also possible to specify which one to use, by importing directly from the
+respective solver interface, e.g. :code:`from optlang.glpk_interface import Model, Variable, Constraint, Objective`
 
 Documentation
 ~~~~~~~~~~~~~

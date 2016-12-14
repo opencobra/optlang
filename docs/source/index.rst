@@ -79,6 +79,12 @@ You should see the following output::
   x3 = 0.0
   x1 = 33.3333333333
 
+
+Using a particular solver
+----------
+If you have more than one solver installed, it's also possible to specify which one to use, by importing directly from the
+respective solver interface, e.g. :code:`from optlang.glpk_interface import Model, Variable, Constraint, Objective`
+
 Quadratic programming
 ----------
 A QP problem can be generated in the same way by creating an objective with a quadratic expression. In the above example
