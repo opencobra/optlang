@@ -5,7 +5,7 @@ Install optlang using pip::
 
   pip install optlang
 
-Or, or download the source distribution and run::
+Or download the source distribution and run::
 
   python setup.py install
 
@@ -16,15 +16,17 @@ You can run optlang's test suite like this (you need to install nose first thoug
   
 Solvers
 ----------
-In addition to optlang itself, it is necessary to install at least one solver. Optlang interfaces with the solvers
-through importable python modules. If the python module corresponding to the solver can be imported without errors
-the solver interface should be available as an optlang submodule (e.g. :code:`optlang.glpk_interface`).
+To solve optimization problems, at least one supported solver must be installed.
+Installing optlang using :code:`pip` will also automatically install GLPK. To use other solvers (e.g. commercial solvers) it is necessary
+to install them manually. Optlang interfaces with all solvers through importable python modules. If the python module corresponding
+to the solver can be imported without errors the solver interface should be available as an optlang submodule (e.g.
+:code:`optlang.glpk_interface`).
 
 The required python modules for the currently supported solvers are:
 
-- GLPK: :code:`swiglpk`
+- GLPK: :code:`swiglpk` (automatically installed by :code:`pip install optlang`) 
 
-  - GLPK is an open source Linear Programming library. Swiglpk can be installed from binary wheels or from source. Installing from source requires swig and GLPK
+  - GLPK is an open source Linear Programming library. Swiglpk can be installed from binary wheels or from source. Installing from source requires swig and GLPK.
 
 - Cplex: :code:`cplex`
 
