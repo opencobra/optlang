@@ -42,6 +42,7 @@ from `GLPK documentation <http://www.gnu.org/software/glpk>`__):
 
 ::
 
+    from __future__ import print_function
     from optlang.glpk_interface import Model, Variable, Constraint, Objective
 
     x1 = Variable('x1', lb=0)
@@ -60,10 +61,10 @@ from `GLPK documentation <http://www.gnu.org/software/glpk>`__):
 
     status = model.optimize()
 
-    print "status:", model.status
-    print "objective value:", model.objective.value
+    print("status:", model.status)
+    print("objective value:", model.objective.value)
     for var_name, var in model.variables.iteritems():
-        print var_name, "=", var.primal
+        print(var_name, "=", var.primal)
 
 The example will produce the following output:
 
