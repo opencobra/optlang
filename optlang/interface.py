@@ -1385,7 +1385,7 @@ class Model(object):
     def _remove_variables(self, variables):
         for variable in variables:
             try:
-                var = self._variables[variable.name]
+                self._variables[variable.name]
             except KeyError:
                 raise LookupError("Variable %s not in solver" % variable.name)
 
