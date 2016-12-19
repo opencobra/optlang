@@ -1387,7 +1387,7 @@ class Model(object):
             try:
                 var = self._variables[variable.name]
             except KeyError:
-                raise LookupError("Variable %s not in solver" % var)
+                raise LookupError("Variable %s not in solver" % variable.name)
 
         constraint_ids = set()
         for variable in variables:
