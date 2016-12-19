@@ -23,13 +23,15 @@ bibliography: paper.bib
 
 # Summary
 
-Optlang is a Python package for solving mathematical optimization problems, i.e. maximizing or minimizing an
-objective function over a set of variables subject to a number of constraints. It provides a common native Python
-interface to a series of optimization tools, so different solver backends can used and changed in a transparent way.
+Optlang is a Python package implementing a modeling language for solving mathematical optimization problems, i.e.
+maximizing or minimizing an objective function over a set of variables subject to a number of constraints. It provides
+a common native Python interface to a series of optimization tools, so different solver backends can be used and
+changed in a transparent way.
 
-Optlang takes advantage of the symbolic math library SymPy [@Sympy] to allow objective functions and constraints
-to be easily formulated algebraically from symbolic expressions of variables. With optlang the user can thus
-focus on the science of formulating a problem without worrying about how to solve it.
+Optlang's object-oriented API takes advantage of the symbolic math library SymPy [@Sympy] to allow objective functions
+and constraints to be easily formulated algebraically from symbolic expressions of variables. Optlang targets
+scientists who can thus focus on formulating optimization problems based on mathematical equations derived from domain
+knowledge.
 
 Solver interfaces can be added by subclassing the 4 main classes of the optlang API (Variable, Constraint, Objective
 and Model) and implementing the relevant API functions.

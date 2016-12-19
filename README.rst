@@ -10,7 +10,7 @@ problems, i.e. maximizing or minimizing an objective function over a set
 of variables subject to a number of constraints. Optlang provides a
 common interface to a series of optimization tools, so different solver
 backends can be changed in a transparent way.
-Optlang takes advantage of the symbolic math library
+Optlang's object-oriented API takes advantage of the symbolic math library
 `sympy <http://sympy.org/en/index.html>`__ to allow objective functions
 and constraints to be easily formulated from symbolic expressions of
 variables (see examples).
@@ -29,7 +29,25 @@ Install using pip
 
     pip install optlang
 
-This will also install `swiglpk <https://github.com/biosustain/swiglpk>`_, an interface to the open source LP solver `GLPK <https://www.gnu.org/software/glpk/>`_ (see below for further supported solvers).
+This will also install `swiglpk <https://github.com/biosustain/swiglpk>`_, an interface to the open source (mixed integer) LP solver `GLPK <https://www.gnu.org/software/glpk/>`_.
+Quadratic programming (and MIQP) is supported through additional optional solvers (see below).
+
+Dependencies
+~~~~~~~~~~~~
+
+The following dependencies are needed.
+
+-  `sympy >= 1.0.0 <http://sympy.org/en/index.html>`__
+-  `six >= 1.9.0 <https://pypi.python.org/pypi/six>`__
+-  `swiglpk >= 1.3.0 <https://pypi.python.org/pypi/swiglpk>`__
+
+The following are optional dependencies that allow other solvers to be used.
+
+-  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__ (LP, MILP, QP, MIQP)
+-  `gurobipy <http://www.gurobi.com>`__ (LP, MILP (QP and MIQP support will be added in the future))
+-  `scipy <http://www.scipy.org>`__ (LP)
+
+
 
 Example
 ~~~~~~~
@@ -90,36 +108,6 @@ Documentation
 Documentation for optlang is provided at
 `readthedocs.org <http://optlang.readthedocs.org/en/latest/>`__.
 
-Development
-~~~~~~~~~~~
-
-The following dependencies are needed.
-
--  `sympy >= 1.0.0 <http://sympy.org/en/index.html>`__
--  `six >= 1.9.0 <https://pypi.python.org/pypi/six>`__
--  `swiglpk >= 1.3.0 <https://pypi.python.org/pypi/swiglpk>`__
-
-The following are optional dependencies that allow other solvers to be used.
-
--  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
--  `gurobipy <http://www.gurobi.com>`__
--  `scipy <http://www.scipy.org>`__
-
-Local installations like
-
-::
-
-    python setup.py install
-
-
-might fail installing the dependencies (unresolved issue with
-``easy_install``). Running
-
-::
-
-    pip install -r requirements.txt
-
-beforehand should fix this issue.
 
 Future outlook
 ~~~~~~~~~~~~~~

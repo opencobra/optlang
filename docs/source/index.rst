@@ -7,6 +7,7 @@ Optlang provides a common interface to a series of optimization tools, so differ
 In constrast to e.g. the commonly used General Algebraic Modeling System (GAMS), optlang has a simple and intuitive interface using native Python algebra syntax, and is free and open-source.
 
 Optlang takes advantage of the symbolic math library `SymPy <http://sympy.org>`_ to allow objective functions and constraints to be easily formulated from symbolic expressions of variables (see examples).
+Scientists can thus use optlang to formulate their optimization problems using mathematical expressions derived from domain knowledge.
 
 Currently supported solvers are:
 

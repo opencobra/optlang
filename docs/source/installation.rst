@@ -41,3 +41,23 @@ The required python modules for the currently supported solvers are:
   - The SciPy linprog function is a very basic implementation of the simplex algorithm for solving linear optimization problems. Linprog is included in all recent versions of SciPy.
 
 After importing optlang you can check :code:`optlang.available_solvers` to verify that a solver is recognized.
+
+
+Issues
+------
+
+Local installations like
+
+::
+
+    python setup.py install
+
+
+might fail installing the dependencies (unresolved issue with
+``easy_install``). Running
+
+::
+
+    pip install -r requirements.txt
+
+beforehand should fix this issue.
