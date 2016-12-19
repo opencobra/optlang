@@ -1,5 +1,5 @@
 ---
-title: 'Optlang: A Python interface to common mathematical optimization solvers'
+title: 'Optlang: An algebraic modeling language for mathematical optimization'
 tags:
  - Mathematical optimization
  - Linear programming
