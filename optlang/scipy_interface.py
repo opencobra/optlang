@@ -404,12 +404,12 @@ class Constraint(interface.Constraint):
                 self.problem.problem.set_constraint_bound(self.upper_constraint_name, value)
         self._ub = value
 
-    def coefficient_dict(self):
+    def coefficient_dict(self, names=True):
         if self.expression.is_Add:
-            coefficient_dict = {variable.name: coef for variable, coef in
+            coefficient_dict = {variable: coef for variable, coef in
                                 self.expression.as_coefficients_dict().items()}
         elif self.expression.is_Atom and self.expression.is_Symbol:
-            coefficient_dict = {self.expression.name: 1}
+            coefficient_dict = {self.expression: 1}
         elif self.expression.is_Mul and len(self.expression.args) <= 2:
             args = self.expression.args
             coefficient_dict = {args[1]: float(args[0])}
@@ -417,12 +417,14 @@ class Constraint(interface.Constraint):
             coefficient_dict = {}
         else:
             raise ValueError("Invalid expression: " + str(self.expression))
+        if names is True:
+            coefficient_dict = {var.name: coef for var, coef in coefficient_dict.items()}
         return coefficient_dict
 
     def set_linear_coefficients(self, coefficients):
         lb, ub = self.lb, self.ub
         self.lb, self.ub = None, None
-        coefficients_dict = self.coefficient_dict()
+        coefficients_dict = self.coefficient_dict(names=False)
         coefficients_dict.update(coefficients)
         self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items()))
         self.lb = lb
@@ -439,7 +441,11 @@ class Objective(interface.Objective):
 
     def _get_expression(self):
         if self.problem is not None:
-            self._expression = sympy.Add(*(v * k for k, v in self.problem.problem.objective))
+            coefficients_dict = self.problem.problem.objective
+            coefficients_dict = {
+                self.problem._variables[name]: coef for name, coef in coefficients_dict.items() if name in self.problem._variables
+            }
+            self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items()))
         return self._expression
 
     @property
@@ -457,22 +463,22 @@ class Objective(interface.Objective):
 
     def coefficient_dict(self):
         if self.expression.is_Add:
-            coefficient_dict = {variable.name: coef for variable, coef in
+            coefficient_dict = {variable: coef for variable, coef in
                                 self.expression.as_coefficients_dict().items()}
-        elif self.expression.is_Atom:
-            if self.expression.is_Symbol:
-                coefficient_dict = {self.expression.name: 1}
-            else:
-                coefficient_dict = {}
+        elif self.expression.is_Atom and self.expression.is_Symbol:
+            coefficient_dict = {self.expression: 1}
         elif self.expression.is_Mul and len(self.expression.args) <= 2:
             args = self.expression.args
-            coefficient_dict = {args[1].name: float(args[0])}
+            coefficient_dict = {args[1]: float(args[0])}
+        elif self.expression.is_Number:
+            coefficient_dict = {}
         else:
-            raise ValueError("Invalid expression")
+            raise ValueError("Invalid expression: " + str(self.expression))
+        coefficient_dict = {var.name: coef for var, coef in coefficient_dict.items()}
         return coefficient_dict
 
     def set_linear_coefficients(self, coefficients):
-        self.problem.problem.objective.update(coefficients)
+        self.problem.problem.objective.update({var.name: coef for var, coef in coefficients.items()})
 
 
 @six.add_metaclass(inheritdocstring)
@@ -578,11 +584,14 @@ class Model(interface.Model):
     @interface.Model.objective.setter
     def objective(self, value):
         super(Model, Model).objective.fset(self, value)
+        value.problem = None
         if value is None:
             self.problem.objective = {}
         else:
-            self.problem.objective = self._objective.coefficient_dict()
+            self.problem.objective = value.coefficient_dict()
             self.problem.direction = value.direction
+        value.problem = self
+
 
 
 if __name__ == "__main__":
