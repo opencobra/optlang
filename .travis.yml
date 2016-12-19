@@ -12,7 +12,6 @@ addons:
     - swig
     - libzmq3-dev
     - libgmp-dev
-    - libglp
     - libglpk-dev
     - glpk-utils
     - pandoc
