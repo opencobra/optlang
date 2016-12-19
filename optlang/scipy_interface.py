@@ -33,6 +33,7 @@ import six
 from optlang import interface
 from scipy.optimize import linprog
 from optlang.util import inheritdocstring
+import sympy
 
 SCIPY_STATUS = {
     0: interface.OPTIMAL,
@@ -412,9 +413,20 @@ class Constraint(interface.Constraint):
         elif self.expression.is_Mul and len(self.expression.args) <= 2:
             args = self.expression.args
             coefficient_dict = {args[1]: float(args[0])}
+        elif self.expression.is_Number:
+            coefficient_dict = {}
         else:
-            raise ValueError("Invalid expression")
+            raise ValueError("Invalid expression: " + str(self.expression))
         return coefficient_dict
+
+    def set_linear_coefficients(self, coefficients):
+        lb, ub = self.lb, self.ub
+        self.lb, self.ub = None, None
+        coefficients_dict = self.coefficient_dict()
+        coefficients_dict.update(coefficients)
+        self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items()))
+        self.lb = lb
+        self.ub = ub
 
 
 @six.add_metaclass(inheritdocstring)
@@ -424,6 +436,11 @@ class Objective(interface.Objective):
         if not self.is_Linear:
             raise ValueError(
                 "Scipy only supports linear objectives. %s is not linear." % self)
+
+    def _get_expression(self):
+        if self.problem is not None:
+            self._expression = sympy.Add(*(v * k for k, v in self.problem.problem.objective))
+        return self._expression
 
     @property
     def value(self):
@@ -453,6 +470,9 @@ class Objective(interface.Objective):
         else:
             raise ValueError("Invalid expression")
         return coefficient_dict
+
+    def set_linear_coefficients(self, coefficients):
+        self.problem.problem.objective.update(coefficients)
 
 
 @six.add_metaclass(inheritdocstring)
