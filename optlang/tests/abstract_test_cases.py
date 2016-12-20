@@ -592,7 +592,7 @@ class AbstractModelTestCase(unittest.TestCase):
         x = self.interface.Variable("x", lb=0)
         y = self.interface.Variable("y", lb=0)
         c1 = self.interface.Constraint((y + 2 * (x - 3)).expand(), ub=0)
-        c2 = self.interface.Constraint(y + 1/2 * x - 3, ub=0)
+        c2 = self.interface.Constraint(y + (1 / 2) * x - 3, ub=0)
         obj = self.interface.Objective(x)
         model = self.interface.Model()
         model.add([c1, c2])
