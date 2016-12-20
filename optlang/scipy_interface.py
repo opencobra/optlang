@@ -467,7 +467,7 @@ class Objective(interface.Objective):
                                 self.expression.as_coefficients_dict().items()}
         elif self.expression.is_Atom and self.expression.is_Symbol:
             coefficient_dict = {self.expression: 1}
-        elif self.expression.is_Mul and len(self.expression.args) <= 2:
+        elif self.expression.is_Mul and len(self.expression.args) <= 2 and self.expression.args[1].is_Symbol:
             args = self.expression.args
             coefficient_dict = {args[1]: float(args[0])}
         elif self.expression.is_Number:
