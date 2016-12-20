@@ -274,3 +274,17 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_add_integer_var(self):
         self.assertRaises(ValueError, self.interface.Variable, 'int_var', lb=-13, ub=499., type='integer')
+
+    def test_scipy_coefficient_dict(self):
+        x = self.interface.Variable("x")
+        c = self.interface.Constraint(2 ** x, lb=0, sloppy=True)
+        obj = self.interface.Objective(2 ** x, sloppy=True)
+        model = self.interface.Model()
+        self.assertRaises(Exception, setattr, model, "objective", obj)
+        self.assertRaises(Exception, model._add_constraint, c)
+
+        c = self.interface.Constraint(0, lb=0)
+        obj = self.interface.Objective(0)
+        model.add(c)
+        model.objective = obj
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)

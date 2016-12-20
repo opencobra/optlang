@@ -466,22 +466,32 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         """Change whether the QP solver will try to find a globally optimal solution or a local optimum.
         This will only"""
         if self.problem is not None:
-            return _SOLUTION_TARGETS[self.problem.problem.parameters.solutiontarget.get()]
+            params = self.problem.problem.parameters
+            try:
+                solution_target = params.optimalitytarget
+            except AttributeError:  # pragma: no cover
+                solution_target = params.solutiontarget  # Compatibility with cplex < 12.6.3
+            return _SOLUTION_TARGETS[solution_target.get()]
         else:
             return None
 
     @solution_target.setter
     def solution_target(self, value):
         if self.problem is not None:
+            params = self.problem.problem.parameters
+            try:
+                solution_target = params.optimalitytarget
+            except AttributeError:  # pragma: no cover
+                solution_target = params.solutiontarget  # Compatibility with cplex < 12.6.3
             if value is None:
-                self.problem.problem.parameters.solutiontarget.reset()
+                solution_target.reset()
             else:
                 try:
-                    solution_target = _SOLUTION_TARGETS.index(value)
+                    target = _SOLUTION_TARGETS.index(value)
                 except ValueError:
                     raise ValueError(
                         "%s is not a valid solution target. Choose between %s" % (value, str(_SOLUTION_TARGETS)))
-                self.problem.problem.parameters.solutiontarget.set(solution_target)
+                solution_target.set(target)
         self._solution_target = self.solution_target
 
     @property

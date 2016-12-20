@@ -443,7 +443,7 @@ class OptimizationExpression(object):
     @property
     def problem(self):
         """A reference to the model that the object belongs to (or None)"""
-        return self._problem
+        return getattr(self, '_problem', None)
 
     @problem.setter
     def problem(self, value):
@@ -1385,9 +1385,9 @@ class Model(object):
     def _remove_variables(self, variables):
         for variable in variables:
             try:
-                var = self._variables[variable.name]
+                self._variables[variable.name]
             except KeyError:
-                raise LookupError("Variable %s not in solver" % var)
+                raise LookupError("Variable %s not in solver" % variable.name)
 
         constraint_ids = set()
         for variable in variables:

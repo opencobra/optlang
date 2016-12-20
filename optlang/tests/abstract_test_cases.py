@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import division
+
 import abc
 import unittest
 
@@ -583,6 +585,58 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
         cloned_model.optimize()
         self.assertAlmostEqual(cloned_model.objective.value, opt)
+
+    def test_remove_variable_not_in_model_raises(self):
+        var = self.interface.Variable("test")
+        self.assertRaises(Exception, self.model._remove_variables, [var])
+
+    def test_objective_set_linear_coefficients(self):
+        x = self.interface.Variable("x", lb=0)
+        y = self.interface.Variable("y", lb=0)
+        c1 = self.interface.Constraint((y + 2 * (x - 3)).expand(), ub=0)
+        c2 = self.interface.Constraint(y + (1 / 2) * x - 3, ub=0)
+        obj = self.interface.Objective(x)
+        model = self.interface.Model()
+        model.add([c1, c2])
+        model.objective = obj
+
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+        self.assertAlmostEqual(x.primal, 3)
+        self.assertAlmostEqual(y.primal, 0)
+
+        obj.set_linear_coefficients({y: 1})
+        self.assertEqual(obj.expression - (x + y), 0)
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+        self.assertAlmostEqual(x.primal, 2)
+        self.assertAlmostEqual(y.primal, 2)
+
+        obj.set_linear_coefficients({x: 0})
+        self.assertEqual(obj.expression - y, 0)
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+        self.assertAlmostEqual(x.primal, 0)
+        self.assertAlmostEqual(y.primal, 3)
+
+    def test_constraint_set_linear_coefficients(self):
+        x = self.interface.Variable("x", lb=0, ub=1000)
+        y = self.interface.Variable("y", lb=0)
+        c1 = self.interface.Constraint(y, ub=1)
+        obj = self.interface.Objective(x)
+        model = self.interface.Model()
+        model.add([c1])
+        model.objective = obj
+
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+        self.assertAlmostEqual(x.primal, x.ub)
+
+        c1.set_linear_coefficients({x: 1})
+        self.assertEqual(c1.expression - (x + y), 0)
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+        self.assertAlmostEqual(x.primal, 1)
+
+        c1.set_linear_coefficients({x: 2})
+        self.assertEqual(c1.expression - (2 * x + y), 0)
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+        self.assertAlmostEqual(x.primal, 0.5)
 
 
 @six.add_metaclass(abc.ABCMeta)
