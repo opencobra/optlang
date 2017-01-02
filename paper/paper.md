@@ -23,7 +23,7 @@ bibliography: paper.bib
 
 # Summary
 
-Optlang is a Python package implementing a modeling language for solving mathematical optimization problems, i.e.
+Optlang is a Python package implementing a modeling language for solving mathematical optimization problems, i.e., 
 maximizing or minimizing an objective function over a set of variables subject to a number of constraints. It provides
 a common native Python interface to a series of optimization tools, so different solver backends can be used and
 changed in a transparent way.
@@ -33,7 +33,7 @@ and constraints to be easily formulated algebraically from symbolic expressions 
 scientists who can thus focus on formulating optimization problems based on mathematical equations derived from domain
 knowledge.
 
-Solver interfaces can be added by subclassing the 4 main classes of the optlang API (Variable, Constraint, Objective
+Solver interfaces can be added by subclassing the four main classes of the optlang API (Variable, Constraint, Objective,
 and Model) and implementing the relevant API functions.
 
 
