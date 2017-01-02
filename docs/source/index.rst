@@ -1,12 +1,13 @@
 optlang
 *******
 
-Optlang is a Python package for solving mathematical optimization problems, i.e. maximizing or minimizing an objective function over a set of variables subject to a number of constraints.
+Optlang is a Python package implementing a modeling language for solving mathematical optimization problems, i.e. maximizing or minimizing an objective function over a set of variables subject to a number of constraints.
 Optlang provides a common interface to a series of optimization tools, so different solver backends can be changed in a transparent way.
 
 In constrast to e.g. the commonly used General Algebraic Modeling System (GAMS), optlang has a simple and intuitive interface using native Python algebra syntax, and is free and open-source.
 
 Optlang takes advantage of the symbolic math library `SymPy <http://sympy.org>`_ to allow objective functions and constraints to be easily formulated from symbolic expressions of variables (see examples).
+Scientists can thus use optlang to formulate their optimization problems using mathematical expressions derived from domain knowledge.
 
 Currently supported solvers are:
 
@@ -78,6 +79,12 @@ You should see the following output::
   x2 = 66.6666666667
   x3 = 0.0
   x1 = 33.3333333333
+
+
+Using a particular solver
+----------
+If you have more than one solver installed, it's also possible to specify which one to use, by importing directly from the
+respective solver interface, e.g. :code:`from optlang.glpk_interface import Model, Variable, Constraint, Objective`
 
 Quadratic programming
 ----------
