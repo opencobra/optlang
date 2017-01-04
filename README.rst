@@ -3,7 +3,7 @@ optlang
 
 *Sympy based mathematical programming language*
 
-|PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |DOI|
+|PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |JOSS| |DOI|
 
 Optlang is a Python package for solving mathematical optimization
 problems, i.e. maximizing or minimizing an objective function over a set
@@ -108,6 +108,15 @@ Documentation
 Documentation for optlang is provided at
 `readthedocs.org <http://optlang.readthedocs.org/en/latest/>`__.
 
+Citation
+~~~~~~~~
+
+Please cite |JOSS| if you use optlang in a scientific publication. In case you would like to reference a specific version of of optlang you can use the respective Zenodo DOI (|DOI| points to the latest version).
+
+Contributing
+~~~~~~~~~~~~
+
+Please read `<CONTRIBUTING.md>`__.
 
 Future outlook
 ~~~~~~~~~~~~~~
@@ -138,6 +147,8 @@ also provides a good overview of the project's roadmap.
    :target: https://codecov.io/gh/biosustain/optlang/branch/master
 .. |Documentation Status| image:: https://readthedocs.org/projects/optlang/badge/?version=latest
    :target: https://readthedocs.org/projects/optlang/?badge=latest
+.. |JOSS|  image:: http://joss.theoj.org/papers/cd848071a664d696e214a3950c840e15/status.svg
+   :target: http://joss.theoj.org/papers/cd848071a664d696e214a3950c840e15
 .. |DOI| image:: https://zenodo.org/badge/5031/biosustain/optlang.svg
    :target: https://zenodo.org/badge/latestdoi/5031/biosustain/optlang
 .. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/443yp8hf25c6748h/branch/master?svg=true
