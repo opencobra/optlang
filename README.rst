@@ -111,7 +111,7 @@ Documentation for optlang is provided at
 Citation
 ~~~~~~~~
 
-Please cite |JOSS| if you use optlang in a scientific publication. In case you would like to reference a specific version of of optlang you can use the respective Zenodo DOI (|DOI| points to the latest version).
+Please cite |JOSS| if you use optlang in a scientific publication. In case you would like to reference a specific version of of optlang you can also include the respective Zenodo DOI (|DOI| points to the latest version).
 
 Contributing
 ~~~~~~~~~~~~
