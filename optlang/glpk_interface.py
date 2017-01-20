@@ -677,8 +677,8 @@ class Model(interface.Model):
         if len(variables) > 0:
             if len(variables) > 350:
                 delete_indices = [variable._index - 1 for variable in variables]
-                keep_indices = [i for i in range(0, len(self.variables)) if i not in delete_indices]
-                self._variables = self.variables.fromkeys(keep_indices)
+                keep_indices = [i for i in range(0, len(self._variables)) if i not in delete_indices]
+                self._variables = self._variables.fromkeys(keep_indices)
             else:
                 for variable in variables:
                     del self._variables[variable.name]
