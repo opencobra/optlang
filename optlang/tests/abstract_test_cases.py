@@ -62,6 +62,8 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.model.update()
         self.var.name = "test_2"
         self.assertEqual(self.var.name, "test_2")
+        self.model.remove(self.var)
+        self.model.update()
 
     @abc.abstractmethod
     def test_get_primal(self):

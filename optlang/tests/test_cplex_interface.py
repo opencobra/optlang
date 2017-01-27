@@ -72,9 +72,12 @@ else:
         def test_changing_variable_names_is_reflected_in_the_solver(self):
             model = Model(problem=cplex.Cplex(TESTMODELPATH))
             for i, variable in enumerate(model.variables):
+                old_name = variable.name
                 variable.name = "var" + str(i)
                 self.assertEqual(variable.name, "var" + str(i))
                 self.assertEqual(model.problem.variables.get_names(i), "var" + str(i))
+                self.assertIn("var" + str(i), model._variables_to_constraints_mapping)
+                self.assertNotIn(old_name, model._variables_to_constraints_mapping)
 
         def test_cplex_setting_bounds(self):
             problem = cplex.Cplex()
