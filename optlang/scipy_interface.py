@@ -143,6 +143,7 @@ class Problem(object):
             raise ValueError("A variable with that name already exists")
         self._variables = OrderedDict(((value if k == name else k), v) for k, v in self._variables.items())
         self._objective = OrderedDict(((value if k == name else k), v) for k, v in self._objective.items())
+        self.bounds = OrderedDict(((value if k == name else k), v) for k, v in self.bounds.items())
 
     def change_constraint_name(self, name, value):
         if name != value and value in self._constraints:
