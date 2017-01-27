@@ -211,6 +211,8 @@ class Variable(sympy.Symbol):
         self._name = value
         if getattr(self, 'problem', None) is not None:
             self.problem.variables.update_key(old_name)
+            self.problem._variables_to_constraints_mapping[value] = self.problem._variables_to_constraints_mapping[old_name]
+            del self.problem._variables_to_constraints_mapping[old_name]
 
     @property
     def lb(self):
