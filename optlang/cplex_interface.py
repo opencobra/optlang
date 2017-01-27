@@ -185,6 +185,8 @@ class Variable(interface.Variable):
     def name(self, value):
         if getattr(self, "problem", None) is not None:
             self.problem.problem.variables.set_names(self.name, value)
+            self.problem._variables_to_constraints_mapping[value] = self.problem._variables_to_constraints_mapping[self.name]
+            del self.problem._variables_to_constraints_mapping[self.name]
         super(Variable, Variable).name.fset(self, value)
 
 
