@@ -295,7 +295,8 @@ class Variable(sympy.Symbol):
             if primal is not None:
                 if self.type in ("integer", "binary"):
                     primal = round(primal)
-                primal = self._round_primal_to_bounds(primal)
+                if self.problem.status == OPTIMAL:
+                    primal = self._round_primal_to_bounds(primal)
             return primal
         else:
             return None
