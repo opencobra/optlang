@@ -234,7 +234,7 @@ class Problem(object):
             index = self._get_constraint_index(name)
             return self._slacks[index]
 
-    def optimize(self, method="simplex", verbosity=False, **kwargs):
+    def optimize(self, method="simplex", verbosity=False, tolerance=1e-9, **kwargs):
         """Run the linprog function on the problem. Returns None."""
         c = np.array([self.objective.get(name, 0) for name in self._variables])
         if self.direction == "max":
@@ -242,7 +242,7 @@ class Problem(object):
 
         bounds = list(six.itervalues(self.bounds))
         solution = linprog(c, self.A, self.upper_bounds, bounds=bounds, method=method,
-                           options={"maxiter": 10000, "disp": verbosity}, **kwargs)
+                           options={"maxiter": 10000, "disp": verbosity, "tol": tolerance}, **kwargs)
         self._solution = solution
         self._status = solution.status
         if SCIPY_STATUS[self._status] == interface.OPTIMAL:
@@ -484,9 +484,10 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, verbosity=0, *args, **kwargs):
+    def __init__(self, verbosity=0, tolerance=1e-9, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._verbosity = verbosity
+        self.tolerance = tolerance
 
     @property
     def verbosity(self):
@@ -513,6 +514,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def timeout(self, value):
         if value is not None:
             raise ValueError("Scipy interface does not support timeout")
+
+    @property
+    def tolerance(self):
+        return self._tolerance
+
+    @tolerance.setter
+    def tolerance(self, value):
+        self._tolerance = value
 
 
 @six.add_metaclass(inheritdocstring)
@@ -578,7 +587,7 @@ class Model(interface.Model):
             super(Model, self)._remove_constraints(constraints)
 
     def _optimize(self):
-        self.problem.optimize(verbosity=bool(self.configuration.verbosity))
+        self.problem.optimize(verbosity=bool(self.configuration.verbosity), tolerance=self.configuration.tolerance)
         status = self.problem.status
         return status
 
