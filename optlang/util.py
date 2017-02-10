@@ -111,28 +111,28 @@ def list_available_solvers():
 
         solvers['GUROBI'] = True
         log.debug('Gurobi python bindings found at %s' % os.path.dirname(gurobipy.__file__))
-    except:
+    except Exception:
         log.debug('Gurobi python bindings not available.')
     try:
         import swiglpk
 
         solvers['GLPK'] = True
         log.debug('GLPK python bindings found at %s' % os.path.dirname(swiglpk.__file__))
-    except:
+    except Exception:
         log.debug('GLPK python bindings not available.')
     try:
         import mosek
 
         solvers['MOSEK'] = True
         log.debug('Mosek python bindings found at %s' % os.path.dirname(mosek.__file__))
-    except:
+    except Exception:
         log.debug('Mosek python bindings not available.')
     try:
         import cplex
 
         solvers['CPLEX'] = True
         log.debug('CPLEX python bindings found at %s' % os.path.dirname(cplex.__file__))
-    except:
+    except Exception:
         log.debug('CPLEX python bindings not available.')
     try:
         from scipy import optimize

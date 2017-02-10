@@ -212,7 +212,7 @@ class Constraint(interface.Constraint):
             else:
                 raise IndexError(
                     "Could not determine row index for variable %s" % self)
-        except:
+        except Exception:  # TODO Change to specific exception type
             return None
 
     @property
