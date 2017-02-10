@@ -182,7 +182,12 @@ def is_numeric(obj):
     if isinstance(obj, (int, float)) or getattr(obj, "is_Number", False):
         return True
     else:
-        return False
+        try:
+            float(obj)
+        except ValueError:
+            return False
+        else:
+            return True
 
 
 def expr_to_json(expr):

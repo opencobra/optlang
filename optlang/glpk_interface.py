@@ -263,7 +263,7 @@ class Constraint(interface.Constraint):
 
             for i, (name, coeff) in enumerate(six.iteritems(final_variables_and_coefficients)):
                 ia[i + 1] = self.problem._variables[name]._index
-                va[i + 1] = coeff
+                va[i + 1] = float(coeff)
 
             glp_set_mat_row(problem, self._index, len(final_variables_and_coefficients), ia, va)
         else:
@@ -323,7 +323,7 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         for variable, coefficient in coefficients.items():
-            glp_set_obj_coef(self.problem.problem, variable._index, coefficient)
+            glp_set_obj_coef(self.problem.problem, variable._index, float(coefficient))
         self._expression_expired = True
 
 
