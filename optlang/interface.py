@@ -1099,6 +1099,7 @@ class Model(object):
         if objective is None:
             objective = self.interface.Objective(0)
         self._objective = objective
+        self._objective.problem = self
         self._variables = Container()
         self._constraints = Container()
         self._variables_to_constraints_mapping = dict()
@@ -1125,6 +1126,7 @@ class Model(object):
             self.add(variables)
         if constraints is not None:
             self.add(constraints)
+        self.update()
 
     @property
     def interface(self):
