@@ -1126,7 +1126,6 @@ class Model(object):
             self.add(variables)
         if constraints is not None:
             self.add(constraints)
-        self.update()
 
     @property
     def interface(self):
