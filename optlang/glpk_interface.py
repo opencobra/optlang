@@ -344,7 +344,7 @@ class Objective(interface.Objective):
         if self.problem is not None:
             return {var: glp_get_obj_coef(self.problem.problem, var._index) for var in variables}
         else:
-            raise Exception("Can't get coefficients from solver if constraint is not in a model")
+            raise Exception("Can't get coefficients from solver if objective is not in a model")
 
 
 
