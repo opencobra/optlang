@@ -269,6 +269,17 @@ class Constraint(interface.Constraint):
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            num_cols = glp_get_num_cols(self.problem.problem)
+            ia = intArray(num_cols + 1)
+            da = doubleArray(num_cols + 1)
+            nnz = glp_get_mat_row(self.problem.problem, self._index, ia, da)
+            return {self.problem._variables[ia[i + 1] - 1]: da[i + 1] for i in range(nnz)}
+        else:
+            raise Exception("Can't get coefficients from solver if constraint is not in a model")
+
+
 
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
@@ -322,9 +333,19 @@ class Objective(interface.Objective):
         return self
 
     def set_linear_coefficients(self, coefficients):
-        for variable, coefficient in coefficients.items():
-            glp_set_obj_coef(self.problem.problem, variable._index, float(coefficient))
-        self._expression_expired = True
+        if self.problem is not None:
+            for variable, coefficient in coefficients.items():
+                glp_set_obj_coef(self.problem.problem, variable._index, float(coefficient))
+            self._expression_expired = True
+        else:
+            raise Exception("Can't change coefficients if objective is not associated with a model.")
+
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            return {var: glp_get_obj_coef(self.problem.problem, var._index) for var in variables}
+        else:
+            raise Exception("Can't get coefficients from solver if constraint is not in a model")
+
 
 
 @six.add_metaclass(inheritdocstring)
