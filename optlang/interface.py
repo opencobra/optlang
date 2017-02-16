@@ -547,6 +547,10 @@ class OptimizationExpression(object):
         """Set coefficients of linear terms in constraint or objective.
         Existing coefficients for linear or non-linear terms will not be modified.
 
+        Note: This method interacts with the low-level solver backend and can only be used on objects that are
+        associated with a Model. The method is not part of optlangs basic interface and should be used mainly where
+        speed is important.
+
         Parameters
         ----------
         coefficients : dict
@@ -555,6 +559,25 @@ class OptimizationExpression(object):
         Returns
         -------
         None
+        """
+        raise NotImplementedError("Child classes should implement this.")
+
+    def get_linear_coefficients(self, variables):
+        """Get coefficients of linear terms in constraint or objective.
+
+        Note: This method interacts with the low-level solver backend and can only be used on objects that are
+        associated with a Model. The method is not part of optlangs basic interface and should be used mainly where
+        speed is important.
+
+        Parameters
+        ----------
+        variables : iterable
+            An iterable of Variable objects
+
+        Returns
+        -------
+        Coefficients : dict
+            {var1: coefficient, var2: coefficient ...}
         """
         raise NotImplementedError("Child classes should implement this.")
 
