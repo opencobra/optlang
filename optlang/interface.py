@@ -26,6 +26,8 @@ The classes in this module can be used to construct and modify problems, but no 
 import collections
 import inspect
 import logging
+
+log = logging.getLogger(__name__)
 import sys
 import uuid
 import warnings
@@ -36,17 +38,21 @@ from optlang.exceptions import IndicatorConstraintsNotSupported
 
 import sympy as old_sympy
 try:
-    # raise ImportError
+    raise ImportError
     import symengine as sympy
 except ImportError:
     log.info('symengine not available. Using normal sympy.')
     import sympy
-from sympy.core.singleton import S
-from sympy.core.logic import fuzzy_bool
+# from sympy.core.singleton import S
+# from sympy.core.logic import fuzzy_bool
+from sympy import sympify
+
+from sympy.core.assumptions import _assume_rules
+from sympy.core.facts import FactKB
+from sympy.core.expr import Expr
+from optlang.util import parse_expr, expr_to_json, is_numeric
 
 from .container import Container
-
-log = logging.getLogger(__name__)
 
 OPTIMAL = 'optimal'
 UNDEFINED = 'undefined'
@@ -153,21 +159,13 @@ class Variable(sympy.Symbol):
 
     def __new__(cls, name, *args, **kwargs):
         # https://www.reddit.com/r/learnpython/comments/30tbtf/parent_class_called_before_the_child_class/
-        inst = sympy.Symbol.__new__(cls, name)
-        return inst
+        obj = sympy.Symbol.__new__(cls, name)
+        obj.name = name
+        obj._assumptions = FactKB(_assume_rules)
+        obj._assumptions._tell('commutative', True)
+        obj._assumptions._tell('uuid', uuid.uuid1())
 
-    # def __new__(cls, name, **kwargs):
-    #     if not isinstance(name, six.string_types):
-    #         raise TypeError("name should be a string, not %s" % repr(type(name)))
-    #
-    #     obj = Expr.__new__(cls)
-    #
-    #     obj.name = name
-    #     obj._assumptions = FactKB(_assume_rules)
-    #     obj._assumptions._tell('commutative', True)
-    #     obj._assumptions._tell('uuid', uuid.uuid1())
-    #
-    #     return obj
+        return obj
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
 
