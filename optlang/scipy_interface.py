@@ -431,6 +431,10 @@ class Constraint(interface.Constraint):
         self.lb = lb
         self.ub = ub
 
+    def get_linear_coefficients(self, variables):
+        coefs = self.coefficient_dict(names=False)
+        return {v: coefs.get(v, 0) for v in variables}
+
 
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
@@ -480,6 +484,9 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         self.problem.problem.objective.update({var.name: coef for var, coef in coefficients.items()})
+
+    def get_linear_coefficients(self, variables):
+        return {v: self.problem.problem.objective.get(v.name, 0) for v in variables}
 
 
 @six.add_metaclass(inheritdocstring)
