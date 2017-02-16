@@ -268,6 +268,12 @@ class AbstractConstraintTestCase(unittest.TestCase):
         const.lb = -10
         self.assertEqual(model.optimize(), interface.OPTIMAL)
 
+    def test_constraint_get_linear_coefficients_raises(self):
+        self.assertRaises(Exception, self.constraint.get_linear_coefficients)
+
+    def test_constraint_set_linear_coefficients_raises(self):
+        self.assertRaises(Exception, self.constraint.set_linear_coefficients)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractObjectiveTestCase(unittest.TestCase):
@@ -279,6 +285,13 @@ class AbstractObjectiveTestCase(unittest.TestCase):
     def test_change_direction(self):
         pass
 
+    def test_objective_get_linear_coefficients_raises(self):
+        objective = self.interface.Objective(0)
+        self.assertRaises(Exception, objective.get_linear_coefficients)
+
+    def test_objective_set_linear_coefficients_raises(self):
+        objective = self.interface.Objective(0)
+        self.assertRaises(Exception, objective.set_linear_coefficients)
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractModelTestCase(unittest.TestCase):

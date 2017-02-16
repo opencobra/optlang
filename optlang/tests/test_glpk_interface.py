@@ -95,6 +95,8 @@ class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
 
 
 class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
+    interface = glpk_interface
+
     def setUp(self):
         self.model = Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.obj = self.model.objective
