@@ -20,18 +20,17 @@ http://www.zib.de/koch/perplex/data/netlib/txt/
  publisher = {Elsevier Science Publishers B. V.},
  address = {Amsterdam, The Netherlands, The Netherlands},
  keywords = {Linear-programming, NETLIB, Rational-arithmetic},
-} 
+}
 """
 
 import glob
 import gzip
+import os
 import pickle
+import re
 from fractions import Fraction
 
-import os
-import re
 import six
-
 
 OBJ_REGEX = re.compile('\* Objvalue : -?\d+/\d+')
 
@@ -53,4 +52,3 @@ for key, value in six.iteritems(the_final_netlib_results):
 
 with open('the_final_netlib_results.pcl', 'w') as fhandle:
     pickle.dump(the_final_netlib_results, fhandle, protocol=2)
-

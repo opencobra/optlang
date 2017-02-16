@@ -31,4 +31,4 @@ status = model.optimize()
 print("status:", model.status)
 print("objective value:", model.objective.value)
 for var_name, var in six.iteritems(model.variables):
-      print(var_name, "=", var.primal)
+    print(var_name, "=", var.primal)

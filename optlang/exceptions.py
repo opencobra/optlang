@@ -14,6 +14,19 @@
 # limitations under the License.
 
 
+class ContainerAlreadyContains(Exception):
+    """
+    This exception is raised when the name of an object being added to a Container is already
+    taken by another object.
+    """
+    def __init__(self, message):
+        super(ContainerAlreadyContains, self).__init__(message)
+
+
 class IndicatorConstraintsNotSupported(Exception):
+    """
+    This exception is raised when trying to add indicator variables to a constraint using a solver
+    that does not support indicator variables.
+    """
     def __init__(self, message):
         super(IndicatorConstraintsNotSupported, self).__init__(message)

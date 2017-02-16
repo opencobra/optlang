@@ -16,19 +16,18 @@
 
 import os
 import unittest
+
 import nose
-
 import optlang
-from optlang.util import glpk_read_cplex
-
 import optlang.glpk_interface as glpk
 from optlang import interface
-
+from optlang.util import glpk_read_cplex
 
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 
 try:
     import optlang.cplex_interface as cplex
+
 
     class ChangeSolverTestCase(unittest.TestCase):
         def setUp(self):
@@ -95,4 +94,3 @@ except ImportError as e:
 
 if __name__ == '__main__':
     nose.runmodule()
-
