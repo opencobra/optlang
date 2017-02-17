@@ -423,17 +423,23 @@ class Constraint(interface.Constraint):
         return coefficient_dict
 
     def set_linear_coefficients(self, coefficients):
-        lb, ub = self.lb, self.ub
-        self.lb, self.ub = None, None
-        coefficients_dict = self.coefficient_dict(names=False)
-        coefficients_dict.update(coefficients)
-        self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items()))
-        self.lb = lb
-        self.ub = ub
+        if self.problem is not None:
+            lb, ub = self.lb, self.ub
+            self.lb, self.ub = None, None
+            coefficients_dict = self.coefficient_dict(names=False)
+            coefficients_dict.update(coefficients)
+            self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items()))
+            self.lb = lb
+            self.ub = ub
+        else:
+            raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
     def get_linear_coefficients(self, variables):
-        coefs = self.coefficient_dict(names=False)
-        return {v: coefs.get(v, 0) for v in variables}
+        if self.problem is not None:
+            coefs = self.coefficient_dict(names=False)
+            return {v: coefs.get(v, 0) for v in variables}
+        else:
+            raise Exception("Can't get coefficients from solver if constraint is not in a model")
 
 
 @six.add_metaclass(inheritdocstring)
@@ -483,10 +489,16 @@ class Objective(interface.Objective):
         return coefficient_dict
 
     def set_linear_coefficients(self, coefficients):
-        self.problem.problem.objective.update({var.name: coef for var, coef in coefficients.items()})
+        if self.problem is not None:
+            self.problem.problem.objective.update({var.name: coef for var, coef in coefficients.items()})
+        else:
+            raise Exception("Can't change coefficients if objective is not associated with a model.")
 
     def get_linear_coefficients(self, variables):
-        return {v: self.problem.problem.objective.get(v.name, 0) for v in variables}
+        if self.problem is not None:
+            return {v: self.problem.problem.objective.get(v.name, 0) for v in variables}
+        else:
+            raise Exception("Can't get coefficients from solver if objective is not in a model")
 
 
 @six.add_metaclass(inheritdocstring)
