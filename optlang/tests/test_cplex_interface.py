@@ -119,6 +119,8 @@ else:
                 self.assertAlmostEqual(i, j)
 
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
+        interface = cplex_interface
+
         def setUp(self):
             problem = cplex.Cplex()
             problem.read(TESTMODELPATH)

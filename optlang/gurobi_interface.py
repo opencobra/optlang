@@ -191,6 +191,13 @@ class Constraint(interface.Constraint):
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            grb_constraint = self.problem.problem.getConstrByName(self.name)
+            return {v: self.problem.problem.getCoeff(grb_constraint, v._internal_variable) for v in variables}
+        else:
+            raise Exception("Can't get coefficients from solver if constraint is not in a model")
+
     @property
     def _internal_constraint(self):
         if self.problem is not None:
@@ -340,6 +347,14 @@ class Objective(interface.Objective):
                 self._expression_expired = True
         else:
             raise Exception("Can't change coefficients if objective is not associated with a model.")
+
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            obj = self.problem.problem.getObjective()
+            coefs = {obj.getVar(i).getAttr("varName"): obj.getCoeff(i) for i in range(obj.size())}
+            return {v: coefs.get(v.name, 0) for v in variables}
+        else:
+            raise("Can't get coefficients from solver if objective is not in a model")
 
     def _get_expression(self):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
