@@ -38,14 +38,13 @@ from optlang.exceptions import IndicatorConstraintsNotSupported
 
 import sympy as old_sympy
 try:
-    raise ImportError
+    # raise ImportError
     import symengine as sympy
+
+    print('Using symengine')
 except ImportError:
     log.info('symengine not available. Using normal sympy.')
     import sympy
-# from sympy.core.singleton import S
-# from sympy.core.logic import fuzzy_bool
-from sympy import sympify
 
 from sympy.core.assumptions import _assume_rules
 from sympy.core.facts import FactKB
@@ -166,6 +165,8 @@ class Variable(sympy.Symbol):
         obj._assumptions._tell('uuid', uuid.uuid1())
 
         return obj
+
+    # def __add__
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
 
@@ -407,7 +408,7 @@ class OptimizationExpression(object):
                 variable_substitutions[variable] = model.variables[variable.name]
             else:
                 variable_substitutions[variable] = interface.Variable.clone(variable)
-        adjusted_expression = sympify(expression.expression).xreplace(variable_substitutions)
+        adjusted_expression = expression.expression.xreplace(variable_substitutions)
         return adjusted_expression
 
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
@@ -455,9 +456,10 @@ class OptimizationExpression(object):
     @property
     def variables(self):
         """Variables in constraint."""
-        # return sympify(self.expression).atoms(sympy.Symbol)
-
-        return sympify(self.expression).atoms()
+        # if sympy.__name__ == 'symengine':
+        #     return self.expression.free_symbols
+        # else:
+        return self.expression.atoms(Variable)
 
     def _canonicalize(self, expression):
         if isinstance(expression, float):
