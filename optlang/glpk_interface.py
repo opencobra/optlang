@@ -307,10 +307,13 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        if (glp_get_num_int(self.problem.problem) + glp_get_num_bin(self.problem.problem)) > 0:
-            return glp_mip_obj_val(self.problem.problem)
+        if getattr(self, 'problem', None) is not None:
+            if self.problem._glpk_is_mip():
+                return glp_mip_obj_val(self.problem.problem)
+            else:
+                return glp_get_obj_val(self.problem.problem)
         else:
-            return glp_get_obj_val(self.problem.problem)
+            return None
 
     @interface.Objective.direction.setter
     def direction(self, value):

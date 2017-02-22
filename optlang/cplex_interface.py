@@ -313,7 +313,10 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        return self.problem.problem.solution.get_objective_value()
+        if getattr(self, 'problem', None) is not None:
+            return self.problem.problem.solution.get_objective_value()
+        else:
+            return None
 
     @interface.Objective.direction.setter
     def direction(self, value):
