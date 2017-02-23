@@ -293,6 +293,10 @@ class AbstractObjectiveTestCase(unittest.TestCase):
         objective = self.interface.Objective(0)
         self.assertRaises(Exception, objective.set_linear_coefficients, {})
 
+    def test_objective_value_is_none(self):
+        objective = self.interface.Objective(0)
+        self.assertIs(objective.value, None)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractModelTestCase(unittest.TestCase):
