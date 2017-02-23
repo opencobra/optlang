@@ -111,28 +111,28 @@ def list_available_solvers():
 
         solvers['GUROBI'] = True
         log.debug('Gurobi python bindings found at %s' % os.path.dirname(gurobipy.__file__))
-    except:
+    except Exception:
         log.debug('Gurobi python bindings not available.')
     try:
         import swiglpk
 
         solvers['GLPK'] = True
         log.debug('GLPK python bindings found at %s' % os.path.dirname(swiglpk.__file__))
-    except:
+    except Exception:
         log.debug('GLPK python bindings not available.')
     try:
         import mosek
 
         solvers['MOSEK'] = True
         log.debug('Mosek python bindings found at %s' % os.path.dirname(mosek.__file__))
-    except:
+    except Exception:
         log.debug('Mosek python bindings not available.')
     try:
         import cplex
 
         solvers['CPLEX'] = True
         log.debug('CPLEX python bindings found at %s' % os.path.dirname(cplex.__file__))
-    except:
+    except Exception:
         log.debug('CPLEX python bindings not available.')
     try:
         from scipy import optimize
@@ -182,7 +182,12 @@ def is_numeric(obj):
     if isinstance(obj, (int, float)) or getattr(obj, "is_Number", False):
         return True
     else:
-        return False
+        try:
+            float(obj)
+        except ValueError:
+            return False
+        else:
+            return True
 
 
 def expr_to_json(expr):

@@ -112,6 +112,8 @@ else:
 
 
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
+        interface = gurobi_interface
+
         def setUp(self):
             problem = gurobipy.read(TESTMODELPATH)
             self.model = Model(problem=problem)

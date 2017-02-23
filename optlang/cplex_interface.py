@@ -202,6 +202,13 @@ class Constraint(interface.Constraint):
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            coefs = self.problem.problem.linear_constraints.get_coefficients([(self.name, v.name) for v in variables])
+            return {v: c for v, c in zip(variables, coefs)}
+        else:
+            raise Exception("Can't get coefficients from solver if constraint is not in a model")
+
     def _get_expression(self):
         if self.problem is not None:
             cplex_problem = self.problem.problem
@@ -306,7 +313,10 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        return self.problem.problem.solution.get_objective_value()
+        if getattr(self, 'problem', None) is not None:
+            return self.problem.problem.solution.get_objective_value()
+        else:
+            return None
 
     @interface.Objective.direction.setter
     def direction(self, value):
@@ -333,6 +343,13 @@ class Objective(interface.Objective):
             self._expression_expired = True
         else:
             raise Exception("Can't change coefficients if objective is not associated with a model.")
+
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            coefs = self.problem.problem.objective.get_linear([v.name for v in variables])
+            return {v: c for v, c in zip(variables, coefs)}
+        else:
+            raise Exception("Can't get coefficients from solver if objective is not in a model")
 
 
 @six.add_metaclass(inheritdocstring)

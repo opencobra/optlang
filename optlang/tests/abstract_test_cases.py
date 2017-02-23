@@ -268,6 +268,12 @@ class AbstractConstraintTestCase(unittest.TestCase):
         const.lb = -10
         self.assertEqual(model.optimize(), interface.OPTIMAL)
 
+    def test_constraint_get_linear_coefficients_raises(self):
+        self.assertRaises(Exception, self.constraint.get_linear_coefficients, [])
+
+    def test_constraint_set_linear_coefficients_raises(self):
+        self.assertRaises(Exception, self.constraint.set_linear_coefficients, {})
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractObjectiveTestCase(unittest.TestCase):
@@ -278,6 +284,18 @@ class AbstractObjectiveTestCase(unittest.TestCase):
     @abc.abstractmethod
     def test_change_direction(self):
         pass
+
+    def test_objective_get_linear_coefficients_raises(self):
+        objective = self.interface.Objective(0)
+        self.assertRaises(Exception, objective.get_linear_coefficients, [])
+
+    def test_objective_set_linear_coefficients_raises(self):
+        objective = self.interface.Objective(0)
+        self.assertRaises(Exception, objective.set_linear_coefficients, {})
+
+    def test_objective_value_is_none(self):
+        objective = self.interface.Objective(0)
+        self.assertIs(objective.value, None)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -429,6 +447,17 @@ class AbstractModelTestCase(unittest.TestCase):
             constraint = self.interface.Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
             self.model.add(constraint)
             self.model.update()
+
+    def test_objective_get_linear_coefficients(self):
+        coefs = self.model.objective.get_linear_coefficients(self.model.variables)
+        expr = sum(c * v for v, c in coefs.items())
+        self.assertEqual(expr - self.model.objective.expression, 0)
+
+    def test_constraint_get_linear_coefficients(self):
+        constraint = self.model.constraints[5]
+        coefs = constraint.get_linear_coefficients(self.model.variables)
+        expr = sum(c * v for v, c in coefs.items())
+        self.assertEqual(expr - constraint.expression, 0)
 
     @abc.abstractmethod
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
