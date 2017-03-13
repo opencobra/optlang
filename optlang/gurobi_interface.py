@@ -585,13 +585,12 @@ class Model(interface.Model):
                 ub = gurobipy.GRB.INFINITY
             else:
                 ub = variable.ub
-            gurobi_var = self.problem.addVar(
+            self.problem.addVar(
                 name=variable.name,
                 lb=lb,
                 ub=ub,
                 vtype=_VTYPE_TO_GUROBI_VTYPE[variable.type]
             )
-            variable._internal_var = gurobi_var
 
     def _remove_variables(self, variables):
         # Not calling parent method to avoid expensive variable removal from sympy expressions
