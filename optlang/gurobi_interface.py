@@ -569,6 +569,8 @@ class Model(interface.Model):
         super(Model, self).update(callback=self.problem.update)
 
     def _optimize(self):
+        if self.status != interface.OPTIMAL:
+            self.problem.reset()
         self.problem.update()
         self.problem.optimize()
         status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
