@@ -346,12 +346,10 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
-            grb_obj = self.problem.problem.getObjective()
-            for var, coeff in six.iteritems(coefficients):
-                grb_var = self.problem.problem.getVarByName(var.name)
-                grb_obj.remove(grb_var)
-                grb_obj.addTerms(float(coeff), grb_var)
-                self._expression_expired = True
+            for var, coeff in coefficients.items():
+                var._internal_variable.setAttr("Obj", coeff)
+            self._expression_expired = True
+            self.problem.update()
         else:
             raise Exception("Can't change coefficients if objective is not associated with a model.")
 
