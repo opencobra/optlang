@@ -149,29 +149,17 @@ else:
 
 if __name__ == '__main__':
     # tar = tarfile.open('data/netlib_lp_problems.tar.gz')
-    # model_paths_in_tar = glob.fnmatch.filter(tar.getnames(), '*.SIF')
-    # for model_path_in_tar in model_paths_in_tar:
-    # try:
-    #
-    # fhandle = tar.extractfile(model_path_in_tar)
+    # fhandle = tar.extractfile('./netlib/SEBA.SIF')
     # problem = read_netlib_sif_cplex(fhandle)
-    #
-    # except cplex.exceptions.CplexSolverError, e:
-    # print model_path_in_tar
-    # print problem
-    # print problem.get_problem_name()
-    # print e
-    # fhandle = tar.extractfile('./netlib/ADLITTLE.SIF')
-    # glpk_problem = read_netlib_sif_glpk(fhandle)
-    # glp_simplex(glpk_problem, None)
-    # print glp_get_obj_val(glpk_problem)
-    # print glpk_problem
-    # fhandle = tar.extractfile('./netlib/ADLITTLE.SIF')
-    # glpk_problem = read_netlib_sif_glpk(fhandle)
-    # model = Model(problem=glpk_problem)
-    # glp_simplex(glpk_problem, None)
-    # model.optimize()
-    # print model.objective.value
-    # print model
-    # test_netlib().next()
+    # model = Model(problem=problem)
+    # status = model.optimize()
+    # print(status)
+    # print(model.objective.value)
+    # print(model.constraints['VILLKOR7'])
+    # # print(model)
+    # model = Model.clone(model, use_lp=False, use_json=False)
+    # status = model.optimize()
+    # print(status)
+    # print(model.constraints['VILLKOR7'])
+    # print(model.objective.value)
     nose.runmodule()

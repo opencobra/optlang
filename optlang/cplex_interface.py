@@ -577,7 +577,7 @@ class Model(interface.Model):
                 elif sense == 'L':
                     constr = Constraint(lhs, ub=rhs, name=name, problem=self)
                 elif sense == 'R':
-                    range_val = self.problem.linear_constraints.get_rhs(name)
+                    range_val = self.problem.linear_constraints.get_range_values(name)
                     if range_val > 0:
                         constr = Constraint(lhs, lb=rhs, ub=rhs + range_val, name=name, problem=self)
                     else:
