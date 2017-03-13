@@ -55,7 +55,7 @@ def check_dimensions(model, glpk_problem):
 
 def check_optimization(model, expected_solution):
     status = model.optimize()
-    if not status is "time_limit":
+    if status is not "time_limit":
         nose.tools.assert_equals(status, expected_solution['status'])
 
         if status is "optimal":
