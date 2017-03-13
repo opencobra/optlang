@@ -108,6 +108,7 @@ _STATUS_MAP = {
     'solution_limit': interface.SPECIAL,
     'unbounded': interface.UNBOUNDED,
     'relaxation_unbounded': interface.UNBOUNDED,
+    'non-existing-status': 'Here for testing that missing statuses are handled.'
     # 102: interface.OPTIMAL # The same as cplex.Cplex.solution.status.optimal_tolerance
 }
 
