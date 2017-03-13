@@ -20,15 +20,12 @@ Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
 """
 
-import random
 import logging
-
+import random
 import types
-
 
 log = logging.getLogger(__name__)
 import sympy
-import inspyred
 import interface
 
 
@@ -206,10 +203,10 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
             previous_selector = self._algorithm.selector
             previous_variator = self._algorithm.variator
             previous_replacer = self._algorithm.replacer
-            previous_migrator = self._algorithm.migrator
-            previous_archiver = self._algorithm.archiver
-            previous_observer = self._algorithm.observer
-            previous_terminator = self._algorithm.terminator
+            # previous_migrator = self._algorithm.migrator
+            # previous_archiver = self._algorithm.archiver
+            # previous_observer = self._algorithm.observer
+            # previous_terminator = self._algorithm.terminator
         except AttributeError:
             init = True
 
@@ -235,16 +232,18 @@ class Configuration(interface.EvolutionaryOptimizationConfiguration):
             self._algorithm = inspyred.emo.Pareto(random)
         else:
             raise ValueError(
-                "%s is not a supported. Try one of the following instead: 'GeneticAlgorithm', 'ParticleSwarmOptimization', 'EvolutionaryStrategy'. TODO: be more specific here")
+                "%s is not a supported. Try one of the following instead:"
+                "'GeneticAlgorithm', 'ParticleSwarmOptimization', 'EvolutionaryStrategy'."
+                "TODO: be more specific here")
         # self._algorithm.terminator = self._default_terminator
         if init is False:
             self._algorithm.selector = previous_selector
             self._algorithm.variator = previous_variator
             self._algorithm.replacer = previous_replacer
-            previous_migrator = self._algorithm.migrator
-            previous_archiver = self._algorithm.archiver
-            previous_observer = self._algorithm.observer
-            previous_terminator = self._algorithm.terminator
+            # previous_migrator = self._algorithm.migrator
+            # previous_archiver = self._algorithm.archiver
+            # previous_observer = self._algorithm.observer
+            # previous_terminator = self._algorithm.terminator
             # TODO: setting a new algorithm should recycle old variators, selectors etc.
 
     def _evolve_kwargs(self):
@@ -267,7 +266,6 @@ class Model(interface.Model):
         super(Model, self).__init__(*args, **kwargs)
         self.configuration = Configuration()
         if algorithm is None:
-            # TODO: pick something smart?
             self.configuration.algorithm = "GA"
         else:
             self.configuration.algorithm = algorithm
@@ -280,7 +278,7 @@ class Model(interface.Model):
             if variable.type == 'continuous':
                 individual.append(random.uniform(variable.lb, variable.ub))
             else:
-                individual.append(random.choice(xrange(variable.lb, variable.ub + 1)))
+                individual.append(random.choice(range(variable.lb, variable.ub + 1)))
         return individual
 
     def _evaluator(self, candidates, args):
@@ -327,19 +325,21 @@ if __name__ == '__main__':
     x = Variable('x', lb=0, ub=2)
     y = Variable('y', lb=0, ub=2)
     rosenbrock_obj = Objective((1 - x) ** 2 + 100 * (y - x ** 2) ** 2, name="Rosenbrock function", direction='min')
-    print "The rosenbrock function:", rosenbrock_obj
-    print "The global minimum at (x,y) = (1,1) is", rosenbrock_obj.expression.subs({x: 1, y: 1})
+    print("The rosenbrock function:", rosenbrock_obj)
+    print("The global minimum at (x,y) = (1,1) is", rosenbrock_obj.expression.subs({x: 1, y: 1}))
 
     problem = Model(name='rosenbrock', algorithm='PSO')
     # problem = Model(name='rosenbrock')
 
     problem.objective = rosenbrock_obj
 
+
     def my_observer(population, num_generations, num_evaluations, args):
         best = max(population)
-        print('{0:6} -- {1} : {2}'.format(num_generations,
-                                          best.fitness,
-                                          str(best.candidate)))
+        print(('{0:6} -- {1} : {2}'.format(num_generations,
+                                           best.fitness,
+                                           str(best.candidate))))
+
 
     problem.configuration.max_generations = 100
     problem.configuration.terminator = inspyred.ec.terminators.generation_termination
@@ -347,9 +347,8 @@ if __name__ == '__main__':
     problem.configuration.selector = inspyred.ec.selectors.tournament_selection
     final_pop = problem.optimize()
     fitnesses = [individual.fitness for individual in final_pop]
-    print fitnesses
-    print "mean", numpy.mean(fitnesses)
-    print "max", numpy.max(fitnesses)
-    print "min", numpy.min(fitnesses)
+    print(fitnesses)
+    print("mean", numpy.mean(fitnesses))
+    print("max", numpy.max(fitnesses))
+    print("min", numpy.min(fitnesses))
     # print numpy.std(fitnesses)
-

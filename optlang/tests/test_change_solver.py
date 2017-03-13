@@ -16,19 +16,18 @@
 
 import os
 import unittest
+
 import nose
-
 import optlang
-from optlang.util import glpk_read_cplex
-
 import optlang.glpk_interface as glpk
 from optlang import interface
-
+from optlang.util import glpk_read_cplex
 
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 
 try:
     import optlang.cplex_interface as cplex
+
 
     class ChangeSolverTestCase(unittest.TestCase):
         def setUp(self):
@@ -40,7 +39,7 @@ try:
             x3 = interface.Variable('x3', lb=0)
             c1 = interface.Constraint(x1 + x2 + x3, ub=100)
             glpk_c1 = glpk.Constraint.clone(c1)
-            print glpk_c1
+            print(glpk_c1)
             self.assertIs(glpk_c1.__class__, glpk.Constraint)
             for variable in glpk_c1.variables:
                 self.assertIs(variable.__class__, glpk.Variable)
@@ -51,7 +50,7 @@ try:
             x3 = glpk.Variable('x3', lb=0)
             c1 = glpk.Constraint(x1 + x2 + x3, ub=100)
             cplex_c1 = cplex.Constraint.clone(c1)
-            print cplex_c1
+            print(cplex_c1)
             self.assertIs(cplex_c1.__class__, cplex.Constraint)
             for variable in cplex_c1.variables:
                 self.assertIs(variable.__class__, cplex.Variable)
@@ -82,12 +81,12 @@ try:
             for constraint in glpk_model.constraints:
                 self.assertIs(constraint.__class__, glpk.Constraint)
 
-except ImportError, e:
+except ImportError as e:
 
-    if e.message.find('cplex') >= 0:
+    if str(e).find('cplex') >= 0:
         class TestMissingDependency(unittest.TestCase):
 
-            @unittest.skip('Missing dependency - ' + e.message)
+            @unittest.skip('Missing dependency - ' + str(e))
             def test_fail(self):
                 pass
     else:
@@ -95,4 +94,3 @@ except ImportError, e:
 
 if __name__ == '__main__':
     nose.runmodule()
-

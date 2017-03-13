@@ -67,7 +67,7 @@ class VariableTestCase(unittest.TestCase):
         self.assertRaises(Exception, setattr, self.var, 'ub', -20)
 
     def test_pickle_ability(self):
-        var = Variable('name', lb=-10, ub=10., type='binary')
+        var = Variable('name', type='binary')
         pickle_var = pickle.loads(pickle.dumps(var))
         keys = var.__dict__.keys()
         self.assertEqual([getattr(var, k) for k in keys], [getattr(pickle_var, k) for k in keys])
@@ -76,9 +76,9 @@ class VariableTestCase(unittest.TestCase):
 # noinspection PyPep8Naming
 class ConstraintTestCase(unittest.TestCase):
     def setUp(self):
-        self.x = Variable('x', lb=-83.3, ub=1324422., type='binary')
+        self.x = Variable('x', type='binary')
         self.y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        self.z = Variable('z', lb=0.000003, ub=0.000003, type='integer')
+        self.z = Variable('z', lb=0., ub=3., type='integer')
 
     def test_is_Linear(self):
         constraint = Constraint(
@@ -132,7 +132,7 @@ class ConstraintTestCase(unittest.TestCase):
     def test_canonicalization_with_lb_and_ub(self):
         constraint = Constraint(-20 + self.x + 3, ub=666, lb=-666)
         self.assertEqual(constraint.lb, -649)
-        self.assertEqual(constraint.ub, 666)
+        self.assertEqual(constraint.ub, 683)
         self.assertEqual(constraint.expression, self.x)
 
         # def test_pickle_ability(self):

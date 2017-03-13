@@ -20,24 +20,24 @@ http://www.zib.de/koch/perplex/data/netlib/txt/
  publisher = {Elsevier Science Publishers B. V.},
  address = {Amsterdam, The Netherlands, The Netherlands},
  keywords = {Linear-programming, NETLIB, Rational-arithmetic},
-} 
+}
 """
 
 import glob
 import gzip
+import os
 import pickle
+import re
 from fractions import Fraction
 
-import os
-import re
-
+import six
 
 OBJ_REGEX = re.compile('\* Objvalue : -?\d+/\d+')
 
 the_final_netlib_results = dict()
 
 for path in glob.glob("netlib_reference_results/*.txt.gz"):
-    print "Parsing", path
+    print("Parsing", path)
     with gzip.open(path) as fhandle:
         for line in fhandle.readlines():
             if OBJ_REGEX.match(line):
@@ -46,10 +46,9 @@ for path in glob.glob("netlib_reference_results/*.txt.gz"):
                     "Objvalue": obj_value}
                 break
 
-for key, value in the_final_netlib_results.iteritems():
-    assert value.has_key("Objvalue")
+for key, value in six.iteritems(the_final_netlib_results):
+    assert "Objvalue" in value
     assert isinstance(value['Objvalue'], Fraction)
 
 with open('the_final_netlib_results.pcl', 'w') as fhandle:
     pickle.dump(the_final_netlib_results, fhandle, protocol=2)
-

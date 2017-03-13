@@ -13,25 +13,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-__version__ = '0.0.2'
+from __future__ import absolute_import
 
 import logging
+from optlang._version import get_versions
+from optlang.util import list_available_solvers
+from optlang.interface import statuses
+import optlang.duality
+
+__version__ = get_versions()['version']
+del get_versions
 
 log = logging.getLogger(__name__)
 
-from .util import list_available_solvers
-
 available_solvers = list_available_solvers()
 
-if available_solvers['GLPK']:
-    from .glpk_interface import Model, Variable, Constraint, Objective
-elif available_solvers['CPLEX']:
-    from .cplex_interface import Model, Variable, Constraint, Objective
+# Load classes from preferred solver interface
+if available_solvers['CPLEX']:
+    from optlang.cplex_interface import Model, Variable, Constraint, Objective
+elif available_solvers["GUROBI"]:
+    from optlang.gurobi_interface import Model, Variable, Constraint, Objective
+elif available_solvers['GLPK']:
+    from optlang.glpk_interface import Model, Variable, Constraint, Objective
+elif available_solvers['SCIPY']:
+    from optlang.scipy_interface import Model, Variable, Constraint, Objective
 else:
     log.error('No solvers available.')
 
+# Import all available solver interfaces
 if available_solvers['GLPK']:
-    import glpk_interface
+    from optlang import glpk_interface
 if available_solvers['CPLEX']:
-    import cplex_interface
+    from optlang import cplex_interface
+if available_solvers['GUROBI']:
+    from optlang import gurobi_interface
+if available_solvers['SCIPY']:
+    from optlang import scipy_interface

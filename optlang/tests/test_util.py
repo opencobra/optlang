@@ -2,13 +2,13 @@
 # See LICENSE for details.
 
 import os
-import nose
-from swiglpk import glp_create_prob, \
-    glp_read_lp, glp_create_index, glp_get_num_cols, glp_get_num_rows
 
+import nose
+import six
 from optlang.util import solve_with_glpsol, \
     list_available_solvers, glpk_read_cplex
-
+from swiglpk import glp_create_prob, \
+    glp_read_lp, glp_create_index, glp_get_num_cols, glp_get_num_rows
 
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 
@@ -59,7 +59,8 @@ def test_solve_with_glpsol():
                  'R_PYRt2r': ['1', '-0', '0'], 'R_FUMt2_2': ['1', '0', '0'], 'R_SUCDi': ['1', '5.06437566148209', '0'],
                  'R_ALCD2x': ['1', '-5.84859702315521e-30', '0'], 'R_EX_o2_e': ['1', '-21.7994926559988', '0'],
                  'M_g3p_c': ['5', '0', '-0.0521979805747125'], 'R_EX_akg_e':
-        ['2', '0', '-0.0611098309167366'], 'R_GLUt2r': ['1', '-0', '0'], 'M_pi_c': ['5', '0', '-0.00127312147743201'],
+                     ['2', '0', '-0.0611098309167366'], 'R_GLUt2r': ['1', '-0', '0'],
+                 'M_pi_c': ['5', '0', '-0.00127312147743201'],
                  'M_pi_e': ['5', '0', '-0'], 'R_LDH_D': ['1', '0', '0'], 'M_o2_c': ['5', '0', '-0'],
                  'M_atp_c': ['1', '0', '0'], 'M_o2_e': ['5', '0', '-0'], 'R_MALt2_2': ['1', '0', '0'],
                  'R_FBA': ['1', '7.47738196216028', '0'], 'M_for_c': ['5', '0', '-0.00763872886459208'],
@@ -100,13 +101,13 @@ def test_solve_with_glpsol():
                  'R_GND': ['1', '4.95998494457465', '0'], 'R_ACt2r': ['1', '-0', '0'],
                  'R_PPC': ['1', '2.50430947036873', '0'], 'R_EX_etoh_e': ['2', '0', '-0.0394667658003924'],
                  'R_AKGt2r': ['1', '-0', '0'], 'R_GLUN': ['2', '0', '-0.00509248590972805']}
-    for key, val in result.iteritems():
+    for key, val in six.iteritems(result):
         assert val == reference[key]
 
 
 def test_list_available_solvers():
     solvers = list_available_solvers()
-    for solver, boolean in solvers.iteritems():
+    for solver, boolean in six.iteritems(solvers):
         assert boolean is True or boolean is False
 
 
