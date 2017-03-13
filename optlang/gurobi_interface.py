@@ -126,7 +126,8 @@ class Variable(interface.Variable):
         if value is None:
             value = -gurobipy.GRB.INFINITY
         if self.problem:
-            return self._internal_variable.setAttr('LB', value)
+            self._internal_variable.setAttr('LB', value)
+            self.problem.problem.update()
 
     @interface.Variable.ub.setter
     def ub(self, value):
@@ -134,7 +135,8 @@ class Variable(interface.Variable):
         if value is None:
             value = gurobipy.GRB.INFINITY
         if self.problem:
-            return self._internal_variable.setAttr('UB', value)
+            self._internal_variable.setAttr('UB', value)
+            self.problem.problem.update()
 
     def set_bounds(self, lb, ub):
         super(Variable, self).set_bounds(lb, ub)
