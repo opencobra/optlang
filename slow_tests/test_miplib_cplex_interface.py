@@ -27,14 +27,7 @@ try:
 
 except ImportError as e:
 
-    if e.message.find('cplex') >= 0:
-        class TestMissingDependency(unittest.TestCase):
-
-            @unittest.skip('Missing dependency - ' + e.message)
-            def test_fail(self):
-                pass
-    else:
-        raise
+    raise nose.SkipTest('Skipping MILP tests because cplex is not available.')
 
 else:
     from optlang.cplex_interface import Model
