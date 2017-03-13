@@ -615,17 +615,19 @@ class Model(interface.Model):
                 lhs = gurobipy.quicksum([coef * var._internal_variable for var, coef in coef_dict.items()])
                 sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(constraint.lb,
                                                                                                     constraint.ub)
-                if range_value != 0.:
+
+                if range_value != 0:
                     aux_var = self.problem.addVar(name=constraint.name + '_aux', lb=0, ub=range_value)
                     self.problem.update()
                     lhs = lhs - aux_var
-                    rhs = constraint.ub
+
                 self.problem.addConstr(lhs, sense, rhs, name=constraint.name)
             else:
                 raise ValueError(
                     "GUROBI currently only supports linear constraints. %s is not linear." % self)
                 # self.problem.addQConstr(lhs, sense, rhs)
             constraint.problem = self
+        self.problem.update()
 
     def _remove_constraints(self, constraints):
         self.problem.update()
