@@ -330,9 +330,12 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        try:
-            return self.problem.problem.getAttr("ObjVal")
-        except gurobipy.GurobiError:  # TODO: let this check the actual error message
+        if getattr(self, "problem", None) is not None:
+            try:
+                return self.problem.problem.getAttr("ObjVal")
+            except gurobipy.GurobiError:  # TODO: let this check the actual error message
+                return None
+        else:
             return None
 
     @interface.Objective.direction.setter
