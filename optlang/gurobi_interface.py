@@ -190,6 +190,7 @@ class Constraint(interface.Constraint):
             grb_constraint = self.problem.problem.getConstrByName(self.name)
             for var, coeff in six.iteritems(coefficients):
                 self.problem.problem.chgCoeff(grb_constraint, self.problem.problem.getVarByName(var.name), float(coeff))
+            self.problem.update()
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
@@ -282,6 +283,7 @@ class Constraint(interface.Constraint):
                 self.problem.problem.update()
                 self.problem.problem.addConstr(updated_row, sense, rhs, self.name)
             aux_var.setAttr("UB", range_value)
+        self.problem.update()
 
     @interface.Constraint.lb.setter
     def lb(self, value):
