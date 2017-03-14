@@ -1,0 +1,74 @@
+{
+  "10teams": {
+    "status": "optimal",
+    "solution": 924.0
+  },
+  "aflow30a": {
+    "status": "optimal",
+    "solution": 1158.0
+  },
+  "air05": {
+    "status": "optimal",
+    "solution": 26374.0
+  },
+  "arki001": {
+    "status": "optimal",
+    "solution": 7580810.0
+  },
+  "danoint": {
+    "status": "optimal",
+    "solution": 65.67
+  },
+  "disctom": {
+    "status": "optimal",
+    "solution": -5000.0
+  },
+  "fiber": {
+    "status": "optimal",
+    "solution": 405935.18
+  },
+  "fixnet6": {
+    "status": "optimal",
+    "solution": 3983.0
+  },
+  "gesa2": {
+    "status": "optimal",
+    "solution": 25779856.3719999976
+  },
+  "gesa2-o": {
+    "status": "optimal",
+    "solution": 25779856.3719999976
+  },
+  "glass4": {
+    "status": "optimal",
+    "solution": 1200010000.0
+  },
+  "harp2": {
+    "status": "optimal",
+    "solution": -73899800.0
+  },
+  "markshare1": {
+    "status": "optimal",
+    "solution": 1.0
+  },
+  "mas74": {
+    "status": "optimal",
+    "solution": 11801.2
+  },
+  "mas76": {
+    "status": "optimal",
+    "solution": 40005.1
+  },
+  "misc07": {
+    "status": "optimal",
+    "solution": 2810.0
+  },
+  "modglob": {
+    "status": "optimal",
+    "solution": 20740500.0
+  },
+  "momentum2": {
+    "status": "optimal",
+    "solution": 12314.2
+  }
+}

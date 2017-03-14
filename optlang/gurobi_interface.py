@@ -126,7 +126,8 @@ class Variable(interface.Variable):
         if value is None:
             value = -gurobipy.GRB.INFINITY
         if self.problem:
-            return self._internal_variable.setAttr('LB', value)
+            self._internal_variable.setAttr('LB', value)
+            self.problem.problem.update()
 
     @interface.Variable.ub.setter
     def ub(self, value):
@@ -134,7 +135,8 @@ class Variable(interface.Variable):
         if value is None:
             value = gurobipy.GRB.INFINITY
         if self.problem:
-            return self._internal_variable.setAttr('UB', value)
+            self._internal_variable.setAttr('UB', value)
+            self.problem.problem.update()
 
     def set_bounds(self, lb, ub):
         super(Variable, self).set_bounds(lb, ub)
@@ -188,6 +190,7 @@ class Constraint(interface.Constraint):
             grb_constraint = self.problem.problem.getConstrByName(self.name)
             for var, coeff in six.iteritems(coefficients):
                 self.problem.problem.chgCoeff(grb_constraint, self.problem.problem.getVarByName(var.name), float(coeff))
+            self.problem.update()
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
@@ -280,6 +283,7 @@ class Constraint(interface.Constraint):
                 self.problem.problem.update()
                 self.problem.problem.addConstr(updated_row, sense, rhs, self.name)
             aux_var.setAttr("UB", range_value)
+        self.problem.update()
 
     @interface.Constraint.lb.setter
     def lb(self, value):
@@ -326,9 +330,12 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        try:
-            return self.problem.problem.getAttr("ObjVal")
-        except gurobipy.GurobiError:  # TODO: let this check the actual error message
+        if getattr(self, "problem", None) is not None:
+            try:
+                return self.problem.problem.getAttr("ObjVal")
+            except gurobipy.GurobiError:  # TODO: let this check the actual error message
+                return None
+        else:
             return None
 
     @interface.Objective.direction.setter
@@ -339,12 +346,10 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
-            grb_obj = self.problem.problem.getObjective()
-            for var, coeff in six.iteritems(coefficients):
-                grb_var = self.problem.problem.getVarByName(var.name)
-                grb_obj.remove(grb_var)
-                grb_obj.addTerms(float(coeff), grb_var)
-                self._expression_expired = True
+            for var, coeff in coefficients.items():
+                var._internal_variable.setAttr("Obj", coeff)
+            self._expression_expired = True
+            self.problem.update()
         else:
             raise Exception("Can't change coefficients if objective is not associated with a model.")
 
@@ -564,6 +569,8 @@ class Model(interface.Model):
         super(Model, self).update(callback=self.problem.update)
 
     def _optimize(self):
+        if self.status != interface.OPTIMAL:
+            self.problem.reset()
         self.problem.update()
         self.problem.optimize()
         status = _GUROBI_STATUS_TO_STATUS[self.problem.getAttr("Status")]
@@ -580,13 +587,12 @@ class Model(interface.Model):
                 ub = gurobipy.GRB.INFINITY
             else:
                 ub = variable.ub
-            gurobi_var = self.problem.addVar(
+            self.problem.addVar(
                 name=variable.name,
                 lb=lb,
                 ub=ub,
                 vtype=_VTYPE_TO_GUROBI_VTYPE[variable.type]
             )
-            variable._internal_var = gurobi_var
 
     def _remove_variables(self, variables):
         # Not calling parent method to avoid expensive variable removal from sympy expressions
@@ -611,17 +617,19 @@ class Model(interface.Model):
                 lhs = gurobipy.quicksum([coef * var._internal_variable for var, coef in coef_dict.items()])
                 sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(constraint.lb,
                                                                                                     constraint.ub)
-                if range_value != 0.:
+
+                if range_value != 0:
                     aux_var = self.problem.addVar(name=constraint.name + '_aux', lb=0, ub=range_value)
                     self.problem.update()
                     lhs = lhs - aux_var
-                    rhs = constraint.ub
+
                 self.problem.addConstr(lhs, sense, rhs, name=constraint.name)
             else:
                 raise ValueError(
                     "GUROBI currently only supports linear constraints. %s is not linear." % self)
                 # self.problem.addQConstr(lhs, sense, rhs)
             constraint.problem = self
+        self.problem.update()
 
     def _remove_constraints(self, constraints):
         self.problem.update()
