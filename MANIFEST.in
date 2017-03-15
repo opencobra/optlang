@@ -4,3 +4,4 @@ include README.rst
 include requirements.txt
 include versioneer.py
 include optlang/_version.py
+recursive-exclude slow_tests *
