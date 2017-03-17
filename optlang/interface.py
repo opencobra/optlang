@@ -746,10 +746,10 @@ class Constraint(OptimizationExpression):
         else:
             expression = expression - coeff
             if self.lb is not None and self.ub is not None:
-                oldub=self.ub
-                self.ub=None
-                self.lb= self.lb - float(coeff)
-                self.ub= oldub - float(coeff)
+                oldub = self.ub
+                self.ub = None
+                self.lb = self.lb - float(coeff)
+                self.ub = oldub - float(coeff)
             elif self.lb is not None:
                 self.lb = self.lb - float(coeff)
             elif self.ub is not None:
