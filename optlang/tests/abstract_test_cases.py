@@ -301,7 +301,7 @@ class AbstractConstraintTestCase(unittest.TestCase):
         c6 = self.interface.Constraint(x + 3, ub=0)
         self.assertEqual(c6.expression - x, 0)
         self.assertEqual(c6.ub, -3)
-        
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractObjectiveTestCase(unittest.TestCase):
