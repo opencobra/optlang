@@ -738,17 +738,21 @@ class Constraint(OptimizationExpression):
             return expression
         assert len(lonely_coeffs) == 1
         coeff = lonely_coeffs[0]
-        if self.lb is None and self.ub is None:
+        expression = expression - coeff
+        if self.lb is not None and self.ub is not None:
+            oldub = self.ub
+            self.ub = None
+            self.lb = self.lb - float(coeff)
+            self.ub = oldub - float(coeff)
+        elif self.lb is not None:
+            self.lb = self.lb - float(coeff)
+        elif self.ub is not None:
+            self.ub = self.ub - float(coeff)
+        else:
             raise ValueError(
                 "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set."
                 % expression
             )
-        else:
-            expression = expression - coeff
-            if self.lb is not None:
-                self.lb = self.lb - float(coeff)
-            if self.ub is not None:
-                self.ub = self.ub - float(coeff)
         return expression
 
     @property
