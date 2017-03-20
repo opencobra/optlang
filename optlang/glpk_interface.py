@@ -284,7 +284,7 @@ class Constraint(interface.Constraint):
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, **kwargs):
-        super(Objective, self).__init__(expression, **kwargs)
+        super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         self._expression_expired = False
         if not (sloppy or self.is_Linear):
             raise ValueError(
