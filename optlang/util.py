@@ -26,6 +26,8 @@ import inspect
 from subprocess import check_output
 from sympy.printing.str import StrPrinter
 import sympy
+from optlang import symbolics
+from optlang.symbolics import mul, add, pow
 
 
 def solve_with_glpsol(glp_prob):
@@ -222,18 +224,18 @@ def parse_expr(expr, local_dict=None):
     if local_dict is None:
         local_dict = {}
     if expr["type"] == "Add":
-        return sympy.Add._from_args([parse_expr(arg, local_dict) for arg in expr["args"]])
+        return add([parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Mul":
-        return sympy.Mul._from_args([parse_expr(arg, local_dict) for arg in expr["args"]])
+        return mul([parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Pow":
-        return sympy.Pow(parse_expr(arg, local_dict) for arg in expr["args"])
+        return pow(parse_expr(arg, local_dict) for arg in expr["args"])
     elif expr["type"] == "Symbol":
         try:
             return local_dict[expr["name"]]
         except KeyError:
-            return sympy.Symbol(expr["name"])
+            return symbolics.Symbol(expr["name"])
     elif expr["type"] == "Number":
-        return sympy.sympify(expr["value"])
+        return symbolics.sympify(expr["value"])
     else:
         raise NotImplementedError(expr["type"] + " is not implemented")
 

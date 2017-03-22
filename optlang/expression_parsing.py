@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from optlang.symbolics import One
 
 def parse_optimization_expression(obj, linear=True, quadratic=False, expression=None, **kwargs):
     """
@@ -67,6 +68,8 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
     """
     if expression.is_Add:
         coefficients = expression.as_coefficients_dict()
+        if One in coefficients:
+            del coefficients[One]
     elif expression.is_Mul:
         coefficients = {expression.args[1]: expression.args[0]}
     elif expression.is_Symbol:
@@ -75,12 +78,13 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
         coefficients = {}
     else:
         raise ValueError("Expression {} seems to be invalid".format(expression))
-    for var in coefficients:
+    for var, coef in coefficients.items():
         if not var.is_Symbol:
             if expanded:
                 raise ValueError("Expression {} seems to be invalid".format(expression))
             else:
                 coefficients = _parse_linear_expression(expression, expanded=True, **kwargs)
+                break
     return coefficients
 
 
