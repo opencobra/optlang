@@ -1,6 +1,10 @@
 optlang
 =======
 
+.. image:: https://badges.gitter.im/biosustain/optlang.svg
+   :alt: Join the chat at https://gitter.im/biosustain/optlang
+   :target: https://gitter.im/biosustain/optlang?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
 *Sympy based mathematical programming language*
 
 |PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |JOSS| |DOI|
