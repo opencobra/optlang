@@ -15,6 +15,7 @@
 
 from optlang.symbolics import One
 
+
 def parse_optimization_expression(obj, linear=True, quadratic=False, expression=None, **kwargs):
     """
     Function for parsing the expression of a Constraint or Objective object.

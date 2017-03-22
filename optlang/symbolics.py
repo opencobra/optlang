@@ -113,5 +113,3 @@ else:  # Use sympy
         if len(args) == 1:
             args = args[0]
         return sympy.Mul._from_args(args)
-
-

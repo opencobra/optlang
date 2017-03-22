@@ -35,11 +35,11 @@ import six
 
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
-#import sympy
+# import sympy
 
-#from sympy.core.assumptions import _assume_rules
-#from sympy.core.facts import FactKB
-#from sympy.core.expr import Expr
+# from sympy.core.assumptions import _assume_rules
+# from sympy.core.facts import FactKB
+# from sympy.core.expr import Expr
 from optlang.util import parse_expr, expr_to_json, is_numeric
 from optlang import symbolics
 

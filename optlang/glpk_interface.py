@@ -523,8 +523,8 @@ class Model(interface.Model):
             )
             self._objective = Objective(
                 symbolics.add(
-                    [symbolics.mul( (symbolics.Real(term[0]), term[1]) ) for term in term_generator if
-                      term[0] != 0.]
+                    [symbolics.mul((symbolics.Real(term[0]), term[1])) for term in term_generator if
+                     term[0] != 0.]
                 ),
                 problem=self,
                 direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
