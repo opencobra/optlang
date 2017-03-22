@@ -104,6 +104,9 @@ else:  # Use sympy
 
             return obj
 
+        def __init__(self, *args, **kwargs):
+            super(Symbol, self).__init__()
+
     def add(*args):
         if len(args) == 1:
             args = args[0]
