@@ -30,13 +30,11 @@ import logging
 
 import os
 import six
-import sympy
-from sympy.core.add import _unevaluated_Add
-from sympy.core.mul import _unevaluated_Mul
 
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
+from optlang import symbolics
 
 log = logging.getLogger(__name__)
 
@@ -164,8 +162,8 @@ class Constraint(interface.Constraint):
             nnz = glp_get_mat_row(self.problem.problem, self._index, ia, da)
             constraint_variables = [self.problem._variables[glp_get_col_name(self.problem.problem, ia[i])] for i in
                                     range(1, nnz + 1)]
-            expression = sympy.Add._from_args(
-                [sympy.Mul._from_args((sympy.RealNumber(da[i]), constraint_variables[i - 1])) for i in
+            expression = symbolics.add(
+                [symbolics.mul((symbolics.Real(da[i]), constraint_variables[i - 1])) for i in
                  range(1, nnz + 1)])
             self._expression = expression
         return self._expression
@@ -287,9 +285,9 @@ class Objective(interface.Objective):
                 for index in range(1, glp_get_num_cols(self.problem.problem) + 1):
                     coeff = glp_get_obj_coef(self.problem.problem, index)
                     if coeff != 0.:
-                        yield (sympy.RealNumber(coeff), variables[index - 1])
+                        yield (symbolics.Real(coeff), variables[index - 1])
 
-            expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
+            expression = symbolics.add([symbolics.mul(term) for term in term_generator()])
             self._expression = expression
             self._expression_expired = False
         return self._expression
@@ -480,9 +478,9 @@ class Model(interface.Model):
                     )
                     log.exception()
                 if isinstance(lhs, int):
-                    lhs = sympy.Integer(lhs)
+                    lhs = symbolics.Integer(lhs)
                 elif isinstance(lhs, float):
-                    lhs = sympy.RealNumber(lhs)
+                    lhs = symbolics.Real(lhs)
                 constraint_id = glp_get_row_name(self.problem, j)
                 for variable in constraint_variables:
                     try:
@@ -500,9 +498,10 @@ class Model(interface.Model):
                 for index in range(1, glp_get_num_cols(problem) + 1)
             )
             self._objective = Objective(
-                _unevaluated_Add(
-                    *[_unevaluated_Mul(sympy.RealNumber(term[0]), term[1]) for term in term_generator if
-                      term[0] != 0.]),
+                symbolics.add(
+                    [symbolics.mul( (symbolics.Real(term[0]), term[1]) ) for term in term_generator if
+                      term[0] != 0.]
+                ),
                 problem=self,
                 direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
         glp_scale_prob(self.problem, GLP_SF_AUTO)
