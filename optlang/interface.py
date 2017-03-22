@@ -536,6 +536,10 @@ class OptimizationExpression(object):
         """Set coefficients of linear terms in constraint or objective.
         Existing coefficients for linear or non-linear terms will not be modified.
 
+        Note: This method interacts with the low-level solver backend and can only be used on objects that are
+        associated with a Model. The method is not part of optlangs basic interface and should be used mainly where
+        speed is important.
+
         Parameters
         ----------
         coefficients : dict
@@ -544,6 +548,25 @@ class OptimizationExpression(object):
         Returns
         -------
         None
+        """
+        raise NotImplementedError("Child classes should implement this.")
+
+    def get_linear_coefficients(self, variables):
+        """Get coefficients of linear terms in constraint or objective.
+
+        Note: This method interacts with the low-level solver backend and can only be used on objects that are
+        associated with a Model. The method is not part of optlangs basic interface and should be used mainly where
+        speed is important.
+
+        Parameters
+        ----------
+        variables : iterable
+            An iterable of Variable objects
+
+        Returns
+        -------
+        Coefficients : dict
+            {var1: coefficient, var2: coefficient ...}
         """
         raise NotImplementedError("Child classes should implement this.")
 
@@ -704,17 +727,21 @@ class Constraint(OptimizationExpression):
             return expression
         assert len(lonely_coeffs) == 1
         coeff = lonely_coeffs[0]
-        if self.lb is None and self.ub is None:
+        expression = expression - coeff
+        if self.lb is not None and self.ub is not None:
+            oldub = self.ub
+            self.ub = None
+            self.lb = self.lb - float(coeff)
+            self.ub = oldub - float(coeff)
+        elif self.lb is not None:
+            self.lb = self.lb - float(coeff)
+        elif self.ub is not None:
+            self.ub = self.ub - float(coeff)
+        else:
             raise ValueError(
                 "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set."
                 % expression
             )
-        else:
-            expression = expression - coeff
-            if self.lb is not None:
-                self.lb = self.lb - float(coeff)
-            if self.ub is not None:
-                self.ub = self.ub - float(coeff)
         return expression
 
     @property

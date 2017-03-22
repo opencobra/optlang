@@ -268,6 +268,40 @@ class AbstractConstraintTestCase(unittest.TestCase):
         const.lb = -10
         self.assertEqual(model.optimize(), interface.OPTIMAL)
 
+    def test_constraint_get_linear_coefficients_raises(self):
+        self.assertRaises(Exception, self.constraint.get_linear_coefficients, [])
+
+    def test_constraint_set_linear_coefficients_raises(self):
+        self.assertRaises(Exception, self.constraint.set_linear_coefficients, {})
+
+    def test_move_constant_to_rhs(self):
+        x = self.interface.Variable("x")
+        c1 = self.interface.Constraint(x + 3, lb=0, ub=0)
+        self.assertEqual(c1.expression - x, 0)
+        self.assertEqual(c1.lb, -3)
+        self.assertEqual(c1.ub, -3)
+
+        c2 = self.interface.Constraint(x - 3, lb=0, ub=0)
+        self.assertEqual(c2.expression - x, 0)
+        self.assertEqual(c2.lb, 3)
+        self.assertEqual(c2.ub, 3)
+
+        c3 = self.interface.Constraint(x - 3, lb=0)
+        self.assertEqual(c3.expression - x, 0)
+        self.assertEqual(c3.lb, 3)
+
+        c4 = self.interface.Constraint(x - 3, ub=0)
+        self.assertEqual(c4.expression - x, 0)
+        self.assertEqual(c4.ub, 3)
+
+        c5 = self.interface.Constraint(x + 3, lb=0)
+        self.assertEqual(c5.expression - x, 0)
+        self.assertEqual(c5.lb, -3)
+
+        c6 = self.interface.Constraint(x + 3, ub=0)
+        self.assertEqual(c6.expression - x, 0)
+        self.assertEqual(c6.ub, -3)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractObjectiveTestCase(unittest.TestCase):
@@ -278,6 +312,18 @@ class AbstractObjectiveTestCase(unittest.TestCase):
     @abc.abstractmethod
     def test_change_direction(self):
         pass
+
+    def test_objective_get_linear_coefficients_raises(self):
+        objective = self.interface.Objective(0)
+        self.assertRaises(Exception, objective.get_linear_coefficients, [])
+
+    def test_objective_set_linear_coefficients_raises(self):
+        objective = self.interface.Objective(0)
+        self.assertRaises(Exception, objective.set_linear_coefficients, {})
+
+    def test_objective_value_is_none(self):
+        objective = self.interface.Objective(0)
+        self.assertIs(objective.value, None)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -429,6 +475,17 @@ class AbstractModelTestCase(unittest.TestCase):
             constraint = self.interface.Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
             self.model.add(constraint)
             self.model.update()
+
+    def test_objective_get_linear_coefficients(self):
+        coefs = self.model.objective.get_linear_coefficients(self.model.variables)
+        expr = sum(c * v for v, c in coefs.items())
+        self.assertEqual(expr - self.model.objective.expression, 0)
+
+    def test_constraint_get_linear_coefficients(self):
+        constraint = self.model.constraints[5]
+        coefs = constraint.get_linear_coefficients(self.model.variables)
+        expr = sum(c * v for v, c in coefs.items())
+        self.assertEqual(expr - constraint.expression, 0)
 
     @abc.abstractmethod
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):

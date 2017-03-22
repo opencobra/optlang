@@ -112,6 +112,8 @@ else:
 
 
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
+        interface = gurobi_interface
+
         def setUp(self):
             problem = gurobipy.read(TESTMODELPATH)
             self.model = Model(problem=problem)
@@ -242,7 +244,7 @@ else:
             for i in range(row.size()):
                 coeff_dict[row.getVar(i).VarName] = row.getCoeff(i)
             self.assertDictEqual(coeff_dict, {'x': 0.3, 'y': 0.4, 'z': 66., 'test_aux': -1.0})
-            self.assertEqual(internal_constraint.RHS, 0)
+            self.assertEqual(internal_constraint.RHS, constr1.lb)
             self.assertEqual(self.model.problem.getVarByName(internal_constraint.getAttr('ConstrName') + '_aux'), 100)
             # constr2
             coeff_dict = dict()
@@ -251,7 +253,7 @@ else:
             for i in range(row.size()):
                 coeff_dict[row.getVar(i).VarName] = row.getCoeff(i)
             self.assertDictEqual(coeff_dict, {'x': 2.333, 'y': 1.})
-            self.assertEqual(internal_constraint.RHS, 96.997)
+            self.assertEqual(internal_constraint.RHS, constr2.ub)
             self.assertEqual(internal_constraint.Sense, '<')
             # constr3
             coeff_dict = dict()
@@ -261,7 +263,7 @@ else:
             for i in range(row.size()):
                 coeff_dict[row.getVar(i).VarName] = row.getCoeff(i)
             self.assertDictEqual(coeff_dict, {'x': 2.333, 'y': 1., 'z': 1.})
-            self.assertEqual(internal_constraint.RHS, -300)
+            self.assertEqual(internal_constraint.RHS, constr3.lb)
             self.assertEqual(internal_constraint.Sense, '>')
             # constr4
             coeff_dict = dict()
@@ -271,7 +273,7 @@ else:
             for i in range(row.size()):
                 coeff_dict[row.getVar(i).VarName] = row.getCoeff(i)
             self.assertDictEqual(coeff_dict, {'x': 1})
-            self.assertEqual(internal_constraint.RHS, -300)
+            self.assertEqual(internal_constraint.RHS, constr4.lb)
             self.assertEqual(internal_constraint.Sense, '=')
 
         def test_change_of_constraint_is_reflected_in_low_level_solver(self):

@@ -49,7 +49,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
-    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp
+    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_mip_row_val
 
 
 
@@ -121,12 +121,10 @@ class Variable(interface.Variable):
         interface.Variable.type.fset(self, value)
 
     def _get_primal(self):
-        if self.type == "continuous":
-            primal_from_solver = glp_get_col_prim(self.problem.problem, self._index)
-        elif self.type in ("binary", "integer"):
+        if self.problem._glpk_is_mip():
             primal_from_solver = glp_mip_col_val(self.problem.problem, self._index)
         else:
-            raise AssertionError("Unknown variable type")
+            primal_from_solver = glp_get_col_prim(self.problem.problem, self._index)
         return primal_from_solver
 
     @property
@@ -216,7 +214,10 @@ class Constraint(interface.Constraint):
     @property
     def primal(self):
         if self.problem is not None:
-            primal_from_solver = glp_get_row_prim(self.problem.problem, self._index)
+            if self.problem._glpk_is_mip():
+                primal_from_solver = glp_mip_row_val(self.problem.problem, self._index)
+            else:
+                primal_from_solver = glp_get_row_prim(self.problem.problem, self._index)
             # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
             return primal_from_solver
         else:
@@ -267,11 +268,21 @@ class Constraint(interface.Constraint):
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
 
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            num_cols = glp_get_num_cols(self.problem.problem)
+            ia = intArray(num_cols + 1)
+            da = doubleArray(num_cols + 1)
+            nnz = glp_get_mat_row(self.problem.problem, self._index, ia, da)
+            return {self.problem._variables[ia[i + 1] - 1]: da[i + 1] for i in range(nnz)}
+        else:
+            raise Exception("Can't get coefficients from solver if constraint is not in a model")
+
 
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, **kwargs):
-        super(Objective, self).__init__(expression, **kwargs)
+        super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         self._expression_expired = False
         if not (sloppy or self.is_Linear):
             raise ValueError(
@@ -294,10 +305,13 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        if (glp_get_num_int(self.problem.problem) + glp_get_num_bin(self.problem.problem)) > 0:
-            return glp_mip_obj_val(self.problem.problem)
+        if getattr(self, 'problem', None) is not None:
+            if self.problem._glpk_is_mip():
+                return glp_mip_obj_val(self.problem.problem)
+            else:
+                return glp_get_obj_val(self.problem.problem)
         else:
-            return glp_get_obj_val(self.problem.problem)
+            return None
 
     @interface.Objective.direction.setter
     def direction(self, value):
@@ -320,9 +334,19 @@ class Objective(interface.Objective):
         return self
 
     def set_linear_coefficients(self, coefficients):
-        for variable, coefficient in coefficients.items():
-            glp_set_obj_coef(self.problem.problem, variable._index, float(coefficient))
-        self._expression_expired = True
+        if self.problem is not None:
+            for variable, coefficient in coefficients.items():
+                glp_set_obj_coef(self.problem.problem, variable._index, float(coefficient))
+            self._expression_expired = True
+        else:
+            raise Exception("Can't change coefficients if objective is not associated with a model.")
+
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            return {var: glp_get_obj_coef(self.problem.problem, var._index) for var in variables}
+        else:
+            raise Exception("Can't get coefficients from solver if objective is not in a model")
+
 
 
 @six.add_metaclass(inheritdocstring)
@@ -557,42 +581,48 @@ class Model(interface.Model):
     @property
     def primal_values(self):
         primal_values = collections.OrderedDict()
+        is_mip = self._glpk_is_mip()
         for index, variable in enumerate(self.variables):
-            if variable.type == "continuous":
-                value = glp_get_col_prim(self.problem, index + 1)
-            elif variable.type in ["binary", "integer"]:
+            if is_mip:
                 value = glp_mip_col_val(self.problem, index + 1)
             else:
-                raise AssertionError("Unknown variable type")
+                value = glp_get_col_prim(self.problem, index + 1)
             primal_values[variable.name] = variable._round_primal_to_bounds(value)
         return primal_values
 
     @property
     def reduced_costs(self):
         reduced_costs = collections.OrderedDict()
+        is_mip = self._glpk_is_mip()
         for index, variable in enumerate(self.variables):
-            if variable.type == "continuous":
-                value = glp_get_col_dual(self.problem, index + 1)
-            elif variable.type in ["binary", "integer"]:
-                value = glp_mip_col_val(self.problem, index + 1)
+            if is_mip:
+                value = None
             else:
-                raise AssertionError("Unknown variable type")
+                value = glp_get_col_dual(self.problem, index + 1)
             reduced_costs[variable.name] = value
         return reduced_costs
 
     @property
     def constraint_values(self):
         dual_values = collections.OrderedDict()
+        is_mip = self._glpk_is_mip()
         for index, constraint in enumerate(self.constraints):
-            value = glp_get_row_prim(self.problem, index + 1)
+            if is_mip:
+                value = glp_mip_row_val(self.problem, index + 1)
+            else:
+                value = glp_get_row_prim(self.problem, index + 1)
             dual_values[constraint.name] = value
         return dual_values
 
     @property
     def shadow_prices(self):
+        is_mip = self._glpk_is_mip()
         shadow_prices = collections.OrderedDict()
         for index, constraint in enumerate(self.constraints):
-            value = glp_get_row_dual(self.problem, index + 1)
+            if is_mip:
+                value = None
+            else:
+                value = glp_get_row_dual(self.problem, index + 1)
             shadow_prices[constraint.name] = value
         return shadow_prices
 
@@ -651,7 +681,7 @@ class Model(interface.Model):
             self.configuration.presolve = False
             status = self._run_glp_simplex()
             self.configuration.presolve = True
-        if (glp_get_num_int(self.problem) + glp_get_num_bin(self.problem)) > 0:
+        if self._glpk_is_mip():
             status = self._run_glp_mip()
             if status == 'undefined' or status == 'infeasible':
                 # Let's see if the presolver and some scaling can fix this issue
@@ -741,6 +771,9 @@ class Model(interface.Model):
             raise Exception(
                 "Something is wrong with the provided bounds %f and %f in variable %s" %
                 (variable.lb, variable.ub, variable))
+
+    def _glpk_is_mip(self):
+        return glp_get_num_int(self.problem) > 0
 
     def _glpk_set_row_bounds(self, constraint):
         if constraint.lb is None and constraint.ub is None:

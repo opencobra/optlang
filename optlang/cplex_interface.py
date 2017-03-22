@@ -43,73 +43,81 @@ from optlang.expression_parsing import parse_optimization_expression
 Zero = S.Zero
 One = S.One
 
-_CPLEX_STATUS_TO_STATUS = {
-    cplex.Cplex.solution.status.MIP_abort_feasible: interface.ABORTED,
-    cplex.Cplex.solution.status.MIP_abort_infeasible: interface.ABORTED,
-    cplex.Cplex.solution.status.MIP_dettime_limit_feasible: interface.TIME_LIMIT,
-    cplex.Cplex.solution.status.MIP_dettime_limit_infeasible: interface.TIME_LIMIT,
-    cplex.Cplex.solution.status.MIP_feasible: interface.FEASIBLE,
-    cplex.Cplex.solution.status.MIP_feasible_relaxed_inf: interface.SPECIAL,
-    cplex.Cplex.solution.status.MIP_feasible_relaxed_quad: interface.SPECIAL,
-    cplex.Cplex.solution.status.MIP_feasible_relaxed_sum: interface.SPECIAL,
-    cplex.Cplex.solution.status.MIP_infeasible: interface.INFEASIBLE,
-    cplex.Cplex.solution.status.MIP_infeasible_or_unbounded: interface.INFEASIBLE_OR_UNBOUNDED,
-    cplex.Cplex.solution.status.MIP_optimal: interface.OPTIMAL,
-    cplex.Cplex.solution.status.MIP_optimal_infeasible: interface.SPECIAL,
-    cplex.Cplex.solution.status.MIP_optimal_relaxed_inf: interface.SPECIAL,
-    cplex.Cplex.solution.status.MIP_optimal_relaxed_sum: interface.SPECIAL,
-    cplex.Cplex.solution.status.MIP_time_limit_feasible: interface.TIME_LIMIT,
-    cplex.Cplex.solution.status.MIP_time_limit_infeasible: interface.TIME_LIMIT,
-    cplex.Cplex.solution.status.MIP_unbounded: interface.UNBOUNDED,
-    cplex.Cplex.solution.status.abort_dettime_limit: interface.ABORTED,
-    cplex.Cplex.solution.status.abort_dual_obj_limit: interface.ABORTED,
-    cplex.Cplex.solution.status.abort_iteration_limit: interface.ABORTED,
-    cplex.Cplex.solution.status.abort_obj_limit: interface.ABORTED,
-    cplex.Cplex.solution.status.abort_primal_obj_limit: interface.ABORTED,
-    cplex.Cplex.solution.status.abort_relaxed: interface.ABORTED,
-    cplex.Cplex.solution.status.abort_time_limit: interface.TIME_LIMIT,
-    cplex.Cplex.solution.status.abort_user: interface.ABORTED,
-    cplex.Cplex.solution.status.conflict_abort_contradiction: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_abort_dettime_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_abort_iteration_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_abort_memory_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_abort_node_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_abort_obj_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_abort_time_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_abort_user: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_feasible: interface.SPECIAL,
-    cplex.Cplex.solution.status.conflict_minimal: interface.SPECIAL,
-    cplex.Cplex.solution.status.fail_feasible: interface.SPECIAL,
-    cplex.Cplex.solution.status.fail_feasible_no_tree: interface.SPECIAL,
-    cplex.Cplex.solution.status.fail_infeasible: interface.SPECIAL,
-    cplex.Cplex.solution.status.fail_infeasible_no_tree: interface.SPECIAL,
-    cplex.Cplex.solution.status.feasible: interface.FEASIBLE,
-    cplex.Cplex.solution.status.feasible_relaxed_inf: interface.SPECIAL,
-    cplex.Cplex.solution.status.feasible_relaxed_quad: interface.SPECIAL,
-    cplex.Cplex.solution.status.feasible_relaxed_sum: interface.SPECIAL,
-    cplex.Cplex.solution.status.first_order: interface.SPECIAL,
-    cplex.Cplex.solution.status.infeasible: interface.INFEASIBLE,
-    cplex.Cplex.solution.status.infeasible_or_unbounded: interface.INFEASIBLE_OR_UNBOUNDED,
-    cplex.Cplex.solution.status.mem_limit_feasible: interface.MEMORY_LIMIT,
-    cplex.Cplex.solution.status.mem_limit_infeasible: interface.MEMORY_LIMIT,
-    cplex.Cplex.solution.status.node_limit_feasible: interface.NODE_LIMIT,
-    cplex.Cplex.solution.status.node_limit_infeasible: interface.NODE_LIMIT,
-    cplex.Cplex.solution.status.num_best: interface.NUMERIC,
-    cplex.Cplex.solution.status.optimal: interface.OPTIMAL,
-    cplex.Cplex.solution.status.optimal_face_unbounded: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_infeasible: interface.INFEASIBLE,
-    cplex.Cplex.solution.status.optimal_populated: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_populated_tolerance: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_relaxed_inf: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_relaxed_quad: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_relaxed_sum: interface.SPECIAL,
-    cplex.Cplex.solution.status.optimal_tolerance: interface.OPTIMAL,
-    cplex.Cplex.solution.status.populate_solution_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.solution_limit: interface.SPECIAL,
-    cplex.Cplex.solution.status.unbounded: interface.UNBOUNDED,
-    cplex.Cplex.solution.status.relaxation_unbounded: interface.UNBOUNDED,
+_STATUS_MAP = {
+    'MIP_abort_feasible': interface.ABORTED,
+    'MIP_abort_infeasible': interface.ABORTED,
+    'MIP_dettime_limit_feasible': interface.TIME_LIMIT,
+    'MIP_dettime_limit_infeasible': interface.TIME_LIMIT,
+    'MIP_feasible': interface.FEASIBLE,
+    'MIP_feasible_relaxed_inf': interface.SPECIAL,
+    'MIP_feasible_relaxed_quad': interface.SPECIAL,
+    'MIP_feasible_relaxed_sum': interface.SPECIAL,
+    'MIP_infeasible': interface.INFEASIBLE,
+    'MIP_infeasible_or_unbounded': interface.INFEASIBLE_OR_UNBOUNDED,
+    'MIP_optimal': interface.OPTIMAL,
+    'MIP_optimal_infeasible': interface.SPECIAL,
+    'MIP_optimal_relaxed_inf': interface.SPECIAL,
+    'MIP_optimal_relaxed_sum': interface.SPECIAL,
+    'MIP_time_limit_feasible': interface.TIME_LIMIT,
+    'MIP_time_limit_infeasible': interface.TIME_LIMIT,
+    'MIP_unbounded': interface.UNBOUNDED,
+    'abort_dettime_limit': interface.ABORTED,
+    'abort_dual_obj_limit': interface.ABORTED,
+    'abort_iteration_limit': interface.ABORTED,
+    'abort_obj_limit': interface.ABORTED,
+    'abort_primal_obj_limit': interface.ABORTED,
+    'abort_relaxed': interface.ABORTED,
+    'abort_time_limit': interface.TIME_LIMIT,
+    'abort_user': interface.ABORTED,
+    'conflict_abort_contradiction': interface.SPECIAL,
+    'conflict_abort_dettime_limit': interface.SPECIAL,
+    'conflict_abort_iteration_limit': interface.SPECIAL,
+    'conflict_abort_memory_limit': interface.SPECIAL,
+    'conflict_abort_node_limit': interface.SPECIAL,
+    'conflict_abort_obj_limit': interface.SPECIAL,
+    'conflict_abort_time_limit': interface.SPECIAL,
+    'conflict_abort_user': interface.SPECIAL,
+    'conflict_feasible': interface.SPECIAL,
+    'conflict_minimal': interface.SPECIAL,
+    'fail_feasible': interface.SPECIAL,
+    'fail_feasible_no_tree': interface.SPECIAL,
+    'fail_infeasible': interface.SPECIAL,
+    'fail_infeasible_no_tree': interface.SPECIAL,
+    'feasible': interface.FEASIBLE,
+    'feasible_relaxed_inf': interface.SPECIAL,
+    'feasible_relaxed_quad': interface.SPECIAL,
+    'feasible_relaxed_sum': interface.SPECIAL,
+    'first_order': interface.SPECIAL,
+    'infeasible': interface.INFEASIBLE,
+    'infeasible_or_unbounded': interface.INFEASIBLE_OR_UNBOUNDED,
+    'mem_limit_feasible': interface.MEMORY_LIMIT,
+    'mem_limit_infeasible': interface.MEMORY_LIMIT,
+    'node_limit_feasible': interface.NODE_LIMIT,
+    'node_limit_infeasible': interface.NODE_LIMIT,
+    'num_best': interface.NUMERIC,
+    'optimal': interface.OPTIMAL,
+    'optimal_face_unbounded': interface.SPECIAL,
+    'optimal_infeasible': interface.INFEASIBLE,
+    'optimal_populated': interface.SPECIAL,
+    'optimal_populated_tolerance': interface.SPECIAL,
+    'optimal_relaxed_inf': interface.SPECIAL,
+    'optimal_relaxed_quad': interface.SPECIAL,
+    'optimal_relaxed_sum': interface.SPECIAL,
+    'optimal_tolerance': interface.OPTIMAL,
+    'populate_solution_limit': interface.SPECIAL,
+    'solution_limit': interface.SPECIAL,
+    'unbounded': interface.UNBOUNDED,
+    'relaxation_unbounded': interface.UNBOUNDED,
+    'non-existing-status': 'Here for testing that missing statuses are handled.'
     # 102: interface.OPTIMAL # The same as cplex.Cplex.solution.status.optimal_tolerance
 }
+
+# Check if each status is supported by the current cplex version
+_CPLEX_STATUS_TO_STATUS = {}
+for status_name, optlang_status in _STATUS_MAP.items():
+    cplex_status = getattr(cplex.Cplex.solution.status, status_name, None)
+    if cplex_status is not None:
+        _CPLEX_STATUS_TO_STATUS[cplex_status] = optlang_status
 
 _LP_METHODS = ["auto", "primal", "dual", "network", "barrier", "sifting", "concurrent"]
 
@@ -193,7 +201,7 @@ class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
-        super(Constraint, self).__init__(expression, *args, **kwargs)
+        super(Constraint, self).__init__(expression, *args, sloppy=sloppy, **kwargs)
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
@@ -201,6 +209,13 @@ class Constraint(interface.Constraint):
             self.problem.problem.linear_constraints.set_coefficients(triplets)
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
+
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            coefs = self.problem.problem.linear_constraints.get_coefficients([(self.name, v.name) for v in variables])
+            return {v: c for v, c in zip(variables, coefs)}
+        else:
+            raise Exception("Can't get coefficients from solver if constraint is not in a model")
 
     def _get_expression(self):
         if self.problem is not None:
@@ -299,14 +314,17 @@ class Constraint(interface.Constraint):
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, **kwargs):
-        super(Objective, self).__init__(expression, **kwargs)
+        super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         self._expression_expired = False
         if not (sloppy or self.is_Linear or self.is_Quadratic):
             raise ValueError("Cplex only supports linear and quadratic objectives.")
 
     @property
     def value(self):
-        return self.problem.problem.solution.get_objective_value()
+        if getattr(self, 'problem', None) is not None:
+            return self.problem.problem.solution.get_objective_value()
+        else:
+            return None
 
     @interface.Objective.direction.setter
     def direction(self, value):
@@ -333,6 +351,13 @@ class Objective(interface.Objective):
             self._expression_expired = True
         else:
             raise Exception("Can't change coefficients if objective is not associated with a model.")
+
+    def get_linear_coefficients(self, variables):
+        if self.problem is not None:
+            coefs = self.problem.problem.objective.get_linear([v.name for v in variables])
+            return {v: c for v, c in zip(variables, coefs)}
+        else:
+            raise Exception("Can't get coefficients from solver if objective is not in a model")
 
 
 @six.add_metaclass(inheritdocstring)
