@@ -35,7 +35,7 @@ import six
 
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
-# import sympy
+import sympy
 
 # from sympy.core.assumptions import _assume_rules
 # from sympy.core.facts import FactKB
@@ -506,7 +506,12 @@ class OptimizationExpression(object):
                             is_quad = True
             return is_quad
         else:
-            poly = self.expression.as_poly(*self.variables)
+            if isinstance(self.expression, sympy.Basic):
+                sympy_expression = self.expression
+            else:
+                sympy_expression = sympy.sympify(self.expression)
+            # TODO: Find a way to do this with symengine (Poly is not part of symengine, 23 March 2017)
+            poly = sympy_expression.as_poly(*sympy_expression.atoms(sympy.Symbol))
             if poly is None:
                 return False
             else:
