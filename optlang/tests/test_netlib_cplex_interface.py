@@ -123,6 +123,20 @@ else:
                         netlib_id, os.path.basename(str(__file__)))
                     yield func
 
+                    if not os.getenv('TRAVIS', False):
+                        # check that a cloned model also gives the correct result
+                        model = Model.clone(model, use_json=False, use_lp=False)
+                        model.optimize()
+                        if model.status == 'optimal':
+                            model_objval = model.objective.value
+                        else:
+                            raise Exception('No optimal solution found for netlib model %s' % netlib_id)
+
+                        func = partial(check_objval_against_the_final_netlib_results, netlib_id, model_objval)
+                        func.description = "test_netlib_check_objective_value__against_the_final_netlib_results_after_cloning_%s (%s)" % (
+                            netlib_id, os.path.basename(str(__file__)))
+                        yield func
+
     except ImportError as e:
 
         if str(e).find('cplex') >= 0:
@@ -136,29 +150,17 @@ else:
 
 if __name__ == '__main__':
     # tar = tarfile.open('data/netlib_lp_problems.tar.gz')
-    # model_paths_in_tar = glob.fnmatch.filter(tar.getnames(), '*.SIF')
-    # for model_path_in_tar in model_paths_in_tar:
-    # try:
-    #
-    # fhandle = tar.extractfile(model_path_in_tar)
+    # fhandle = tar.extractfile('./netlib/SEBA.SIF')
     # problem = read_netlib_sif_cplex(fhandle)
-    #
-    # except cplex.exceptions.CplexSolverError, e:
-    # print model_path_in_tar
-    # print problem
-    # print problem.get_problem_name()
-    # print e
-    # fhandle = tar.extractfile('./netlib/ADLITTLE.SIF')
-    # glpk_problem = read_netlib_sif_glpk(fhandle)
-    # glp_simplex(glpk_problem, None)
-    # print glp_get_obj_val(glpk_problem)
-    # print glpk_problem
-    # fhandle = tar.extractfile('./netlib/ADLITTLE.SIF')
-    # glpk_problem = read_netlib_sif_glpk(fhandle)
-    # model = Model(problem=glpk_problem)
-    # glp_simplex(glpk_problem, None)
-    # model.optimize()
-    # print model.objective.value
-    # print model
-    # test_netlib().next()
+    # model = Model(problem=problem)
+    # status = model.optimize()
+    # print(status)
+    # print(model.objective.value)
+    # print(model.constraints['VILLKOR7'])
+    # # print(model)
+    # model = Model.clone(model, use_lp=False, use_json=False)
+    # status = model.optimize()
+    # print(status)
+    # print(model.constraints['VILLKOR7'])
+    # print(model.objective.value)
     nose.runmodule()
