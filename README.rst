@@ -1,8 +1,6 @@
 optlang
 =======
 
-
-
 *Sympy based mathematical programming language*
 
 |PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |Gitter| |JOSS| |DOI|
