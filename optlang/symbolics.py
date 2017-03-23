@@ -52,8 +52,11 @@ if USE_SYMENGINE:
     Zero = Integer(0)
     One = Integer(1)
     NegativeOne = Integer(-1)
-    pow = symengine.sympy_compat.Pow
     sympify = symengine.sympy_compat.sympify
+
+    Add = symengine.Add
+    Mul = symengine.Mul
+    Pow = symengine.sympy_compat.Pow
 
     class Symbol(symengine_Symbol):
         def __new__(cls, name, *args, **kwargs):
@@ -87,8 +90,11 @@ else:  # Use sympy
     Zero = Integer(0)
     One = Integer(1)
     NegativeOne = Integer(-1)
-    pow = sympy.Pow
     sympify = sympy.sympify
+
+    Add = sympy.Add
+    Mul = sympy.Mul
+    Pow = sympy.Pow
 
     class Symbol(sympy.Symbol):
         def __new__(cls, name, **kwargs):
