@@ -213,7 +213,7 @@ else:
             constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.model.add(constraint)
             self.assertEqual(
-                (self.model.constraints['test'].expression - (0.4*y + 0.3*x)).expand() - 0,
+                (self.model.constraints['test'].expression - (0.4 * y + 0.3 * x)).expand() - 0,
                 0
             )
 
@@ -226,12 +226,9 @@ else:
                 self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y'), ('test', 'z')]),
                 [0.3, 0.4, 77.])
             self.assertEqual(
-                (self.model.constraints['test'].expression - (0.4*y + 0.3*x + 77.0*z)).expand() - 0,
+                (self.model.constraints['test'].expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand() - 0,
                 0
             )
-
-            # self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
-            print(self.model)
 
         def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -244,7 +241,7 @@ else:
             self.assertEqual(constraint.name, "test")
             self.assertEqual(constraint.lb, -100)
             self.assertEqual(constraint.ub, None)
-            self.assertEqual((constraint.expression - (0.4*y + 0.3*x + 77.0*z)).expand(), 0)
+            self.assertEqual((constraint.expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand(), 0)
 
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)

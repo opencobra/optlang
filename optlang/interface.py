@@ -35,8 +35,6 @@ import six
 
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
-import sympy
-
 # from sympy.core.assumptions import _assume_rules
 # from sympy.core.facts import FactKB
 # from sympy.core.expr import Expr

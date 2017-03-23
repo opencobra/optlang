@@ -598,8 +598,7 @@ class Model(interface.Model):
                     raise e
             else:
                 linear_expression = add(
-                    [mul(symbolics.Real(coeff), variables[index]) for index, coeff in
-                    enumerate(self.problem.objective.get_linear()) if coeff != 0.]
+                    [mul(symbolics.Real(coeff), variables[index]) for index, coeff in enumerate(self.problem.objective.get_linear()) if coeff != 0.]
                 )
                 try:
                     quadratic = self.problem.objective.get_quadratic()
