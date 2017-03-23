@@ -337,7 +337,7 @@ class AbstractModelTestCase(unittest.TestCase):
         model = self.interface.Model()
         self.assertEqual(len(model.constraints), 0)
         self.assertEqual(len(model.variables), 0)
-        self.assertEqual(model.objective.expression, 0)
+        self.assertEqual(model.objective.expression - 0, 0)
 
     @abc.abstractmethod
     def test_pickle_ability(self):
@@ -485,7 +485,7 @@ class AbstractModelTestCase(unittest.TestCase):
         constraint = self.model.constraints[5]
         coefs = constraint.get_linear_coefficients(self.model.variables)
         expr = sum(c * v for v, c in coefs.items())
-        self.assertEqual(expr - constraint.expression, 0)
+        self.assertEqual((expr - constraint.expression).expand(), 0.)
 
     @abc.abstractmethod
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
@@ -532,13 +532,23 @@ class AbstractModelTestCase(unittest.TestCase):
     def test_change_objective(self):
         v1, v2 = self.model.variables.values()[0:2]
         self.model.objective = self.interface.Objective(1. * v1 + 1. * v2)
-        self.assertEqual(str(self.model.objective), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+        self.assertEqual(self.model.objective.direction, "max")
+        self.assertEqual(
+            (self.model.objective.expression -
+             (1.0*self.model.variables["R_PGK"] + 1.0*self.model.variables["R_Biomass_Ecoli_core_w_GAM"])).expand(),
+            0.
+        )
         self.model.objective = self.interface.Objective(v1 + v2)
-        self.assertEqual(str(self.model.objective), 'Maximize\n1.0*R_PGK + 1.0*R_Biomass_Ecoli_core_w_GAM')
+        self.assertEqual(self.model.objective.direction, "max")
+        self.assertEqual(
+            (self.model.objective.expression -
+             (1.0*self.model.variables["R_PGK"] + 1.0*self.model.variables["R_Biomass_Ecoli_core_w_GAM"])).expand(),
+            0.
+        )
 
     def test_number_objective(self):
         self.model.objective = self.interface.Objective(0.)
-        self.assertEqual(self.model.objective.expression, 0)
+        self.assertEqual(self.model.objective.expression - 0, 0)
         self.assertEqual(self.model.objective.direction, "max")
         self.assertEqual(self.model.optimize(), "optimal")
 
@@ -663,13 +673,13 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertAlmostEqual(y.primal, 0)
 
         obj.set_linear_coefficients({y: 1})
-        self.assertEqual(obj.expression - (x + y), 0)
+        self.assertEqual((obj.expression - (x + y)).expand(), 0)
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
         self.assertAlmostEqual(x.primal, 2)
         self.assertAlmostEqual(y.primal, 2)
 
         obj.set_linear_coefficients({x: 0})
-        self.assertEqual(obj.expression - y, 0)
+        self.assertEqual((obj.expression - y).expand(), 0)
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
         self.assertAlmostEqual(x.primal, 0)
         self.assertAlmostEqual(y.primal, 3)
@@ -687,12 +697,12 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertAlmostEqual(x.primal, x.ub)
 
         c1.set_linear_coefficients({x: 1})
-        self.assertEqual(c1.expression - (x + y), 0)
+        self.assertEqual((c1.expression - (x + y)).expand() - 0, 0)
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
         self.assertAlmostEqual(x.primal, 1)
 
         c1.set_linear_coefficients({x: 2})
-        self.assertEqual(c1.expression - (2 * x + y), 0)
+        self.assertEqual((c1.expression - (2 * x + y)).expand() - 0, 0)
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
         self.assertAlmostEqual(x.primal, 0.5)
 
