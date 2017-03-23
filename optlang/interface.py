@@ -886,7 +886,7 @@ class Objective(OptimizationExpression):
         if isinstance(expression, sympy.Basic):
             expression *= 1.
         else:
-            expression = (1. * expression).simplify()
+            expression = (1. * expression).expand()
         return expression
 
     @property
