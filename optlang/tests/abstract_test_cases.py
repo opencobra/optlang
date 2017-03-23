@@ -511,9 +511,8 @@ class AbstractModelTestCase(unittest.TestCase):
     def test_change_constraint_bounds(self):
         pass
 
-    @abc.abstractmethod
     def test_initial_objective(self):
-        pass
+        self.assertEqual(self.model.objective.expression, 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])
 
     def test_optimize(self):
         self.model.optimize()

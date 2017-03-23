@@ -357,9 +357,6 @@ else:
             print('bounds', bounds)
             self.assertEqual(bounds, inner_problem_bounds)
 
-        def test_initial_objective(self):
-            self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
-
         @unittest.skip('Not supported yet')
         def test_iadd_objective(self):
             v2, v3 = self.model.variables.values()[1:3]

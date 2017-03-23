@@ -296,9 +296,6 @@ else:
             self.assertEqual(self.model.problem.linear_constraints.get_senses(constraint.name), "E")
             self.assertEqual(self.model.problem.linear_constraints.get_range_values(constraint.name), 0)
 
-        def test_initial_objective(self):
-            self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
-
         def test_iadd_objective(self):
             v2, v3 = self.model.variables.values()[1:3]
             self.model.objective += 2. * v2 - 3. * v3

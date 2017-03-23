@@ -324,9 +324,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
         self.assertEqual(bounds_new, inner_problem_bounds_new)
 
-    def test_initial_objective(self):
-        self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
-
     def test_iadd_objective(self):
         v2, v3 = self.model.variables.values()[1:3]
         self.model.objective += 2. * v2 - 3. * v3
