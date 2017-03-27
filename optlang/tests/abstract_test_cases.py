@@ -485,7 +485,7 @@ class AbstractModelTestCase(unittest.TestCase):
         constraint = self.model.constraints[5]
         coefs = constraint.get_linear_coefficients(self.model.variables)
         expr = sum(c * v for v, c in coefs.items())
-        self.assertEqual((expr - constraint.expression).expand(), 0.)
+        self.assertEqual((expr - constraint.expression).expand() - 0, 0)
 
     @abc.abstractmethod
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
