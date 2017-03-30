@@ -26,7 +26,7 @@ del get_versions
 
 log = logging.getLogger(__name__)
 
-# The try/fail approach doesn't require this, but it is still a useful list
+# Dictionary of available solvers
 available_solvers = list_available_solvers()
 
 # Try to load each solver.
@@ -34,18 +34,28 @@ try:
 	from optlang import glpk_interface
 except:
 	glpk_interface = None
+	if available_solvers['GLPK']:
+		log.error('GLPK could not load but should be available')
+
 try:
 	from optlang import cplex_interface
 except:
 	cplex_interface = None
+	if available_solvers['CPLEX']:
+		log.error('CPLEX could not load but should be available')
+
 try:
 	from optlang import gurobi_interface
 except:
 	gurobi_interface = None
+	if available_solvers['GUROBI']:
+		log.error('GUROBI could not load but should be available')
 try:
 	from optlang import scipy_interface
 except:
 	scipy_interface = None
+	if available_solvers['SCIPY']:
+		log.error('SCIPY could not load but should be available')
 
 # Go through and find the best solver that loaded. Load that one as the default
 best_interface = None
