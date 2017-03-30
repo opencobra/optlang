@@ -114,8 +114,9 @@ _STATUS_MAP = {
 
 # Check if each status is supported by the current cplex version
 _CPLEX_STATUS_TO_STATUS = {}
+_solution = cplex.Cplex().solution
 for status_name, optlang_status in _STATUS_MAP.items():
-    cplex_status = getattr(cplex.Cplex.solution.status, status_name, None)
+    cplex_status = getattr(_solution.status, status_name, None)
     if cplex_status is not None:
         _CPLEX_STATUS_TO_STATUS[cplex_status] = optlang_status
 

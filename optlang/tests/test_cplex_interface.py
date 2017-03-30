@@ -48,7 +48,7 @@ else:
             model = Model(problem=problem)
             model.optimize()
             self.assertEqual(model.status, 'optimal')
-            self.assertEqual(model.objective.value, 0.8739215069684305)
+            self.assertAlmostEqual(model.objective.value, 0.8739215069684305)
             print([var.primal for var in model.variables])
             for i, j in zip([var.primal for var in model.variables],
                             [0.8739215069684306, -16.023526143167608, 16.023526143167604, -14.71613956874283,
@@ -380,15 +380,23 @@ else:
 
             self.assertRaises(ValueError, setattr, self.configuration, "qp_method", "weird_stuff")
             self.configuration.solution_target = None
-            self.assertEqual(self.model.problem.parameters.solutiontarget.get(),
-                             self.model.problem.parameters.solutiontarget.default())
+            if hasattr(self.model.problem.parameters, "optimalitytarget"):
+                self.assertEqual(self.model.problem.parameters.optimalitytarget.get(),
+                                 self.model.problem.parameters.optimalitytarget.default())
+            else:
+                self.assertEqual(self.model.problem.parameters.solutiontarget.get(),
+                                 self.model.problem.parameters.solutiontarget.default())
 
         def test_solution_method(self):
             for option in cplex_interface._SOLUTION_TARGETS:
                 self.configuration.solution_target = option
                 self.assertEqual(self.configuration.solution_target, option)
-                self.assertEqual(self.model.problem.parameters.solutiontarget.get(),
-                                 cplex_interface._SOLUTION_TARGETS.index(option))
+                if hasattr(self.model.problem.parameters, "optimalitytarget"):
+                    self.assertEqual(self.model.problem.parameters.optimalitytarget.get(),
+                                     cplex_interface._SOLUTION_TARGETS.index(option))
+                else:
+                    self.assertEqual(self.model.problem.parameters.solutiontarget.get(),
+                                     cplex_interface._SOLUTION_TARGETS.index(option))
 
             self.assertRaises(ValueError, setattr, self.configuration, "solution_target", "weird_stuff")
 
