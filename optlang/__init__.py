@@ -33,29 +33,31 @@ available_solvers = list_available_solvers()
 try:
 	from optlang import glpk_interface
 except:
-	glpk_interface=None
+	glpk_interface = None
 try:
 	from optlang import cplex_interface
 except:
-	cplex_interface=None
+	cplex_interface = None
 try:
 	from optlang import gurobi_interface
 except:
-	gurobi_interface=None
+	gurobi_interface = None
 try:
 	from optlang import scipy_interface
 except:
-	scipy_interface=None
+	scipy_interface = None
 
 # Go through and find the best solver that loaded. Load that one as the default
-best_interface=None
+best_interface = None
 for engine in [cplex_interface,gurobi_interface,glpk_interface,scipy_interface]:
 	if engine is not None:
-		best_interface=engine
-		Model=engine.Model
-		Variable=engine.Variable
-		Constraint=engine.Constraint
-		Objective=engine.Objective
+		best_interface = engine
+		Model = engine.Model
+		Variable = engine.Variable
+		Constraint = engine.Constraint
+		Objective = engine.Objective
 		break
+
+# If we can't find any interface, that is probably an issue
 if best_interface is None:
 	log.error('No solvers were available and/or loadable.')
