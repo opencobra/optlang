@@ -3,7 +3,7 @@ optlang
 
 *Sympy based mathematical programming language*
 
-|PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |JOSS| |DOI|
+|PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |Gitter| |JOSS| |DOI|
 
 Optlang is a Python package for solving mathematical optimization
 problems, i.e. maximizing or minimizing an objective function over a set
@@ -153,4 +153,7 @@ also provides a good overview of the project's roadmap.
    :target: https://zenodo.org/badge/latestdoi/5031/biosustain/optlang
 .. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/443yp8hf25c6748h/branch/master?svg=true
    :target: https://ci.appveyor.com/project/phantomas1234/optlang/branch/master
+.. |Gitter| image:: https://badges.gitter.im/biosustain/optlang.svg
+   :alt: Join the chat at https://gitter.im/biosustain/optlang
+   :target: https://gitter.im/biosustain/optlang?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 

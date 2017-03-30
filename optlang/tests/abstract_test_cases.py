@@ -274,6 +274,34 @@ class AbstractConstraintTestCase(unittest.TestCase):
     def test_constraint_set_linear_coefficients_raises(self):
         self.assertRaises(Exception, self.constraint.set_linear_coefficients, {})
 
+    def test_move_constant_to_rhs(self):
+        x = self.interface.Variable("x")
+        c1 = self.interface.Constraint(x + 3, lb=0, ub=0)
+        self.assertEqual(c1.expression - x, 0)
+        self.assertEqual(c1.lb, -3)
+        self.assertEqual(c1.ub, -3)
+
+        c2 = self.interface.Constraint(x - 3, lb=0, ub=0)
+        self.assertEqual(c2.expression - x, 0)
+        self.assertEqual(c2.lb, 3)
+        self.assertEqual(c2.ub, 3)
+
+        c3 = self.interface.Constraint(x - 3, lb=0)
+        self.assertEqual(c3.expression - x, 0)
+        self.assertEqual(c3.lb, 3)
+
+        c4 = self.interface.Constraint(x - 3, ub=0)
+        self.assertEqual(c4.expression - x, 0)
+        self.assertEqual(c4.ub, 3)
+
+        c5 = self.interface.Constraint(x + 3, lb=0)
+        self.assertEqual(c5.expression - x, 0)
+        self.assertEqual(c5.lb, -3)
+
+        c6 = self.interface.Constraint(x + 3, ub=0)
+        self.assertEqual(c6.expression - x, 0)
+        self.assertEqual(c6.ub, -3)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractObjectiveTestCase(unittest.TestCase):

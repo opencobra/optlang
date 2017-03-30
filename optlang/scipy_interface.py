@@ -445,7 +445,7 @@ class Constraint(interface.Constraint):
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, **kwargs):
-        super(Objective, self).__init__(expression, sloppy, **kwargs)
+        super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         if not (sloppy or self.is_Linear):
             raise ValueError(
                 "Scipy only supports linear objectives. %s is not linear." % self)

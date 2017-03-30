@@ -201,7 +201,7 @@ class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
-        super(Constraint, self).__init__(expression, *args, **kwargs)
+        super(Constraint, self).__init__(expression, *args, sloppy=sloppy, **kwargs)
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
@@ -314,7 +314,7 @@ class Constraint(interface.Constraint):
 @six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, **kwargs):
-        super(Objective, self).__init__(expression, **kwargs)
+        super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         self._expression_expired = False
         if not (sloppy or self.is_Linear or self.is_Quadratic):
             raise ValueError("Cplex only supports linear and quadratic objectives.")
@@ -577,7 +577,7 @@ class Model(interface.Model):
                 elif sense == 'L':
                     constr = Constraint(lhs, ub=rhs, name=name, problem=self)
                 elif sense == 'R':
-                    range_val = self.problem.linear_constraints.get_rhs(name)
+                    range_val = self.problem.linear_constraints.get_range_values(name)
                     if range_val > 0:
                         constr = Constraint(lhs, lb=rhs, ub=rhs + range_val, name=name, problem=self)
                     else:
