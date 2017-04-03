@@ -357,6 +357,59 @@ else:
             self.model.objective = Objective(self.model.variables[2])
 
 
+        # TODO Move these 3 tests to AbstractTestCases
+        def test_is_integer(self):
+            model = self.model
+            self.assertFalse(model.is_integer)
+
+            model.variables[0].type = "integer"
+            self.assertTrue(model.is_integer)
+
+            model.variables[0].type = "continuous"
+            model.variables[1].type = "binary"
+            self.assertTrue(model.is_integer)
+
+            model.variables[1].type = "continuous"
+            self.assertFalse(model.is_integer)
+
+        def test_integer_variable_dual(self):
+            model = self.interface.Model()
+            x = self.interface.Variable("x", lb=0)
+            y = self.interface.Variable("y", lb=0)
+            c = self.interface.Constraint(x + y, ub=1)
+            model.add(c)
+            model.objective = self.interface.Objective(x)
+
+            model.optimize()
+            self.assertEqual(y.dual, -1)
+
+            x.type = "integer"
+            model.optimize()
+            self.assertEqual(y.dual, None)
+
+            x.type = "continuous"
+            model.optimize()
+            self.assertEqual(y.dual, -1)
+
+        def test_integer_constraint_dual(self):
+            model = self.interface.Model()
+            x = self.interface.Variable("x")
+            c = self.interface.Constraint(x, ub=1)
+            model.add(c)
+            model.objective = self.interface.Objective(x)
+
+            model.optimize()
+            self.assertEqual(c.dual, 1)
+
+            x.type = "integer"
+            model.optimize()
+            self.assertEqual(c.dual, None)
+
+            x.type = "continuous"
+            model.optimize()
+            self.assertEqual(c.dual, 1)
+
+
     class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
         def setUp(self):
             self.model = Model()

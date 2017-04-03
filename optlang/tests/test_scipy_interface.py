@@ -288,3 +288,12 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         model.add(c)
         model.objective = obj
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+
+    def test_is_integer(self):
+        self.skipTest()
+
+    def test_integer_variable_dual(self):
+        self.skipTest()
+
+    def test_integer_constraint_dual(self):
+        self.skipTest()
