@@ -290,10 +290,10 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
 
     def test_is_integer(self):
-        self.skipTest()
+        self.skipTest("No integers with scipy")
 
     def test_integer_variable_dual(self):
-        self.skipTest()
+        self.skipTest("No duals with scipy")
 
     def test_integer_constraint_dual(self):
-        self.skipTest()
+        self.skipTest("No duals with scipy")
