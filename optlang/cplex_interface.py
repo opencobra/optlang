@@ -138,6 +138,7 @@ _CPLEX_MIP_TYPES_TO_CONTINUOUS = {
     cplex.Cplex.problem_type.MIQCP: cplex.Cplex.problem_type.QCP
 }
 
+
 def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
     """Helper function used by Constraint and Model"""
     if lb is None and ub is None:
