@@ -62,6 +62,7 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.model.update()
         self.var.name = "test_2"
         self.assertEqual(self.var.name, "test_2")
+        self.assertEqual(str(self.var), self.var.name)
         self.model.remove(self.var)
         self.model.update()
 
@@ -479,7 +480,7 @@ class AbstractModelTestCase(unittest.TestCase):
     def test_objective_get_linear_coefficients(self):
         coefs = self.model.objective.get_linear_coefficients(self.model.variables)
         expr = sum(c * v for v, c in coefs.items())
-        self.assertEqual(expr - self.model.objective.expression, 0)
+        self.assertEqual((expr - self.model.objective.expression).expand() - 0, 0)
 
     def test_constraint_get_linear_coefficients(self):
         constraint = self.model.constraints[5]
