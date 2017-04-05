@@ -387,5 +387,11 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
                 self.assertEqual(da[i], 666.)
 
 
+    class DualValuesMIPTestCase(
+        abstract_test_cases.AbstractDualValuesMIPTestCase):
+
+        interface = glpk_interface
+
+
 if __name__ == '__main__':
     nose.runmodule()
