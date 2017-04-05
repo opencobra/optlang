@@ -31,7 +31,6 @@ from six.moves import StringIO
 
 log = logging.getLogger(__name__)
 
-from future.utils import raise_from
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
@@ -184,7 +183,7 @@ class Variable(interface.Variable):
         try:
             return self.problem.problem.solution.get_values(self.name)
         except CplexSolverError as err:
-            raise_from(SolverError(str(err)), err)
+            raise SolverError(str(err))
 
     @property
     def dual(self):
@@ -194,7 +193,7 @@ class Variable(interface.Variable):
             try:
                 return self.problem.problem.solution.get_reduced_costs(self.name)
             except CplexSolverError as err:
-                raise_from(SolverError(str(err)), err)
+                raise SolverError(str(err))
         else:
             return None
 
@@ -255,7 +254,7 @@ class Constraint(interface.Constraint):
                 return self.problem.problem.solution.get_activity_levels(
                     self.name)
             except CplexSolverError as err:
-                raise_from(SolverError(str(err)), err)
+                raise SolverError(str(err))
             # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
         else:
             return None
@@ -266,7 +265,7 @@ class Constraint(interface.Constraint):
             try:
                 return self.problem.problem.solution.get_dual_values(self.name)
             except CplexSolverError as err:
-                raise_from(SolverError(str(err)), err)
+                raise SolverError(str(err))
         else:
             return None
 
@@ -340,7 +339,7 @@ class Objective(interface.Objective):
             try:
                 return self.problem.problem.solution.get_objective_value()
             except CplexSolverError as err:
-                raise_from(SolverError(str(err)), err)
+                raise SolverError(str(err))
         else:
             return None
 
@@ -720,7 +719,7 @@ class Model(interface.Model):
             for variable, primal in zip(self.variables, self.problem.solution.get_values()):
                 primal_values[variable.name] = variable._round_primal_to_bounds(primal)
         except CplexSolverError as err:
-            raise_from(SolverError(str(err)), err)
+            raise SolverError(str(err))
         return primal_values
 
     @property
@@ -729,7 +728,7 @@ class Model(interface.Model):
             return collections.OrderedDict(
                 zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
         except CplexSolverError as err:
-            raise_from(SolverError(str(err)), err)
+            raise SolverError(str(err))
 
     @property
     def constraint_values(self):
@@ -737,7 +736,7 @@ class Model(interface.Model):
             return collections.OrderedDict(
                 zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
         except CplexSolverError as err:
-            raise_from(SolverError(str(err)), err)
+            raise SolverError(str(err))
 
 
     @property
@@ -746,7 +745,7 @@ class Model(interface.Model):
             return collections.OrderedDict(
                 zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
         except CplexSolverError as err:
-            raise_from(SolverError(str(err)), err)
+            raise SolverError(str(err))
 
     def to_lp(self):
         self.update()
@@ -760,7 +759,7 @@ class Model(interface.Model):
         try:
             self.problem.solve()
         except CplexSolverError as err:
-            raise_from(SolverError(str(err)), err)
+            raise SolverError(str(err))
         cplex_status = self.problem.solution.get_status()
         self._original_status = self.problem.solution.get_status_string()
         status = _CPLEX_STATUS_TO_STATUS[cplex_status]
