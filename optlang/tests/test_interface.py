@@ -29,7 +29,7 @@ class TestModel(TestCase):
         model = Model()
         self.assertEqual(len(model.constraints), 0)
         self.assertEqual(len(model.variables), 0)
-        self.assertEqual(model.objective.expression, 0)
+        self.assertEqual(model.objective.expression - 0, 0)
 
     def test_add_variable(self):
         var = Variable('z')
@@ -100,11 +100,22 @@ class TestModel(TestCase):
         self.model.remove(var.name)
         self.assertNotIn(var, self.model.variables.values())
         self.assertEqual(var.problem, None)
-        self.assertEqual(self.model.__str__(), 'Maximize\n2.0*x\nsubject to\nconstr1: 3 <= 1.0*x\nBounds\n0 <= x <= 10')
+        self.assertEqual(self.model.objective.direction, "max")
+        self.assertEqual(
+            (self.model.objective.expression - (2.0 * self.model.variables.x)).expand() - 0, 0
+        )
+        self.assertEqual(len(self.model.variables), 1)
+        self.assertEqual(len(self.model.constraints), 1)
+        self.assertEqual((self.model.variables[0].lb, self.model.variables[0].ub), (0, 10))
+        self.assertEqual(self.model.constraints[0].lb, 3)
+        self.assertEqual(
+            (self.model.constraints[0].expression - (1.0 * self.model.variables.x)).expand() - 0, 0
+        )
+        # self.assertEqual(self.model.__str__(), 'Maximize\n2.0*x\nsubject to\nconstr1: 3 <= 1.0*x\nBounds\n0 <= x <= 10')
 
     def test_number_objective(self):
         self.model.objective = Objective(0.)
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0')
+        self.assertIn('Maximize\n0', self.model.objective.__str__())
 
     def test_add_differing_interface_type_raises(self):
         from optlang import glpk_interface as glpk
