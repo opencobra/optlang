@@ -540,50 +540,25 @@ else:
                 self.continuous_var.primal
             self.assertIn("CPLEX Error  1217", str(context.exception))
 
-        def test_variable_dual(self):
-            with self.assertRaises(SolverError) as context:
-                self.continuous_var.dual
-            self.assertIn("CPLEX Error  1017", str(context.exception))
-
         def test_binary_variable_primal(self):
             with self.assertRaises(SolverError) as context:
                 self.binary_var.primal
             self.assertIn("CPLEX Error  1217", str(context.exception))
-
-        def test_binary_variable_dual(self):
-            with self.assertRaises(SolverError) as context:
-                self.binary_var.dual
-            self.assertIn("CPLEX Error  1017", str(context.exception))
 
         def test_constraint_primal(self):
             with self.assertRaises(SolverError) as context:
                 self.constraint.primal
             self.assertIn("CPLEX Error  1217", str(context.exception))
 
-        def test_constraint_dual(self):
-            with self.assertRaises(SolverError) as context:
-                self.constraint.dual
-            self.assertIn("CPLEX Error  1017", str(context.exception))
-
         def test_primal_values(self):
             with self.assertRaises(SolverError) as context:
                 self.model.primal_values
             self.assertIn("CPLEX Error  1217", str(context.exception))
 
-        def test_reduced_costs(self):
-            with self.assertRaises(SolverError) as context:
-                self.model.reduced_costs
-            self.assertIn("CPLEX Error  1017", str(context.exception))
-
         def test_constraint_values(self):
             with self.assertRaises(SolverError) as context:
                 self.model.constraint_values
             self.assertIn("CPLEX Error  1217", str(context.exception))
-
-        def test_shadow_prices(self):
-            with self.assertRaises(SolverError) as context:
-                self.model.shadow_prices
-            self.assertIn("CPLEX Error  1017", str(context.exception))
 
 
     class DualValuesMIPTestCase(
