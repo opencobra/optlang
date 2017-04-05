@@ -1425,9 +1425,9 @@ class Model(object):
         replacements = dict([(variable, 0) for variable in variables])
         for constraint_id in constraint_ids:
             constraint = self._constraints[constraint_id]
-            constraint._expression = constraint.expression.xreplace(replacements)
+            constraint._expression = constraint._expression.xreplace(replacements)
         if self.objective is not None:
-            self.objective._expression = self.objective.expression.xreplace(replacements)
+            self.objective._expression = self.objective._expression.xreplace(replacements)
 
     def _remove_variable(self, variable):
         self._remove_variables([variable])
