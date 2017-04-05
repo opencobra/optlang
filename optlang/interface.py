@@ -1222,6 +1222,8 @@ class Model(object):
         collections.OrderedDict
         """
         # Fallback, if nothing faster is available
+        if self.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
         return collections.OrderedDict([(variable.name, variable.dual) for variable in self.variables])
 
     @property
@@ -1243,6 +1245,8 @@ class Model(object):
         -------
         collections.OrderedDict
         """
+        if self.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
         # Fallback, if nothing faster is available
         return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraints])
 

@@ -197,7 +197,7 @@ class Variable(interface.Variable):
     def dual(self):
         if self.problem is not None:
             if self.problem.is_integer:
-                return None
+                raise ValueError("Dual values are not well-defined for integer problems")
             return self.problem.problem.solution.get_reduced_costs(self.name)
         else:
             return None
@@ -265,7 +265,7 @@ class Constraint(interface.Constraint):
     def dual(self):
         if self.problem is not None:
             if self.problem.is_integer:
-                return None
+                raise ValueError("Dual values are not well-defined for integer problems")
             return self.problem.problem.solution.get_dual_values(self.name)
         else:
             return None
@@ -719,7 +719,7 @@ class Model(interface.Model):
     @property
     def reduced_costs(self):
         if self.is_integer:
-            return collections.OrderedDict((var.name, None) for var in self.variables)
+            raise ValueError("Dual values are not well-defined for integer problems")
         else:
             return collections.OrderedDict(
                 zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
@@ -733,7 +733,7 @@ class Model(interface.Model):
     @property
     def shadow_prices(self):
         if self.is_integer:
-            return collections.OrderedDict((var.name, None) for var in self.variables)
+            raise ValueError("Dual values are not well-defined for integer problems")
         else:
             return collections.OrderedDict(
                 zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
