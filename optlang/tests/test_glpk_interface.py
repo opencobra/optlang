@@ -388,7 +388,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
 
     class DualValuesMIPTestCase(
-        abstract_test_cases.AbstractDualValuesMIPTestCase):
+            abstract_test_cases.AbstractDualValuesMIPTestCase):
 
         interface = glpk_interface
 

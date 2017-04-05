@@ -780,4 +780,3 @@ class AbstractDualValuesMIPTestCase(unittest.TestCase):
     def test_shadow_prices(self):
         with self.assertRaises(SolverError):
             self.model.shadow_prices
-

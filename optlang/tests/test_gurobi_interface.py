@@ -424,7 +424,7 @@ else:
 
 
     class DualValuesMIPTestCase(
-        abstract_test_cases.AbstractDualValuesMIPTestCase):
+            abstract_test_cases.AbstractDualValuesMIPTestCase):
 
         interface = gurobi_interface
 
