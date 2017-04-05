@@ -642,6 +642,11 @@ class Model(interface.Model):
         for internal_constraint in internal_constraints:
             self.problem.remove(internal_constraint)
 
+    @property
+    def is_integer(self):
+        self.problem.update()
+        return self.problem.NumIntVars > 0
+
 
 if __name__ == '__main__':
     x = Variable('x', lb=0, ub=10)
