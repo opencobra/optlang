@@ -23,6 +23,8 @@ else:
 
     import nose
     from optlang.tests import abstract_test_cases
+    from optlang.exceptions import SolverError
+    from optlang.interface import OPTIMAL, INFEASIBLE
 
     from optlang.cplex_interface import Variable, Constraint, Model, Objective
     from optlang import cplex_interface
@@ -443,7 +445,7 @@ else:
             obj = Objective(self.x1 * self.x2, direction="min")
             model.objective = obj
             model.configuration.solution_target = "convex"
-            self.assertRaises(CplexSolverError, model.optimize)
+            self.assertRaises(SolverError, model.optimize)
             model.configuration.solution_target = "local"
             model.configuration.qp_method = "barrier"
             model.optimize()
@@ -496,6 +498,67 @@ else:
             model.configuration.solution_target = "global"
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 2441.999999971)
+
+    class InfeasibleMIPTestCase(unittest.TestCase):
+
+        interface = cplex_interface
+
+        def setUp(self):
+            model = self.interface.Model()
+            x = self.interface.Variable('x', lb=0, ub=10)
+            y = self.interface.Variable('y', lb=0, ub=10)
+            k = self.interface.Variable('k', type='binary')
+            i = self.interface.Variable('i', type='binary')
+            constr1 = self.interface.Constraint(1. * x + y, lb=3, name="constr1")
+            constr2 = self.interface.Constraint(x - k, ub=-10, name="constr2")
+            constr3 = self.interface.Constraint(y - i, ub=-10, name="constr3")
+            obj = self.interface.Objective(2 * x + y)
+            model.add(x)
+            model.add(y)
+            model.add(k)
+            model.add(i)
+            model.add(constr1)
+            model.add(constr2)
+            model.add(constr3)
+            model.objective = obj
+            model.optimize()
+            self.model = model
+            self.continuous_var = x
+            self.binary_var = k
+            self.constraint = constr1
+
+        def test_infeasible(self):
+            self.assertEqual(self.model.status, INFEASIBLE)
+
+        def test_objective_value(self):
+            with self.assertRaises(SolverError) as context:
+                self.model.objective.value
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_variable_primal(self):
+            with self.assertRaises(SolverError) as context:
+                self.continuous_var.primal
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_binary_variable_primal(self):
+            with self.assertRaises(SolverError) as context:
+                self.binary_var.primal
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_constraint_primal(self):
+            with self.assertRaises(SolverError) as context:
+                self.constraint.primal
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_primal_values(self):
+            with self.assertRaises(SolverError) as context:
+                self.model.primal_values
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_constraint_values(self):
+            with self.assertRaises(SolverError) as context:
+                self.model.constraint_values
+            self.assertIn("CPLEX Error  1217", str(context.exception))
 
 
 if __name__ == '__main__':

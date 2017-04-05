@@ -27,6 +27,9 @@ import copy
 import os
 import sympy
 
+from optlang.exceptions import SolverError
+from optlang.interface import OPTIMAL
+
 __test__ = False
 
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.json')

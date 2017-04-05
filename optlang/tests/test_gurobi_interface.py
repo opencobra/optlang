@@ -422,5 +422,6 @@ else:
                 if col_name == 'R_Biomass_Ecoli_core_w_GAM':
                     self.assertEqual(row.getCoeff(i), 666.)
 
+
 if __name__ == '__main__':
     nose.runmodule()
