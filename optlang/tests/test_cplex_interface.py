@@ -561,11 +561,5 @@ else:
             self.assertIn("CPLEX Error  1217", str(context.exception))
 
 
-    class DualValuesMIPTestCase(
-            abstract_test_cases.AbstractDualValuesMIPTestCase):
-
-        interface = cplex_interface
-
-
 if __name__ == '__main__':
     nose.runmodule()
