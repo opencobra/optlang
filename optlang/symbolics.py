@@ -69,6 +69,9 @@ if USE_SYMENGINE:
         def __repr__(self):
             return self._name
 
+        def __str__(self):
+            return self._name
+
     def add(*args):
         if len(args) == 1:
             args = args[0]
