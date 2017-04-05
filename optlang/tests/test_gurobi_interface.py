@@ -282,12 +282,20 @@ else:
             constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.assertEqual(constraint._internal_constraint, None)
             self.model.add(constraint)
-            self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
+            self.assertEqual(self.model.constraints['test'].lb, -100)
+            self.assertEqual(
+                (self.model.constraints['test'].expression - (0.4 * y + 0.3 * x)).expand() - 0,
+                0
+            )
             z = Variable('z', lb=3, ub=10, type='integer')
             self.assertEqual(z._internal_variable, None)
             constraint += 77. * z
             self.assertEqual(z._internal_variable, self.model.problem.getVarByName('z'))
-            self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
+            self.assertEqual(self.model.constraints['test'].lb, -100)
+            self.assertEqual(
+                (self.model.constraints['test'].expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand() - 0,
+                0
+            )
 
         def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -297,7 +305,10 @@ else:
             z = Variable('z', lb=2, ub=5, type='integer')
             constraint += 77. * z
             self.model.remove(constraint)
-            self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
+            self.assertEqual(constraint.lb, -100)
+            self.assertEqual(
+                (constraint.expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand() - 0, 0
+            )
 
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -393,7 +404,11 @@ else:
         def test_set_copied_objective(self):
             obj_copy = copy.copy(self.model.objective)
             self.model.objective = obj_copy
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_Biomass_Ecoli_core_w_GAM')
+            self.assertEqual(self.model.objective.direction, "max")
+            self.assertEqual(
+                (self.model.objective.expression - (1.0 * self.model.variables.R_Biomass_Ecoli_core_w_GAM)).expand() - 0,
+                0
+            )
 
         def test_timeout(self):
             self.model.configuration.timeout = 0
