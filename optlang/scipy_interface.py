@@ -33,7 +33,7 @@ import six
 from optlang import interface
 from scipy.optimize import linprog
 from optlang.util import inheritdocstring
-import sympy
+from optlang import symbolics
 
 SCIPY_STATUS = {
     0: interface.OPTIMAL,
@@ -408,7 +408,7 @@ class Constraint(interface.Constraint):
     def coefficient_dict(self, names=True):
         if self.expression.is_Add:
             coefficient_dict = {variable: coef for variable, coef in
-                                self.expression.as_coefficients_dict().items()}
+                                self.expression.as_coefficients_dict().items() if variable.is_Symbol}
         elif self.expression.is_Atom and self.expression.is_Symbol:
             coefficient_dict = {self.expression: 1}
         elif self.expression.is_Mul and len(self.expression.args) <= 2:
@@ -428,7 +428,7 @@ class Constraint(interface.Constraint):
             self.lb, self.ub = None, None
             coefficients_dict = self.coefficient_dict(names=False)
             coefficients_dict.update(coefficients)
-            self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items()))
+            self._expression = symbolics.add(*(v * k for k, v in coefficients_dict.items()))
             self.lb = lb
             self.ub = ub
         else:
@@ -456,7 +456,7 @@ class Objective(interface.Objective):
             coefficients_dict = {
                 self.problem._variables[name]: coef for name, coef in coefficients_dict.items() if name in self.problem._variables
             }
-            self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items()))
+            self._expression = symbolics.add(*(v * k for k, v in coefficients_dict.items()))
         return self._expression
 
     @property
@@ -475,7 +475,7 @@ class Objective(interface.Objective):
     def coefficient_dict(self):
         if self.expression.is_Add:
             coefficient_dict = {variable: coef for variable, coef in
-                                self.expression.as_coefficients_dict().items()}
+                                self.expression.as_coefficients_dict().items() if variable.is_Symbol}
         elif self.expression.is_Atom and self.expression.is_Symbol:
             coefficient_dict = {self.expression: 1}
         elif self.expression.is_Mul and len(self.expression.args) <= 2 and self.expression.args[1].is_Symbol:
@@ -620,7 +620,6 @@ class Model(interface.Model):
             self.problem.objective = value.coefficient_dict()
             self.problem.direction = value.direction
         value.problem = self
-
 
 
 if __name__ == "__main__":

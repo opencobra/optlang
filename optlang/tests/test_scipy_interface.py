@@ -196,7 +196,12 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         pass
 
     def test_initial_objective(self):
-        self.assertIn('1.0*BIOMASS_Ecoli_core_w_GAM', self.model.objective.expression.__str__(), )
+        self.assertIn('BIOMASS_Ecoli_core_w_GAM', self.model.objective.expression.__str__(), )
+        self.assertEqual(
+            (self.model.objective.expression - (
+                1.0 * self.model.variables.BIOMASS_Ecoli_core_w_GAM -
+                1.0 * self.model.variables.BIOMASS_Ecoli_core_w_GAM_reverse_712e5)).expand() - 0, 0
+        )
 
     @unittest.skip("Not implemented yet")
     def test_iadd_objective(self):
@@ -210,7 +215,10 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     def test_set_copied_objective(self):
         obj_copy = copy.copy(self.model.objective)
         self.model.objective = obj_copy
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_Biomass_Ecoli_core_w_GAM')
+        self.assertEqual(model.objective.direction, "max")
+        self.assertEqual(
+            (model.objective.expression - (1.0 * model.variables.R_Biomass_Ecoli_core_w_GAM)).expand() - 0, 0
+        )
 
     @unittest.skip("NA")
     def test_timeout(self):
@@ -288,3 +296,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         model.add(c)
         model.objective = obj
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+
+    def test_deepcopy(self):
+        self.skipTest("Not implemented yet")
