@@ -215,9 +215,9 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     def test_set_copied_objective(self):
         obj_copy = copy.copy(self.model.objective)
         self.model.objective = obj_copy
-        self.assertEqual(model.objective.direction, "max")
+        self.assertEqual(self.model.objective.direction, "max")
         self.assertEqual(
-            (model.objective.expression - (1.0 * model.variables.R_Biomass_Ecoli_core_w_GAM)).expand() - 0, 0
+            (self.model.objective.expression - (1.0 * self.model.variables.R_Biomass_Ecoli_core_w_GAM)).expand() - 0, 0
         )
 
     @unittest.skip("NA")
