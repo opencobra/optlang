@@ -166,6 +166,8 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         if self.problem:
+            if self.problem.is_integer:
+                raise ValueError("Dual values are not well-defined for integer problems")
             return self._internal_variable.getAttr('RC')
         else:
             return None
@@ -253,6 +255,8 @@ class Constraint(interface.Constraint):
     @property
     def dual(self):
         if self.problem is not None:
+            if self.problem.is_integer:
+                raise ValueError("Dual values are not well-defined for integer problems")
             return self._internal_constraint.Pi
         else:
             return None
@@ -637,6 +641,11 @@ class Model(interface.Model):
         super(Model, self)._remove_constraints(constraints)
         for internal_constraint in internal_constraints:
             self.problem.remove(internal_constraint)
+
+    @property
+    def is_integer(self):
+        self.problem.update()
+        return self.problem.NumIntVars > 0
 
 
 if __name__ == '__main__':
