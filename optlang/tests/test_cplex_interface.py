@@ -540,51 +540,91 @@ else:
                 self.continuous_var.primal
             self.assertIn("CPLEX Error  1217", str(context.exception))
 
-#        def test_variable_dual(self):
-#            with self.assertRaises(SolverError) as context:
-#                self.continuous_var.dual
-#            self.assertIn("CPLEX Error  1017", str(context.exception))
-
         def test_binary_variable_primal(self):
             with self.assertRaises(SolverError) as context:
                 self.binary_var.primal
             self.assertIn("CPLEX Error  1217", str(context.exception))
-
-#        def test_binary_variable_dual(self):
-#            with self.assertRaises(SolverError) as context:
-#                self.binary_var.dual
-#            self.assertIn("CPLEX Error  1017", str(context.exception))
 
         def test_constraint_primal(self):
             with self.assertRaises(SolverError) as context:
                 self.constraint.primal
             self.assertIn("CPLEX Error  1217", str(context.exception))
 
-#        def test_constraint_dual(self):
-#            with self.assertRaises(SolverError) as context:
-#                self.constraint.dual
-#            self.assertIn("CPLEX Error  1017", str(context.exception))
-
         def test_primal_values(self):
             with self.assertRaises(SolverError) as context:
                 self.model.primal_values
             self.assertIn("CPLEX Error  1217", str(context.exception))
-
-#        def test_reduced_costs(self):
-#            with self.assertRaises(SolverError) as context:
-#                self.model.reduced_costs
-#            self.assertIn("CPLEX Error  1017", str(context.exception))
 
         def test_constraint_values(self):
             with self.assertRaises(SolverError) as context:
                 self.model.constraint_values
             self.assertIn("CPLEX Error  1217", str(context.exception))
 
-#        def test_shadow_prices(self):
-#            with self.assertRaises(SolverError) as context:
-#                self.model.shadow_prices
-#            self.assertIn("CPLEX Error  1017", str(context.exception))
 
+    class UnsolvedTestCase(unittest.TestCase):
+
+        interface = cplex_interface
+
+        def setUp(self):
+            model = self.interface.Model()
+            x = self.interface.Variable('x', lb=0, ub=10)
+            constr1 = self.interface.Constraint(1. * x, lb=3, name="constr1")
+            obj = self.interface.Objective(2 * x)
+            model.add(x)
+            model.add(constr1)
+            model.objective = obj
+            self.model = model
+            self.continuous_var = x
+            self.constraint = constr1
+
+        def test_status(self):
+            self.assertIs(self.model.status, None)
+
+        def test_objective_value(self):
+            with self.assertRaises(SolverError) as context:
+                self.model.objective.value
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_variable_primal(self):
+            with self.assertRaises(SolverError) as context:
+                self.continuous_var.primal
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_variable_dual(self):
+            with self.assertRaises(SolverError) as context:
+                self.continuous_var.dual
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_constraint_primal(self):
+            with self.assertRaises(SolverError) as context:
+                self.constraint.primal
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_constraint_dual(self):
+            with self.assertRaises(SolverError) as context:
+                self.constraint.dual
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_primal_values(self):
+            with self.assertRaises(SolverError) as context:
+                self.model.primal_values
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_constraint_values(self):
+            with self.assertRaises(SolverError) as context:
+                self.model.constraint_values
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+        def test_reduced_costs(self):
+            with self.assertRaises(SolverError) as context:
+                self.model.reduced_costs
+            self.assertIn("CPLEX Error  1217", str(context.exception))
+
+
+        def test_shadow_prices(self):
+            with self.assertRaises(SolverError) as context:
+                self.model.shadow_prices
+            self.assertIn("CPLEX Error  1217", str(context.exception))
 
 if __name__ == '__main__':
     nose.runmodule()
