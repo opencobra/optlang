@@ -29,16 +29,19 @@ import six
 import os
 from six.moves import StringIO
 
-log = logging.getLogger(__name__)
-
 import sympy
 from sympy.core.add import _unevaluated_Add
 from sympy.core.mul import _unevaluated_Mul
 from sympy.core.singleton import S
 import cplex
+from cplex.exceptions import CplexSolverError
+
 from optlang import interface
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
+from optlang.exceptions import SolverError
+
+log = logging.getLogger(__name__)
 
 Zero = S.Zero
 One = S.One
@@ -190,17 +193,21 @@ class Variable(interface.Variable):
         super(Variable, Variable).type.fset(self, value)
 
     def _get_primal(self):
-        primal_from_solver = self.problem.problem.solution.get_values(self.name)
-        return primal_from_solver
+        try:
+            return self.problem.problem.solution.get_values(self.name)
+        except CplexSolverError as err:
+            raise SolverError(str(err))
 
     @property
     def dual(self):
-        if self.problem is not None:
-            if self.problem.is_integer:
-                raise ValueError("Dual values are not well-defined for integer problems")
-            return self.problem.problem.solution.get_reduced_costs(self.name)
-        else:
+        if self.problem is None:
             return None
+        if self.problem.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
+        try:
+            return self.problem.problem.solution.get_reduced_costs(self.name)
+        except CplexSolverError as err:
+            raise SolverError(str(err))
 
     @interface.Variable.name.setter
     def name(self, value):
@@ -254,21 +261,24 @@ class Constraint(interface.Constraint):
 
     @property
     def primal(self):
-        if self.problem is not None:
-            primal_from_solver = self.problem.problem.solution.get_activity_levels(self.name)
-            # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
-            return primal_from_solver
-        else:
+        if self.problem is None:
             return None
+        try:
+            # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
+            return self.problem.problem.solution.get_activity_levels(self.name)
+        except CplexSolverError as err:
+            raise SolverError(str(err))
 
     @property
     def dual(self):
-        if self.problem is not None:
-            if self.problem.is_integer:
-                raise ValueError("Dual values are not well-defined for integer problems")
-            return self.problem.problem.solution.get_dual_values(self.name)
-        else:
+        if self.problem is None:
             return None
+        if self.problem.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
+        try:
+            return self.problem.problem.solution.get_dual_values(self.name)
+        except CplexSolverError as err:
+            raise SolverError(str(err))
 
     @interface.Constraint.name.setter
     def name(self, value):
@@ -335,10 +345,12 @@ class Objective(interface.Objective):
 
     @property
     def value(self):
-        if getattr(self, 'problem', None) is not None:
-            return self.problem.problem.solution.get_objective_value()
-        else:
+        if getattr(self, 'problem', None) is None:
             return None
+        try:
+            return self.problem.problem.solution.get_objective_value()
+        except CplexSolverError as err:
+            raise SolverError(str(err))
 
     @interface.Objective.direction.setter
     def direction(self, value):
@@ -711,32 +723,42 @@ class Model(interface.Model):
 
     @property
     def primal_values(self):
-        primal_values = collections.OrderedDict()
-        for variable, primal in zip(self.variables, self.problem.solution.get_values()):
-            primal_values[variable.name] = variable._round_primal_to_bounds(primal)
+        try:
+            primal_values = collections.OrderedDict(
+                (variable.name, variable._round_primal_to_bounds(primal))
+                for variable, primal in zip(self.variables, self.problem.solution.get_values())
+            )
+        except CplexSolverError as err:
+            raise SolverError(str(err))
         return primal_values
 
     @property
     def reduced_costs(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        else:
+        try:
             return collections.OrderedDict(
                 zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
+        except CplexSolverError as err:
+            raise SolverError(str(err))
 
     @property
     def constraint_values(self):
-        return collections.OrderedDict(
-            zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
-
+        try:
+            return collections.OrderedDict(
+                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
+        except CplexSolverError as err:
+            raise SolverError(str(err))
 
     @property
     def shadow_prices(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        else:
+        try:
             return collections.OrderedDict(
                 zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
+        except CplexSolverError as err:
+            raise SolverError(str(err))
 
     @property
     def is_integer(self):
@@ -751,7 +773,10 @@ class Model(interface.Model):
         return lp_form
 
     def _optimize(self):
-        self.problem.solve()
+        try:
+            self.problem.solve()
+        except CplexSolverError as err:
+            raise SolverError(str(err))
         cplex_status = self.problem.solution.get_status()
         self._original_status = self.problem.solution.get_status_string()
         status = _CPLEX_STATUS_TO_STATUS[cplex_status]
