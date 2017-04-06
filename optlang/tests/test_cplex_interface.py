@@ -620,11 +620,11 @@ else:
                 self.model.reduced_costs
             self.assertIn("CPLEX Error  1217", str(context.exception))
 
-
         def test_shadow_prices(self):
             with self.assertRaises(SolverError) as context:
                 self.model.shadow_prices
             self.assertIn("CPLEX Error  1217", str(context.exception))
+
 
 if __name__ == '__main__':
     nose.runmodule()

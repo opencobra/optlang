@@ -751,15 +751,6 @@ class Model(interface.Model):
             raise SolverError(str(err))
 
     @property
-    def constraint_values(self):
-        try:
-            return collections.OrderedDict(
-                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
-        except CplexSolverError as err:
-            raise SolverError(str(err))
-
-
-    @property
     def shadow_prices(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
