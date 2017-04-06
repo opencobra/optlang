@@ -280,7 +280,12 @@ class Constraint(interface.Constraint):
             ia = intArray(num_cols + 1)
             da = doubleArray(num_cols + 1)
             nnz = glp_get_mat_row(self.problem.problem, self._index, ia, da)
-            return {self.problem._variables[ia[i + 1] - 1]: da[i + 1] for i in range(nnz)}
+            coefs = dict.fromkeys(variables, 0.0)
+            coefs.update({
+                self.problem._variables[ia[i + 1] - 1]: da[i + 1]
+                for i in range(nnz)
+                if self.problem._variables[ia[i + 1] - 1] in variables})
+            return coefs
         else:
             raise Exception("Can't get coefficients from solver if constraint is not in a model")
 
