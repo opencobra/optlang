@@ -749,6 +749,31 @@ class AbstractModelTestCase(unittest.TestCase):
         model.optimize()
         self.assertEqual(c.dual, 1)
 
+    def test_integer_batch_duals(self):
+        model = self.interface.Model()
+        x = self.interface.Variable("x")
+        c = self.interface.Constraint(x, ub=1)
+        model.add(c)
+        model.objective = self.interface.Objective(x)
+        model.optimize()
+
+        self.assertEqual(model.reduced_costs[x.name], 0)
+        self.assertEqual(model.shadow_prices[c.name], 1)
+
+        x.type = "integer"
+        model.optimize()
+
+        with self.assertRaises(ValueError):
+            model.reduced_costs
+        with self.assertRaises(ValueError):
+            model.shadow_prices
+
+        x.type = "continuous"
+        model.optimize()
+
+        self.assertEqual(model.reduced_costs[x.name], 0)
+        self.assertEqual(model.shadow_prices[c.name], 1)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractConfigurationTestCase(unittest.TestCase):

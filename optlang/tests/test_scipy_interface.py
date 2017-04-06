@@ -297,3 +297,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_integer_constraint_dual(self):
         self.skipTest("No duals with scipy")
+
+    def test_integer_batch_duals(self):
+        self.skipTest("No duals with scipy")
