@@ -193,7 +193,6 @@ class Variable(interface.Variable):
         super(Variable, Variable).type.fset(self, value)
 
     def _get_primal(self):
-        primal_from_solver = self.problem.problem.solution.get_values(self.name)
         try:
             return self.problem.problem.solution.get_values(self.name)
         except CplexSolverError as err:
@@ -264,10 +263,9 @@ class Constraint(interface.Constraint):
     def primal(self):
         if self.problem is None:
             return None
-        primal_from_solver = self.problem.problem.solution.get_activity_levels(self.name)
         try:
             # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
-            return primal_from_solver
+            return self.problem.problem.solution.get_activity_levels(self.name)
         except CplexSolverError as err:
             raise SolverError(str(err))
 
