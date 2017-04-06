@@ -132,6 +132,12 @@ _VTYPE_TO_CPLEX_VTYPE = dict(
     [(val, key) for key, val in six.iteritems(_CPLEX_VTYPE_TO_VTYPE)]
 )
 
+_CPLEX_MIP_TYPES_TO_CONTINUOUS = {
+    cplex.Cplex.problem_type.MILP: cplex.Cplex.problem_type.LP,
+    cplex.Cplex.problem_type.MIQP: cplex.Cplex.problem_type.QP,
+    cplex.Cplex.problem_type.MIQCP: cplex.Cplex.problem_type.QCP
+}
+
 
 def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
     """Helper function used by Constraint and Model"""
@@ -175,6 +181,12 @@ class Variable(interface.Variable):
                     ", ".join(_VTYPE_TO_CPLEX_VTYPE.keys())
                 )
             self.problem.problem.variables.set_types(self.name, cplex_kind)
+            if value == "continuous" and not self.problem.is_integer:
+                print("hmm")
+                cplex_type = self.problem.problem.get_problem_type()
+                if cplex_type in _CPLEX_MIP_TYPES_TO_CONTINUOUS:
+                    print("yes")
+                    self.problem.problem.set_problem_type(_CPLEX_MIP_TYPES_TO_CONTINUOUS[cplex_type])
         super(Variable, Variable).type.fset(self, value)
 
     def _get_primal(self):
@@ -184,8 +196,8 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         if self.problem is not None:
-            if self.problem.problem.get_problem_type() == self.problem.problem.problem_type.MILP:  # cplex cannot determine reduced costs for MILP problems ...
-                return None
+            if self.problem.is_integer:
+                raise ValueError("Dual values are not well-defined for integer problems")
             return self.problem.problem.solution.get_reduced_costs(self.name)
         else:
             return None
@@ -252,22 +264,23 @@ class Constraint(interface.Constraint):
     @property
     def dual(self):
         if self.problem is not None:
+            if self.problem.is_integer:
+                raise ValueError("Dual values are not well-defined for integer problems")
             return self.problem.problem.solution.get_dual_values(self.name)
         else:
             return None
 
     @interface.Constraint.name.setter
     def name(self, value):
-        old_name = getattr(self, 'name', None)
-        self._name = value
         if getattr(self, 'problem', None) is not None:
             if self.indicator_variable is not None:
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name"
                 )
             else:
-                self.problem.problem.linear_constraints.set_names(old_name, value)
-            self.problem.constraints.update_key(old_name)
+                self.problem.problem.linear_constraints.set_names(self.name, value)
+            self.problem.constraints.update_key(self.name)
+        self._name = value
 
     @interface.Constraint.lb.setter
     def lb(self, value):
@@ -705,8 +718,11 @@ class Model(interface.Model):
 
     @property
     def reduced_costs(self):
-        return collections.OrderedDict(
-            zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
+        if self.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
+        else:
+            return collections.OrderedDict(
+                zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
 
     @property
     def constraint_values(self):
@@ -716,8 +732,15 @@ class Model(interface.Model):
 
     @property
     def shadow_prices(self):
-        return collections.OrderedDict(
-            zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
+        if self.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
+        else:
+            return collections.OrderedDict(
+                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
+
+    @property
+    def is_integer(self):
+        return (self.problem.variables.get_num_integer() + self.problem.variables.get_num_binary()) > 0
 
     def to_lp(self):
         self.update()

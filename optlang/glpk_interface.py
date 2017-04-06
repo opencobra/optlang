@@ -132,6 +132,8 @@ class Variable(interface.Variable):
     @property
     def dual(self):
         if self.problem:
+            if self.problem.is_integer:
+                raise ValueError("Dual values are not well-defined for integer problems")
             return glp_get_col_dual(self.problem.problem, self._index)
         else:
             return None
@@ -228,6 +230,8 @@ class Constraint(interface.Constraint):
     @property
     def dual(self):
         if self.problem is not None:
+            if self.problem.is_integer:
+                raise ValueError("Dual values are not well-defined for integer problems")
             return glp_get_row_dual(self.problem.problem, self._index)
         else:
             return None
@@ -593,14 +597,11 @@ class Model(interface.Model):
 
     @property
     def reduced_costs(self):
-        reduced_costs = collections.OrderedDict()
-        is_mip = self._glpk_is_mip()
-        for index, variable in enumerate(self.variables):
-            if is_mip:
-                value = None
-            else:
-                value = glp_get_col_dual(self.problem, index + 1)
-            reduced_costs[variable.name] = value
+        if self.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
+        reduced_costs = collections.OrderedDict(
+            (var.name, glp_get_col_dual(self.problem, index + 1)) for index, var in enumerate(self.variables)
+        )
         return reduced_costs
 
     @property
@@ -617,14 +618,11 @@ class Model(interface.Model):
 
     @property
     def shadow_prices(self):
-        is_mip = self._glpk_is_mip()
-        shadow_prices = collections.OrderedDict()
-        for index, constraint in enumerate(self.constraints):
-            if is_mip:
-                value = None
-            else:
-                value = glp_get_row_dual(self.problem, index + 1)
-            shadow_prices[constraint.name] = value
+        if self.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
+        shadow_prices = collections.OrderedDict(
+            (constraint.name, glp_get_row_dual(self.problem, index + 1)) for index, constraint in enumerate(self.constraints)
+        )
         return shadow_prices
 
     def to_lp(self):
@@ -775,6 +773,10 @@ class Model(interface.Model):
 
     def _glpk_is_mip(self):
         return glp_get_num_int(self.problem) > 0
+
+    @property
+    def is_integer(self):
+        return self._glpk_is_mip()
 
     def _glpk_set_row_bounds(self, constraint):
         if constraint.lb is None and constraint.ub is None:

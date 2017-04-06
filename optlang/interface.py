@@ -1246,6 +1246,10 @@ class Model(object):
         # Fallback, if nothing faster is available
         return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraints])
 
+    @property
+    def is_integer(self):
+        return any(var.type in ("integer", "binary") for var in self.variables)
+
     def __str__(self):
         if hasattr(self, "to_lp"):
             return self.to_lp()
