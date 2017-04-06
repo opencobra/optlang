@@ -18,7 +18,7 @@ variables (see examples).
 Show us some love by staring this repo if you find optlang useful!
 
 Also, please use the GitHub `issue tracker <https://github.com/biosustain/optlang/issues>`_
-to let us know about bugs or feature requests, or if you have problems or questions regarding optlang.
+to let us know about bugs or feature requests, or our `gitter channel <https://gitter.im/biosustain/optlang>`_ if you have problems or questions regarding optlang.
 
 Installation
 ~~~~~~~~~~~~
