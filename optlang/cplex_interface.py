@@ -721,13 +721,12 @@ class Model(interface.Model):
             {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
                 direction])
 
-    @property
-    def primal_values(self):
+    def _get_primal_values(self):
         try:
-            primal_values = collections.OrderedDict(
-                (variable.name, variable._round_primal_to_bounds(primal))
-                for variable, primal in zip(self.variables, self.problem.solution.get_values())
-            )
+            # FIXME: the rounding should be performed on vector
+            primal_values = [variable._round_primal_to_bounds(primal)
+                             for variable, primal in zip(self.variables, self.problem.solution.get_values())]
+
         except CplexSolverError as err:
             raise SolverError(str(err))
         return primal_values
