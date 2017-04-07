@@ -731,31 +731,25 @@ class Model(interface.Model):
             raise SolverError(str(err))
         return primal_values
 
-    @property
-    def reduced_costs(self):
+    def _get_reduced_costs(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
         try:
-            return collections.OrderedDict(
-                zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
+            return self.problem.solution.get_reduced_costs()
         except CplexSolverError as err:
             raise SolverError(str(err))
 
-    @property
-    def constraint_values(self):
+    def _get_constraint_values(self):
         try:
-            return collections.OrderedDict(
-                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
+            return self.problem.solution.get_activity_levels()
         except CplexSolverError as err:
             raise SolverError(str(err))
 
-    @property
-    def shadow_prices(self):
+    def _get_shadow_prices(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
         try:
-            return collections.OrderedDict(
-                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
+            return self.problem.solution.get_dual_values()
         except CplexSolverError as err:
             raise SolverError(str(err))
 
