@@ -583,47 +583,43 @@ class Model(interface.Model):
         )
         value.problem = self
 
-    @property
-    def primal_values(self):
-        primal_values = collections.OrderedDict()
+    def _get_primal_values(self):
+        primal_values = []
         is_mip = self._glpk_is_mip()
+        # FIXME: vector function for lookup
         for index, variable in enumerate(self.variables):
             if is_mip:
                 value = glp_mip_col_val(self.problem, index + 1)
             else:
                 value = glp_get_col_prim(self.problem, index + 1)
-            primal_values[variable.name] = variable._round_primal_to_bounds(value)
+            # FIXME: vector function for rounding
+            primal_values.append(variable._round_primal_to_bounds(value))
         return primal_values
 
-    @property
-    def reduced_costs(self):
+    def _get_reduced_costs(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        reduced_costs = collections.OrderedDict(
-            (var.name, glp_get_col_dual(self.problem, index + 1)) for index, var in enumerate(self.variables)
-        )
-        return reduced_costs
+        # FIXME: vector function for lookup
+        return [glp_get_col_dual(self.problem, index + 1) for index, var in enumerate(self.variables)]
 
-    @property
-    def constraint_values(self):
-        dual_values = collections.OrderedDict()
+    def _get_constraint_values(self):
+        dual_values = []
         is_mip = self._glpk_is_mip()
+        # FIXME: vector function for lookup
         for index, constraint in enumerate(self.constraints):
             if is_mip:
                 value = glp_mip_row_val(self.problem, index + 1)
             else:
                 value = glp_get_row_prim(self.problem, index + 1)
-            dual_values[constraint.name] = value
+            dual_values.append(value)
         return dual_values
 
-    @property
-    def shadow_prices(self):
+    def _get_shadow_prices(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        shadow_prices = collections.OrderedDict(
-            (constraint.name, glp_get_row_dual(self.problem, index + 1)) for index, constraint in enumerate(self.constraints)
-        )
-        return shadow_prices
+        # FIXME: vector function for lookup
+        return [glp_get_row_dual(self.problem, index + 1) for index, constraint in enumerate(self.constraints)]
+
 
     def to_lp(self):
         self.update()
