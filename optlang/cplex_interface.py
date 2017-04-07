@@ -723,10 +723,7 @@ class Model(interface.Model):
 
     def _get_primal_values(self):
         try:
-            # FIXME: implement vector based rounding function
-            primal_values = [variable._round_primal_to_bounds(primal)
-                             for variable, primal in zip(self.variables, self.problem.solution.get_values())]
-
+            primal_values = self.problem.solution.get_values()
         except CplexSolverError as err:
             raise SolverError(str(err))
         return primal_values

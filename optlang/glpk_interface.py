@@ -593,10 +593,6 @@ class Model(interface.Model):
                 primal_values.append(value)
         else:
             primal_values = get_col_primals(self.problem)
-
-        # round primals
-        for i, variable in enumerate(self.variables):
-            primal_values[i] = variable._round_primal_to_bounds(primal_values[i])
         return primal_values
 
     def _get_reduced_costs(self):

@@ -1215,12 +1215,16 @@ class Model(object):
     def primal_values(self):
         """The primal values of model variables.
 
+        The primal values are rounded to the bounds.
         Returns
         -------
         collections.OrderedDict
         """
+        # round primals
+        primal_values = [variable._round_primal_to_bounds(primal)
+                         for variable, primal in zip(self.variables, self._get_primal_values())]
         return collections.OrderedDict(
-            zip(self._get_variables_names(), self._get_primal_values())
+            zip(self._get_variables_names(), primal_values)
         )
 
     def _get_primal_values(self):
