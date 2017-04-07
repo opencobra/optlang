@@ -1220,11 +1220,8 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        # round primals
-        primal_values = [variable._round_primal_to_bounds(primal)
-                         for variable, primal in zip(self.variables, self._get_primal_values())]
         return collections.OrderedDict(
-            zip(self._get_variables_names(), primal_values)
+            zip(self._get_variables_names(), self._get_primal_values())
         )
 
     def _get_primal_values(self):
@@ -1302,7 +1299,7 @@ class Model(object):
             zip(self._get_constraint_names(), self._get_shadow_prices())
         )
 
-    @property
+
     def _get_shadow_prices(self):
         """The shadow prices of model (dual values of all constraints).
 

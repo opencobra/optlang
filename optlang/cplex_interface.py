@@ -721,6 +721,15 @@ class Model(interface.Model):
             {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
                 direction])
 
+    @property
+    def primal_values(self):
+        # round primals
+        primal_values = [variable._round_primal_to_bounds(primal)
+                         for variable, primal in zip(self.variables, self._get_primal_values())]
+        return collections.OrderedDict(
+            zip(self._get_variables_names(), primal_values)
+        )
+
     def _get_primal_values(self):
         try:
             primal_values = self.problem.solution.get_values()
