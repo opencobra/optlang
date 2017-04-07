@@ -51,7 +51,8 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
-    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_mip_row_val
+    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_mip_row_val, \
+    get_col_primals, get_col_duals, get_row_primals, get_row_duals
 
 
 
@@ -584,40 +585,40 @@ class Model(interface.Model):
         value.problem = self
 
     def _get_primal_values(self):
-        primal_values = []
-        is_mip = self._glpk_is_mip()
-        # no vector function in swiglpk (iteration required)
-        for index, variable in enumerate(self.variables):
-            if is_mip:
+        if self._glpk_is_mip():
+            # no vector function (element wise)
+            primal_values = []
+            for index in range(len(self.variables)):
                 value = glp_mip_col_val(self.problem, index + 1)
-            else:
-                value = glp_get_col_prim(self.problem, index + 1)
-            primal_values.append(variable._round_primal_to_bounds(value))
+                primal_values.append(value)
+        else:
+            primal_values = get_col_primals(self.problem)
+
+        # round primals
+        for i, variable in enumerate(self.variables):
+            primal_values[i] = variable._round_primal_to_bounds(primal_values[i])
         return primal_values
 
     def _get_reduced_costs(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        # no vector function in swiglpk (iteration required)
-        return [glp_get_col_dual(self.problem, index + 1) for index in range(len(self.variables))]
+        return get_col_duals(self.problem)
 
     def _get_constraint_values(self):
-        dual_values = []
-        is_mip = self._glpk_is_mip()
-        # no vector function in swiglpk (iteration required)
-        for index in range(len(self.constraints)):
-            if is_mip:
+        if self._glpk_is_mip():
+            # no vector function (element wise)
+            dual_values = []
+            for index in range(len(self.constraints)):
                 value = glp_mip_row_val(self.problem, index + 1)
-            else:
-                value = glp_get_row_prim(self.problem, index + 1)
-            dual_values.append(value)
+                dual_values.append(value)
+        else:
+            dual_values = get_row_primals(self.problem)
         return dual_values
 
     def _get_shadow_prices(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        # no vector function in swiglpk (iteration required)
-        return [glp_get_row_dual(self.problem, index + 1) for index in range(len(self.constraints))]
+        return get_row_duals(self.problem)
 
     def to_lp(self):
         self.update()
