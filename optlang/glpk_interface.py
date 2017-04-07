@@ -586,27 +586,26 @@ class Model(interface.Model):
     def _get_primal_values(self):
         primal_values = []
         is_mip = self._glpk_is_mip()
-        # FIXME: vector function for lookup
+        # no vector function in swiglpk (iteration required)
         for index, variable in enumerate(self.variables):
             if is_mip:
                 value = glp_mip_col_val(self.problem, index + 1)
             else:
                 value = glp_get_col_prim(self.problem, index + 1)
-            # FIXME: vector function for rounding
             primal_values.append(variable._round_primal_to_bounds(value))
         return primal_values
 
     def _get_reduced_costs(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        # FIXME: vector function for lookup
-        return [glp_get_col_dual(self.problem, index + 1) for index, var in enumerate(self.variables)]
+        # no vector function in swiglpk (iteration required)
+        return [glp_get_col_dual(self.problem, index + 1) for index in range(len(self.variables))]
 
     def _get_constraint_values(self):
         dual_values = []
         is_mip = self._glpk_is_mip()
-        # FIXME: vector function for lookup
-        for index, constraint in enumerate(self.constraints):
+        # no vector function in swiglpk (iteration required)
+        for index in range(len(self.constraints)):
             if is_mip:
                 value = glp_mip_row_val(self.problem, index + 1)
             else:
@@ -617,9 +616,8 @@ class Model(interface.Model):
     def _get_shadow_prices(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        # FIXME: vector function for lookup
-        return [glp_get_row_dual(self.problem, index + 1) for index, constraint in enumerate(self.constraints)]
-
+        # no vector function in swiglpk (iteration required)
+        return [glp_get_row_dual(self.problem, index + 1) for index in range(len(self.constraints))]
 
     def to_lp(self):
         self.update()
