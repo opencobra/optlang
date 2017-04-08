@@ -469,14 +469,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         error_stream_handler = ErrorStreamHandler(logger)
         warning_stream_handler = WarningStreamHandler(logger)
         log_stream_handler = LogStreamHandler(logger)
-        results_stream_handler = LogStreamHandler(logger)
+        results_stream_handler = ResultsStreamHandler(logger)
         if self.problem is not None:
             problem = self.problem.problem
             if value == 0:
                 problem.set_error_stream(error_stream_handler)
                 problem.set_warning_stream(warning_stream_handler)
-                problem.set_log_stream(log_stream_handler)
-                problem.set_results_stream(results_stream_handler)
+                problem.set_log_stream(None)
+                problem.set_results_stream(None)
             elif value == 1:
                 problem.set_error_stream(sys.stderr)
                 problem.set_warning_stream(warning_stream_handler)
