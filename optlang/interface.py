@@ -1202,16 +1202,37 @@ class Model(object):
         """The solver status of the model."""
         return self._status
 
+    def _get_variables_names(self):
+        """The names of model variables.
+
+        Returns
+        -------
+        list
+        """
+        return [variable.name for variable in self.variables]
+
     @property
     def primal_values(self):
         """The primal values of model variables.
 
+        The primal values are rounded to the bounds.
         Returns
         -------
         collections.OrderedDict
         """
+        return collections.OrderedDict(
+            zip(self._get_variables_names(), self._get_primal_values())
+        )
+
+    def _get_primal_values(self):
+        """The primal values of model variables.
+
+        Returns
+        -------
+        list
+        """
         # Fallback, if nothing faster is available
-        return collections.OrderedDict([(variable.name, variable.primal) for variable in self.variables])
+        return [variable.primal for variable in self.variables]
 
     @property
     def reduced_costs(self):
@@ -1221,8 +1242,28 @@ class Model(object):
         -------
         collections.OrderedDict
         """
+        return collections.OrderedDict(
+            zip(self._get_variables_names(), self._get_reduced_costs())
+        )
+
+    def _get_reduced_costs(self):
+        """The reduced costs/dual values of all variables.
+
+        Returns
+        -------
+        list
+        """
         # Fallback, if nothing faster is available
-        return collections.OrderedDict([(variable.name, variable.dual) for variable in self.variables])
+        return [variable.dual for variable in self.variables]
+
+    def _get_constraint_names(self):
+        """The names of model constraints.
+
+        Returns
+        -------
+        list
+        """
+        return [constraint.name for constraint in self.constraints]
 
     @property
     def constraint_values(self):
@@ -1232,8 +1273,19 @@ class Model(object):
         -------
         collections.OrderedDict
         """
+        return collections.OrderedDict(
+            zip(self._get_constraint_names(), self._get_constraint_values())
+        )
+
+    def _get_constraint_values(self):
+        """The primal values of all constraints.
+
+        Returns
+        -------
+        list
+        """
         # Fallback, if nothing faster is available
-        return collections.OrderedDict([(constraint.name, constraint.primal) for constraint in self.constraints])
+        return [constraint.primal for constraint in self.constraints]
 
     @property
     def shadow_prices(self):
@@ -1243,8 +1295,20 @@ class Model(object):
         -------
         collections.OrderedDict
         """
+        return collections.OrderedDict(
+            zip(self._get_constraint_names(), self._get_shadow_prices())
+        )
+
+
+    def _get_shadow_prices(self):
+        """The shadow prices of model (dual values of all constraints).
+
+        Returns
+        -------
+        collections.OrderedDict
+        """
         # Fallback, if nothing faster is available
-        return collections.OrderedDict([(constraint.name, constraint.dual) for constraint in self.constraints])
+        return [constraint.dual for constraint in self.constraints]
 
     @property
     def is_integer(self):

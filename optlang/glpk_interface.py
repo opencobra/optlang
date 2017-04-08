@@ -51,7 +51,8 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
-    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_mip_row_val
+    glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_mip_row_val, \
+    get_col_primals, get_col_duals, get_row_primals, get_row_duals
 
 
 
@@ -590,45 +591,37 @@ class Model(interface.Model):
 
     @property
     def primal_values(self):
-        primal_values = collections.OrderedDict()
-        is_mip = self._glpk_is_mip()
-        for index, variable in enumerate(self.variables):
-            if is_mip:
-                value = glp_mip_col_val(self.problem, index + 1)
-            else:
-                value = glp_get_col_prim(self.problem, index + 1)
-            primal_values[variable.name] = variable._round_primal_to_bounds(value)
-        return primal_values
+        # round primals
+        primal_values = [variable._round_primal_to_bounds(primal)
+                         for variable, primal in zip(self.variables, self._get_primal_values())]
+        return collections.OrderedDict(
+            zip(self._get_variables_names(), primal_values)
+        )
 
-    @property
-    def reduced_costs(self):
+    def _get_primal_values(self):
+        if self._glpk_is_mip():
+            # no vector function (element wise)
+            return [glp_mip_col_val(self.problem, index + 1)
+                    for index in range(len(self.variables))]
+        else:
+            return get_col_primals(self.problem)
+
+    def _get_reduced_costs(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        reduced_costs = collections.OrderedDict(
-            (var.name, glp_get_col_dual(self.problem, index + 1)) for index, var in enumerate(self.variables)
-        )
-        return reduced_costs
+        return get_col_duals(self.problem)
 
-    @property
-    def constraint_values(self):
-        dual_values = collections.OrderedDict()
-        is_mip = self._glpk_is_mip()
-        for index, constraint in enumerate(self.constraints):
-            if is_mip:
-                value = glp_mip_row_val(self.problem, index + 1)
-            else:
-                value = glp_get_row_prim(self.problem, index + 1)
-            dual_values[constraint.name] = value
-        return dual_values
+    def _get_constraint_values(self):
+        if self._glpk_is_mip():
+            # no vector function (element wise)
+            return [glp_mip_row_val(self.problem, index + 1) for index in range(len(self.constraints))]
+        else:
+            return get_row_primals(self.problem)
 
-    @property
-    def shadow_prices(self):
+    def _get_shadow_prices(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
-        shadow_prices = collections.OrderedDict(
-            (constraint.name, glp_get_row_dual(self.problem, index + 1)) for index, constraint in enumerate(self.constraints)
-        )
-        return shadow_prices
+        return get_row_duals(self.problem)
 
     def to_lp(self):
         self.update()
