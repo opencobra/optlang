@@ -469,14 +469,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         error_stream_handler = ErrorStreamHandler(logger)
         warning_stream_handler = WarningStreamHandler(logger)
         log_stream_handler = LogStreamHandler(logger)
-        results_stream_handler = LogStreamHandler(logger)
+        results_stream_handler = ResultsStreamHandler(logger)
         if self.problem is not None:
             problem = self.problem.problem
             if value == 0:
                 problem.set_error_stream(error_stream_handler)
                 problem.set_warning_stream(warning_stream_handler)
-                problem.set_log_stream(log_stream_handler)
-                problem.set_results_stream(results_stream_handler)
+                problem.set_log_stream(None)
+                problem.set_results_stream(None)
             elif value == 1:
                 problem.set_error_stream(sys.stderr)
                 problem.set_warning_stream(warning_stream_handler)
@@ -723,40 +723,39 @@ class Model(interface.Model):
 
     @property
     def primal_values(self):
+        # round primals
+        primal_values = [variable._round_primal_to_bounds(primal)
+                         for variable, primal in zip(self.variables, self._get_primal_values())]
+        return collections.OrderedDict(
+            zip(self._get_variables_names(), primal_values)
+        )
+
+    def _get_primal_values(self):
         try:
-            primal_values = collections.OrderedDict(
-                (variable.name, variable._round_primal_to_bounds(primal))
-                for variable, primal in zip(self.variables, self.problem.solution.get_values())
-            )
+            primal_values = self.problem.solution.get_values()
         except CplexSolverError as err:
             raise SolverError(str(err))
         return primal_values
 
-    @property
-    def reduced_costs(self):
+    def _get_reduced_costs(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
         try:
-            return collections.OrderedDict(
-                zip((variable.name for variable in self.variables), self.problem.solution.get_reduced_costs()))
+            return self.problem.solution.get_reduced_costs()
         except CplexSolverError as err:
             raise SolverError(str(err))
 
-    @property
-    def constraint_values(self):
+    def _get_constraint_values(self):
         try:
-            return collections.OrderedDict(
-                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_activity_levels()))
+            return self.problem.solution.get_activity_levels()
         except CplexSolverError as err:
             raise SolverError(str(err))
 
-    @property
-    def shadow_prices(self):
+    def _get_shadow_prices(self):
         if self.is_integer:
             raise ValueError("Dual values are not well-defined for integer problems")
         try:
-            return collections.OrderedDict(
-                zip((constraint.name for constraint in self.constraints), self.problem.solution.get_dual_values()))
+            return self.problem.solution.get_dual_values()
         except CplexSolverError as err:
             raise SolverError(str(err))
 

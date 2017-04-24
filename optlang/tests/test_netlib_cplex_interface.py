@@ -57,7 +57,7 @@ else:
             """
             Check that ...
             """
-            if problem.solution.get_status() == cplex.Cplex.solution.status.optimal:
+            if problem.solution.get_status() == cplex.Cplex().solution.status.optimal:
                 problem_objval = problem.solution.get_objective_value()
             else:
                 problem_objval = None

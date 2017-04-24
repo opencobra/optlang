@@ -479,12 +479,14 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_objective_get_linear_coefficients(self):
         coefs = self.model.objective.get_linear_coefficients(self.model.variables)
+        self.assertEqual(len(coefs), len(self.model.variables))
         expr = sum(c * v for v, c in coefs.items())
         self.assertEqual(expr - self.model.objective.expression, 0)
 
     def test_constraint_get_linear_coefficients(self):
         constraint = self.model.constraints[5]
         coefs = constraint.get_linear_coefficients(self.model.variables)
+        self.assertEqual(len(coefs), len(self.model.variables))
         expr = sum(c * v for v, c in coefs.items())
         self.assertEqual(expr - constraint.expression, 0)
 
