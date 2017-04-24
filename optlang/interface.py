@@ -1299,7 +1299,6 @@ class Model(object):
             zip(self._get_constraint_names(), self._get_shadow_prices())
         )
 
-
     def _get_shadow_prices(self):
         """The shadow prices of model (dual values of all constraints).
 
