@@ -592,19 +592,12 @@ class Model(interface.Model):
     @property
     def primal_values(self):
         # round primals
-        primal_values = [variable._round_primal_to_bounds(primal)
-                         for variable, primal in zip(self.variables, self._get_primal_values())]
         return collections.OrderedDict(
-            zip(self._get_variables_names(), primal_values)
+            (var.name, var._round_primal_to_bounds(primal)) for var, primal in zip(self.variables, self._get_primal_values())
         )
 
     def _get_primal_values(self):
-        if self._glpk_is_mip():
-            # no vector function (element wise)
-            return [glp_mip_col_val(self.problem, index + 1)
-                    for index in range(len(self.variables))]
-        else:
-            return get_col_primals(self.problem)
+        return get_col_primals(self.problem)
 
     def _get_reduced_costs(self):
         if self.is_integer:
@@ -612,11 +605,7 @@ class Model(interface.Model):
         return get_col_duals(self.problem)
 
     def _get_constraint_values(self):
-        if self._glpk_is_mip():
-            # no vector function (element wise)
-            return [glp_mip_row_val(self.problem, index + 1) for index in range(len(self.constraints))]
-        else:
-            return get_row_primals(self.problem)
+        return get_row_primals(self.problem)
 
     def _get_shadow_prices(self):
         if self.is_integer:
