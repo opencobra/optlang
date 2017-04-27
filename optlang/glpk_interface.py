@@ -589,13 +589,6 @@ class Model(interface.Model):
         )
         value.problem = self
 
-    @property
-    def primal_values(self):
-        # round primals
-        return collections.OrderedDict(
-            (var.name, var._round_primal_to_bounds(primal)) for var, primal in zip(self.variables, self._get_primal_values())
-        )
-
     def _get_primal_values(self):
         return get_col_primals(self.problem)
 

@@ -292,11 +292,8 @@ class Variable(sympy.Symbol):
         """The primal of variable (None if no solution exists)."""
         if self.problem:
             primal = self._get_primal()
-            if primal is not None:
-                if self.type in ("integer", "binary"):
-                    primal = round(primal)
-                if self.problem.status == OPTIMAL:
-                    primal = self._round_primal_to_bounds(primal)
+            if primal is not None and self.type in ("integer", "binary"):
+                primal = round(primal)
             return primal
         else:
             return None
@@ -368,29 +365,29 @@ class Variable(sympy.Symbol):
         """
         return cls(json_obj["name"], lb=json_obj["lb"], ub=json_obj["ub"], type=json_obj["type"])
 
-    def _round_primal_to_bounds(self, primal, tolerance=1e-5):
-        """Rounds primal value to lie within variables bounds.
-
-        Raises if exceeding threshold.
-
-        Parameters
-        ----------
-        primal : float
-            The primal value to round.
-        tolerance : float (optional)
-            The tolerance threshold (default: 1e-5).
-        """
-        if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
-            return primal
-        else:
-            if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
-                return self.lb
-            elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
-                return self.ub
-            else:
-                raise AssertionError(
-                    'The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (
-                        primal, self.name, self.lb, self.ub))
+    # def _round_primal_to_bounds(self, primal, tolerance=1e-5):
+    #     """Rounds primal value to lie within variables bounds.
+    #
+    #     Raises if exceeding threshold.
+    #
+    #     Parameters
+    #     ----------
+    #     primal : float
+    #         The primal value to round.
+    #     tolerance : float (optional)
+    #         The tolerance threshold (default: 1e-5).
+    #     """
+    #     if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
+    #         return primal
+    #     else:
+    #         if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
+    #             return self.lb
+    #         elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
+    #             return self.ub
+    #         else:
+    #             raise AssertionError(
+    #                 'The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (
+    #                     primal, self.name, self.lb, self.ub))
 
 
 # noinspection PyPep8Naming
