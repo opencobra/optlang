@@ -14,6 +14,13 @@
 # limitations under the License.
 
 
+class SolverError(Exception):
+    """Reraise solver specific errors with this unified optlang error instead."""
+
+    def __init__(self, message, **kwargs):
+        super(SolverError, self).__init__(message, **kwargs)
+
+
 class ContainerAlreadyContains(Exception):
     """
     This exception is raised when the name of an object being added to a Container is already

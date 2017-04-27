@@ -299,3 +299,16 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_deepcopy(self):
         self.skipTest("Not implemented yet")
+
+    def test_is_integer(self):
+        self.skipTest("No integers with scipy")
+
+    def test_integer_variable_dual(self):
+        self.skipTest("No duals with scipy")
+
+    def test_integer_constraint_dual(self):
+        self.skipTest("No duals with scipy")
+
+    def test_integer_batch_duals(self):
+        self.skipTest("No duals with scipy")
+
