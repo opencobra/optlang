@@ -39,7 +39,7 @@ import sympy
 from sympy.core.assumptions import _assume_rules
 from sympy.core.facts import FactKB
 from sympy.core.expr import Expr
-from optlang.util import parse_expr, expr_to_json, is_numeric
+from optlang.util import parse_expr, expr_to_json, is_numeric, SolverTolerances
 
 from .container import Container
 
@@ -981,6 +981,7 @@ class Configuration(object):
 
     def __init__(self, problem=None, *args, **kwargs):
         self.problem = problem
+        self._add_tolerances()
 
     @property
     def verbosity(self):
@@ -1016,6 +1017,18 @@ class Configuration(object):
     @presolve.setter
     def presolve(self):
         raise NotImplementedError
+
+    def _add_tolerances(self):
+        self.tolerances = SolverTolerances(self._tolerance_functions())
+
+    def _tolerance_functions(self):
+        """
+        This should be implemented in child classes. Must return a dict, where keys are available tolerance parameters
+        and values are tuples of (getter_function, setter_function).
+        The getter functions must be callable with no arguments and the setter functions must be callable with the
+        new value as the only argument
+        """
+        return {}
 
 
 class MathematicalProgrammingConfiguration(Configuration):

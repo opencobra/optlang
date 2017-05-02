@@ -433,6 +433,22 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 self.problem.problem.params.TimeLimit = value
         self._timeout = value
 
+    def _tolerance_functions(self):
+        return {
+            "feasibility": (
+                lambda: self.problem.problem.params.FeasibilityTol,
+                lambda x: setattr(self.problem.problem.params, "FeasibilityTol", x)
+            ),
+            "optimality": (
+                lambda: self.problem.problem.params.OptimalityTol,
+                lambda x: setattr(self.problem.problem.params, "OptimalityTol", x)
+            ),
+            "integrality": (
+                lambda: self.problem.problem.params.IntFeasTol,
+                lambda x: setattr(self.problem.problem.params, "IntFeasTol", x)
+            )
+        }
+
 
 class Model(interface.Model):
 

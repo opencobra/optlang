@@ -559,6 +559,22 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.problem.problem.parameters.qpmethod.set(method)
         self._qp_method = value
 
+    def _tolerance_functions(self):
+        return {
+            "feasibility": (
+                self.problem.problem.parameters.simplex.tolerances.feasibility.get,
+                self.problem.problem.parameters.simplex.tolerances.feasibility.set
+            ),
+            "optimality": (
+                self.problem.problem.parameters.simplex.tolerances.optimality.get,
+                self.problem.problem.parameters.simplex.tolerances.optimality.set
+            ),
+            "integrality": (
+                self.problem.problem.parameters.mip.tolerances.integrality.get,
+                self.problem.problem.parameters.mip.tolerances.integrality.set
+            )
+        }
+
 
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
