@@ -156,12 +156,8 @@ class Variable(interface.Variable):
         if self.problem:
             return self._internal_variable.setAttr('VType', _VTYPE_TO_GUROBI_VTYPE[value])
 
-    @property
-    def primal(self):
-        if self.problem:
-            return self._internal_variable.getAttr('X')
-        else:
-            return None
+    def _get_primal(self):
+        return self._internal_variable.getAttr('X')
 
     @property
     def dual(self):
