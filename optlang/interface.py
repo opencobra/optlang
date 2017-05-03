@@ -1030,6 +1030,9 @@ class Configuration(object):
         """
         return {}
 
+    def __setstate__(self, state):
+        self.__init__()
+
 
 class MathematicalProgrammingConfiguration(Configuration):
     def __init__(self, *args, **kwargs):
@@ -1581,17 +1584,28 @@ class Model(object):
         >>> with open("path_to_file.json") as infile:
         >>>     model = Model.from_json(json.load(infile))
         """
-        model = cls(name=json_obj["name"])
-        interface = model.interface
+        model = cls()
+        model._init_from_json(json_obj)
+        return model
+
+    def _init_from_json(self, json_obj):
+        self.name = json_obj["name"]
+        interface = self.interface
         variables = [interface.Variable.from_json(var_json) for var_json in json_obj["variables"]]
         var_dict = {var.name: var for var in variables}
         constraints = [interface.Constraint.from_json(constraint_json, var_dict) for constraint_json in json_obj["constraints"]]
         objective = interface.Objective.from_json(json_obj["objective"], var_dict)
-        model.add(variables)
-        model.add(constraints)
-        model.objective = objective
-        model.update()
-        return model
+        self.add(variables)
+        self.add(constraints)
+        self.objective = objective
+        self.update()
+
+    def __getstate__(self):
+        return self.to_json()
+
+    def __setstate__(self, state):
+        self.__init__()
+        self._init_from_json(state)
 
 
 if __name__ == '__main__':
