@@ -779,7 +779,7 @@ class AbstractModelTestCase(unittest.TestCase):
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractConfigurationTestCase(unittest.TestCase):
-    @abc.abstractmethod
+
     def setUp(self):
         pass
 
