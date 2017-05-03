@@ -420,12 +420,12 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def _tolerance_functions(self):
         return {
             "feasibility": (
-                lambda: self._iocp.tol_bnd,
-                lambda x: setattr(self._iocp, 'tol_bnd', x)
+                lambda: self._smcp.tol_bnd,
+                lambda x: setattr(self._smcp, 'tol_bnd', x)
             ),
             "optimality": (
-                lambda: self._iocp.tol_opt,
-                lambda x: setattr(self._iocp, 'tol_opt', x)
+                lambda: self._iocp.tol_obj,
+                lambda x: setattr(self._iocp, 'tol_obj', x)
             ),
             "integrality": (
                 lambda: self._iocp.tol_int,
