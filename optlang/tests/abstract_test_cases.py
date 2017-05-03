@@ -783,6 +783,16 @@ class AbstractConfigurationTestCase(unittest.TestCase):
     def setUp(self):
         pass
 
+    def test_tolerance_parameters(self):
+        model = self.interface.Model()
+        params = dir(model.configuration.tolerances)
+        for param in params:
+            val = getattr(model.configuration.tolerances, param)
+            setattr(model.configuration.tolerances, param, 2 * val)
+            self.assertEqual(
+                getattr(model.configuration.tolerances, param), 2 * val
+            )
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractQuadraticProgrammingTestCase(unittest.TestCase):
