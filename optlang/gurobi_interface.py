@@ -336,7 +336,7 @@ class Objective(interface.Objective):
     def value(self):
         if getattr(self, "problem", None) is not None:
             try:
-                return self.problem.problem.getAttr("ObjVal")
+                return self.problem.problem.getAttr("ObjVal") + getattr(self.problem, "_objective_offset", 0)
             except gurobipy.GurobiError:  # TODO: let this check the actual error message
                 return None
         else:
@@ -368,7 +368,7 @@ class Objective(interface.Objective):
     def _get_expression(self):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             grb_obj = self.problem.problem.getObjective()
-            terms = []
+            terms = [getattr(self.problem, "_objective_offset", 0)]
             for i in range(grb_obj.size()):
                 terms.append(grb_obj.getCoeff(i) * self.problem.variables[grb_obj.getVar(i).getAttr('VarName')])
             expression = sympy.Add._from_args(terms)
@@ -548,7 +548,8 @@ class Model(interface.Model):
         offset, linear_coefficients, quadratic_coefficients = parse_optimization_expression(
             value, quadratic=True, expression=expression
         )
-        self.problem.setAttr("ObjCon", offset)
+        # self.problem.setAttr("ObjCon", offset) # Does not seem to work
+        self._objective_offset
         grb_terms = []
         for var, coef in linear_coefficients.items():
             var = self.problem.getVarByName(var.name)

@@ -348,7 +348,7 @@ class Objective(interface.Objective):
         if getattr(self, 'problem', None) is None:
             return None
         try:
-            return self.problem.problem.solution.get_objective_value()
+            return self.problem.problem.solution.get_objective_value() + getattr(self.problem, "_objective_offset", 0)
         except CplexSolverError as err:
             raise SolverError(str(err))
 
@@ -367,7 +367,7 @@ class Objective(interface.Objective):
             expression = sympy.Add._from_args([coeff * var for coeff, var in zip(coeffs, self.problem._variables) if coeff != 0.])
             if cplex_problem.objective.get_num_quadratic_nonzeros() > 0:
                 expression += self.problem._get_quadratic_expression(cplex_problem.objective.get_quadratic())
-            self._expression = expression
+            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
 
@@ -700,7 +700,8 @@ class Model(interface.Model):
         self.update()
         expression = self._objective._expression
         offset, linear_coefficients, quadratic_coeffients = parse_optimization_expression(value, quadratic=True, expression=expression)
-        self.problem.objective.set_offset(float(offset))
+        # self.problem.objective.set_offset(float(offset)) # Not available prior to 12.6.2
+        self._objective_offset = offset
         if linear_coefficients:
             self.problem.objective.set_linear([var.name, float(coef)] for var, coef in linear_coefficients.items())
 

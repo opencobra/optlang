@@ -311,7 +311,7 @@ class Objective(interface.Objective):
                         yield (sympy.RealNumber(coeff), variables[index - 1])
 
             expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
-            self._expression = expression
+            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
 
