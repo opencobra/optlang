@@ -21,10 +21,6 @@ To use this interface, install the gurobi solver and the bundled python interfac
 and make sure that 'import gurobipy' runs without error.
 """
 
-from warnings import warn
-
-warn("Be careful! The GUROBI interface is still under construction ...")
-
 import logging
 
 log = logging.getLogger(__name__)
