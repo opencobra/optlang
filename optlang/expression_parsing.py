@@ -52,11 +52,12 @@ def parse_optimization_expression(obj, linear=True, quadratic=False, expression=
     assert linear or quadratic
 
     if quadratic:
-        linear_coefficients, quadratic_coefficients = _parse_quadratic_expression(expression, **kwargs)
+        offset, linear_coefficients, quadratic_coefficients = _parse_quadratic_expression(expression, **kwargs)
     else:
-        linear_coefficients, quadratic_coefficients = _parse_linear_expression(expression, **kwargs), {}
+        offset, linear_coefficients = _parse_linear_expression(expression, **kwargs)
+        quadratic_coefficients = {}
 
-    return linear_coefficients, quadratic_coefficients
+    return offset, linear_coefficients, quadratic_coefficients
 
 
 def _parse_linear_expression(expression, expanded=False, **kwargs):
@@ -65,6 +66,9 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
 
     Returns a dictionary of variable: coefficient pairs.
     """
+    offset = 0
+    constant = None
+
     if expression.is_Add:
         coefficients = expression.as_coefficients_dict()
     elif expression.is_Mul:
@@ -76,12 +80,17 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
     else:
         raise ValueError("Expression {} seems to be invalid".format(expression))
     for var in coefficients:
-        if not var.is_Symbol:
-            if expanded:
+        if not (var.is_Symbol):
+            if var == 1:
+                constant = var
+                offset = coefficients[var]
+            elif expanded:
                 raise ValueError("Expression {} seems to be invalid".format(expression))
             else:
                 coefficients = _parse_linear_expression(expression, expanded=True, **kwargs)
-    return coefficients
+    if constant is not None:
+        del coefficients[constant]
+    return offset, coefficients
 
 
 def _parse_quadratic_expression(expression, expanded=False):
@@ -93,9 +102,10 @@ def _parse_quadratic_expression(expression, expanded=False):
     """
     linear_coefficients = {}
     quadratic_coefficients = {}
+    offset = 0
 
     if expression.is_Number:  # Constant expression, no coefficients
-        return linear_coefficients, quadratic_coefficients
+        return expression, linear_coefficients, quadratic_coefficients
 
     if expression.is_Mul:
         terms = (expression,)
@@ -107,6 +117,7 @@ def _parse_quadratic_expression(expression, expanded=False):
     try:
         for term in terms:
             if term.is_Number:
+                offset += term
                 continue
             if term.is_Pow:
                 term = 1.0 * term
@@ -139,4 +150,4 @@ def _parse_quadratic_expression(expression, expanded=False):
             # Try to expand the expression and parse it again
             return _parse_quadratic_expression(expression.expand(), expanded=True)
 
-    return linear_coefficients, quadratic_coefficients
+    return offset, linear_coefficients, quadratic_coefficients

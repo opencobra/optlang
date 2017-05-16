@@ -699,7 +699,8 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
         expression = self._objective._expression
-        linear_coefficients, quadratic_coeffients = parse_optimization_expression(value, quadratic=True, expression=expression)
+        offset, linear_coefficients, quadratic_coeffients = parse_optimization_expression(value, quadratic=True, expression=expression)
+        self.problem.objective.set_offset(float(offset))
         if linear_coefficients:
             self.problem.objective.set_linear([var.name, float(coef)] for var, coef in linear_coefficients.items())
 
@@ -823,7 +824,7 @@ class Model(interface.Model):
         for constraint in constraints:
             constraint._problem = None  # This needs to be done in order to not trigger constraint._get_expression()
             if constraint.is_Linear:
-                coeff_dict, _ = parse_optimization_expression(constraint)
+                offset, coeff_dict, _ = parse_optimization_expression(constraint)
 
                 sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(
                     constraint.lb,

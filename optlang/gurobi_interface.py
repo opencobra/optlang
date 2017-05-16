@@ -545,9 +545,10 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective._expression
 
-        linear_coefficients, quadratic_coefficients = parse_optimization_expression(
+        offset, linear_coefficients, quadratic_coefficients = parse_optimization_expression(
             value, quadratic=True, expression=expression
         )
+        self.problem.setAttr("ObjCon", offset)
         grb_terms = []
         for var, coef in linear_coefficients.items():
             var = self.problem.getVarByName(var.name)
@@ -616,7 +617,7 @@ class Model(interface.Model):
             self.problem.update()
             constraint._problem = None
             if constraint.is_Linear:
-                coef_dict, _ = parse_optimization_expression(constraint, linear=True)
+                offset, coef_dict, _ = parse_optimization_expression(constraint, linear=True)
 
                 lhs = gurobipy.quicksum([coef * var._internal_variable for var, coef in coef_dict.items()])
                 sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(constraint.lb,

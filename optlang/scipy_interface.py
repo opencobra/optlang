@@ -31,6 +31,7 @@ from itertools import islice
 import numpy as np
 import six
 from optlang import interface
+from optlang.expression_parsing import parse_optimization_expression
 from scipy.optimize import linprog
 from optlang.util import inheritdocstring
 import sympy
@@ -212,6 +213,14 @@ class Problem(object):
         self._reset_solution()
 
     @property
+    def offset(self):
+        return self._offset
+
+    @offset.setter
+    def offset(self, value):
+        self._offset = value
+
+    @property
     def direction(self):
         return self._direction
 
@@ -260,9 +269,9 @@ class Problem(object):
         if self._f is None:
             raise RuntimeError("Problem has not been optimized yet")
         if self.direction == "max":
-            return -self._f
+            return -self._f + self.offset
         else:
-            return self._f
+            return self._f + self.offset
 
     def _update_variable_indices(self, start=0):
         i = start
@@ -617,7 +626,9 @@ class Model(interface.Model):
         if value is None:
             self.problem.objective = {}
         else:
-            self.problem.objective = value.coefficient_dict()
+            offset, coefficients, _ = parse_optimization_expression(value)
+            self.problem.objective = {var.name: coef for var, coef in coefficients.items()}
+            self.problem.offset = offset
             self.problem.direction = value.direction
         value.problem = self
 
