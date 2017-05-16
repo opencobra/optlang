@@ -56,7 +56,7 @@ class ExpressionParsingTestCase(unittest.TestCase):
         offset_obj, linear_terms_obj, quad_terms_obj = parse_optimization_expression(Objective(expr), linear=False)
 
         self.assertEqual(offset_const, -4)
-        self.assertEqual(offset_obj, -4+offset)
+        self.assertEqual(offset_obj, -4 + offset)
         self.assertEqual(linear_terms_const, linear_target)
         self.assertEqual(linear_terms_obj, linear_target)
         self.assertEqual(quad_terms_const, target)
