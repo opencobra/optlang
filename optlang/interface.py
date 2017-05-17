@@ -39,7 +39,7 @@ import sympy
 from sympy.core.assumptions import _assume_rules
 from sympy.core.facts import FactKB
 from sympy.core.expr import Expr
-from optlang.util import parse_expr, expr_to_json, is_numeric
+from optlang.util import parse_expr, expr_to_json, is_numeric, SolverTolerances
 
 from .container import Container
 
@@ -291,13 +291,7 @@ class Variable(sympy.Symbol):
     def primal(self):
         """The primal of variable (None if no solution exists)."""
         if self.problem:
-            primal = self._get_primal()
-            if primal is not None:
-                if self.type in ("integer", "binary"):
-                    primal = round(primal)
-                if self.problem.status == OPTIMAL:
-                    primal = self._round_primal_to_bounds(primal)
-            return primal
+            return self._get_primal()
         else:
             return None
 
@@ -368,29 +362,29 @@ class Variable(sympy.Symbol):
         """
         return cls(json_obj["name"], lb=json_obj["lb"], ub=json_obj["ub"], type=json_obj["type"])
 
-    def _round_primal_to_bounds(self, primal, tolerance=1e-5):
-        """Rounds primal value to lie within variables bounds.
-
-        Raises if exceeding threshold.
-
-        Parameters
-        ----------
-        primal : float
-            The primal value to round.
-        tolerance : float (optional)
-            The tolerance threshold (default: 1e-5).
-        """
-        if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
-            return primal
-        else:
-            if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
-                return self.lb
-            elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
-                return self.ub
-            else:
-                raise AssertionError(
-                    'The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (
-                        primal, self.name, self.lb, self.ub))
+    # def _round_primal_to_bounds(self, primal, tolerance=1e-5):
+    #     """Rounds primal value to lie within variables bounds.
+    #
+    #     Raises if exceeding threshold.
+    #
+    #     Parameters
+    #     ----------
+    #     primal : float
+    #         The primal value to round.
+    #     tolerance : float (optional)
+    #         The tolerance threshold (default: 1e-5).
+    #     """
+    #     if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
+    #         return primal
+    #     else:
+    #         if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
+    #             return self.lb
+    #         elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
+    #             return self.ub
+    #         else:
+    #             raise AssertionError(
+    #                 'The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (
+    #                     primal, self.name, self.lb, self.ub))
 
 
 # noinspection PyPep8Naming
@@ -987,6 +981,7 @@ class Configuration(object):
 
     def __init__(self, problem=None, *args, **kwargs):
         self.problem = problem
+        self._add_tolerances()
 
     @property
     def verbosity(self):
@@ -1022,6 +1017,21 @@ class Configuration(object):
     @presolve.setter
     def presolve(self):
         raise NotImplementedError
+
+    def _add_tolerances(self):
+        self.tolerances = SolverTolerances(self._tolerance_functions())
+
+    def _tolerance_functions(self):
+        """
+        This should be implemented in child classes. Must return a dict, where keys are available tolerance parameters
+        and values are tuples of (getter_function, setter_function).
+        The getter functions must be callable with no arguments and the setter functions must be callable with the
+        new value as the only argument
+        """
+        return {}
+
+    def __setstate__(self, state):
+        self.__init__()
 
 
 class MathematicalProgrammingConfiguration(Configuration):
@@ -1574,17 +1584,28 @@ class Model(object):
         >>> with open("path_to_file.json") as infile:
         >>>     model = Model.from_json(json.load(infile))
         """
-        model = cls(name=json_obj["name"])
-        interface = model.interface
+        model = cls()
+        model._init_from_json(json_obj)
+        return model
+
+    def _init_from_json(self, json_obj):
+        self.name = json_obj["name"]
+        interface = self.interface
         variables = [interface.Variable.from_json(var_json) for var_json in json_obj["variables"]]
         var_dict = {var.name: var for var in variables}
         constraints = [interface.Constraint.from_json(constraint_json, var_dict) for constraint_json in json_obj["constraints"]]
         objective = interface.Objective.from_json(json_obj["objective"], var_dict)
-        model.add(variables)
-        model.add(constraints)
-        model.objective = objective
-        model.update()
-        return model
+        self.add(variables)
+        self.add(constraints)
+        self.objective = objective
+        self.update()
+
+    def __getstate__(self):
+        return self.to_json()
+
+    def __setstate__(self, state):
+        self.__init__()
+        self._init_from_json(state)
 
 
 if __name__ == '__main__':

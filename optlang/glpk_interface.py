@@ -311,17 +311,18 @@ class Objective(interface.Objective):
                         yield (sympy.RealNumber(coeff), variables[index - 1])
 
             expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
-            self._expression = expression
+            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
 
     @property
     def value(self):
         if getattr(self, 'problem', None) is not None:
+            offset = getattr(self.problem, '_objective_offset', 0)
             if self.problem._glpk_is_mip():
-                return glp_mip_obj_val(self.problem.problem)
+                return glp_mip_obj_val(self.problem.problem) + offset
             else:
-                return glp_get_obj_val(self.problem.problem)
+                return glp_get_obj_val(self.problem.problem) + offset
         else:
             return None
 
@@ -416,6 +417,22 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         else:
             self._smcp.tm_lim = value * 1000  # milliseconds to seconds
             self._iocp.tm_lim = value * 1000
+
+    def _tolerance_functions(self):
+        return {
+            "feasibility": (
+                lambda: self._smcp.tol_bnd,
+                lambda x: setattr(self._smcp, 'tol_bnd', x)
+            ),
+            "optimality": (
+                lambda: self._iocp.tol_obj,
+                lambda x: setattr(self._iocp, 'tol_obj', x)
+            ),
+            "integrality": (
+                lambda: self._iocp.tol_int,
+                lambda x: setattr(self._iocp, 'tol_int', x)
+            )
+        }
 
     @property
     def presolve(self):
@@ -578,7 +595,8 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
 
-        coef_dict, _ = parse_optimization_expression(value, linear=True)
+        offset, coef_dict, _ = parse_optimization_expression(value, linear=True)
+        self._objective_offset = offset
 
         for var, coef in coef_dict.items():
             glp_set_obj_coef(self.problem, var._index, float(coef))
@@ -589,22 +607,8 @@ class Model(interface.Model):
         )
         value.problem = self
 
-    @property
-    def primal_values(self):
-        # round primals
-        primal_values = [variable._round_primal_to_bounds(primal)
-                         for variable, primal in zip(self.variables, self._get_primal_values())]
-        return collections.OrderedDict(
-            zip(self._get_variables_names(), primal_values)
-        )
-
     def _get_primal_values(self):
-        if self._glpk_is_mip():
-            # no vector function (element wise)
-            return [glp_mip_col_val(self.problem, index + 1)
-                    for index in range(len(self.variables))]
-        else:
-            return get_col_primals(self.problem)
+        return get_col_primals(self.problem)
 
     def _get_reduced_costs(self):
         if self.is_integer:
@@ -612,11 +616,7 @@ class Model(interface.Model):
         return get_col_duals(self.problem)
 
     def _get_constraint_values(self):
-        if self._glpk_is_mip():
-            # no vector function (element wise)
-            return [glp_mip_row_val(self.problem, index + 1) for index in range(len(self.constraints))]
-        else:
-            return get_row_primals(self.problem)
+        return get_row_primals(self.problem)
 
     def _get_shadow_prices(self):
         if self.is_integer:
@@ -730,7 +730,7 @@ class Model(interface.Model):
             value_array = doubleArray(num_cols + 1)
             num_vars = 0  # constraint.variables is too expensive for large problems
 
-            coef_dict, _ = parse_optimization_expression(constraint, linear=True)
+            offset, coef_dict, _ = parse_optimization_expression(constraint, linear=True)
 
             num_vars = len(coef_dict)
             for i, (var, coef) in enumerate(coef_dict.items()):
