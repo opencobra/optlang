@@ -417,6 +417,22 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             self._smcp.tm_lim = value * 1000  # milliseconds to seconds
             self._iocp.tm_lim = value * 1000
 
+    def _tolerance_functions(self):
+        return {
+            "feasibility": (
+                lambda: self._smcp.tol_bnd,
+                lambda x: setattr(self._smcp, 'tol_bnd', x)
+            ),
+            "optimality": (
+                lambda: self._iocp.tol_obj,
+                lambda x: setattr(self._iocp, 'tol_obj', x)
+            ),
+            "integrality": (
+                lambda: self._iocp.tol_int,
+                lambda x: setattr(self._iocp, 'tol_int', x)
+            )
+        }
+
     @property
     def presolve(self):
         return self._presolve

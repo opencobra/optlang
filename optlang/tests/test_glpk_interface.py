@@ -111,6 +111,10 @@ class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
         self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MAX)
 
 
+class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
+    interface = glpk_interface
+
+
 class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     interface = glpk_interface
 

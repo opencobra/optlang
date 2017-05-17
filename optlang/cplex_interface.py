@@ -413,7 +413,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.problem.problem.parameters.lpmethod.set(lp_method)
 
     def _set_presolve(self, value):
-        if self.problem is not None:
+        if getattr(self, 'problem', None) is not None:
             presolve = self.problem.problem.parameters.preprocessing.presolve
             if value is True:
                 presolve.set(presolve.values.on)
@@ -470,7 +470,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         warning_stream_handler = WarningStreamHandler(logger)
         log_stream_handler = LogStreamHandler(logger)
         results_stream_handler = ResultsStreamHandler(logger)
-        if self.problem is not None:
+        if getattr(self, 'problem', None) is not None:
             problem = self.problem.problem
             if value == 0:
                 problem.set_error_stream(error_stream_handler)
@@ -505,12 +505,19 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @timeout.setter
     def timeout(self, value):
-        if self.problem is not None:
+        if getattr(self, 'problem', None) is not None:
             if value is None:
                 self.problem.problem.parameters.timelimit.reset()
             else:
                 self.problem.problem.parameters.timelimit.set(value)
         self._timeout = value
+
+    def __getstate__(self):
+        return {"presolve": self.presolve, "timeout": self.timeout, "verbosity": self.verbosity}
+
+    def __setstate__(self, state):
+        for key, val in six.iteritems(state):
+            setattr(self, key, val)
 
     @property
     def solution_target(self):
@@ -558,6 +565,22 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         method = getattr(self.problem.problem.parameters.qpmethod.values, value)
         self.problem.problem.parameters.qpmethod.set(method)
         self._qp_method = value
+
+    def _tolerance_functions(self):
+        return {
+            "feasibility": (
+                self.problem.problem.parameters.simplex.tolerances.feasibility.get,
+                self.problem.problem.parameters.simplex.tolerances.feasibility.set
+            ),
+            "optimality": (
+                self.problem.problem.parameters.simplex.tolerances.optimality.get,
+                self.problem.problem.parameters.simplex.tolerances.optimality.set
+            ),
+            "integrality": (
+                self.problem.problem.parameters.mip.tolerances.integrality.get,
+                self.problem.problem.parameters.mip.tolerances.integrality.set
+            )
+        }
 
 
 @six.add_metaclass(inheritdocstring)
