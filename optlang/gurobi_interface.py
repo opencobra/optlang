@@ -368,12 +368,12 @@ class Objective(interface.Objective):
     def _get_expression(self):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             grb_obj = self.problem.problem.getObjective()
-            terms = [getattr(self.problem, "_objective_offset", 0)]
+            terms = []
             for i in range(grb_obj.size()):
                 terms.append(grb_obj.getCoeff(i) * self.problem.variables[grb_obj.getVar(i).getAttr('VarName')])
             expression = sympy.Add._from_args(terms)
             # TODO implement quadratic objectives
-            self._expression = expression
+            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
 
@@ -549,7 +549,7 @@ class Model(interface.Model):
             value, quadratic=True, expression=expression
         )
         # self.problem.setAttr("ObjCon", offset) # Does not seem to work
-        self._objective_offset
+        self._objective_offset = offset
         grb_terms = []
         for var, coef in linear_coefficients.items():
             var = self.problem.getVarByName(var.name)
