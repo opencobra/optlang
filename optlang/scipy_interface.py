@@ -214,7 +214,7 @@ class Problem(object):
 
     @property
     def offset(self):
-        return self._offset
+        return getattr(self, '_offset', 0)
 
     @offset.setter
     def offset(self, value):
@@ -465,7 +465,7 @@ class Objective(interface.Objective):
             coefficients_dict = {
                 self.problem._variables[name]: coef for name, coef in coefficients_dict.items() if name in self.problem._variables
             }
-            self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items()))
+            self._expression = sympy.Add(*(v * k for k, v in coefficients_dict.items())) + self.problem.problem.offset
         return self._expression
 
     @property
