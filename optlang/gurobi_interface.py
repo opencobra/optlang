@@ -328,7 +328,7 @@ class Objective(interface.Objective):
     def value(self):
         if getattr(self, "problem", None) is not None:
             try:
-                return self.problem.problem.getAttr("ObjVal")
+                return self.problem.problem.getAttr("ObjVal") + getattr(self.problem, "_objective_offset", 0)
             except gurobipy.GurobiError:  # TODO: let this check the actual error message
                 return None
         else:
@@ -365,7 +365,7 @@ class Objective(interface.Objective):
                 terms.append(grb_obj.getCoeff(i) * self.problem.variables[grb_obj.getVar(i).getAttr('VarName')])
             expression = sympy.Add._from_args(terms)
             # TODO implement quadratic objectives
-            self._expression = expression
+            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
 
@@ -553,9 +553,11 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective._expression
 
-        linear_coefficients, quadratic_coefficients = parse_optimization_expression(
+        offset, linear_coefficients, quadratic_coefficients = parse_optimization_expression(
             value, quadratic=True, expression=expression
         )
+        # self.problem.setAttr("ObjCon", offset) # Does not seem to work
+        self._objective_offset = offset
         grb_terms = []
         for var, coef in linear_coefficients.items():
             var = self.problem.getVarByName(var.name)
@@ -624,7 +626,7 @@ class Model(interface.Model):
             self.problem.update()
             constraint._problem = None
             if constraint.is_Linear:
-                coef_dict, _ = parse_optimization_expression(constraint, linear=True)
+                offset, coef_dict, _ = parse_optimization_expression(constraint, linear=True)
 
                 lhs = gurobipy.quicksum([coef * var._internal_variable for var, coef in coef_dict.items()])
                 sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(constraint.lb,

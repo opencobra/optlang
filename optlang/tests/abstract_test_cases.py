@@ -700,6 +700,29 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
         self.assertAlmostEqual(x.primal, 0.5)
 
+    def test_objective_handles_constants_2(self):
+        offset = 2
+        self.model.optimize()
+        optimal = self.model.objective.value
+        objective = self.interface.Objective(self.model.objective.expression + offset)
+        self.model.objective = objective
+        self.model.optimize()
+        self.assertEqual(self.model.objective.value, optimal + offset)
+
+    # def test_objective_handles_constants_3(self):
+    #     offset = 3
+    #     self.model.optimize()
+    #     optimal = self.model.objective.value
+    #     self.model.objective += offset
+    #     self.model.optimize()
+    #     self.assertEqual(self.model.objective.value, optimal + offset)
+
+    def test_objective_expression_includes_constant(self):
+        objective = self.model.objective
+        self.model.objective = self.interface.Objective(objective.expression + 3)
+        self.model.update()
+        self.assertEqual((self.model.objective.expression - (objective.expression + 3)).expand(), 0)
+
     def test_is_integer(self):
         model = self.model
         self.assertFalse(model.is_integer)

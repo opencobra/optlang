@@ -311,17 +311,18 @@ class Objective(interface.Objective):
                         yield (sympy.RealNumber(coeff), variables[index - 1])
 
             expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
-            self._expression = expression
+            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
 
     @property
     def value(self):
         if getattr(self, 'problem', None) is not None:
+            offset = getattr(self.problem, '_objective_offset', 0)
             if self.problem._glpk_is_mip():
-                return glp_mip_obj_val(self.problem.problem)
+                return glp_mip_obj_val(self.problem.problem) + offset
             else:
-                return glp_get_obj_val(self.problem.problem)
+                return glp_get_obj_val(self.problem.problem) + offset
         else:
             return None
 
@@ -594,7 +595,8 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
 
-        coef_dict, _ = parse_optimization_expression(value, linear=True)
+        offset, coef_dict, _ = parse_optimization_expression(value, linear=True)
+        self._objective_offset = offset
 
         for var, coef in coef_dict.items():
             glp_set_obj_coef(self.problem, var._index, float(coef))
@@ -728,7 +730,7 @@ class Model(interface.Model):
             value_array = doubleArray(num_cols + 1)
             num_vars = 0  # constraint.variables is too expensive for large problems
 
-            coef_dict, _ = parse_optimization_expression(constraint, linear=True)
+            offset, coef_dict, _ = parse_optimization_expression(constraint, linear=True)
 
             num_vars = len(coef_dict)
             for i, (var, coef) in enumerate(coef_dict.items()):
