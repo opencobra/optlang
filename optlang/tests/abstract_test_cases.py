@@ -717,6 +717,12 @@ class AbstractModelTestCase(unittest.TestCase):
     #     self.model.optimize()
     #     self.assertEqual(self.model.objective.value, optimal + offset)
 
+    def test_objective_expression_includes_constant(self):
+        objective = self.model.objective
+        self.model.objective = self.interface.Objective(objective.expression + 3)
+        self.model.update()
+        self.assertEqual((self.model.objective.expression - (objective.expression + 3)).expand(), 0)
+
     def test_is_integer(self):
         model = self.model
         self.assertFalse(model.is_integer)
