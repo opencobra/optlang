@@ -83,7 +83,7 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
         if not (var.is_Symbol):
             if var == 1:
                 constant = var
-                offset = coefficients[var]
+                offset = float(coefficients[var])
             elif expanded:
                 raise ValueError("Expression {} seems to be invalid".format(expression))
             else:
@@ -117,7 +117,7 @@ def _parse_quadratic_expression(expression, expanded=False):
     try:
         for term in terms:
             if term.is_Number:
-                offset += term
+                offset += float(term)
                 continue
             if term.is_Pow:
                 term = 1.0 * term
