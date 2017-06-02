@@ -105,7 +105,7 @@ def _parse_quadratic_expression(expression, expanded=False):
     offset = 0
 
     if expression.is_Number:  # Constant expression, no coefficients
-        return expression, linear_coefficients, quadratic_coefficients
+        return float(expression), linear_coefficients, quadratic_coefficients
 
     if expression.is_Mul:
         terms = (expression,)
