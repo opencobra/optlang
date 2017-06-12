@@ -73,8 +73,6 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
 
     if expression.is_Add:
         coefficients = expression.as_coefficients_dict()
-        if One in coefficients:
-            del coefficients[One]
     elif expression.is_Mul:
         coefficients = {expression.args[1]: expression.args[0]}
     elif expression.is_Symbol:
@@ -86,7 +84,7 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
 
     for var in coefficients:
         if not (var.is_Symbol):
-            if var == 1:
+            if var == One:
                 constant = var
                 offset = float(coefficients[var])
             elif expanded:
