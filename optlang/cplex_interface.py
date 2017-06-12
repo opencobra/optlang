@@ -344,7 +344,7 @@ class Objective(interface.Objective):
         if getattr(self, 'problem', None) is None:
             return None
         try:
-            return self.problem.problem.solution.get_objective_value()
+            return self.problem.problem.solution.get_objective_value() + getattr(self.problem, "_objective_offset", 0)
         except CplexSolverError as err:
             raise SolverError(str(err))
 
@@ -363,7 +363,7 @@ class Objective(interface.Objective):
             expression = add([coeff * var for coeff, var in zip(coeffs, self.problem._variables) if coeff != 0.])
             if cplex_problem.objective.get_num_quadratic_nonzeros() > 0:
                 expression += self.problem._get_quadratic_expression(cplex_problem.objective.get_quadratic())
-            self._expression = expression
+            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
 
@@ -409,7 +409,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.problem.problem.parameters.lpmethod.set(lp_method)
 
     def _set_presolve(self, value):
-        if self.problem is not None:
+        if getattr(self, 'problem', None) is not None:
             presolve = self.problem.problem.parameters.preprocessing.presolve
             if value is True:
                 presolve.set(presolve.values.on)
@@ -466,7 +466,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         warning_stream_handler = WarningStreamHandler(logger)
         log_stream_handler = LogStreamHandler(logger)
         results_stream_handler = ResultsStreamHandler(logger)
-        if self.problem is not None:
+        if getattr(self, 'problem', None) is not None:
             problem = self.problem.problem
             if value == 0:
                 problem.set_error_stream(error_stream_handler)
@@ -501,12 +501,19 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @timeout.setter
     def timeout(self, value):
-        if self.problem is not None:
+        if getattr(self, 'problem', None) is not None:
             if value is None:
                 self.problem.problem.parameters.timelimit.reset()
             else:
                 self.problem.problem.parameters.timelimit.set(value)
         self._timeout = value
+
+    def __getstate__(self):
+        return {"presolve": self.presolve, "timeout": self.timeout, "verbosity": self.verbosity}
+
+    def __setstate__(self, state):
+        for key, val in six.iteritems(state):
+            setattr(self, key, val)
 
     @property
     def solution_target(self):
@@ -554,6 +561,22 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         method = getattr(self.problem.problem.parameters.qpmethod.values, value)
         self.problem.problem.parameters.qpmethod.set(method)
         self._qp_method = value
+
+    def _tolerance_functions(self):
+        return {
+            "feasibility": (
+                self.problem.problem.parameters.simplex.tolerances.feasibility.get,
+                self.problem.problem.parameters.simplex.tolerances.feasibility.set
+            ),
+            "optimality": (
+                self.problem.problem.parameters.simplex.tolerances.optimality.get,
+                self.problem.problem.parameters.simplex.tolerances.optimality.set
+            ),
+            "integrality": (
+                self.problem.problem.parameters.mip.tolerances.integrality.get,
+                self.problem.problem.parameters.mip.tolerances.integrality.set
+            )
+        }
 
 
 @six.add_metaclass(inheritdocstring)
@@ -694,7 +717,9 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
         expression = self._objective._expression
-        linear_coefficients, quadratic_coeffients = parse_optimization_expression(value, quadratic=True, expression=expression)
+        offset, linear_coefficients, quadratic_coeffients = parse_optimization_expression(value, quadratic=True, expression=expression)
+        # self.problem.objective.set_offset(float(offset)) # Not available prior to 12.6.2
+        self._objective_offset = offset
         if linear_coefficients:
             self.problem.objective.set_linear([var.name, float(coef)] for var, coef in linear_coefficients.items())
 
@@ -715,15 +740,6 @@ class Model(interface.Model):
         self.problem.objective.set_sense(
             {'min': self.problem.objective.sense.minimize, 'max': self.problem.objective.sense.maximize}[
                 direction])
-
-    @property
-    def primal_values(self):
-        # round primals
-        primal_values = [variable._round_primal_to_bounds(primal)
-                         for variable, primal in zip(self.variables, self._get_primal_values())]
-        return collections.OrderedDict(
-            zip(self._get_variables_names(), primal_values)
-        )
 
     def _get_primal_values(self):
         try:
@@ -827,7 +843,7 @@ class Model(interface.Model):
         for constraint in constraints:
             constraint._problem = None  # This needs to be done in order to not trigger constraint._get_expression()
             if constraint.is_Linear:
-                coeff_dict, _ = parse_optimization_expression(constraint)
+                offset, coeff_dict, _ = parse_optimization_expression(constraint)
 
                 sense, rhs, range_value = _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(
                     constraint.lb,

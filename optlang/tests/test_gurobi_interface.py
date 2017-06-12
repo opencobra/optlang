@@ -133,6 +133,10 @@ else:
             self.assertEqual(self.model.problem.getAttr('ModelSense'), gurobipy.GRB.MAXIMIZE)
 
 
+    class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
+        interface = gurobi_interface
+
+
     class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         interface = gurobi_interface
 

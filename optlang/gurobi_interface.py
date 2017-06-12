@@ -21,10 +21,6 @@ To use this interface, install the gurobi solver and the bundled python interfac
 and make sure that 'import gurobipy' runs without error.
 """
 
-from warnings import warn
-
-warn("Be careful! The GUROBI interface is still under construction ...")
-
 import logging
 
 log = logging.getLogger(__name__)
@@ -155,12 +151,8 @@ class Variable(interface.Variable):
         if self.problem:
             return self._internal_variable.setAttr('VType', _VTYPE_TO_GUROBI_VTYPE[value])
 
-    @property
-    def primal(self):
-        if self.problem:
-            return self._internal_variable.getAttr('X')
-        else:
-            return None
+    def _get_primal(self):
+        return self._internal_variable.getAttr('X')
 
     @property
     def dual(self):
@@ -334,7 +326,7 @@ class Objective(interface.Objective):
     def value(self):
         if getattr(self, "problem", None) is not None:
             try:
-                return self.problem.problem.getAttr("ObjVal")
+                return self.problem.problem.getAttr("ObjVal") + getattr(self.problem, "_objective_offset", 0)
             except gurobipy.GurobiError:  # TODO: let this check the actual error message
                 return None
         else:
@@ -371,7 +363,7 @@ class Objective(interface.Objective):
                 terms.append(grb_obj.getCoeff(i) * self.problem.variables[grb_obj.getVar(i).getAttr('VarName')])
             expression = symbolics.add(terms)
             # TODO implement quadratic objectives
-            self._expression = expression
+            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
 
@@ -434,6 +426,22 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             else:
                 self.problem.problem.params.TimeLimit = value
         self._timeout = value
+
+    def _tolerance_functions(self):
+        return {
+            "feasibility": (
+                lambda: self.problem.problem.params.FeasibilityTol,
+                lambda x: setattr(self.problem.problem.params, "FeasibilityTol", x)
+            ),
+            "optimality": (
+                lambda: self.problem.problem.params.OptimalityTol,
+                lambda x: setattr(self.problem.problem.params, "OptimalityTol", x)
+            ),
+            "integrality": (
+                lambda: self.problem.problem.params.IntFeasTol,
+                lambda x: setattr(self.problem.problem.params, "IntFeasTol", x)
+            )
+        }
 
 
 class Model(interface.Model):
@@ -545,9 +553,11 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         expression = self._objective._expression
 
-        linear_coefficients, quadratic_coefficients = parse_optimization_expression(
+        offset, linear_coefficients, quadratic_coefficients = parse_optimization_expression(
             value, quadratic=True, expression=expression
         )
+        # self.problem.setAttr("ObjCon", offset) # Does not seem to work
+        self._objective_offset = offset
         grb_terms = []
         for var, coef in linear_coefficients.items():
             var = self.problem.getVarByName(var.name)
@@ -616,7 +626,7 @@ class Model(interface.Model):
             self.problem.update()
             constraint._problem = None
             if constraint.is_Linear:
-                coef_dict, _ = parse_optimization_expression(constraint, linear=True)
+                offset, coef_dict, _ = parse_optimization_expression(constraint, linear=True)
 
                 lhs = gurobipy.quicksum([coef * var._internal_variable for var, coef in coef_dict.items()])
                 sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(constraint.lb,

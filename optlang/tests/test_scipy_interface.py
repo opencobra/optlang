@@ -101,6 +101,10 @@ class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
         self.assertEqual(self.model.problem.direction, "max")
 
 
+class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
+    interface = scipy_interface
+
+
 class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     interface = scipy_interface
 

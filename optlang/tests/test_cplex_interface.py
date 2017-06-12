@@ -368,6 +368,9 @@ else:
 
 
     class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
+
+        interface = cplex_interface
+
         def setUp(self):
             self.model = Model()
             self.configuration = self.model.configuration
