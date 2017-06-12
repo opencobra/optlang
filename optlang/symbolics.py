@@ -43,7 +43,7 @@ else:
         USE_SYMENGINE = True
 
 
-if USE_SYMENGINE:
+if USE_SYMENGINE:  # pragma: no cover
     import operator
     from six.moves import reduce
 
