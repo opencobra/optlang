@@ -110,7 +110,7 @@ else:
             self.assertEqual(self.constraint.primal, None)
             self.model.optimize()
             self.assertEqual(self.model.status, 'optimal')
-            self.assertEqual(self.model.objective.value, 0.8739215069684305)
+            self.assertAlmostEqual(self.model.objective.value, 0.8739215069684305)
             print([constraint.primal for constraint in self.model.constraints])
             for i, j in zip([constraint.primal for constraint in self.model.constraints],
                             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -214,7 +214,12 @@ else:
             y = Variable('y', lb=-181133.3, ub=12000.)
             constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
             self.model.add(constraint)
-            self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
+            self.assertEqual(
+                (self.model.constraints['test'].expression - (0.4 * y + 0.3 * x)).expand() - 0,
+                0
+            )
+
+            # self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
             self.assertEqual(self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y')]),
                              [0.3, 0.4])
             z = Variable('z', lb=3, ub=4, type='integer')
@@ -222,8 +227,10 @@ else:
             self.assertEqual(
                 self.model.problem.linear_constraints.get_coefficients([('test', 'x'), ('test', 'y'), ('test', 'z')]),
                 [0.3, 0.4, 77.])
-            self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
-            print(self.model)
+            self.assertEqual(
+                (self.model.constraints['test'].expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand() - 0,
+                0
+            )
 
         def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -233,7 +240,10 @@ else:
             z = Variable('z', lb=2, ub=5, type='integer')
             constraint += 77. * z
             self.model.remove(constraint)
-            self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
+            self.assertEqual(constraint.name, "test")
+            self.assertEqual(constraint.lb, -100)
+            self.assertEqual(constraint.ub, None)
+            self.assertEqual((constraint.expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand(), 0)
 
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)
@@ -298,9 +308,6 @@ else:
             self.assertEqual(self.model.problem.linear_constraints.get_senses(constraint.name), "E")
             self.assertEqual(self.model.problem.linear_constraints.get_range_values(constraint.name), 0)
 
-        def test_initial_objective(self):
-            self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
-
         def test_iadd_objective(self):
             v2, v3 = self.model.variables.values()[1:3]
             self.model.objective += 2. * v2 - 3. * v3
@@ -330,7 +337,8 @@ else:
         def test_set_copied_objective(self):
             obj_copy = copy.copy(self.model.objective)
             self.model.objective = obj_copy
-            self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_Biomass_Ecoli_core_w_GAM')
+            self.assertEqual(self.model.objective.direction, "max")
+            self.assertEqual(self.model.objective.expression, 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])
 
         def test_timeout(self):
             self.model.configuration.timeout = 0

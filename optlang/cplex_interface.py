@@ -29,22 +29,18 @@ import six
 import os
 from six.moves import StringIO
 
-import sympy
-from sympy.core.add import _unevaluated_Add
-from sympy.core.mul import _unevaluated_Mul
-from sympy.core.singleton import S
 import cplex
 from cplex.exceptions import CplexSolverError
 
 from optlang import interface
+from optlang import symbolics
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang.exceptions import SolverError
 
 log = logging.getLogger(__name__)
 
-Zero = S.Zero
-One = S.One
+from optlang.symbolics import add, mul, One, Zero
 
 _STATUS_MAP = {
     'MIP_abort_feasible': interface.ABORTED,
@@ -242,8 +238,8 @@ class Constraint(interface.Constraint):
             cplex_problem = self.problem.problem
             cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
             variables = self.problem._variables
-            expression = sympy.Add._from_args(
-                [sympy.Mul._from_args((sympy.RealNumber(cplex_row.val[i]), variables[ind])) for i, ind in
+            expression = add(
+                [mul((symbolics.Real(cplex_row.val[i]), variables[ind])) for i, ind in
                  enumerate(cplex_row.ind)])
             self._expression = expression
         return self._expression
@@ -364,7 +360,7 @@ class Objective(interface.Objective):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             cplex_problem = self.problem.problem
             coeffs = cplex_problem.objective.get_linear()
-            expression = sympy.Add._from_args([coeff * var for coeff, var in zip(coeffs, self.problem._variables) if coeff != 0.])
+            expression = add([coeff * var for coeff, var in zip(coeffs, self.problem._variables) if coeff != 0.])
             if cplex_problem.objective.get_num_quadratic_nonzeros() > 0:
                 expression += self.problem._get_quadratic_expression(cplex_problem.objective.get_quadratic())
             self._expression = expression + getattr(self.problem, "_objective_offset", 0)
@@ -616,9 +612,9 @@ class Model(interface.Model):
                 # lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])
                 lhs = 0
                 if isinstance(lhs, int):
-                    lhs = sympy.Integer(lhs)
+                    lhs = symbolics.Integer(lhs)
                 elif isinstance(lhs, float):
-                    lhs = sympy.RealNumber(lhs)
+                    lhs = symbolics.Real(lhs)
                 if sense == 'E':
                     constr = Constraint(lhs, lb=rhs, ub=rhs, name=name, problem=self)
                 elif sense == 'G':
@@ -650,10 +646,9 @@ class Model(interface.Model):
                 if 'CPLEX Error  1219:' not in str(e):
                     raise e
             else:
-                linear_expression = _unevaluated_Add(
-                    *[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
-                      enumerate(self.problem.objective.get_linear()) if coeff != 0.])
-
+                linear_expression = add(
+                    [mul(symbolics.Real(coeff), variables[index]) for index, coeff in enumerate(self.problem.objective.get_linear()) if coeff != 0.]
+                )
                 try:
                     quadratic = self.problem.objective.get_quadratic()
                 except IndexError:
@@ -905,4 +900,4 @@ class Model(interface.Model):
                     terms.append(0.5 * val * self._variables[i_name] ** 2)
                 else:
                     pass  # Only look at upper triangle
-        return _unevaluated_Add(*terms)
+        return add(terms)

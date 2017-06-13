@@ -26,6 +26,8 @@ import inspect
 from subprocess import check_output
 from sympy.printing.str import StrPrinter
 import sympy
+from optlang import symbolics
+from optlang.symbolics import mul, add, Pow
 
 
 def solve_with_glpsol(glp_prob):
@@ -194,19 +196,19 @@ def expr_to_json(expr):
     """
     Converts a Sympy expression to a json-compatible tree-structure.
     """
-    if isinstance(expr, sympy.Mul):
+    if isinstance(expr, symbolics.Mul):
         return {"type": "Mul", "args": [expr_to_json(arg) for arg in expr.args]}
-    elif isinstance(expr, sympy.Add):
+    elif isinstance(expr, symbolics.Add):
         return {"type": "Add", "args": [expr_to_json(arg) for arg in expr.args]}
-    elif isinstance(expr, sympy.Symbol):
+    elif isinstance(expr, symbolics.Symbol):
         return {"type": "Symbol", "name": expr.name}
-    elif isinstance(expr, sympy.Pow):
+    elif isinstance(expr, symbolics.Pow):
         return {"type": "Pow", "args": [expr_to_json(arg) for arg in expr.args]}
     elif isinstance(expr, (float, int)):
         return {"type": "Number", "value": expr}
-    elif isinstance(expr, sympy.Float):
+    elif isinstance(expr, symbolics.Real):
         return {"type": "Number", "value": float(expr)}
-    elif isinstance(expr, sympy.Integer):
+    elif isinstance(expr, symbolics.Integer):
         return {"type": "Number", "value": int(expr)}
     else:
         raise NotImplementedError("Type not implemented: " + str(type(expr)))
@@ -222,18 +224,18 @@ def parse_expr(expr, local_dict=None):
     if local_dict is None:
         local_dict = {}
     if expr["type"] == "Add":
-        return sympy.Add._from_args([parse_expr(arg, local_dict) for arg in expr["args"]])
+        return add([parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Mul":
-        return sympy.Mul._from_args([parse_expr(arg, local_dict) for arg in expr["args"]])
+        return mul([parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Pow":
-        return sympy.Pow(parse_expr(arg, local_dict) for arg in expr["args"])
+        return Pow(parse_expr(arg, local_dict) for arg in expr["args"])
     elif expr["type"] == "Symbol":
         try:
             return local_dict[expr["name"]]
         except KeyError:
-            return sympy.Symbol(expr["name"])
+            return symbolics.Symbol(expr["name"])
     elif expr["type"] == "Number":
-        return sympy.sympify(expr["value"])
+        return symbolics.sympify(expr["value"])
     else:
         raise NotImplementedError(expr["type"] + " is not implemented")
 

@@ -29,17 +29,17 @@ import logging
 import sys
 import uuid
 import warnings
+import sympy
 
 import six
 
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
-import sympy
-
-from sympy.core.assumptions import _assume_rules
-from sympy.core.facts import FactKB
-from sympy.core.expr import Expr
+# from sympy.core.assumptions import _assume_rules
+# from sympy.core.facts import FactKB
+# from sympy.core.expr import Expr
 from optlang.util import parse_expr, expr_to_json, is_numeric, SolverTolerances
+from optlang import symbolics
 
 from .container import Container
 
@@ -77,7 +77,7 @@ statuses = {
 
 
 # noinspection PyShadowingBuiltins
-class Variable(sympy.Symbol):
+class Variable(symbolics.Symbol):
     """Optimization variables.
 
     Variable objects are used to represents each variable of the optimization problem. When the optimization is
@@ -162,19 +162,6 @@ class Variable(sympy.Symbol):
     #     return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16 * random.random()))),
     #                                  **assumptions)  # uuid.uuid1()
 
-    def __new__(cls, name, **kwargs):
-        if not isinstance(name, six.string_types):
-            raise TypeError("name should be a string, not %s" % repr(type(name)))
-
-        obj = Expr.__new__(cls)
-
-        obj.name = name
-        obj._assumptions = FactKB(_assume_rules)
-        obj._assumptions._tell('commutative', True)
-        obj._assumptions._tell('uuid', uuid.uuid1())
-
-        return obj
-
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
 
         # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
@@ -187,7 +174,7 @@ class Variable(sympy.Symbol):
                     'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char))
         self._name = name
-        sympy.Symbol.__init__(name, *args, **kwargs)
+        symbolics.Symbol.__init__(self, name, *args, **kwargs)
         self._lb = lb
         self._ub = ub
         if self._lb is None and type == 'binary':
@@ -457,13 +444,13 @@ class OptimizationExpression(object):
     @property
     def variables(self):
         """Variables in constraint/objective's expression."""
-        return self.expression.atoms(sympy.Symbol)
+        return self.expression.atoms(Variable)
 
     def _canonicalize(self, expression):
         if isinstance(expression, float):
-            return sympy.RealNumber(expression)
+            return symbolics.Real(expression)
         elif isinstance(expression, int):
-            return sympy.Integer(expression)
+            return symbolics.Integer(expression)
         else:
             # expression = expression.expand() This would be a good way to canonicalize, but is quite slow
             return expression
@@ -511,7 +498,12 @@ class OptimizationExpression(object):
                             is_quad = True
             return is_quad
         else:
-            poly = self.expression.as_poly(*self.variables)
+            if isinstance(self.expression, sympy.Basic):
+                sympy_expression = self.expression
+            else:
+                sympy_expression = sympy.sympify(self.expression)
+            # TODO: Find a way to do this with symengine (Poly is not part of symengine, 23 March 2017)
+            poly = sympy_expression.as_poly(*sympy_expression.atoms(sympy.Symbol))
             if poly is None:
                 return False
             else:
@@ -888,7 +880,10 @@ class Objective(OptimizationExpression):
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
         expression = super(Objective, self)._canonicalize(expression)
-        expression *= 1.
+        if isinstance(expression, sympy.Basic):
+            expression *= 1.
+        else:
+            expression = (1. * expression).expand()
         return expression
 
     @property
@@ -1507,9 +1502,9 @@ class Model(object):
         replacements = dict([(variable, 0) for variable in variables])
         for constraint_id in constraint_ids:
             constraint = self._constraints[constraint_id]
-            constraint._expression = constraint.expression.xreplace(replacements)
+            constraint._expression = constraint._expression.xreplace(replacements)
         if self.objective is not None:
-            self.objective._expression = self.objective.expression.xreplace(replacements)
+            self.objective._expression = self.objective._expression.xreplace(replacements)
 
     def _remove_variable(self, variable):
         self._remove_variables([variable])
