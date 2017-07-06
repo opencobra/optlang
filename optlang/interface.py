@@ -73,6 +73,56 @@ statuses = {
 }
 
 
+def evaluate_expression(expression):
+    return expression.subs([
+        (sym, sym.value) for sym in expression.free_symbols])
+
+
+def handle_symbols(expression, instance, attr):
+    if isinstance(expression, sympy.Expr):
+        for sym in expression.free_symbols:
+            sym.register(instance, attr, expression)
+        return evaluate_expression(expression)
+    return expression
+
+
+class SymbolicParameter(symbolics.Symbol):
+    """
+    A symbolic parameter to be used in bounds and constraints.
+
+    Attributes
+    ----------
+    value : numeric
+        The current numeric value of the parameter. Changing the value will
+        update all expression this parameter is part of.
+    """
+
+    def __init__(self, name, value=0, **kwargs):
+        super(SymbolicParameter, self).__init__(name=name, **kwargs)
+        self._stack = list()
+        self._value = value
+
+    @property
+    def value(self):
+        """Return the associated numeric value."""
+        return self._value
+
+    @value.setter
+    def value(self, other):
+        """Set a new value and update all expressions."""
+        self._value = other
+        for assigned, attr, expr in self._stack:
+            setattr(assigned, attr, evaluate_expression(expr))
+
+    def register(self, assigned, attr, expr):
+        """Register an object and its expression with this instance."""
+        self._stack.append((assigned, attr, expr))
+
+    def unregister(self, assigned):
+        """Unregister an object from this instance."""
+        self._stack[:] = filter(lambda x: x[0] is not assigned, self._stack)
+
+
 # noinspection PyShadowingBuiltins
 class Variable(symbolics.Symbol):
     """Optimization variables.
@@ -194,6 +244,7 @@ class Variable(symbolics.Symbol):
 
     @lb.setter
     def lb(self, value):
+        value = handle_symbols(value, self, "lb")
         if hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
             raise ValueError(
                 'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (
@@ -210,6 +261,7 @@ class Variable(symbolics.Symbol):
 
     @ub.setter
     def ub(self, value):
+        value = handle_symbols(value, self, "ub")
         if hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
             raise ValueError(
                 'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (
@@ -227,11 +279,8 @@ class Variable(symbolics.Symbol):
             raise ValueError(
                 "The provided lower bound {} is larger than the provided upper bound {}".format(lb, ub)
             )
-        self._lb = lb
-        self._ub = ub
-        if self.problem is not None:
-            self.problem._pending_modifications.var_lb.append((self, lb))
-            self.problem._pending_modifications.var_ub.append((self, ub))
+        self.lb = lb
+        self.ub = ub
 
     @property
     def type(self):
@@ -663,6 +712,7 @@ class Constraint(OptimizationExpression):
 
     @lb.setter
     def lb(self, value):
+        value = handle_symbols(value, self, "lb")
         self._check_valid_lower_bound(value)
         self._lb = value
 
@@ -673,6 +723,7 @@ class Constraint(OptimizationExpression):
 
     @ub.setter
     def ub(self, value):
+        value = handle_symbols(value, self, "ub")
         self._check_valid_upper_bound(value)
         self._ub = value
 

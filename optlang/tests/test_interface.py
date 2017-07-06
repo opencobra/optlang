@@ -5,7 +5,7 @@ import sys
 from unittest import TestCase
 
 from optlang.exceptions import ContainerAlreadyContains
-from optlang.interface import Model, Variable, Constraint, Objective
+from optlang.interface import Model, Variable, Constraint, Objective, SymbolicParameter
 
 
 class TestModel(TestCase):
@@ -224,3 +224,97 @@ class TestConstraint(TestCase):
         c4 = Constraint(self.a + self.b ** 3)
         self.assertFalse(c4.is_Linear)
         self.assertFalse(c4.is_Quadratic)
+
+
+class TestSymbolicParameter(TestCase):
+    def setUp(self):
+        self.x = Variable("c")
+        self.y = Variable("d")
+        self.k = Constraint(self.x + self.y)
+        self.l = Constraint(self.x * self.y)
+
+    def test_variable_simple_lower_bound(self):
+        self.x.lb = 4
+        self.assertEqual(self.x.lb, 4)
+
+    def test_constraint_simple_lower_bound(self):
+        self.k.lb = 4
+        self.assertEqual(self.k.lb, 4)
+
+    def test_variable_simple_upper_bound(self):
+        self.x.ub = 4
+        self.assertEqual(self.x.ub, 4)
+
+    def test_constraint_simple_upper_bound(self):
+        self.k.ub = 4
+        self.assertEqual(self.k.ub, 4)
+
+    def test_variable_symbolic_lower_bound(self):
+        mu = SymbolicParameter("mu", value=2)
+        self.x.lb = 4 + mu
+        self.assertEqual(self.x.lb, 6)
+        mu.value = 4
+        self.assertEqual(self.x.lb, 8)
+
+    def test_constraint_symbolic_lower_bound(self):
+        mu = SymbolicParameter("mu", value=2)
+        self.k.lb = 4 + mu
+        self.assertEqual(self.k.lb, 6)
+        mu.value = 4
+        self.assertEqual(self.k.lb, 8)
+
+    def test_variable_symbolic_upper_bound(self):
+        mu = SymbolicParameter("mu", value=2)
+        self.x.ub = 4 + mu
+        self.assertEqual(self.x.ub, 6)
+        mu.value = 4
+        self.assertEqual(self.x.ub, 8)
+
+    def test_constraint_symbolic_upper_bound(self):
+        mu = SymbolicParameter("mu", value=2)
+        self.k.ub = 4 + mu
+        self.assertEqual(self.k.ub, 6)
+        mu.value = 4
+        self.assertEqual(self.k.ub, 8)
+
+    def test_variable_complex_bound(self):
+        mu = SymbolicParameter("mu", value=2)
+        rho = SymbolicParameter("rho", value=-1)
+        self.x.lb = (4 + mu) * rho
+        self.x.ub = -(4 + mu) * rho
+        self.assertEqual(self.x.lb, -6)
+        self.assertEqual(self.x.ub, 6)
+        mu.value = 4
+        rho.value = -2
+        self.assertEqual(self.x.lb, -16)
+        self.assertEqual(self.x.ub, 16)
+
+    def test_constraint_complex_bound(self):
+        mu = SymbolicParameter("mu", value=2)
+        rho = SymbolicParameter("rho", value=-1)
+        self.k.lb = (4 + mu) * rho
+        self.k.ub = -(4 + mu) * rho
+        self.assertEqual(self.k.lb, -6)
+        self.assertEqual(self.k.ub, 6)
+        mu.value = 4
+        rho.value = -2
+        self.assertEqual(self.k.lb, -16)
+        self.assertEqual(self.k.ub, 16)
+
+    def test_multiple_constraint_bounds(self):
+        mu = SymbolicParameter("mu", value=2)
+        rho = SymbolicParameter("rho", value=-1)
+        self.k.lb = (4 + mu) * rho
+        self.k.ub = -(4 + mu) * rho
+        self.l.lb = mu + rho
+        self.l.ub = mu - rho
+        self.assertEqual(self.k.lb, -6)
+        self.assertEqual(self.k.ub, 6)
+        self.assertEqual(self.l.lb, 1)
+        self.assertEqual(self.l.ub, 3)
+        mu.value = 4
+        rho.value = -2
+        self.assertEqual(self.k.lb, -16)
+        self.assertEqual(self.k.ub, 16)
+        self.assertEqual(self.l.lb, 2)
+        self.assertEqual(self.l.ub, 6)
