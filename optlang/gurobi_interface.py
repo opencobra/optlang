@@ -361,8 +361,9 @@ class Objective(interface.Objective):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             grb_obj = self.problem.problem.getObjective()
             terms = []
+            variables = self.problem._variables
             for i in range(grb_obj.size()):
-                terms.append(grb_obj.getCoeff(i) * self.problem.variables[grb_obj.getVar(i).getAttr('VarName')])
+                terms.append(grb_obj.getCoeff(i) * variables[grb_obj.getVar(i).getAttr('VarName')])
             expression = sympy.Add._from_args(terms)
             # TODO implement quadratic objectives
             self._expression = expression + getattr(self.problem, "_objective_offset", 0)
