@@ -27,6 +27,7 @@ log = logging.getLogger(__name__)
 
 import os
 import six
+from functools import partial
 from optlang import interface
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
@@ -429,20 +430,29 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 self.problem.problem.params.TimeLimit = value
         self._timeout = value
 
+    def _get_feasibility(self):
+        return getattr(self.problem.problem.params, "FeasibilityTol")
+
+    def _set_feasibility(self, value):
+        return setattr(self.problem.problem.params, "FeasibilityTol", value)
+
+    def _get_optimality(self):
+        return getattr(self.problem.problem.params, "OptimalityTol")
+
+    def _set_optimality(self, value):
+        return setattr(self.problem.problem.params, "OptimalityTol", value)
+
+    def _get_integrality(self):
+        return getattr(self.problem.problem.params, "IntFeasTol")
+
+    def _set_integrality(self, value):
+        return setattr(self.problem.problem.params, "IntFeasTol", value)
+
     def _tolerance_functions(self):
         return {
-            "feasibility": (
-                lambda: self.problem.problem.params.FeasibilityTol,
-                lambda x: setattr(self.problem.problem.params, "FeasibilityTol", x)
-            ),
-            "optimality": (
-                lambda: self.problem.problem.params.OptimalityTol,
-                lambda x: setattr(self.problem.problem.params, "OptimalityTol", x)
-            ),
-            "integrality": (
-                lambda: self.problem.problem.params.IntFeasTol,
-                lambda x: setattr(self.problem.problem.params, "IntFeasTol", x)
-            )
+            "feasibility": (self._get_feasibility, self._set_feasibility),
+            "optimality": (self._get_optimality, self._set_optimality),
+            "integrality": (self._get_integrality, self._set_integrality)
         }
 
 
