@@ -328,7 +328,7 @@ class Objective(interface.Objective):
         if getattr(self, "problem", None) is not None:
             try:
                 return self.problem.problem.getAttr("ObjVal") + getattr(self.problem, "_objective_offset", 0)
-            except gurobipy.GurobiError:  # TODO: let this check the actual error message
+            except (gurobipy.GurobiError, AttributeError):  # TODO: let this check the actual error message
                 return None
         else:
             return None
