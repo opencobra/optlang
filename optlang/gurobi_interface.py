@@ -27,11 +27,11 @@ log = logging.getLogger(__name__)
 
 import os
 import six
+from functools import partial
 from optlang import interface
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
-import sympy
-from sympy.core.add import _unevaluated_Add
+from optlang import symbolics
 
 import gurobipy
 
@@ -211,10 +211,9 @@ class Constraint(interface.Constraint):
                 if internal_var_name == self.name + '_aux':
                     continue
                 variable = self.problem._variables[internal_var_name]
-                coeff = sympy.RealNumber(row.getCoeff(i))
-                terms.append(sympy.Mul._from_args((coeff, variable)))
-            sympy.Add._from_args(terms)
-            self._expression = sympy.Add._from_args(terms)
+                coeff = symbolics.Real(row.getCoeff(i))
+                terms.append(symbolics.mul((coeff, variable)))
+            self._expression = symbolics.add(terms)
         return self._expression
 
     def __str__(self):
@@ -364,7 +363,7 @@ class Objective(interface.Objective):
             variables = self.problem._variables
             for i in range(grb_obj.size()):
                 terms.append(grb_obj.getCoeff(i) * variables[grb_obj.getVar(i).getAttr('VarName')])
-            expression = sympy.Add._from_args(terms)
+            expression = symbolics.add(terms)
             # TODO implement quadratic objectives
             self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
@@ -430,20 +429,29 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 self.problem.problem.params.TimeLimit = value
         self._timeout = value
 
+    def _get_feasibility(self):
+        return getattr(self.problem.problem.params, "FeasibilityTol")
+
+    def _set_feasibility(self, value):
+        return setattr(self.problem.problem.params, "FeasibilityTol", value)
+
+    def _get_optimality(self):
+        return getattr(self.problem.problem.params, "OptimalityTol")
+
+    def _set_optimality(self, value):
+        return setattr(self.problem.problem.params, "OptimalityTol", value)
+
+    def _get_integrality(self):
+        return getattr(self.problem.problem.params, "IntFeasTol")
+
+    def _set_integrality(self, value):
+        return setattr(self.problem.problem.params, "IntFeasTol", value)
+
     def _tolerance_functions(self):
         return {
-            "feasibility": (
-                lambda: self.problem.problem.params.FeasibilityTol,
-                lambda x: setattr(self.problem.problem.params, "FeasibilityTol", x)
-            ),
-            "optimality": (
-                lambda: self.problem.problem.params.OptimalityTol,
-                lambda x: setattr(self.problem.problem.params, "OptimalityTol", x)
-            ),
-            "integrality": (
-                lambda: self.problem.problem.params.IntFeasTol,
-                lambda x: setattr(self.problem.problem.params, "IntFeasTol", x)
-            )
+            "feasibility": (self._get_feasibility, self._set_feasibility),
+            "optimality": (self._get_optimality, self._set_optimality),
+            "integrality": (self._get_integrality, self._set_integrality)
         }
 
 
@@ -478,9 +486,10 @@ class Model(interface.Model):
                 name = gurobi_constraint.getAttr("ConstrName")
                 rhs = gurobi_constraint.RHS
                 row = self.problem.getRow(gurobi_constraint)
-                lhs = _unevaluated_Add(
-                    *[sympy.RealNumber(row.getCoeff(i)) * self.variables[row.getVar(i).VarName] for i in
-                      range(row.size())])
+                lhs = symbolics.add(
+                    [symbolics.Real(row.getCoeff(i)) * self.variables[row.getVar(i).VarName] for i in
+                     range(row.size())]
+                )
 
                 if sense == '=':
                     constraint = Constraint(lhs, name=name, lb=rhs, ub=rhs, problem=self)
@@ -494,9 +503,10 @@ class Model(interface.Model):
             super(Model, self)._add_constraints(constraints, sloppy=True)
 
             gurobi_objective = self.problem.getObjective()
-            linear_expression = _unevaluated_Add(
-                *[sympy.RealNumber(gurobi_objective.getCoeff(i)) * self.variables[gurobi_objective.getVar(i).VarName]
-                  for i in range(gurobi_objective.size())])
+            linear_expression = symbolics.add(
+                [symbolics.Real(gurobi_objective.getCoeff(i)) * self.variables[gurobi_objective.getVar(i).VarName]
+                 for i in range(gurobi_objective.size())]
+            )
 
             self._objective = Objective(
                 linear_expression,

@@ -91,7 +91,7 @@ class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                          0.0, 0.0, 2.5546369406238147e-17, 0.0, -5.080374405378186e-29, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
-            self.assertAlmostEqual(i, j)
+            self.assertAlmostEqual(i, j, places=6)
 
 
 class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
@@ -162,14 +162,33 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle._index))
 
     def test_glpk_remove_variable(self):
-        var = self.model.variables.values()[0]
-        self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
-                         'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 59.81*R_Biomass_Ecoli_core_w_GAM - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')  # noqa: E501
+        var = self.model.variables[0]
+        self.assertEqual(
+            (self.model.constraints["M_atp_c"].expression - (
+                -1.0 * self.model.variables.R_ACKr - 1.0 * self.model.variables.R_ADK1 + 1.0 * self.model.variables.R_ATPS4r -
+                1.0 * self.model.variables.R_PGK - 1.0 * self.model.variables.R_SUCOAS - 59.81 * self.model.variables.R_Biomass_Ecoli_core_w_GAM -
+                1.0 * self.model.variables.R_GLNS - 1.0 * self.model.variables.R_GLNabc - 1.0 * self.model.variables.R_PFK -
+                1.0 * self.model.variables.R_PPCK - 1.0 * self.model.variables.R_PPS + 1.0 * self.model.variables.R_PYK -
+                1.0 * self.model.variables.R_ATPM
+            )).expand() - 0, 0
+        )
+        self.assertEqual(self.model.constraints["M_atp_c"].lb, 0)
+        self.assertEqual(self.model.constraints["M_atp_c"].ub, 0)
+
         self.assertEqual(var.problem, self.model)
         self.model.remove(var)
         self.model.update()
-        self.assertEqual(self.model.constraints['M_atp_c'].__str__(),
-                         'M_atp_c: 0.0 <= -1.0*R_ACKr - 1.0*R_ADK1 + 1.0*R_ATPS4r - 1.0*R_PGK - 1.0*R_SUCOAS - 1.0*R_GLNS - 1.0*R_GLNabc - 1.0*R_PFK - 1.0*R_PPCK - 1.0*R_PPS + 1.0*R_PYK - 1.0*R_ATPM <= 0.0')  # noqa: E501
+
+        self.assertEqual(
+            (self.model.constraints["M_atp_c"].expression - (
+                -1.0 * self.model.variables.R_ACKr - 1.0 * self.model.variables.R_ADK1 + 1.0 * self.model.variables.R_ATPS4r -
+                1.0 * self.model.variables.R_SUCOAS - 1.0 * self.model.variables.R_PGK -
+                1.0 * self.model.variables.R_GLNS - 1.0 * self.model.variables.R_GLNabc - 1.0 * self.model.variables.R_PFK -
+                1.0 * self.model.variables.R_PPCK - 1.0 * self.model.variables.R_PPS + 1.0 * self.model.variables.R_PYK -
+                1.0 * self.model.variables.R_ATPM
+            )).expand() - 0, 0
+        )
+
         self.assertNotIn(var, self.model.variables.values())
         self.assertEqual(glp_find_col(self.model.problem, var.name), 0)
         self.assertEqual(var.problem, None)
@@ -255,14 +274,22 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
         self.assertEqual(constraint._index, None)
         self.model.add(constraint)
-        self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x')
+        self.assertEqual(
+            (self.model.constraints["test"].expression - (0.4 * y + 0.3 * x)).expand(), 0
+        )
+        self.assertEqual(self.model.constraints["test"].lb, -100)
+
         self.assertEqual(constraint._index, 73)
         z = Variable('z', lb=3, ub=10, type='integer')
         self.assertEqual(z._index, None)
         constraint += 77. * z
         self.assertEqual(z._index, 98)
-        self.assertEqual(self.model.constraints['test'].__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
-        print(self.model)
+
+        self.assertEqual(
+            (self.model.constraints["test"].expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand(), 0
+        )
+        self.assertEqual(self.model.constraints["test"].lb, -100)
+
         self.assertEqual(constraint._index, 73)
 
     def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
@@ -273,14 +300,23 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         z = Variable('z', lb=2, ub=5, type='integer')
         constraint += 77. * z
         self.model.remove(constraint)
-        self.assertEqual(constraint.__str__(), 'test: -100 <= 0.4*y + 0.3*x + 77.0*z')
+        self.assertEqual(
+            (constraint.expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand() - 0, 0
+        )
+        self.assertEqual(constraint.lb, -100)
+        self.assertEqual(constraint.ub, None)
 
     def test_change_of_objective_is_reflected_in_low_level_solver(self):
         x = Variable('x', lb=-83.3, ub=1324422.)
         y = Variable('y', lb=-181133.3, ub=12000.)
         objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
         self.model.objective = objective
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x')
+
+        self.assertEqual(
+            (self.model.objective.expression - (0.4 * y + 0.3 * x)).expand() - 0, 0
+        )
+        self.assertEqual(self.model.objective.direction, "max")
+
         self.assertEqual(glp_get_obj_coef(self.model.problem, x._index), 0.3)
         self.assertEqual(glp_get_obj_coef(self.model.problem, y._index), 0.4)
         for i in range(1, glp_get_num_cols(self.model.problem) + 1):
@@ -288,7 +324,12 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
                 self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
         z = Variable('z', lb=4, ub=4, type='integer')
         self.model.objective += 77. * z
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n0.4*y + 0.3*x + 77.0*z')
+
+        self.assertEqual(
+            (self.model.objective.expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand() - 0, 0
+        )
+        self.assertEqual(self.model.objective.direction, "max")
+
         self.assertEqual(glp_get_obj_coef(self.model.problem, x._index), 0.3)
         self.assertEqual(glp_get_obj_coef(self.model.problem, y._index), 0.4)
         self.assertEqual(glp_get_obj_coef(self.model.problem, z._index), 77.)
@@ -328,9 +369,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertNotEqual(inner_problem_bounds, inner_problem_bounds_new)
         self.assertEqual(bounds_new, inner_problem_bounds_new)
 
-    def test_initial_objective(self):
-        self.assertEqual(self.model.objective.expression.__str__(), '1.0*R_Biomass_Ecoli_core_w_GAM')
-
     def test_iadd_objective(self):
         v2, v3 = self.model.variables.values()[1:3]
         self.model.objective += 2. * v2 - 3. * v3
@@ -363,7 +401,10 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     def test_set_copied_objective(self):
         obj_copy = copy.copy(self.model.objective)
         self.model.objective = obj_copy
-        self.assertEqual(self.model.objective.__str__(), 'Maximize\n1.0*R_Biomass_Ecoli_core_w_GAM')
+        self.assertEqual(
+            (self.model.objective.expression - 1.0 * self.model.variables.R_Biomass_Ecoli_core_w_GAM).expand() - 0, 0
+        )
+        self.assertEqual(self.model.objective.direction, "max")
 
     def test_timeout(self):
         self.model.configuration.timeout = 0
