@@ -50,7 +50,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
     glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_mip_row_val, \
-    get_col_primals, get_col_duals, get_row_primals, get_row_duals
+    get_col_primals, get_col_duals, get_row_primals, get_row_duals, glp_delete_prob
 
 
 
@@ -578,6 +578,9 @@ class Model(interface.Model):
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
             self.optimize()  # since the start is an optimal solution, nothing will happen here
+
+    def __del__(self):
+        glp_delete_prob(self.problem)
 
     @property
     def objective(self):
