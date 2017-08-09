@@ -167,6 +167,9 @@ class TestVariable(TestCase):
     def setUp(self):
         self.x = Variable("x")
 
+    def test_init_variable(self):
+        self.assertRaises(ValueError, Variable, '')
+
     def test_set_wrong_bounds_on_binary_raises(self):
         self.assertRaises(ValueError, Variable, 'x', lb=-33, ub=0.3, type='binary')
         x = Variable('x', type='binary')
