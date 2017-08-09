@@ -395,7 +395,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def lp_method(self, value):
         if value not in _LP_METHODS:
             raise ValueError("Invalid LP method. Please choose among: " + str(list(_LP_METHODS)))
-        self.problem.problem.params.Method = _LP_METHODS[value]
+        if getattr(self, "problem", None) is not None:
+            self.problem.problem.params.Method = _LP_METHODS[value]
 
     @property
     def presolve(self):
@@ -403,12 +404,13 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @presolve.setter
     def presolve(self, value):
-        if value is True:
-            self.problem.problem.params.Presolve = 2
-        elif value is False:
-            self.problem.problem.params.Presolve = 0
-        else:
-            self.problem.problem.params.Presolve = -1
+        if getattr(self, "problem", None) is not None:
+            if value is True:
+                self.problem.problem.params.Presolve = 2
+            elif value is False:
+                self.problem.problem.params.Presolve = 0
+            else:
+                self.problem.problem.params.Presolve = -1
         self._presolve = value
 
     @property
@@ -436,6 +438,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             else:
                 self.problem.problem.params.TimeLimit = value
         self._timeout = value
+
+    def __getstate__(self):
+        return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
+
+    def __setstate__(self, state):
+        self.__init__()
+        for key, val in six.iteritems(state):
+            setattr(self, key, val)
 
     def _get_feasibility(self):
         return getattr(self.problem.problem.params, "FeasibilityTol")
