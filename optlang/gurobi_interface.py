@@ -237,8 +237,14 @@ class Constraint(interface.Constraint):
     @property
     def primal(self):
         if self.problem is not None:
+            aux_var = self.problem.problem.getVarByName(self._internal_constraint.getAttr('ConstrName') + '_aux')
+            if aux_var is not None:
+                aux_val = aux_var.X
+            else:
+                aux_val = 0
             return (self._internal_constraint.RHS -
-                    self._internal_constraint.Slack)
+                    self._internal_constraint.Slack +
+                    aux_val)
             # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
             # return primal_from_solver
         else:
