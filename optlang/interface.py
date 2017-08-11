@@ -168,6 +168,9 @@ class Variable(symbolics.Symbol):
         if six.PY2:
             name = str(name)
 
+        if len(name) < 1:
+            raise ValueError('Variable name must not be empty string')
+
         for char in name:
             if char.isspace():
                 raise ValueError(
