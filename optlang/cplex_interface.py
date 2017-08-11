@@ -918,4 +918,3 @@ class Model(interface.Model):
             all_names = self.problem.variables.get_names()
             indices = {n: i for i, n in enumerate(all_names) if n in name_set}
             return [indices[n] for n in names]
-
