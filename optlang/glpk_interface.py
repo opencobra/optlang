@@ -579,8 +579,9 @@ class Model(interface.Model):
         if repr_dict['glpk_status'] == 'optimal':
             self.optimize()  # since the start is an optimal solution, nothing will happen here
 
-    def __del__(self):
-        glp_delete_prob(self.problem)
+    # def __del__(self):  # To make sure that the glpk problem is deleted when this is garbage collected
+    # Gotcha: When objects with a __del__ method are part of a referencing cycle, the entire cycle is never automatically garbage collected
+    #     glp_delete_prob(self.problem)
 
     @property
     def objective(self):
