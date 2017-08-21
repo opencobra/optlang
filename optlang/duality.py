@@ -83,7 +83,7 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
             if constraint.lb != 0:
                 dual_objective[const_var] = sign * constraint.lb
             for variable, coef in constraint.expression.as_coefficients_dict().items():
-                if variable == 1:
+                if variable == 1:  # pragma: no cover  # For symengine
                     continue
                 coefficients.setdefault(variable.name, {})[const_var] = sign * coef
         else:
@@ -106,7 +106,7 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
                 coefficients_dict = {constraint.expression.args[1]: constraint.expression.args[0]}
 
             for variable, coef in coefficients_dict.items():
-                if variable == 1:
+                if variable == 1:  # pragma: no cover  # For symengine
                     continue
                 if constraint.lb is not None:
                     coefficients.setdefault(variable.name, {})[lb_var] = -sign * coef
