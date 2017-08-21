@@ -731,7 +731,7 @@ class AbstractModelTestCase(unittest.TestCase):
         objective = self.model.objective
         self.model.objective = self.interface.Objective(objective.expression + 3)
         self.model.update()
-        self.assertEqual((self.model.objective.expression - (objective.expression + 3)).expand(), 0)
+        self.assertEqual((self.model.objective.expression - (objective.expression + 3.)).expand(), 0.)
 
     def test_is_integer(self):
         model = self.model
