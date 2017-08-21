@@ -29,22 +29,18 @@ import six
 import os
 from six.moves import StringIO
 
-import sympy
-from sympy.core.add import _unevaluated_Add
-from sympy.core.mul import _unevaluated_Mul
-from sympy.core.singleton import S
 import cplex
 from cplex.exceptions import CplexSolverError
 
 from optlang import interface
+from optlang import symbolics
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang.exceptions import SolverError
 
 log = logging.getLogger(__name__)
 
-Zero = S.Zero
-One = S.One
+from optlang.symbolics import add, mul, One, Zero
 
 _STATUS_MAP = {
     'MIP_abort_feasible': interface.ABORTED,
@@ -242,8 +238,8 @@ class Constraint(interface.Constraint):
             cplex_problem = self.problem.problem
             cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
             variables = self.problem._variables
-            expression = sympy.Add._from_args(
-                [sympy.Mul._from_args((sympy.RealNumber(cplex_row.val[i]), variables[ind])) for i, ind in
+            expression = add(
+                [mul((symbolics.Real(cplex_row.val[i]), variables[ind])) for i, ind in
                  enumerate(cplex_row.ind)])
             self._expression = expression
         return self._expression
@@ -364,7 +360,7 @@ class Objective(interface.Objective):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             cplex_problem = self.problem.problem
             coeffs = cplex_problem.objective.get_linear()
-            expression = sympy.Add._from_args([coeff * var for coeff, var in zip(coeffs, self.problem._variables) if coeff != 0.])
+            expression = add([coeff * var for coeff, var in zip(coeffs, self.problem._variables) if coeff != 0.])
             if cplex_problem.objective.get_num_quadratic_nonzeros() > 0:
                 expression += self.problem._get_quadratic_expression(cplex_problem.objective.get_quadratic())
             self._expression = expression + getattr(self.problem, "_objective_offset", 0)
@@ -616,9 +612,9 @@ class Model(interface.Model):
                 # lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])
                 lhs = 0
                 if isinstance(lhs, int):
-                    lhs = sympy.Integer(lhs)
+                    lhs = symbolics.Integer(lhs)
                 elif isinstance(lhs, float):
-                    lhs = sympy.RealNumber(lhs)
+                    lhs = symbolics.Real(lhs)
                 if sense == 'E':
                     constr = Constraint(lhs, lb=rhs, ub=rhs, name=name, problem=self)
                 elif sense == 'G':
@@ -650,10 +646,9 @@ class Model(interface.Model):
                 if 'CPLEX Error  1219:' not in str(e):
                     raise e
             else:
-                linear_expression = _unevaluated_Add(
-                    *[_unevaluated_Mul(sympy.RealNumber(coeff), variables[index]) for index, coeff in
-                      enumerate(self.problem.objective.get_linear()) if coeff != 0.])
-
+                linear_expression = add(
+                    [mul(symbolics.Real(coeff), variables[index]) for index, coeff in enumerate(self.problem.objective.get_linear()) if coeff != 0.]
+                )
                 try:
                     quadratic = self.problem.objective.get_quadratic()
                 except IndexError:
@@ -716,7 +711,9 @@ class Model(interface.Model):
         if self._objective is not None:  # Reset previous objective
             variables = self.objective.variables
             if len(variables) > 0:
-                self.problem.objective.set_linear([(variable.name, 0.) for variable in variables])
+                name_list = [var.name for var in variables]
+                index_dict = {n: i for n, i in zip(name_list, self._get_variable_indices(name_list))}
+                self.problem.objective.set_linear([(index_dict[variable.name], 0.) for variable in variables])
             if self.problem.objective.get_num_quadratic_variables() > 0:
                 self.problem.objective.set_quadratic([0. for _ in range(self.problem.variables.get_num())])
         super(Model, self.__class__).objective.fset(self, value)
@@ -726,7 +723,9 @@ class Model(interface.Model):
         # self.problem.objective.set_offset(float(offset)) # Not available prior to 12.6.2
         self._objective_offset = offset
         if linear_coefficients:
-            self.problem.objective.set_linear([var.name, float(coef)] for var, coef in linear_coefficients.items())
+            name_list = [var.name for var in linear_coefficients]
+            index_dict = {n: i for n, i in zip(name_list, self._get_variable_indices(name_list))}
+            self.problem.objective.set_linear([index_dict[var.name], float(coef)] for var, coef in linear_coefficients.items())
 
         for key, coef in quadratic_coeffients.items():
             if len(key) == 1:
@@ -905,4 +904,17 @@ class Model(interface.Model):
                     terms.append(0.5 * val * self._variables[i_name] ** 2)
                 else:
                     pass  # Only look at upper triangle
-        return _unevaluated_Add(*terms)
+        return add(terms)
+
+    def _get_variable_indices(self, names):
+        # Cplex does not keep an index of variable names
+        # Getting indices thus takes roughly quadratic time
+        # If many indices are required an alternate and faster method is used, where the full name list must only
+        # be traversed once
+        if len(names) < 1000:
+            return self.problem.variables.get_indices(names)
+        else:
+            name_set = set(names)
+            all_names = self.problem.variables.get_names()
+            indices = {n: i for i, n in enumerate(all_names) if n in name_set}
+            return [indices[n] for n in names]

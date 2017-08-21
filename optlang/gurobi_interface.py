@@ -27,11 +27,11 @@ log = logging.getLogger(__name__)
 
 import os
 import six
+from functools import partial
 from optlang import interface
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
-import sympy
-from sympy.core.add import _unevaluated_Add
+from optlang import symbolics
 
 import gurobipy
 
@@ -211,10 +211,9 @@ class Constraint(interface.Constraint):
                 if internal_var_name == self.name + '_aux':
                     continue
                 variable = self.problem._variables[internal_var_name]
-                coeff = sympy.RealNumber(row.getCoeff(i))
-                terms.append(sympy.Mul._from_args((coeff, variable)))
-            sympy.Add._from_args(terms)
-            self._expression = sympy.Add._from_args(terms)
+                coeff = symbolics.Real(row.getCoeff(i))
+                terms.append(symbolics.mul((coeff, variable)))
+            self._expression = symbolics.add(terms)
         return self._expression
 
     def __str__(self):
@@ -238,7 +237,14 @@ class Constraint(interface.Constraint):
     @property
     def primal(self):
         if self.problem is not None:
-            return self._internal_constraint.Slack
+            aux_var = self.problem.problem.getVarByName(self._internal_constraint.getAttr('ConstrName') + '_aux')
+            if aux_var is not None:
+                aux_val = aux_var.X
+            else:
+                aux_val = 0
+            return (self._internal_constraint.RHS -
+                    self._internal_constraint.Slack +
+                    aux_val)
             # return self._round_primal_to_bounds(primal_from_solver)  # Test assertions fail
             # return primal_from_solver
         else:
@@ -327,9 +333,10 @@ class Objective(interface.Objective):
     @property
     def value(self):
         if getattr(self, "problem", None) is not None:
+            gurobi_problem = self.problem.problem
             try:
-                return self.problem.problem.getAttr("ObjVal") + getattr(self.problem, "_objective_offset", 0)
-            except gurobipy.GurobiError:  # TODO: let this check the actual error message
+                return gurobi_problem.getAttr("ObjVal") + getattr(self.problem, "_objective_offset", 0)
+            except (gurobipy.GurobiError, AttributeError):  # TODO: let this check the actual error message
                 return None
         else:
             return None
@@ -361,9 +368,10 @@ class Objective(interface.Objective):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             grb_obj = self.problem.problem.getObjective()
             terms = []
+            variables = self.problem._variables
             for i in range(grb_obj.size()):
-                terms.append(grb_obj.getCoeff(i) * self.problem.variables[grb_obj.getVar(i).getAttr('VarName')])
-            expression = sympy.Add._from_args(terms)
+                terms.append(grb_obj.getCoeff(i) * variables[grb_obj.getVar(i).getAttr('VarName')])
+            expression = symbolics.add(terms)
             # TODO implement quadratic objectives
             self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
@@ -387,7 +395,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def lp_method(self, value):
         if value not in _LP_METHODS:
             raise ValueError("Invalid LP method. Please choose among: " + str(list(_LP_METHODS)))
-        self.problem.problem.params.Method = _LP_METHODS[value]
+        if getattr(self, "problem", None) is not None:
+            self.problem.problem.params.Method = _LP_METHODS[value]
 
     @property
     def presolve(self):
@@ -395,12 +404,13 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @presolve.setter
     def presolve(self, value):
-        if value is True:
-            self.problem.problem.params.Presolve = 2
-        elif value is False:
-            self.problem.problem.params.Presolve = 0
-        else:
-            self.problem.problem.params.Presolve = -1
+        if getattr(self, "problem", None) is not None:
+            if value is True:
+                self.problem.problem.params.Presolve = 2
+            elif value is False:
+                self.problem.problem.params.Presolve = 0
+            else:
+                self.problem.problem.params.Presolve = -1
         self._presolve = value
 
     @property
@@ -429,20 +439,37 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 self.problem.problem.params.TimeLimit = value
         self._timeout = value
 
+    def __getstate__(self):
+        return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
+
+    def __setstate__(self, state):
+        self.__init__()
+        for key, val in six.iteritems(state):
+            setattr(self, key, val)
+
+    def _get_feasibility(self):
+        return getattr(self.problem.problem.params, "FeasibilityTol")
+
+    def _set_feasibility(self, value):
+        return setattr(self.problem.problem.params, "FeasibilityTol", value)
+
+    def _get_optimality(self):
+        return getattr(self.problem.problem.params, "OptimalityTol")
+
+    def _set_optimality(self, value):
+        return setattr(self.problem.problem.params, "OptimalityTol", value)
+
+    def _get_integrality(self):
+        return getattr(self.problem.problem.params, "IntFeasTol")
+
+    def _set_integrality(self, value):
+        return setattr(self.problem.problem.params, "IntFeasTol", value)
+
     def _tolerance_functions(self):
         return {
-            "feasibility": (
-                lambda: self.problem.problem.params.FeasibilityTol,
-                lambda x: setattr(self.problem.problem.params, "FeasibilityTol", x)
-            ),
-            "optimality": (
-                lambda: self.problem.problem.params.OptimalityTol,
-                lambda x: setattr(self.problem.problem.params, "OptimalityTol", x)
-            ),
-            "integrality": (
-                lambda: self.problem.problem.params.IntFeasTol,
-                lambda x: setattr(self.problem.problem.params, "IntFeasTol", x)
-            )
+            "feasibility": (self._get_feasibility, self._set_feasibility),
+            "optimality": (self._get_optimality, self._set_optimality),
+            "integrality": (self._get_integrality, self._set_integrality)
         }
 
 
@@ -477,9 +504,10 @@ class Model(interface.Model):
                 name = gurobi_constraint.getAttr("ConstrName")
                 rhs = gurobi_constraint.RHS
                 row = self.problem.getRow(gurobi_constraint)
-                lhs = _unevaluated_Add(
-                    *[sympy.RealNumber(row.getCoeff(i)) * self.variables[row.getVar(i).VarName] for i in
-                      range(row.size())])
+                lhs = symbolics.add(
+                    [symbolics.Real(row.getCoeff(i)) * self.variables[row.getVar(i).VarName] for i in
+                     range(row.size())]
+                )
 
                 if sense == '=':
                     constraint = Constraint(lhs, name=name, lb=rhs, ub=rhs, problem=self)
@@ -493,9 +521,10 @@ class Model(interface.Model):
             super(Model, self)._add_constraints(constraints, sloppy=True)
 
             gurobi_objective = self.problem.getObjective()
-            linear_expression = _unevaluated_Add(
-                *[sympy.RealNumber(gurobi_objective.getCoeff(i)) * self.variables[gurobi_objective.getVar(i).VarName]
-                  for i in range(gurobi_objective.size())])
+            linear_expression = symbolics.add(
+                [symbolics.Real(gurobi_objective.getCoeff(i)) * self.variables[gurobi_objective.getVar(i).VarName]
+                 for i in range(gurobi_objective.size())]
+            )
 
             self._objective = Objective(
                 linear_expression,

@@ -30,13 +30,11 @@ import logging
 
 import os
 import six
-import sympy
-from sympy.core.add import _unevaluated_Add
-from sympy.core.mul import _unevaluated_Mul
 
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
+from optlang import symbolics
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +50,7 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
     glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
     glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_mip_row_val, \
-    get_col_primals, get_col_duals, get_row_primals, get_row_duals
+    get_col_primals, get_col_duals, get_row_primals, get_row_duals, glp_delete_prob
 
 
 
@@ -165,8 +163,8 @@ class Constraint(interface.Constraint):
             nnz = glp_get_mat_row(self.problem.problem, self._index, ia, da)
             constraint_variables = [self.problem._variables[glp_get_col_name(self.problem.problem, ia[i])] for i in
                                     range(1, nnz + 1)]
-            expression = sympy.Add._from_args(
-                [sympy.Mul._from_args((sympy.RealNumber(da[i]), constraint_variables[i - 1])) for i in
+            expression = symbolics.add(
+                [symbolics.mul((symbolics.Real(da[i]), constraint_variables[i - 1])) for i in
                  range(1, nnz + 1)])
             self._expression = expression
         return self._expression
@@ -308,9 +306,9 @@ class Objective(interface.Objective):
                 for index in range(1, glp_get_num_cols(self.problem.problem) + 1):
                     coeff = glp_get_obj_coef(self.problem.problem, index)
                     if coeff != 0.:
-                        yield (sympy.RealNumber(coeff), variables[index - 1])
+                        yield (symbolics.Real(coeff), variables[index - 1])
 
-            expression = sympy.Add._from_args([sympy.Mul._from_args(term) for term in term_generator()])
+            expression = symbolics.add([symbolics.mul(term) for term in term_generator()])
             self._expression = expression + getattr(self.problem, "_objective_offset", 0)
             self._expression_expired = False
         return self._expression
@@ -531,9 +529,9 @@ class Model(interface.Model):
                     )
                     log.exception()
                 if isinstance(lhs, int):
-                    lhs = sympy.Integer(lhs)
+                    lhs = symbolics.Integer(lhs)
                 elif isinstance(lhs, float):
-                    lhs = sympy.RealNumber(lhs)
+                    lhs = symbolics.Real(lhs)
                 constraint_id = glp_get_row_name(self.problem, j)
                 for variable in constraint_variables:
                     try:
@@ -551,9 +549,10 @@ class Model(interface.Model):
                 for index in range(1, glp_get_num_cols(problem) + 1)
             )
             self._objective = Objective(
-                _unevaluated_Add(
-                    *[_unevaluated_Mul(sympy.RealNumber(term[0]), term[1]) for term in term_generator if
-                      term[0] != 0.]),
+                symbolics.add(
+                    [symbolics.mul((symbolics.Real(term[0]), term[1])) for term in term_generator if
+                     term[0] != 0.]
+                ),
                 problem=self,
                 direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
         glp_scale_prob(self.problem, GLP_SF_AUTO)
@@ -579,6 +578,10 @@ class Model(interface.Model):
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
             self.optimize()  # since the start is an optimal solution, nothing will happen here
+
+    # def __del__(self):  # To make sure that the glpk problem is deleted when this is garbage collected
+    # Gotcha: When objects with a __del__ method are part of a referencing cycle, the entire cycle is never automatically garbage collected
+    #     glp_delete_prob(self.problem)
 
     @property
     def objective(self):
