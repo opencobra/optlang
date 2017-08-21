@@ -315,3 +315,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_integer_batch_duals(self):
         self.skipTest("No duals with scipy")
+
+    def test_large_objective(self):
+        self.skipTest("Quite slow and not necessary")
