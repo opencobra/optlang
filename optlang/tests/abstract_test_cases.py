@@ -443,7 +443,7 @@ class AbstractModelTestCase(unittest.TestCase):
         self.model.update()
         self.model.add(constr2)
         self.model.update()
-        self.model.add(constr3)
+        self.model.add(constr3, sloppy=True)
         self.model.update()
         self.model.add([constr4, constr5, constr6])
         self.model.update()
@@ -736,9 +736,11 @@ class AbstractModelTestCase(unittest.TestCase):
     def test_is_integer(self):
         model = self.model
         self.assertFalse(model.is_integer)
+        self.assertFalse(optlang.interface.Model.is_integer.fget(model))
 
         model.variables[0].type = "integer"
         self.assertTrue(model.is_integer)
+        self.assertTrue(optlang.interface.Model.is_integer.fget(model))
 
         model.variables[0].type = "continuous"
         model.variables[1].type = "binary"

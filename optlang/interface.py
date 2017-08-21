@@ -868,7 +868,7 @@ class Objective(OptimizationExpression):
         expression = super(Objective, self)._canonicalize(expression)
         if isinstance(expression, sympy.Basic):
             expression *= 1.
-        else:
+        else:  # pragma: no cover   # symengine
             expression = (1. * expression).expand()
         return expression
 
@@ -1298,7 +1298,7 @@ class Model(object):
     def is_integer(self):
         return any(var.type in ("integer", "binary") for var in self.variables)
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         if hasattr(self, "to_lp"):
             return self.to_lp()
         self.update()
