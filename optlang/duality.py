@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from sympy import Add, Mul
-
+import optlang
 
 # This function is very complex. Should maybe be refactored
 def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_standard_form=True, prefix="dual_", dual_model=None):  # NOQA
@@ -84,6 +83,8 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
             if constraint.lb != 0:
                 dual_objective[const_var] = sign * constraint.lb
             for variable, coef in constraint.expression.as_coefficients_dict().items():
+                if variable == 1:
+                    continue
                 coefficients.setdefault(variable.name, {})[const_var] = sign * coef
         else:
             if constraint.lb is not None:
@@ -105,6 +106,8 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
                 coefficients_dict = {constraint.expression.args[1]: constraint.expression.args[0]}
 
             for variable, coef in coefficients_dict.items():
+                if variable == 1:
+                    continue
                 if constraint.lb is not None:
                     coefficients.setdefault(variable.name, {})[lb_var] = -sign * coef
                 if constraint.ub is not None:
@@ -131,7 +134,7 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
     # Add dual constraints from primal objective
     primal_objective_dict = model.objective.expression.as_coefficients_dict()
     for variable in model.variables:
-        expr = Add(*((coef * dual_var) for dual_var, coef in coefficients[variable.name].items()))
+        expr = optlang.symbolics.add([(coef * dual_var) for dual_var, coef in coefficients[variable.name].items()])
         obj_coef = primal_objective_dict[variable]
         if maximization:
             const = model.interface.Constraint(expr, lb=obj_coef, name=prefix + variable.name)
@@ -140,7 +143,7 @@ def convert_linear_problem_to_dual(model, sloppy=False, infinity=None, maintain_
         dual_model.add(const)
 
     # Make dual objective
-    expr = Add(*((coef * dual_var) for dual_var, coef in dual_objective.items() if coef != 0))
+    expr = optlang.symbolics.add([(coef * dual_var) for dual_var, coef in dual_objective.items() if coef != 0])
     if maximization:
         objective = model.interface.Objective(expr, direction="min")
     else:

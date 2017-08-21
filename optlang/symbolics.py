@@ -72,6 +72,9 @@ if USE_SYMENGINE:  # pragma: no cover
         def __str__(self):
             return self._name
 
+        def __getnewargs__(self):
+            return (self._name, {})
+
     def add(*args):
         if len(args) == 1:
             args = args[0]

@@ -711,7 +711,9 @@ class Model(interface.Model):
         if self._objective is not None:  # Reset previous objective
             variables = self.objective.variables
             if len(variables) > 0:
-                self.problem.objective.set_linear([(variable.name, 0.) for variable in variables])
+                name_list = [var.name for var in variables]
+                index_dict = {n: i for n, i in zip(name_list, self._get_variable_indices(name_list))}
+                self.problem.objective.set_linear([(index_dict[variable.name], 0.) for variable in variables])
             if self.problem.objective.get_num_quadratic_variables() > 0:
                 self.problem.objective.set_quadratic([0. for _ in range(self.problem.variables.get_num())])
         super(Model, self.__class__).objective.fset(self, value)
@@ -721,7 +723,9 @@ class Model(interface.Model):
         # self.problem.objective.set_offset(float(offset)) # Not available prior to 12.6.2
         self._objective_offset = offset
         if linear_coefficients:
-            self.problem.objective.set_linear([var.name, float(coef)] for var, coef in linear_coefficients.items())
+            name_list = [var.name for var in linear_coefficients]
+            index_dict = {n: i for n, i in zip(name_list, self._get_variable_indices(name_list))}
+            self.problem.objective.set_linear([index_dict[var.name], float(coef)] for var, coef in linear_coefficients.items())
 
         for key, coef in quadratic_coeffients.items():
             if len(key) == 1:
@@ -901,3 +905,16 @@ class Model(interface.Model):
                 else:
                     pass  # Only look at upper triangle
         return add(terms)
+
+    def _get_variable_indices(self, names):
+        # Cplex does not keep an index of variable names
+        # Getting indices thus takes roughly quadratic time
+        # If many indices are required an alternate and faster method is used, where the full name list must only
+        # be traversed once
+        if len(names) < 1000:
+            return self.problem.variables.get_indices(names)
+        else:
+            name_set = set(names)
+            all_names = self.problem.variables.get_names()
+            indices = {n: i for i, n in enumerate(all_names) if n in name_set}
+            return [indices[n] for n in names]

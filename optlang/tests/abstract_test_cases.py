@@ -731,7 +731,7 @@ class AbstractModelTestCase(unittest.TestCase):
         objective = self.model.objective
         self.model.objective = self.interface.Objective(objective.expression + 3)
         self.model.update()
-        self.assertEqual((self.model.objective.expression - (objective.expression + 3)).expand(), 0)
+        self.assertEqual((self.model.objective.expression - (objective.expression + 3.)).expand(), 0.)
 
     def test_is_integer(self):
         model = self.model
@@ -808,6 +808,19 @@ class AbstractModelTestCase(unittest.TestCase):
 
         self.assertEqual(model.reduced_costs[x.name], 0)
         self.assertEqual(model.shadow_prices[c.name], 1)
+
+    def test_large_objective(self):
+        model = self.interface.Model()
+        model.add([self.interface.Variable(str(i), lb=1) for i in range(1100)])
+        model.optimize()
+
+        obj = self.interface.Objective(
+            optlang.symbolics.add([optlang.symbolics.mul((optlang.symbolics.One, v)) for v in model.variables]),
+            direction="min"
+        )
+        model.objective = obj
+        model.optimize()
+        self.assertAlmostEqual(model.objective.value, len(model.variables))
 
 
 @six.add_metaclass(abc.ABCMeta)
