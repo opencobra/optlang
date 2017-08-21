@@ -35,9 +35,6 @@ import six
 
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
-# from sympy.core.assumptions import _assume_rules
-# from sympy.core.facts import FactKB
-# from sympy.core.expr import Expr
 from optlang.util import parse_expr, expr_to_json, is_numeric, SolverTolerances
 from optlang import symbolics
 
@@ -147,20 +144,6 @@ class Variable(symbolics.Symbol):
         >>> var_copy = Variable.clone(old_var)
         """
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
-
-    # def __new__(cls, name, **assumptions):
-    #
-    #     if assumptions.get('zero', False):
-    #         return S.Zero
-    #     is_commutative = fuzzy_bool(assumptions.get('commutative', True))
-    #     if is_commutative is None:
-    #         raise ValueError(
-    #             '''Symbol commutativity must be True or False.''')
-    #     assumptions['commutative'] = is_commutative
-    #     for key in assumptions.keys():
-    #         assumptions[key] = bool(assumptions[key])
-    #     return sympy.Symbol.__xnew__(cls, name, uuid=str(int(round(1e16 * random.random()))),
-    #                                  **assumptions)  # uuid.uuid1()
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
 
@@ -1178,16 +1161,10 @@ class Model(object):
     @objective.setter
     def objective(self, value):
         self.update()
-        # try:  # Is this except ever needed?
         for atom in sorted(value.expression.atoms(Variable), key=lambda v: v.name):
             if isinstance(atom, Variable) and (atom.problem is None or atom.problem != self):
                 self._pending_modifications.add_var.append(atom)
         self.update()
-        # except AttributeError as e:
-        #     if isinstance(value.expression, six.types.FunctionType) or isinstance(value.expression, float):
-        #         pass
-        #     else:
-        #         raise AttributeError(e)
         if self._objective is not None:
             self._objective.problem = None
         self._objective = value
