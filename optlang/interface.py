@@ -116,7 +116,7 @@ class Variable(symbolics.Symbol):
                 raise ValueError(
                     'The provided lower bound %g cannot be assigned to integer variable %s (%g mod 1 != 0).' % (
                         value, name, value))
-        if type == 'binary' and (value is None or value != 0):
+        if type == 'binary' and (value is None or value not in (0, 1)):
             raise ValueError(
                 'The provided lower bound %s cannot be assigned to binary variable %s.' % (value, name))
 
@@ -129,7 +129,7 @@ class Variable(symbolics.Symbol):
                 raise ValueError(
                     'The provided upper bound %s cannot be assigned to integer variable %s (%s mod 1 != 0).' % (
                         value, name, value))
-        if type == 'binary' and (value is None or value != 1):
+        if type == 'binary' and (value is None or value not in (0, 1)):
             raise ValueError(
                 'The provided upper bound %s cannot be assigned to binary variable %s.' % (value, name))
 

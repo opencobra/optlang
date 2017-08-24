@@ -318,3 +318,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_large_objective(self):
         self.skipTest("Quite slow and not necessary")
+
+    def test_binary_variables(self):
+        self.skipTest("No integers with scipy")
