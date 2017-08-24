@@ -21,9 +21,11 @@ All symbolic operations in the optlang codebase should use these functions.
 from __future__ import division
 
 import os
-import warnings
 import six
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Read environment variable
 SYMENGINE_PREFERENCE = os.environ.get("OPTLANG_USE_SYMENGINE", "")
@@ -37,10 +39,14 @@ else:
         from symengine.sympy_compat import Symbol as symengine_Symbol
     except ImportError as e:
         if SYMENGINE_PREFERENCE.lower() in ("true", "yes", "on"):
-            warnings.warn("Symengine could not be imported: " + str(e))
+            logger.warn("Symengine could not be imported: " + str(e))
         USE_SYMENGINE = False
     else:
         USE_SYMENGINE = True
+        logger.warn(
+            "Loading symengine... This feature is in beta testing. " +
+            "Please report any issues you encounter on http://github.com/biosustain/optlang/issues"
+        )
 
 
 if USE_SYMENGINE:  # pragma: no cover
