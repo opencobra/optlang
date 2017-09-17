@@ -321,3 +321,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_binary_variables(self):
         self.skipTest("No integers with scipy")
+
+    def test_implicitly_convert_milp_to_lp(self):
+        self.skipTest("No integers with scipy")

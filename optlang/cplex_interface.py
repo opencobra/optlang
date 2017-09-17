@@ -181,10 +181,8 @@ class Variable(interface.Variable):
                 )
             self.problem.problem.variables.set_types(self.name, cplex_kind)
             if value == "continuous" and not self.problem.is_integer:
-                print("hmm")
                 cplex_type = self.problem.problem.get_problem_type()
                 if cplex_type in _CPLEX_MIP_TYPES_TO_CONTINUOUS:
-                    print("yes")
                     self.problem.problem.set_problem_type(_CPLEX_MIP_TYPES_TO_CONTINUOUS[cplex_type])
         super(Variable, Variable).type.fset(self, value)
 
@@ -839,6 +837,10 @@ class Model(interface.Model):
             del self._variables_to_constraints_mapping[variable.name]
             variable.problem = None
             del self._variables[variable.name]
+        if not self.is_integer:
+            cplex_type = self.problem.get_problem_type()
+            if cplex_type in _CPLEX_MIP_TYPES_TO_CONTINUOUS:
+                self.problem.set_problem_type(_CPLEX_MIP_TYPES_TO_CONTINUOUS[cplex_type])
 
     def _add_constraints(self, constraints, sloppy=False):
         super(Model, self)._add_constraints(constraints, sloppy=sloppy)

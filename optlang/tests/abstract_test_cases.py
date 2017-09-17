@@ -842,6 +842,26 @@ class AbstractModelTestCase(unittest.TestCase):
         model.optimize()
         self.assertAlmostEqual(model.objective.value, len(model.variables))
 
+    def test_implicitly_convert_milp_to_lp(self):
+        model = self.interface.Model()
+        var1 = self.interface.Variable("x", ub=1)
+        var2 = self.interface.Variable("y", type="integer")
+        model.add([var1, var2])
+        model.optimize()
+        self.assertTrue(model.is_integer)
+
+        var2.type = "continuous"
+        model.optimize()
+        self.assertAlmostEqual(model.reduced_costs["x"], 0)
+
+        var2.type = "integer"
+        model.optimize()
+        self.assertTrue(model.is_integer)
+
+        model.remove(var2)
+        model.optimize()
+        self.assertAlmostEqual(model.reduced_costs["x"], 0)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractConfigurationTestCase(unittest.TestCase):
