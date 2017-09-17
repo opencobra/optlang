@@ -846,6 +846,7 @@ class AbstractModelTestCase(unittest.TestCase):
         model = self.interface.Model()
         var1 = self.interface.Variable("x", ub=1)
         var2 = self.interface.Variable("y", type="integer")
+        var3 = self.interface.Variable("z")
         model.add([var1, var2])
         model.optimize()
         self.assertTrue(model.is_integer)
@@ -855,10 +856,15 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertAlmostEqual(model.reduced_costs["x"], 0)
 
         var2.type = "integer"
+        model.add(var3)
         model.optimize()
         self.assertTrue(model.is_integer)
 
         model.remove(var2)
+        model.optimize()
+        self.assertAlmostEqual(model.reduced_costs["x"], 0)
+
+        model.remove(var3)
         model.optimize()
         self.assertAlmostEqual(model.reduced_costs["x"], 0)
 
