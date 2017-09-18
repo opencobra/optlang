@@ -32,7 +32,7 @@ SYMENGINE_PREFERENCE = os.environ.get("OPTLANG_USE_SYMENGINE", "")
 
 if SYMENGINE_PREFERENCE.lower() in ("false", "no", "off"):
     USE_SYMENGINE = False
-else:
+else:  # pragma: no cover
     try:
         import symengine
         import symengine.sympy_compat
