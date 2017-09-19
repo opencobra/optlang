@@ -749,6 +749,24 @@ class AbstractModelTestCase(unittest.TestCase):
         model.variables[1].type = "continuous"
         self.assertFalse(model.is_integer)
 
+    def test_binary_variables(self):
+        model = self.interface.Model()
+        var = self.interface.Variable("x", type="binary")
+        obj = self.interface.Objective(var)
+        model.objective = obj
+
+        for lb, ub in ((0, 0), (0, 1), (1, 1)):
+            var.ub = ub
+            var.lb = lb
+
+            obj.direction = "max"
+            model.optimize()
+            self.assertAlmostEqual(var.primal, ub)
+
+            obj.direction = "min"
+            model.optimize()
+            self.assertAlmostEqual(var.primal, lb)
+
     def test_integer_variable_dual(self):
         model = self.interface.Model()
         x = self.interface.Variable("x", lb=0)
@@ -823,6 +841,31 @@ class AbstractModelTestCase(unittest.TestCase):
         model.objective = obj
         model.optimize()
         self.assertAlmostEqual(model.objective.value, len(model.variables))
+
+    def test_implicitly_convert_milp_to_lp(self):
+        model = self.interface.Model()
+        var1 = self.interface.Variable("x", ub=1)
+        var2 = self.interface.Variable("y", type="integer")
+        var3 = self.interface.Variable("z", type="integer")
+        model.add([var1, var2])
+        model.optimize()
+        self.assertTrue(model.is_integer)
+
+        var2.type = "continuous"
+        model.optimize()
+        self.assertAlmostEqual(model.reduced_costs["x"], 0)
+
+        var2.type = "integer"
+        model.add(var3)
+        model.optimize()
+        self.assertTrue(model.is_integer)
+
+        model.remove(var2)
+        model.optimize()
+        model.remove(var3)
+        model.optimize()
+        self.assertAlmostEqual(model.reduced_costs["x"], 0)
+
 
 
 @six.add_metaclass(abc.ABCMeta)

@@ -17,6 +17,7 @@ addons:
     - pandoc
 before_install:
 - export SYMPY_USE_CACHE=no
+- export OPTLANG_USE_SYMENGINE=no
 - pip install pip --upgrade
 - 'echo "this is a build for: $TRAVIS_BRANCH"'
 - 'if [[ "$TRAVIS_PYTHON_VERSION" != "3.5" ]]; then bash ./.travis/install_cplex.sh; fi'
