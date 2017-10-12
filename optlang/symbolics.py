@@ -55,6 +55,8 @@ if USE_SYMENGINE:  # pragma: no cover
 
     Integer = symengine.Integer
     Real = symengine.RealDouble
+    Basic = symengine.Basic
+    Number = symengine.Number
     Zero = Integer(0)
     One = Integer(1)
     NegativeOne = Integer(-1)
