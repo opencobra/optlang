@@ -86,12 +86,14 @@ if USE_SYMENGINE:  # pragma: no cover
     def add(*args):
         if len(args) == 1:
             args = args[0]
-        return sum(args)
+        return Add(*args)
 
     def mul(*args):
         if len(args) == 1:
             args = args[0]
-        return reduce(operator.mul, args, 1)
+        if len(args) == 0:
+            return(Zero)
+        return reduce(operator.mul, args, One)
 
 else:  # Use sympy
     import sympy
