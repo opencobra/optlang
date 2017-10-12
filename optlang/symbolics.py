@@ -92,7 +92,7 @@ if USE_SYMENGINE:  # pragma: no cover
         if len(args) == 1:
             args = args[0]
         if len(args) == 0:
-            return(Zero)
+            return(Zero)  # if you multiply nothing the result should be zero
         return reduce(operator.mul, args, One)
 
 else:  # Use sympy
@@ -103,6 +103,8 @@ else:  # Use sympy
 
     Integer = sympy.Integer
     Real = sympy.RealNumber
+    Basic = sympy.Basic
+    Number = sympy.Number
     Zero = Integer(0)
     One = Integer(1)
     NegativeOne = Integer(-1)
