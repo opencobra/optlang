@@ -86,14 +86,16 @@ if USE_SYMENGINE:  # pragma: no cover
     def add(*args):
         if len(args) == 1:
             args = args[0]
+        elif len(args) == 0:
+            return Zero
         return Add(*args)
 
     def mul(*args):
         if len(args) == 1:
             args = args[0]
-        if len(args) == 0:
-            return(Zero)  # if you multiply nothing the result should be zero
-        return reduce(operator.mul, args, One)
+        elif len(args) == 0:
+            return One  # if you multiply nothing the result should be zero
+        return Mul(args)
 
 else:  # Use sympy
     import sympy
@@ -134,9 +136,13 @@ else:  # Use sympy
     def add(*args):
         if len(args) == 1:
             args = args[0]
+        elif len(args) == 0:
+            return Zero
         return sympy.Add._from_args(args)
 
     def mul(*args):
         if len(args) == 1:
             args = args[0]
+        elif len(args) == 0:
+            return One
         return sympy.Mul._from_args(args)
