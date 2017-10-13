@@ -49,7 +49,7 @@ else:  # pragma: no cover
         )
 
 
-if USE_SYMENGINE:  # pragma: no cover
+if USE_SYMENGINE:  # pragma: no cover # noqa: C901
     import operator
     from six.moves import reduce
 
