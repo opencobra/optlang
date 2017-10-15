@@ -49,12 +49,14 @@ else:  # pragma: no cover
         )
 
 
-if USE_SYMENGINE:  # pragma: no cover
+if USE_SYMENGINE:  # pragma: no cover # noqa: C901
     import operator
     from six.moves import reduce
 
     Integer = symengine.Integer
     Real = symengine.RealDouble
+    Basic = symengine.Basic
+    Number = symengine.Number
     Zero = Integer(0)
     One = Integer(1)
     NegativeOne = Integer(-1)
@@ -84,12 +86,16 @@ if USE_SYMENGINE:  # pragma: no cover
     def add(*args):
         if len(args) == 1:
             args = args[0]
-        return sum(args)
+        elif len(args) == 0:
+            return Zero
+        return Add(*args)
 
     def mul(*args):
         if len(args) == 1:
             args = args[0]
-        return reduce(operator.mul, args, 1)
+        elif len(args) == 0:
+            return One  # if you multiply nothing the result should be zero
+        return Mul(args)
 
 else:  # Use sympy
     import sympy
@@ -99,6 +105,8 @@ else:  # Use sympy
 
     Integer = sympy.Integer
     Real = sympy.RealNumber
+    Basic = sympy.Basic
+    Number = sympy.Number
     Zero = Integer(0)
     One = Integer(1)
     NegativeOne = Integer(-1)
@@ -128,9 +136,13 @@ else:  # Use sympy
     def add(*args):
         if len(args) == 1:
             args = args[0]
+        elif len(args) == 0:
+            return Zero
         return sympy.Add._from_args(args)
 
     def mul(*args):
         if len(args) == 1:
             args = args[0]
+        elif len(args) == 0:
+            return One
         return sympy.Mul._from_args(args)
