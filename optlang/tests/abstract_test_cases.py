@@ -67,6 +67,11 @@ class AbstractVariableTestCase(unittest.TestCase):
         self.model.remove(self.var)
         self.model.update()
 
+    def test_non_string_name_raises(self):
+        for name in [2, None, True, ["name1", "name2"]]:
+            with self.assertRaises(TypeError):
+                self.interface.Variable(name)
+
     @abc.abstractmethod
     def test_get_primal(self):
         pass
