@@ -95,7 +95,7 @@ if USE_SYMENGINE:  # pragma: no cover # noqa: C901
             args = args[0]
         elif len(args) == 0:
             return One  # if you multiply nothing the result should be zero
-        return Mul(args)
+        return Mul(*args)
 
 else:  # Use sympy
     import sympy
