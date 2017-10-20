@@ -4,6 +4,9 @@ python:
 - '2.7'
 - '3.4'
 - '3.5'
+env:
+- OPTLANG_USE_SYMENGINE=False
+- OPTLANG_USE_SYMENGINE=True
 cache:
 - pip: true
 addons:
@@ -17,7 +20,6 @@ addons:
     - pandoc
 before_install:
 - export SYMPY_USE_CACHE=no
-- export OPTLANG_USE_SYMENGINE=no
 - pip install pip --upgrade
 - 'echo "this is a build for: $TRAVIS_BRANCH"'
 - 'if [[ "$TRAVIS_PYTHON_VERSION" != "3.5" ]]; then bash ./.travis/install_cplex.sh; fi'
@@ -28,6 +30,7 @@ install:
 - pip install pypandoc
 - pip install swiglpk
 - pip install scipy
+- pip install symengine
 - python setup.py install
 before_script:
 - flake8 .
