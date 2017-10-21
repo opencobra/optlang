@@ -68,6 +68,9 @@ if USE_SYMENGINE:  # pragma: no cover # noqa: C901
 
     class Symbol(symengine_Symbol):
         def __new__(cls, name, *args, **kwargs):
+            if not isinstance(name, six.string_types):
+                raise TypeError("name should be a string, not %s" % repr(type(name)))
+
             return symengine_Symbol.__new__(cls, name)
 
         def __init__(self, name, *args, **kwargs):
