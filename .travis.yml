@@ -57,11 +57,11 @@ deploy:
       branch: master
       tags: true
       repo: biosustain/optlang
-- provider: pypi
-  user: Nikolaus.Sonnenschein
-  password:
-    secure: Gn23MUvzP1DPJXxRXUOXGBJjyMamawxey5ByrOd+JT90roljHKSk8v1wdBMH7+s1DB/ygUJqB2Zy0cBC3mr0waY6HmxKpXhddgzQzG56Eua/npTxpz58Y8xfSYF+5QqS3gcyBrYEXmeHWuEURERy0b7uYKMx/QcHAHYhTaVy4zE=
-  on:
-    branch: master
-    tags: true
-    repo: biosustain/optlang
+  - provider: pypi
+    user: Nikolaus.Sonnenschein
+    password:
+      secure: Gn23MUvzP1DPJXxRXUOXGBJjyMamawxey5ByrOd+JT90roljHKSk8v1wdBMH7+s1DB/ygUJqB2Zy0cBC3mr0waY6HmxKpXhddgzQzG56Eua/npTxpz58Y8xfSYF+5QqS3gcyBrYEXmeHWuEURERy0b7uYKMx/QcHAHYhTaVy4zE=
+    on:
+      branch: master
+      tags: true
+      repo: biosustain/optlang
