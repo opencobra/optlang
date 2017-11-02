@@ -839,7 +839,7 @@ if __name__ == '__main__':
     print(model)
 
     problem = glp_create_prob()
-    glp_read_lp(problem, None, "../tests/data/model.lp")
+    glp_read_lp(problem, None, "tests/data/model.lp")
 
     solver = Model(problem=problem)
     print(solver.optimize())
