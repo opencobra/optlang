@@ -236,8 +236,11 @@ class Constraint(interface.Constraint):
             cplex_problem = self.problem.problem
             try:
                 cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
-            except cplex.exceptions.errors.CplexSolverError:
-                cplex_row = cplex_problem.indicator_constraints.get_linear_components(self.name)
+            except CplexSolverError as e:
+                if 'CPLEX Error  1219:' not in str(e):
+                    raise e
+                else:
+                    cplex_row = cplex_problem.indicator_constraints.get_linear_components(self.name)
             variables = self.problem._variables
             expression = add(
                 [mul((symbolics.Real(cplex_row.val[i]), variables[ind])) for i, ind in
@@ -643,7 +646,7 @@ class Model(interface.Model):
                 )
             try:
                 objective_name = self.problem.objective.get_name()
-            except cplex.exceptions.CplexSolverError as e:
+            except CplexSolverError as e:
                 if 'CPLEX Error  1219:' not in str(e):
                     raise e
             else:
