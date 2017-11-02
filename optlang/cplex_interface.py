@@ -234,7 +234,10 @@ class Constraint(interface.Constraint):
     def _get_expression(self):
         if self.problem is not None:
             cplex_problem = self.problem.problem
-            cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
+            try:
+                cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
+            except cplex.exceptions.errors.CplexSolverError:
+                cplex_row = cplex_problem.indicator_constraints.get_linear_components(self.name)
             variables = self.problem._variables
             expression = add(
                 [mul((symbolics.Real(cplex_row.val[i]), variables[ind])) for i, ind in
@@ -885,7 +888,9 @@ class Model(interface.Model):
     def _remove_constraints(self, constraints):
         super(Model, self)._remove_constraints(constraints)
         for constraint in constraints:
-            if constraint.is_Linear:
+            if constraint.indicator_variable is not None:
+                self.problem.indicator_constraints.delete(constraint.name)
+            elif constraint.is_Linear:
                 self.problem.linear_constraints.delete(constraint.name)
             elif constraint.is_Quadratic:
                 self.problem.quadratic_constraints.delete(constraint.name)
