@@ -5,13 +5,14 @@ import os
 import random
 
 import nose
+
 from optlang import glpk_exact_interface
 from optlang.tests import test_glpk_interface
-from optlang.glpk_exact_interface import Variable, Constraint, Model, Objective
 
 random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp')
+
 
 class VariableTestCase(test_glpk_interface.VariableTestCase):
     interface = glpk_exact_interface
