@@ -7,11 +7,11 @@ x = np.array([Variable('x{}'.format(i), lb=0) for i in range(1, 4)])
 
 bounds = [100, 600, 300]
 
-A = np.array([[ 1, 1, 1],
+A = np.array([[1, 1, 1],
               [10, 4, 5],
-              [ 2, 2, 6]])
+              [2, 2, 6]])
 
-w = np.array([ 10, 6, 4])
+w = np.array([10, 6, 4])
 
 obj = Objective(w.dot(x), direction='max')
 
