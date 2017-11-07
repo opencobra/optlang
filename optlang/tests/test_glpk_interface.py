@@ -9,13 +9,12 @@ import unittest
 import nose
 import optlang
 from optlang import glpk_interface
-from optlang.glpk_interface import Variable, Constraint, Model, Objective
 from optlang.tests import abstract_test_cases
 from optlang.util import glpk_read_cplex
 from swiglpk import glp_get_num_rows, glp_get_col_name, glp_get_num_cols, glp_get_prob_name, glp_get_row_name, \
     glp_get_col_kind, glp_find_col, intArray, doubleArray, glp_get_mat_row, glp_get_row_type, glp_get_row_lb, \
     glp_get_row_ub, glp_get_obj_coef, GLP_UP, GLP_DB, GLP_LO, GLP_CV, GLP_IV, GLP_FX, GLP_FR, glp_get_col_lb, \
-    glp_get_col_ub
+    glp_get_col_ub, glp_get_obj_dir, GLP_MIN, GLP_MAX
 
 random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
@@ -30,7 +29,7 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
 
     def test_get_primal(self):
         self.assertEqual(self.var.primal, None)
-        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        model = glpk_interface.Model(problem=glpk_read_cplex(TESTMODELPATH))
         model.optimize()
         for i, j in zip([var.primal for var in model.variables],
                         [0.8739215069684306, -16.023526143167608, 16.023526143167604, -14.71613956874283,
@@ -52,7 +51,7 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
             self.assertAlmostEqual(i, j)
 
     def test_changing_variable_names_is_reflected_in_the_solver(self):
-        model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        model = self.interface.Model(problem=glpk_read_cplex(TESTMODELPATH))
         for i, variable in enumerate(model.variables):
             variable.name = "var" + str(i)
             self.assertEqual(variable.name, "var" + str(i))
@@ -65,10 +64,10 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         model = self.model
         var.lb = 1
         self.assertEqual(var.lb, 1)
-        self.assertEqual(glpk_interface.glp_get_col_lb(model.problem, var._index), 1)
+        self.assertEqual(glp_get_col_lb(model.problem, var._index), 1)
         var.ub = 2
         self.assertEqual(var.ub, 2)
-        self.assertEqual(glpk_interface.glp_get_col_ub(model.problem, var._index), 2)
+        self.assertEqual(glp_get_col_ub(model.problem, var._index), 2)
 
 
 class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
@@ -98,17 +97,17 @@ class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
     interface = glpk_interface
 
     def setUp(self):
-        self.model = Model(problem=glpk_read_cplex(TESTMODELPATH))
+        self.model = self.interface.Model(problem=glpk_read_cplex(TESTMODELPATH))
         self.obj = self.model.objective
 
     def test_change_direction(self):
         self.obj.direction = "min"
         self.assertEqual(self.obj.direction, "min")
-        self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MIN)
+        self.assertEqual(glp_get_obj_dir(self.model.problem), GLP_MIN)
 
         self.obj.direction = "max"
         self.assertEqual(self.obj.direction, "max")
-        self.assertEqual(glpk_interface.glp_get_obj_dir(self.model.problem), glpk_interface.GLP_MAX)
+        self.assertEqual(glp_get_obj_dir(self.model.problem), GLP_MAX)
 
 
 class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
@@ -119,7 +118,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     interface = glpk_interface
 
     def test_glpk_create_empty_model(self):
-        model = Model(name="empty_problem")
+        model = self.interface.Model(name="empty_problem")
         self.assertEqual(glp_get_prob_name(model.problem), "empty_problem")
 
     def test_pickle_ability(self):
@@ -150,7 +149,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
                          [glp_get_row_name(inner_prob, j) for j in range(1, glp_get_num_rows(inner_prob) + 1)])
 
     def test_add_non_cplex_conform_variable(self):
-        var = Variable('12x!!@#5_3', lb=-666, ub=666)
+        var = self.interface.Variable('12x!!@#5_3', lb=-666, ub=666)
         self.assertEqual(var._index, None)
         self.model.add(var)
         self.assertTrue(var in self.model.variables.values())
@@ -194,14 +193,14 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(var.problem, None)
 
     def test_add_constraints(self):
-        x = Variable('x', lb=0, ub=1, type='binary')
-        y = Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        z = Variable('z', lb=0., ub=10., type='integer')
-        constr1 = Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-        constr2 = Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
-        constr3 = Constraint(2.333 * x + y + z, lb=-300)
-        constr4 = Constraint(x, lb=-300, ub=-300)
-        constr5 = Constraint(3 * x)
+        x = self.interface.Variable('x', lb=0, ub=1, type='binary')
+        y = self.interface.Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        z = self.interface.Variable('z', lb=0., ub=10., type='integer')
+        constr1 = self.interface.Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
+        constr2 = self.interface.Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
+        constr3 = self.interface.Constraint(2.333 * x + y + z, lb=-300)
+        constr4 = self.interface.Constraint(x, lb=-300, ub=-300)
+        constr5 = self.interface.Constraint(3 * x)
         self.model.add(constr1)
         self.model.add(constr2)
         self.model.add(constr3)
@@ -269,9 +268,9 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertGreater(glp_get_row_ub(self.model.problem, constr5._index), 1e30)
 
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
-        x = Variable('x', lb=-83.3, ub=1324422.)
-        y = Variable('y', lb=-181133.3, ub=12000.)
-        constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
+        x = self.interface.Variable('x', lb=-83.3, ub=1324422.)
+        y = self.interface.Variable('y', lb=-181133.3, ub=12000.)
+        constraint = self.interface.Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
         self.assertEqual(constraint._index, None)
         self.model.add(constraint)
         self.assertEqual(
@@ -280,7 +279,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(self.model.constraints["test"].lb, -100)
 
         self.assertEqual(constraint._index, 73)
-        z = Variable('z', lb=3, ub=10, type='integer')
+        z = self.interface.Variable('z', lb=3, ub=10, type='integer')
         self.assertEqual(z._index, None)
         constraint += 77. * z
         self.assertEqual(z._index, 98)
@@ -293,11 +292,11 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(constraint._index, 73)
 
     def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
-        x = Variable('x', lb=-83.3, ub=1324422.)
-        y = Variable('y', lb=-181133.3, ub=12000.)
-        constraint = Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
+        x = self.interface.Variable('x', lb=-83.3, ub=1324422.)
+        y = self.interface.Variable('y', lb=-181133.3, ub=12000.)
+        constraint = self.interface.Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
         self.model.add(constraint)
-        z = Variable('z', lb=2, ub=5, type='integer')
+        z = self.interface.Variable('z', lb=2, ub=5, type='integer')
         constraint += 77. * z
         self.model.remove(constraint)
         self.assertEqual(
@@ -307,9 +306,9 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(constraint.ub, None)
 
     def test_change_of_objective_is_reflected_in_low_level_solver(self):
-        x = Variable('x', lb=-83.3, ub=1324422.)
-        y = Variable('y', lb=-181133.3, ub=12000.)
-        objective = Objective(0.3 * x + 0.4 * y, name='test', direction='max')
+        x = self.interface.Variable('x', lb=-83.3, ub=1324422.)
+        y = self.interface.Variable('y', lb=-181133.3, ub=12000.)
+        objective = self.interface.Objective(0.3 * x + 0.4 * y, name='test', direction='max')
         self.model.objective = objective
 
         self.assertEqual(
@@ -322,7 +321,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         for i in range(1, glp_get_num_cols(self.model.problem) + 1):
             if i != x._index and i != y._index:
                 self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
-        z = Variable('z', lb=4, ub=4, type='integer')
+        z = self.interface.Variable('z', lb=4, ub=4, type='integer')
         self.model.objective += 77. * z
 
         self.assertEqual(
@@ -416,7 +415,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI._index), 666.)
 
     def test_instantiating_model_with_different_solver_problem_raises(self):
-        self.assertRaises(TypeError, Model, problem='Chicken soup')
+        self.assertRaises(TypeError, self.interface.Model, problem='Chicken soup')
 
     def test_set_linear_coefficients_constraint(self):
         constraint = self.model.constraints.M_atp_c
