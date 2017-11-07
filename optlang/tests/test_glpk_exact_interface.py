@@ -13,12 +13,6 @@ random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp')
 
-test_glpk_interface.Variable = Variable
-test_glpk_interface.Constraint = Constraint
-test_glpk_interface.Objective = Objective
-test_glpk_interface.Model = Model
-
-
 class VariableTestCase(test_glpk_interface.VariableTestCase):
     interface = glpk_exact_interface
 
