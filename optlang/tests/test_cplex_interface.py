@@ -120,6 +120,17 @@ else:
                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
                 self.assertAlmostEqual(i, j)
 
+        def test_cplex_indicator_constraint_expression(self):
+            model = self.interface.Model()
+            x = self.interface.Variable("x")
+            y = self.interface.Variable("y", type="binary")
+            c = self.interface.Constraint(x, lb=0, indicator_variable=y, active_when=1)
+            self.assertEqual(c.expression - x, 0)
+
+            model.add(c)
+            model.update()
+            self.assertEqual(c.expression - x, 0)
+
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
         interface = cplex_interface
 
