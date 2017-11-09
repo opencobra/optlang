@@ -34,6 +34,7 @@ available_solvers = list_available_solvers()
 if available_solvers['GLPK']:
     try:
         from optlang import glpk_interface
+        from optlang import glpk_exact_interface
     except Exception:
         log.error('GLPK is available but could not load with error:\n  ' + str(traceback.format_exc()).strip().replace('\n','\n  '))
 
