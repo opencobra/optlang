@@ -681,10 +681,10 @@ class Constraint(OptimizationExpression):
         """The indicator variable of constraint (if available)."""
         return self._indicator_variable
 
-    @indicator_variable.setter
-    def indicator_variable(self, value):
-        self.__check_valid_indicator_variable(value)
-        self._indicator_variable = value
+    # @indicator_variable.setter
+    # def indicator_variable(self, value):
+    #     self.__check_valid_indicator_variable(value)
+    #     self._indicator_variable = value
 
     @property
     def active_when(self):
