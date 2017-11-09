@@ -304,6 +304,9 @@ class Variable(symbolics.Symbol):
     def __setstate__(self, state):
         self.__dict__ = state
 
+    def __reduce__(self):
+        return (type(self), (self.name, self.lb, self.ub, self.type, self.problem))
+
     def to_json(self):
         """
         Returns a json-compatible object from the Variable that can be saved using the json module.
