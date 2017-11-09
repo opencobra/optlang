@@ -34,6 +34,7 @@ available_solvers = list_available_solvers()
 if available_solvers['GLPK']:
     try:
         from optlang import glpk_interface
+        from optlang import glpk_exact_interface
     except Exception:
         log.error('GLPK is available but could not load with error:\n  ' + str(traceback.format_exc()).strip().replace('\n','\n  '))
 
@@ -57,10 +58,10 @@ if available_solvers['SCIPY']:
 
 
 # Go through and find the best solver that loaded. Load that one as the default
-for engine_str in ['cplex_interface','gurobi_interface','glpk_interface','scipy_interface']:
+for engine_str in ['cplex_interface', 'gurobi_interface', 'glpk_interface', 'scipy_interface']:
     # Must check globals since not all interface variables will be defined
     if engine_str in globals():
-        engine=globals()[engine_str]
+        engine = globals()[engine_str]
         Model = engine.Model
         Variable = engine.Variable
         Constraint = engine.Constraint
