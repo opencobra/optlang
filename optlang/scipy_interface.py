@@ -85,9 +85,9 @@ class Problem(object):
         # self._rows_to_be_added.append(row)
         self._A = np.vstack((self._A, row))
 
-    def _flush_rows_to_add(self):
-        self._A = np.vstack([self._A] + self._rows_to_be_added)
-        self._rows_to_be_added = None
+    # def _flush_rows_to_add(self):
+    #     self._A = np.vstack([self._A] + self._rows_to_be_added)
+    #     self._rows_to_be_added = None
 
     def _add_col_to_A(self, col):
         # Flush any rows_to_be_added
@@ -99,9 +99,9 @@ class Problem(object):
         # self._cols_to_be_added.append(col)
         self._A = np.hstack((self._A, col))
 
-    def _flush_cols_to_add(self):
-        self._A = np.hstack([self._A] + self._cols_to_be_added)
-        self._cols_to_be_added = None
+    # def _flush_cols_to_add(self):
+    #     self._A = np.hstack([self._A] + self._cols_to_be_added)
+    #     self._cols_to_be_added = None
 
     def set_variable_bounds(self, name, lower, upper):
         """Set the bounds of a variable"""
@@ -197,10 +197,10 @@ class Problem(object):
     def A(self):
         """The linear coefficient matrix."""
         assert self._rows_to_be_added is None or self._cols_to_be_added is None
-        if self._rows_to_be_added is not None:
-            self._flush_rows_to_add()
-        if self._cols_to_be_added is not None:
-            self._flush_cols_to_add()
+        # if self._rows_to_be_added is not None:
+        #     self._flush_rows_to_add()
+        # if self._cols_to_be_added is not None:
+        #     self._flush_cols_to_add()
         return self._A
 
     @property
