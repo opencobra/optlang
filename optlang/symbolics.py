@@ -45,10 +45,6 @@ else:  # pragma: no cover
         USE_SYMENGINE = False
     else:
         USE_SYMENGINE = True
-        logger.warn(
-            "Loading symengine... This feature is in beta testing. " +
-            "Please report any issues you encounter on http://github.com/biosustain/optlang/issues"
-        )
 
 
 if USE_SYMENGINE:  # pragma: no cover # noqa: C901
