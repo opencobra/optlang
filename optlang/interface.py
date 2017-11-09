@@ -1511,8 +1511,6 @@ class Model(object):
             constraint._problem = self
 
     def _remove_constraints(self, constraints):
-        for constraint in constraints:  # TODO: remove this hack that fixes problems with lazy solver expressions.
-            constraint.expression
         keys = [constraint.name for constraint in constraints]
         if len(constraints) > 350:  # Need to figure out a good threshold here
             self._constraints = self._constraints.fromkeys(set(self._constraints.keys()).difference(set(keys)))

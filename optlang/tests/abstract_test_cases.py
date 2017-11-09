@@ -182,6 +182,12 @@ class AbstractConstraintTestCase(unittest.TestCase):
             model = self.interface.Model()
             model.add(constraint)
             model.update()
+            self.assertEqual(constraint.problem, model)
+            self.assertIn(constraint, model.constraints)
+            model.remove(constraint.name)
+            model.update()
+            self.assertEqual(constraint.problem, None)
+            self.assertNotIn(constraint, model.constraints)
         else:
             self.assertRaises(
                 optlang.exceptions.IndicatorConstraintsNotSupported,
