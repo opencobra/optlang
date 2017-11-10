@@ -73,19 +73,6 @@ statuses = {
 }
 
 
-def evaluate_expression(expression):
-    return expression.subs([
-        (sym, sym.value) for sym in expression.free_symbols])
-
-
-def handle_symbols(expression, instance, attr):
-    if isinstance(expression, sympy.Expr):
-        for sym in expression.free_symbols:
-            sym.register(instance, attr, expression)
-        return evaluate_expression(expression)
-    return expression
-
-
 class SymbolicParameter(symbolics.Symbol):
     """
     A symbolic parameter to be used in bounds and constraints.
@@ -99,7 +86,7 @@ class SymbolicParameter(symbolics.Symbol):
 
     def __init__(self, name, value=0, **kwargs):
         super(SymbolicParameter, self).__init__(name=name, **kwargs)
-        self._stack = list()
+        self._registry = set()
         self._value = value
 
     @property
@@ -111,16 +98,51 @@ class SymbolicParameter(symbolics.Symbol):
     def value(self, other):
         """Set a new value and update all expressions."""
         self._value = other
-        for assigned, attr, expr in self._stack:
-            setattr(assigned, attr, evaluate_expression(expr))
 
-    def register(self, assigned, attr, expr):
+    def register(self, assigned, attr):
         """Register an object and its expression with this instance."""
-        self._stack.append((assigned, attr, expr))
+        self._registry.add((assigned, attr))
 
     def unregister(self, assigned):
         """Unregister an object from this instance."""
-        self._stack[:] = filter(lambda x: x[0] is not assigned, self._stack)
+        self._registry.remove(None)
+
+    @staticmethod
+    def handle_symbols(expression, instance, attr):
+        try:
+            for sym in expression.atoms(SymbolicParameter):
+                sym.register(instance, attr)
+            return SymbolicExpressionWrapper(expression)
+        except AttributeError:
+            return expression
+
+
+class SymbolicExpressionWrapper(object):
+    __slots__ = "_expression"
+
+    def __init__(self, expression):
+        super(SymbolicExpressionWrapper, self).__init__()
+        self._expression = expression
+
+    def __getattr__(self, name):
+        return self._expression.__getattr__(name)
+
+    def _evaluate(self):
+        return self._expression.subs([
+            (sym, sym.value) for sym in self._expression.atoms(
+                SymbolicParameter)])
+
+    def __float__(self):
+        return float(self._evaluate())
+
+    def __int__(self):
+        return int(self._evaluate())
+
+    def __repr__(self):
+        return repr(self._expression)
+
+    def __str__(self):
+        return str(self._expression)
 
 
 # noinspection PyShadowingBuiltins
@@ -211,8 +233,8 @@ class Variable(symbolics.Symbol):
                         name, char))
         self._name = name
         symbolics.Symbol.__init__(self, name, *args, **kwargs)
-        self._lb = lb
-        self._ub = ub
+        self._lb = SymbolicParameter.handle_symbols(lb, self, "lb")
+        self._ub = SymbolicParameter.handle_symbols(ub, self, "ub")
         if self._lb is None and type == 'binary':
             self._lb = 0.
         if self._ub is None and type == 'binary':
@@ -244,7 +266,7 @@ class Variable(symbolics.Symbol):
 
     @lb.setter
     def lb(self, value):
-        value = handle_symbols(value, self, "lb")
+        value = SymbolicParameter.handle_symbols(value, self, "lb")
         if hasattr(self, 'ub') and self.ub is not None and value is not None and value > self.ub:
             raise ValueError(
                 'The provided lower bound %g is larger than the upper bound %g of variable %s.' % (
@@ -261,7 +283,7 @@ class Variable(symbolics.Symbol):
 
     @ub.setter
     def ub(self, value):
-        value = handle_symbols(value, self, "ub")
+        value = SymbolicParameter.handle_symbols(value, self, "ub")
         if hasattr(self, 'lb') and self.lb is not None and value is not None and value < self.lb:
             raise ValueError(
                 'The provided upper bound %g is smaller than the lower bound %g of variable %s.' % (
@@ -712,7 +734,7 @@ class Constraint(OptimizationExpression):
 
     @lb.setter
     def lb(self, value):
-        value = handle_symbols(value, self, "lb")
+        value = SymbolicParameter.handle_symbols(value, self, "lb")
         self._check_valid_lower_bound(value)
         self._lb = value
 
@@ -723,7 +745,7 @@ class Constraint(OptimizationExpression):
 
     @ub.setter
     def ub(self, value):
-        value = handle_symbols(value, self, "ub")
+        value = SymbolicParameter.handle_symbols(value, self, "ub")
         self._check_valid_upper_bound(value)
         self._ub = value
 
