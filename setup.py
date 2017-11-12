@@ -50,7 +50,7 @@ setup(
     name='optlang',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    packages=find_packages(),
+    packages=find_packages(exclude=('slow_tests',)),
     install_requires=requirements,  # from requirements.txt
     extras_require=extra_requirements,
     test_suite='nose.collector',

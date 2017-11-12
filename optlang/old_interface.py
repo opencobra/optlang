@@ -809,7 +809,7 @@ class Objective(OptimizationExpression):
     """
     Objective objects are used to represent the objective function of an optimization problem.
     An objective consists of a symbolic expression of variables in the problem and a direction. The direction
-    can be either 'min' or 'max' and specifies whether the problem is a minimization or a maximization problem.
+    can be either 'min' or 'max' and specifies whether the problem is a minimization or a maximization _problem.
 
     After a problem has been optimized, the optimal objective value can be accessed from the 'value' attribute
     of the model's objective, i.e. :code:`obj_val = model.objective.value`.
