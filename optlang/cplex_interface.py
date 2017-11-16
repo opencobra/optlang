@@ -627,7 +627,7 @@ class Model(interface.Model):
                         constr = Constraint(lhs, lb=rhs, ub=rhs + range_val, name=name, problem=self)
                     else:
                         constr = Constraint(lhs, lb=rhs + range_val, ub=rhs, name=name, problem=self)
-                else: # pragma: no cover
+                else:  # pragma: no cover
                     raise Exception('%s is not a recognized constraint sense.' % sense)
 
                 for variable in constraint_variables:
