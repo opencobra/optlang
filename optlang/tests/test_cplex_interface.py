@@ -521,6 +521,11 @@ else:
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 2441.999999971)
 
+        def test_quadratic_objective_expression(self):
+            objective = Objective(self.x1 ** 2 + self.x2 ** 2, direction="min")
+            self.model.objective = objective
+            self.assertEqual((self.model.objective.expression - (self.x1 ** 2 + self.x2 ** 2)).simplify(), 0)
+
     class InfeasibleMIPTestCase(unittest.TestCase):
 
         interface = cplex_interface

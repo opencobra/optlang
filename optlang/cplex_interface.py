@@ -614,11 +614,7 @@ class Model(interface.Model):
 
                 # Since constraint expressions are lazily retrieved from the solver they don't have to be built here
                 # lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])
-                lhs = 0
-                if isinstance(lhs, int):
-                    lhs = symbolics.Integer(lhs)
-                elif isinstance(lhs, float):
-                    lhs = symbolics.Real(lhs)
+                lhs = symbolics.Integer(0)
                 if sense == 'E':
                     constr = Constraint(lhs, lb=rhs, ub=rhs, name=name, problem=self)
                 elif sense == 'G':
@@ -631,7 +627,7 @@ class Model(interface.Model):
                         constr = Constraint(lhs, lb=rhs, ub=rhs + range_val, name=name, problem=self)
                     else:
                         constr = Constraint(lhs, lb=rhs + range_val, ub=rhs, name=name, problem=self)
-                else:
+                else: # pragma: no cover
                     raise Exception('%s is not a recognized constraint sense.' % sense)
 
                 for variable in constraint_variables:
