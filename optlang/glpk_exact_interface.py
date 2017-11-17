@@ -39,7 +39,16 @@ from swiglpk import glp_exact, glp_create_prob, glp_get_status, \
 
 @six.add_metaclass(inheritdocstring)
 class Variable(glpk_interface.Variable):
-    pass
+    def __init__(self, name, index=None, type="continuous", *kwargs):
+        if type in ("integer", "binary"):
+            raise ValueError("The GLPK exact solver does not support integer and mixed integer problems")
+        super(Variable, self).__init__(name, index, type, **kwargs)
+
+    @glpk_interface.Variable.type.setter
+    def type(self, value):
+        if type in ("integer", "binary"):
+            raise ValueError("The GLPK exact solver does not support integer and mixed integer problems")
+        super(Variable, Variable).type.fset(self, value)
 
 
 @six.add_metaclass(inheritdocstring)
@@ -95,15 +104,6 @@ class Model(glpk_interface.Model):
                 self.configuration.presolve = False
                 status = self._run_glp_exact()
                 self.configuration.presolve = True
-            if self._glpk_is_mip():
-                status = self._run_glp_mip()
-                if status == 'undefined' or status == 'infeasible':
-                    # Let's see if the presolver and some scaling can fix this issue
-                    glp_scale_prob(self.problem, GLP_SF_AUTO)
-                    original_presolve_setting = self.configuration.presolve
-                    self.configuration.presolve = True
-                    status = self._run_glp_mip()
-                    self.configuration.presolve = original_presolve_setting
             return status
 
 
