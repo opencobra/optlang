@@ -94,11 +94,6 @@ class Model(glpk_interface.Model):
         else:
             status = self._run_glp_exact()
 
-            # Sometimes GLPK gets itself stuck with an invalid basis. This will help it get rid of it.
-            if status == interface.UNDEFINED and self.configuration.presolve is not True:
-                glp_adv_basis(self.problem, 0)
-                status = self._run_glp_exact()
-
             if status == interface.UNDEFINED and self.configuration.presolve is True:
                 # If presolve is on, status will be undefined if not optimal
                 self.configuration.presolve = False
