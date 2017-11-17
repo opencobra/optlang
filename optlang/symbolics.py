@@ -24,6 +24,7 @@ import os
 import six
 import uuid
 import logging
+import optlang
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,8 @@ else:  # pragma: no cover
 if USE_SYMENGINE:  # pragma: no cover # noqa: C901
     import operator
     from six.moves import reduce
+
+    optlang._USING_SYMENGINE = True
 
     Integer = symengine.Integer
     Real = symengine.RealDouble
@@ -103,6 +106,8 @@ else:  # Use sympy
     from sympy.core.assumptions import _assume_rules
     from sympy.core.facts import FactKB
     from sympy.core.expr import Expr
+
+    optlang._USING_SYMENGINE = False
 
     Integer = sympy.Integer
     Real = sympy.RealNumber
