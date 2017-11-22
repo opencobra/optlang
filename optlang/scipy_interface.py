@@ -433,6 +433,7 @@ class Constraint(interface.Constraint):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             lb, ub = self.lb, self.ub
             self.lb, self.ub = None, None
             coefficients_dict = self.coefficient_dict(names=False)
@@ -445,6 +446,7 @@ class Constraint(interface.Constraint):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             coefs = self.coefficient_dict(names=False)
             return {v: coefs.get(v, 0) for v in variables}
         else:
@@ -499,12 +501,14 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             self.problem.problem.objective.update({var.name: coef for var, coef in coefficients.items()})
         else:
             raise Exception("Can't change coefficients if objective is not associated with a model.")
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             return {v: self.problem.problem.objective.get(v.name, 0) for v in variables}
         else:
             raise Exception("Can't get coefficients from solver if objective is not in a model")

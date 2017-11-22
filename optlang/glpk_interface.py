@@ -248,6 +248,7 @@ class Constraint(interface.Constraint):
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
             problem = self.problem.problem
+            self.problem.update()
 
             num_cols = glp_get_num_cols(problem)
 
@@ -275,6 +276,7 @@ class Constraint(interface.Constraint):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             num_cols = glp_get_num_cols(self.problem.problem)
             ia = intArray(num_cols + 1)
             da = doubleArray(num_cols + 1)
@@ -346,6 +348,7 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             for variable, coefficient in coefficients.items():
                 glp_set_obj_coef(self.problem.problem, variable._index, float(coefficient))
             self._expression_expired = True
@@ -354,6 +357,7 @@ class Objective(interface.Objective):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             return {var: glp_get_obj_coef(self.problem.problem, var._index) for var in variables}
         else:
             raise Exception("Can't get coefficients from solver if objective is not in a model")

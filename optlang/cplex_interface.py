@@ -219,6 +219,7 @@ class Constraint(interface.Constraint):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             triplets = [(self.name, var.name, float(coeff)) for var, coeff in six.iteritems(coefficients)]
             self.problem.problem.linear_constraints.set_coefficients(triplets)
         else:
@@ -226,6 +227,7 @@ class Constraint(interface.Constraint):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             coefs = self.problem.problem.linear_constraints.get_coefficients([(self.name, v.name) for v in variables])
             return {v: c for v, c in zip(variables, coefs)}
         else:
@@ -373,6 +375,7 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             self.problem.problem.objective.set_linear([(variable.name, float(coefficient)) for variable, coefficient in coefficients.items()])
             self._expression_expired = True
         else:
@@ -380,6 +383,7 @@ class Objective(interface.Objective):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             coefs = self.problem.problem.objective.get_linear([v.name for v in variables])
             return {v: c for v, c in zip(variables, coefs)}
         else:
