@@ -39,14 +39,14 @@ from swiglpk import glp_exact, glp_create_prob, glp_get_status, \
 
 @six.add_metaclass(inheritdocstring)
 class Variable(glpk_interface.Variable):
-    def __init__(self, name, index=None, type="continuous", *kwargs):
+    def __init__(self, name, index=None, type="continuous", **kwargs):
         if type in ("integer", "binary"):
             raise ValueError("The GLPK exact solver does not support integer and mixed integer problems")
-        super(Variable, self).__init__(name, index, type, **kwargs)
+        super(Variable, self).__init__(name, index, type=type, **kwargs)
 
     @glpk_interface.Variable.type.setter
     def type(self, value):
-        if type in ("integer", "binary"):
+        if value in ("integer", "binary"):
             raise ValueError("The GLPK exact solver does not support integer and mixed integer problems")
         super(Variable, Variable).type.fset(self, value)
 
