@@ -1,31 +1,35 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
-import copy
+
 import os
-import pickle
 import random
 import unittest
+import json
 
 import nose
-import optlang
-from optlang import glpk_interface
+
+import copy
+import pickle
+
+from optlang import glpk_exact_interface
 from optlang.tests import abstract_test_cases
+
+from optlang import glpk_interface
 from optlang.util import glpk_read_cplex
 from swiglpk import glp_get_num_rows, glp_get_col_name, glp_get_num_cols, glp_get_prob_name, glp_get_row_name, \
     glp_get_col_kind, glp_find_col, intArray, doubleArray, glp_get_mat_row, glp_get_row_type, glp_get_row_lb, \
     glp_get_row_ub, glp_get_obj_coef, GLP_UP, GLP_DB, GLP_LO, GLP_CV, GLP_IV, GLP_FX, GLP_FR, glp_get_col_lb, \
     glp_get_col_ub, glp_get_obj_dir, GLP_MIN, GLP_MAX
 
+
 random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp')
+ECOLI_TEST = os.path.join(os.path.dirname(__file__), 'data/coli_core.json')
 
 
 class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
-    interface = glpk_interface
-
-    def test_variable_without_problem_returns_None_index(self):
-        self.assertEqual(self.var._index, None)
+    interface = glpk_exact_interface
 
     def test_get_primal(self):
         self.assertEqual(self.var.primal, None)
@@ -57,47 +61,36 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
             self.assertEqual(variable.name, "var" + str(i))
             self.assertEqual(glp_get_col_name(model.problem, variable._index), "var" + str(i))
 
-    def test_glpk_setting_bounds(self):
+    def test_change_type(self):
+        self.var.type = "continuous"
+        self.assertRaises(ValueError, setattr, self.var, "type", "integer")
+        self.assertRaises(ValueError, setattr, self.var, "type", "binary")
+
+    def test_set_wrong_type_raises(self):
+        self.assertRaises(ValueError, self.interface.Variable, name="test", type="mayo")
+        self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
         self.model.add(self.var)
         self.model.update()
-        var = self.var
-        model = self.model
-        var.lb = 1
-        self.assertEqual(var.lb, 1)
-        self.assertEqual(glp_get_col_lb(model.problem, var._index), 1)
-        var.ub = 2
-        self.assertEqual(var.ub, 2)
-        self.assertEqual(glp_get_col_ub(model.problem, var._index), 2)
+        self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
 
 
 class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
-    interface = glpk_interface
-
-    def test_constraint_index(self):
-        constraint = self.model.constraints.M_atp_c
-        self.assertEqual(constraint._index, 17)
-        self.model.remove(constraint)
-        self.model.update()
-        self.assertEqual(constraint._index, None)
+    interface = glpk_exact_interface
 
     def test_get_primal(self):
-        self.assertEqual(self.constraint.primal, None)
-        self.model.optimize()
-        print([constraint.primal for constraint in self.model.constraints])
-        for i, j in zip([constraint.primal for constraint in self.model.constraints],
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                         4.048900234729145e-15, 0.0, 0.0, 0.0, -3.55971196577979e-16, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                         0.0, 0.0, 2.5546369406238147e-17, 0.0, -5.080374405378186e-29, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
-            self.assertAlmostEqual(i, j, places=6)
+        pass
+
+    @unittest.skip("NA")
+    def test_indicator_constraint_support(self):
+        pass
 
 
 class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
-    interface = glpk_interface
+    interface = glpk_exact_interface
 
     def setUp(self):
-        self.model = self.interface.Model(problem=glpk_read_cplex(TESTMODELPATH))
+        with open(ECOLI_TEST) as infile:
+            self.model = self.interface.Model.from_json(json.load(infile))
         self.obj = self.model.objective
 
     def test_change_direction(self):
@@ -111,15 +104,11 @@ class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
 
 
 class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
-    interface = glpk_interface
+    interface = glpk_exact_interface
 
 
 class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
-    interface = glpk_interface
-
-    def test_glpk_create_empty_model(self):
-        model = self.interface.Model(name="empty_problem")
-        self.assertEqual(glp_get_prob_name(model.problem), "empty_problem")
+    interface = glpk_exact_interface
 
     def test_pickle_ability(self):
         self.model.optimize()
@@ -160,113 +149,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         var_from_pickle = repickled.variables['12x!!@#5_3']
         self.assertEqual(var_from_pickle.name, glp_get_col_name(repickled.problem, var_from_pickle._index))
 
-    def test_glpk_remove_variable(self):
-        var = self.model.variables[0]
-        self.assertEqual(
-            (self.model.constraints["M_atp_c"].expression - (
-                -1.0 * self.model.variables.R_ACKr - 1.0 * self.model.variables.R_ADK1 + 1.0 * self.model.variables.R_ATPS4r -
-                1.0 * self.model.variables.R_PGK - 1.0 * self.model.variables.R_SUCOAS - 59.81 * self.model.variables.R_Biomass_Ecoli_core_w_GAM -
-                1.0 * self.model.variables.R_GLNS - 1.0 * self.model.variables.R_GLNabc - 1.0 * self.model.variables.R_PFK -
-                1.0 * self.model.variables.R_PPCK - 1.0 * self.model.variables.R_PPS + 1.0 * self.model.variables.R_PYK -
-                1.0 * self.model.variables.R_ATPM
-            )).expand() - 0, 0
-        )
-        self.assertEqual(self.model.constraints["M_atp_c"].lb, 0)
-        self.assertEqual(self.model.constraints["M_atp_c"].ub, 0)
-
-        self.assertEqual(var.problem, self.model)
-        self.model.remove(var)
-        self.model.update()
-
-        self.assertEqual(
-            (self.model.constraints["M_atp_c"].expression - (
-                -1.0 * self.model.variables.R_ACKr - 1.0 * self.model.variables.R_ADK1 + 1.0 * self.model.variables.R_ATPS4r -
-                1.0 * self.model.variables.R_SUCOAS - 1.0 * self.model.variables.R_PGK -
-                1.0 * self.model.variables.R_GLNS - 1.0 * self.model.variables.R_GLNabc - 1.0 * self.model.variables.R_PFK -
-                1.0 * self.model.variables.R_PPCK - 1.0 * self.model.variables.R_PPS + 1.0 * self.model.variables.R_PYK -
-                1.0 * self.model.variables.R_ATPM
-            )).expand() - 0, 0
-        )
-
-        self.assertNotIn(var, self.model.variables.values())
-        self.assertEqual(glp_find_col(self.model.problem, var.name), 0)
-        self.assertEqual(var.problem, None)
-
-    def test_add_constraints(self):
-        x = self.interface.Variable('x', lb=0, ub=1, type='binary')
-        y = self.interface.Variable('y', lb=-181133.3, ub=12000., type='continuous')
-        z = self.interface.Variable('z', lb=0., ub=10., type='integer')
-        constr1 = self.interface.Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-        constr2 = self.interface.Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
-        constr3 = self.interface.Constraint(2.333 * x + y + z, lb=-300)
-        constr4 = self.interface.Constraint(x, lb=-300, ub=-300)
-        constr5 = self.interface.Constraint(3 * x)
-        self.model.add(constr1)
-        self.model.add(constr2)
-        self.model.add(constr3)
-        self.model.add([constr4, constr5])
-        self.assertIn(constr1.name, self.model.constraints)
-        self.assertIn(constr2.name, self.model.constraints)
-        self.assertIn(constr3.name, self.model.constraints)
-        self.assertIn(constr4.name, self.model.constraints)
-        self.assertIn(constr5.name, self.model.constraints)
-        # constr1
-        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
-        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr1._index, ia, da)
-        coeff_dict = dict()
-        for i in range(1, nnz + 1):
-            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
-        self.assertDictEqual(coeff_dict, {'x': 0.3, 'y': 0.4, 'z': 66.})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr1._index), GLP_DB)
-        self.assertEqual(glp_get_row_lb(self.model.problem, constr1._index), -100)
-        self.assertEqual(glp_get_row_ub(self.model.problem, constr1._index), 0)
-        # constr2
-        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
-        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr2._index, ia, da)
-        coeff_dict = dict()
-        for i in range(1, nnz + 1):
-            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
-        self.assertDictEqual(coeff_dict, {'x': 2.333, 'y': 1.})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr2._index), GLP_UP)
-        self.assertEqual(glp_get_row_lb(self.model.problem, constr2._index), -1.7976931348623157e+308)
-        self.assertEqual(glp_get_row_ub(self.model.problem, constr2._index), 96.997)
-        # constr3
-        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
-        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr3._index, ia, da)
-        coeff_dict = dict()
-        for i in range(1, nnz + 1):
-            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
-        self.assertDictEqual(coeff_dict, {'x': 2.333, 'y': 1., 'z': 1.})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr3._index), GLP_LO)
-        self.assertEqual(glp_get_row_lb(self.model.problem, constr3._index), -300)
-        self.assertEqual(glp_get_row_ub(self.model.problem, constr3._index), 1.7976931348623157e+308)
-        # constr4
-        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
-        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr4._index, ia, da)
-        coeff_dict = dict()
-        for i in range(1, nnz + 1):
-            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
-        self.assertDictEqual(coeff_dict, {'x': 1})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr4._index), GLP_FX)
-        self.assertEqual(glp_get_row_lb(self.model.problem, constr4._index), -300)
-        self.assertEqual(glp_get_row_ub(self.model.problem, constr4._index), -300)
-
-        # constr5
-        ia = intArray(glp_get_num_rows(self.model.problem) + 1)
-        da = doubleArray(glp_get_num_rows(self.model.problem) + 1)
-        nnz = glp_get_mat_row(self.model.problem, constr5._index, ia, da)
-        coeff_dict = dict()
-        for i in range(1, nnz + 1):
-            coeff_dict[glp_get_col_name(self.model.problem, ia[i])] = da[i]
-        self.assertDictEqual(coeff_dict, {'x': 3})
-        self.assertEqual(glp_get_row_type(self.model.problem, constr5._index), GLP_FR)
-        self.assertLess(glp_get_row_lb(self.model.problem, constr5._index), -1e30)
-        self.assertGreater(glp_get_row_ub(self.model.problem, constr5._index), 1e30)
-
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
         x = self.interface.Variable('x', lb=-83.3, ub=1324422.)
         y = self.interface.Variable('y', lb=-181133.3, ub=12000.)
@@ -279,7 +161,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(self.model.constraints["test"].lb, -100)
 
         self.assertEqual(constraint._index, 73)
-        z = self.interface.Variable('z', lb=3, ub=10, type='integer')
+        z = self.interface.Variable('z', lb=3, ub=10, type='continuous')
         self.assertEqual(z._index, None)
         constraint += 77. * z
         self.assertEqual(z._index, 98)
@@ -296,7 +178,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         y = self.interface.Variable('y', lb=-181133.3, ub=12000.)
         constraint = self.interface.Constraint(0.3 * x + 0.4 * y, lb=-100, name='test')
         self.model.add(constraint)
-        z = self.interface.Variable('z', lb=2, ub=5, type='integer')
+        z = self.interface.Variable('z', lb=2, ub=5, type='continuous')
         constraint += 77. * z
         self.model.remove(constraint)
         self.assertEqual(
@@ -321,7 +203,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         for i in range(1, glp_get_num_cols(self.model.problem) + 1):
             if i != x._index and i != y._index:
                 self.assertEqual(glp_get_obj_coef(self.model.problem, i), 0)
-        z = self.interface.Variable('z', lb=4, ub=4, type='integer')
+        z = self.interface.Variable('z', lb=4, ub=4, type='continuous')
         self.model.objective += 77. * z
 
         self.assertEqual(
@@ -414,9 +296,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.model.objective.set_linear_coefficients({self.model.variables.R_TPI: 666.})
         self.assertEqual(glp_get_obj_coef(self.model.problem, self.model.variables.R_TPI._index), 666.)
 
-    def test_instantiating_model_with_different_solver_problem_raises(self):
-        self.assertRaises(TypeError, self.interface.Model, problem='Chicken soup')
-
     def test_set_linear_coefficients_constraint(self):
         constraint = self.model.constraints.M_atp_c
         constraint.set_linear_coefficients({self.model.variables.R_Biomass_Ecoli_core_w_GAM: 666.})
@@ -429,6 +308,76 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
             col_name = glp_get_col_name(self.model.problem, ia[i])
             if col_name == 'R_Biomass_Ecoli_core_w_GAM':
                 self.assertEqual(da[i], 666.)
+
+    def test_remove_constraints(self):
+        x = self.interface.Variable('x', type='continuous')
+        y = self.interface.Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        z = self.interface.Variable('z', lb=4, ub=4, type='continuous')
+        constr1 = self.interface.Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
+        self.assertEqual(constr1.problem, None)
+        self.model.add(constr1)
+        self.model.update()
+        self.assertEqual(constr1.problem, self.model)
+        self.assertIn(constr1, self.model.constraints)
+        self.model.remove(constr1.name)
+        self.model.update()
+        self.assertEqual(constr1.problem, None)
+        self.assertNotIn(constr1, self.model.constraints)
+
+    def test_add_constraints(self):
+        x = self.interface.Variable('x', lb=0, ub=1, type='continuous')
+        y = self.interface.Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        z = self.interface.Variable('z', lb=0., ub=10., type='continuous')
+        constr1 = self.interface.Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
+        constr2 = self.interface.Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
+        constr3 = self.interface.Constraint(2.333 * x + y + z, lb=-300)
+        constr4 = self.interface.Constraint(x, lb=-300, ub=-300)
+        constr5 = self.interface.Constraint(3 * x)
+        self.model.add(constr1)
+        self.model.add(constr2)
+        self.model.add(constr3)
+        self.model.add([constr4, constr5])
+        self.assertIn(constr1.name, self.model.constraints)
+        self.assertIn(constr2.name, self.model.constraints)
+        self.assertIn(constr3.name, self.model.constraints)
+        self.assertIn(constr4.name, self.model.constraints)
+        self.assertIn(constr5.name, self.model.constraints)
+
+    def test_add_nonlinear_constraint_raises(self):
+        x = self.interface.Variable('x', type='continuous')
+        y = self.interface.Variable('y', lb=-181133.3, ub=12000., type='continuous')
+        z = self.interface.Variable('z', lb=3, ub=3, type='continuous')
+        with self.assertRaises(ValueError):
+            constraint = self.interface.Constraint(0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test')
+            self.model.add(constraint)
+            self.model.update()
+
+    def test_change_variable_type(self):
+        self.assertRaises(ValueError, setattr, self.model.variables[-1], "type", "integer")
+
+    def test_add_integer_var(self):
+        self.assertRaises(ValueError, self.interface.Variable, 'int_var', lb=-13, ub=499., type='integer')
+
+    def test_is_integer(self):
+        self.skipTest("No integers with glpk_exact")
+
+    def test_binary_variables(self):
+        self.skipTest("No integers with glpk_exact")
+
+    def test_implicitly_convert_milp_to_lp(self):
+        self.skipTest("No integers with glpk_exact")
+
+    def test_optimize_milp(self):
+        self.skipTest("No integers with glpk_exact")
+
+    def test_integer_variable_dual(self):
+        self.skipTest("No integers with glpk_exact")
+
+    def test_integer_constraint_dual(self):
+        self.skipTest("No integers with glpk_exact")
+
+    def test_integer_batch_duals(self):
+        self.skipTest("No integers with glpk_exact")
 
 
 if __name__ == '__main__':

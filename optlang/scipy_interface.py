@@ -85,9 +85,9 @@ class Problem(object):
         # self._rows_to_be_added.append(row)
         self._A = np.vstack((self._A, row))
 
-    def _flush_rows_to_add(self):
-        self._A = np.vstack([self._A] + self._rows_to_be_added)
-        self._rows_to_be_added = None
+    # def _flush_rows_to_add(self):
+    #     self._A = np.vstack([self._A] + self._rows_to_be_added)
+    #     self._rows_to_be_added = None
 
     def _add_col_to_A(self, col):
         # Flush any rows_to_be_added
@@ -99,9 +99,9 @@ class Problem(object):
         # self._cols_to_be_added.append(col)
         self._A = np.hstack((self._A, col))
 
-    def _flush_cols_to_add(self):
-        self._A = np.hstack([self._A] + self._cols_to_be_added)
-        self._cols_to_be_added = None
+    # def _flush_cols_to_add(self):
+    #     self._A = np.hstack([self._A] + self._cols_to_be_added)
+    #     self._cols_to_be_added = None
 
     def set_variable_bounds(self, name, lower, upper):
         """Set the bounds of a variable"""
@@ -197,10 +197,10 @@ class Problem(object):
     def A(self):
         """The linear coefficient matrix."""
         assert self._rows_to_be_added is None or self._cols_to_be_added is None
-        if self._rows_to_be_added is not None:
-            self._flush_rows_to_add()
-        if self._cols_to_be_added is not None:
-            self._flush_cols_to_add()
+        # if self._rows_to_be_added is not None:
+        #     self._flush_rows_to_add()
+        # if self._cols_to_be_added is not None:
+        #     self._flush_cols_to_add()
         return self._A
 
     @property
@@ -433,6 +433,7 @@ class Constraint(interface.Constraint):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             lb, ub = self.lb, self.ub
             self.lb, self.ub = None, None
             coefficients_dict = self.coefficient_dict(names=False)
@@ -445,6 +446,7 @@ class Constraint(interface.Constraint):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             coefs = self.coefficient_dict(names=False)
             return {v: coefs.get(v, 0) for v in variables}
         else:
@@ -499,12 +501,14 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             self.problem.problem.objective.update({var.name: coef for var, coef in coefficients.items()})
         else:
             raise Exception("Can't change coefficients if objective is not associated with a model.")
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             return {v: self.problem.problem.objective.get(v.name, 0) for v in variables}
         else:
             raise Exception("Can't get coefficients from solver if objective is not in a model")

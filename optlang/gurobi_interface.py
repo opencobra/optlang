@@ -181,6 +181,7 @@ class Constraint(interface.Constraint):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             grb_constraint = self.problem.problem.getConstrByName(self.name)
             for var, coeff in six.iteritems(coefficients):
                 self.problem.problem.chgCoeff(grb_constraint, self.problem.problem.getVarByName(var.name), float(coeff))
@@ -190,6 +191,7 @@ class Constraint(interface.Constraint):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             grb_constraint = self.problem.problem.getConstrByName(self.name)
             return {v: self.problem.problem.getCoeff(grb_constraint, v._internal_variable) for v in variables}
         else:
@@ -349,6 +351,7 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             for var, coeff in coefficients.items():
                 var._internal_variable.setAttr("Obj", coeff)
             self._expression_expired = True
@@ -358,6 +361,7 @@ class Objective(interface.Objective):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             obj = self.problem.problem.getObjective()
             coefs = {obj.getVar(i).getAttr("varName"): obj.getCoeff(i) for i in range(obj.size())}
             return {v: coefs.get(v.name, 0) for v in variables}

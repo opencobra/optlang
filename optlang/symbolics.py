@@ -24,6 +24,7 @@ import os
 import six
 import uuid
 import logging
+import optlang
 
 logger = logging.getLogger(__name__)
 
@@ -40,18 +41,18 @@ else:  # pragma: no cover
     except ImportError as e:
         if SYMENGINE_PREFERENCE.lower() in ("true", "yes", "on"):
             logger.warn("Symengine could not be imported: " + str(e))
+            if os.getenv('TRAVIS', None) is not None:  # Travis should error here # pragma: no cover
+                raise RuntimeError("Symengine should be used but could not be!")
         USE_SYMENGINE = False
     else:
         USE_SYMENGINE = True
-        logger.warn(
-            "Loading symengine... This feature is in beta testing. " +
-            "Please report any issues you encounter on http://github.com/biosustain/optlang/issues"
-        )
 
 
 if USE_SYMENGINE:  # pragma: no cover # noqa: C901
     import operator
     from six.moves import reduce
+
+    optlang._USING_SYMENGINE = True
 
     Integer = symengine.Integer
     Real = symengine.RealDouble
@@ -68,6 +69,9 @@ if USE_SYMENGINE:  # pragma: no cover # noqa: C901
 
     class Symbol(symengine_Symbol):
         def __new__(cls, name, *args, **kwargs):
+            if not isinstance(name, six.string_types):
+                raise TypeError("name should be a string, not %s" % repr(type(name)))
+
             return symengine_Symbol.__new__(cls, name)
 
         def __init__(self, name, *args, **kwargs):
@@ -102,6 +106,8 @@ else:  # Use sympy
     from sympy.core.assumptions import _assume_rules
     from sympy.core.facts import FactKB
     from sympy.core.expr import Expr
+
+    optlang._USING_SYMENGINE = False
 
     Integer = sympy.Integer
     Real = sympy.RealNumber

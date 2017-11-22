@@ -304,6 +304,9 @@ class Variable(symbolics.Symbol):
     def __setstate__(self, state):
         self.__dict__ = state
 
+    def __reduce__(self):
+        return (type(self), (self.name, self.lb, self.ub, self.type, self.problem))
+
     def to_json(self):
         """
         Returns a json-compatible object from the Variable that can be saved using the json module.
@@ -678,10 +681,10 @@ class Constraint(OptimizationExpression):
         """The indicator variable of constraint (if available)."""
         return self._indicator_variable
 
-    @indicator_variable.setter
-    def indicator_variable(self, value):
-        self.__check_valid_indicator_variable(value)
-        self._indicator_variable = value
+    # @indicator_variable.setter
+    # def indicator_variable(self, value):
+    #     self.__check_valid_indicator_variable(value)
+    #     self._indicator_variable = value
 
     @property
     def active_when(self):
@@ -1511,8 +1514,6 @@ class Model(object):
             constraint._problem = self
 
     def _remove_constraints(self, constraints):
-        for constraint in constraints:  # TODO: remove this hack that fixes problems with lazy solver expressions.
-            constraint.expression
         keys = [constraint.name for constraint in constraints]
         if len(constraints) > 350:  # Need to figure out a good threshold here
             self._constraints = self._constraints.fromkeys(set(self._constraints.keys()).difference(set(keys)))

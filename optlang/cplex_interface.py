@@ -219,6 +219,7 @@ class Constraint(interface.Constraint):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             triplets = [(self.name, var.name, float(coeff)) for var, coeff in six.iteritems(coefficients)]
             self.problem.problem.linear_constraints.set_coefficients(triplets)
         else:
@@ -226,6 +227,7 @@ class Constraint(interface.Constraint):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             coefs = self.problem.problem.linear_constraints.get_coefficients([(self.name, v.name) for v in variables])
             return {v: c for v, c in zip(variables, coefs)}
         else:
@@ -234,7 +236,13 @@ class Constraint(interface.Constraint):
     def _get_expression(self):
         if self.problem is not None:
             cplex_problem = self.problem.problem
-            cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
+            try:
+                cplex_row = cplex_problem.linear_constraints.get_rows(self.name)
+            except CplexSolverError as e:
+                if 'CPLEX Error  1219:' not in str(e):
+                    raise e
+                else:
+                    cplex_row = cplex_problem.indicator_constraints.get_linear_components(self.name)
             variables = self.problem._variables
             expression = add(
                 [mul((symbolics.Real(cplex_row.val[i]), variables[ind])) for i, ind in
@@ -367,6 +375,7 @@ class Objective(interface.Objective):
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
+            self.problem.update()
             self.problem.problem.objective.set_linear([(variable.name, float(coefficient)) for variable, coefficient in coefficients.items()])
             self._expression_expired = True
         else:
@@ -374,6 +383,7 @@ class Objective(interface.Objective):
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
+            self.problem.update()
             coefs = self.problem.problem.objective.get_linear([v.name for v in variables])
             return {v: c for v, c in zip(variables, coefs)}
         else:
@@ -608,11 +618,7 @@ class Model(interface.Model):
 
                 # Since constraint expressions are lazily retrieved from the solver they don't have to be built here
                 # lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])
-                lhs = 0
-                if isinstance(lhs, int):
-                    lhs = symbolics.Integer(lhs)
-                elif isinstance(lhs, float):
-                    lhs = symbolics.Real(lhs)
+                lhs = symbolics.Integer(0)
                 if sense == 'E':
                     constr = Constraint(lhs, lb=rhs, ub=rhs, name=name, problem=self)
                 elif sense == 'G':
@@ -625,7 +631,7 @@ class Model(interface.Model):
                         constr = Constraint(lhs, lb=rhs, ub=rhs + range_val, name=name, problem=self)
                     else:
                         constr = Constraint(lhs, lb=rhs + range_val, ub=rhs, name=name, problem=self)
-                else:
+                else:  # pragma: no cover
                     raise Exception('%s is not a recognized constraint sense.' % sense)
 
                 for variable in constraint_variables:
@@ -640,7 +646,7 @@ class Model(interface.Model):
                 )
             try:
                 objective_name = self.problem.objective.get_name()
-            except cplex.exceptions.CplexSolverError as e:
+            except CplexSolverError as e:
                 if 'CPLEX Error  1219:' not in str(e):
                     raise e
             else:
@@ -885,7 +891,9 @@ class Model(interface.Model):
     def _remove_constraints(self, constraints):
         super(Model, self)._remove_constraints(constraints)
         for constraint in constraints:
-            if constraint.is_Linear:
+            if constraint.indicator_variable is not None:
+                self.problem.indicator_constraints.delete(constraint.name)
+            elif constraint.is_Linear:
                 self.problem.linear_constraints.delete(constraint.name)
             elif constraint.is_Quadratic:
                 self.problem.quadratic_constraints.delete(constraint.name)

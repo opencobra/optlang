@@ -120,6 +120,17 @@ else:
                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
                 self.assertAlmostEqual(i, j)
 
+        def test_cplex_indicator_constraint_expression(self):
+            model = self.interface.Model()
+            x = self.interface.Variable("x")
+            y = self.interface.Variable("y", type="binary")
+            c = self.interface.Constraint(x, lb=0, indicator_variable=y, active_when=1)
+            self.assertEqual(c.expression - x, 0)
+
+            model.add(c)
+            model.update()
+            self.assertEqual(c.expression - x, 0)
+
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
         interface = cplex_interface
 
@@ -509,6 +520,11 @@ else:
             model.configuration.solution_target = "global"
             model.optimize()
             self.assertAlmostEqual(model.objective.value, 2441.999999971)
+
+        def test_quadratic_objective_expression(self):
+            objective = Objective(self.x1 ** 2 + self.x2 ** 2, direction="min")
+            self.model.objective = objective
+            self.assertEqual((self.model.objective.expression - (self.x1 ** 2 + self.x2 ** 2)).simplify(), 0)
 
     class InfeasibleMIPTestCase(unittest.TestCase):
 
