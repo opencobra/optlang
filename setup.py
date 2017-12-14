@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright 2013 Novo Nordisk Foundation Center for Biosustainability,
 # Technical University of Denmark.
 #
@@ -13,60 +15,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from __future__ import absolute_import
 
-from setuptools import setup, find_packages
-from itertools import chain
+import io
+import sys
 
 import versioneer
-
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'optlang/_version.py'
-versioneer.versionfile_build = 'optlang/_version.py'
-versioneer.tag_prefix = ''  # tags are like 1.2.0
-versioneer.parentdir_prefix = 'optlang-'  # dirname like 'myproject-1.2.0'
-
-# Run
-# pandoc --from=markdown --to=rst README.md -o README.rst
-# from time to time, to keep README.rst updated
-with open('README.rst', 'r') as f:
-    description = f.read()
-
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if on_rtd:
-    requirements = []
-else:
-    # requirements = ['sympy>=1.0.0', 'six>=1.9.0']
-    with open("requirements.txt") as infile:
-        requirements = infile.read().splitlines()
+from setuptools import setup
 
 
-extra_requirements = {
-    'test': ['nose>=1.3.7', 'rednose>=0.4.3', 'coverage>=4.0.3', 'jsonschema>=2.5'],
-}
-extra_requirements['all'] = list(set(chain(*extra_requirements.values())))
+setup_requirements = []
+# prevent pytest-runner from being installed on every invocation
+if set(['pytest', 'test', 'ptr']).intersection(sys.argv):
+    setup_requirements.append("pytest-runner")
 
+with io.open('requirements.txt') as file_handle:
+    requirements = file_handle.readlines()
+
+with io.open('test_requirements.txt') as file_handle:
+    test_requirements = file_handle.readlines()
+
+
+# All other keys are defined in setup.cfg under [metadata] and [options].
 setup(
-    name='optlang',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    packages=find_packages(exclude=('slow_tests',)),
-    install_requires=requirements,  # from requirements.txt
-    extras_require=extra_requirements,
-    test_suite='nose.collector',
-    author='Nikolaus Sonnenschein',
-    author_email='niko.sonnenschein@gmail.com',
-    description='Formulate optimization problems using sympy expressions and solve them using interfaces to third-party optimization software (e.g. GLPK).',
-    license='Apache License Version 2.0',
-    url='https://github.com/biosustain/optlang',
-    long_description=description,
-    keywords=['optimization', 'sympy', 'mathematical programming', 'heuristic optimization'],
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Topic :: Scientific/Engineering :: Mathematics',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'License :: OSI Approved :: Apache Software License',
-    ],
+    setup_requires=setup_requirements,
+    install_requires=requirements,
+    tests_require=test_requirements
 )

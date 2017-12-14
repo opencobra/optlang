@@ -1,7 +1,8 @@
 include LICENSE
-include README.md
 include README.rst
 include requirements.txt
+include test_requirements.txt
 include versioneer.py
 include optlang/_version.py
+
 recursive-exclude slow_tests *

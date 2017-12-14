@@ -45,5 +45,6 @@ nosetests.xml
 .coveralls.yml
 
 .idea
+.cache/
 
 MANIFEST

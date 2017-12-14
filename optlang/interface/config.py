@@ -19,12 +19,30 @@ from __future__ import absolute_import
 
 import inspect
 
-from optlang.util import SolverTolerances
 
 __all__ = (
     "MathematicalProgrammingConfiguration",
     "EvolutionaryOptimizationConfiguration"
 )
+
+
+class SolverTolerances(object):
+    def __init__(self, tolerance_functions):
+        self.__dict__['_functions'] = tolerance_functions
+
+    def __getattr__(self, item):
+        try:
+            return self._functions[item][0]()
+        except KeyError:
+            raise AttributeError(item + " is not an available tolerance parameter with this solver")
+
+    def __setattr__(self, key, value):
+        if key not in self._functions:
+            raise AttributeError(key + " is not an available tolerance parameter with this solver")
+        self._functions[key][1](value)
+
+    def __dir__(self):
+        return list(self._functions)
 
 
 class Configuration(object):

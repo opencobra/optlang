@@ -17,16 +17,18 @@
 
 from __future__ import absolute_import
 
+from weakref import ref
+
 from six import PY2
 
-from optlang.symbolics import Symbol
+from optlang.symbols import UniqueSymbol
 from optlang.util import is_numeric
 
 __all__ = ("Variable",)
 
 
 # noinspection PyShadowingBuiltins
-class Variable(Symbol):
+class Variable(UniqueSymbol):
     """Optimization variable.
 
     Variable objects are used to represents each variable of the optimization problem. When the optimization is
@@ -59,154 +61,31 @@ class Variable(Symbol):
     '-10 <= x <= 10'
     """
 
-    @staticmethod
-    def __test_valid_lower_bound(type, value, name):
-        if not (value is None or is_numeric(value)):
-            raise TypeError("Variable bounds must be numeric or None.")
-        if value is not None:
-            if type == 'integer' and value % 1 != 0.:
-                raise ValueError(
-                    'The provided lower bound %g cannot be assigned to integer variable %s (%g mod 1 != 0).' % (
-                        value, name, value))
-        if type == 'binary' and (value is None or value not in (0, 1)):
-            raise ValueError(
-                'The provided lower bound %s cannot be assigned to binary variable %s.' % (value, name))
+    # Might want to consider the use of slots in future for memory efficiency.
+    __slots__ = ("_name", "_type", "_lb", "_ub", "_observer", "_observable")
 
-    @staticmethod
-    def __test_valid_upper_bound(type, value, name):
-        if not (value is None or is_numeric(value)):
-            raise TypeError("Variable bounds must be numeric or None.")
-        if value is not None:
-            if type == 'integer' and value % 1 != 0.:
-                raise ValueError(
-                    'The provided upper bound %s cannot be assigned to integer variable %s (%s mod 1 != 0).' % (
-                        value, name, value))
-        if type == 'binary' and (value is None or value not in (0, 1)):
-            raise ValueError(
-                'The provided upper bound %s cannot be assigned to binary variable %s.' % (value, name))
+    _TYPES = frozenset(["continuous", "integer", "binary"])
 
-    @classmethod
-    def clone(cls, variable, **kwargs):
-        """
-        Make a copy of a variable.
-
-        Example
-        ----------
-        >>> var_copy = Variable.clone(old_var)
-        """
-        return cls(variable.name, lb=variable.lb, ub=variable.ub,
-                   type=variable.type, **kwargs)
-
-    def __init__(self, name, lb=None, ub=None, type="continuous",
-                 subject=None, **kwargs):
-        self.subject = subject
+    def __init__(self, name, lb=None, ub=None, type="continuous", **kwargs):
         # Ensure that name is str and not binary or unicode.
         # Some solvers only support the `str` type in Python 2.
         if PY2:
             name = str(name)
         if len(name) == 0:
-            raise ValueError('The variable name must not be empty.')
+            raise ValueError("The variable's name must not be empty.")
         if any(char.isspace() for char in name):
             raise ValueError(
-                'Variable names cannot contain whitespace characters.')
-        self._name = name
-        super(Variable, self).__init__(self, name, **kwargs)
-        self._lb = lb
-        self._ub = ub
-        if self._lb is None and type == 'binary':
-            self._lb = 0.
-        if self._ub is None and type == 'binary':
-            self._ub = 1.
-        self.__test_valid_lower_bound(type, self._lb, name)
-        self.__test_valid_upper_bound(type, self._ub, name)
+                "The variable's name cannot contain whitespace characters.")
+        super(Variable, self).__init__(name=name, **kwargs)
+        self._name = None
         self._type = None
+        self._lb = None
+        self._ub = None
+        self._observer = None
+        self._observable = None
+        self.name = name
         self.type = type
-
-    @property
-    def name(self):
-        """Name of variable."""
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        old_name = getattr(self, "name", "")
-        self._name = value
-        subject = getattr(self, "subject", None)
-        if subject is not None and value != old_name:
-            subject.update_variable(self, "name", value)
-
-    @property
-    def lb(self):
-        """Lower bound of variable."""
-        return self._lb
-
-    @lb.setter
-    def lb(self, value):
-        self._lb = value
-        if self.subject is not None:
-            self.subject.update_variable(self, value)
-
-    @property
-    def ub(self):
-        """Upper bound of variable."""
-        return self._ub
-
-    @ub.setter
-    def ub(self, value):
-        self._ub = value
-        if self.subject is not None:
-            self.subject.update_variable(self, "ub", value)
-
-    @property
-    def bounds(self):
-        """The variable's lower and upper bound."""
-        return self._lb, self._ub
-
-    @bounds.setter
-    def bounds(self, pair):
-        self._lb = pair[0]
-        self._ub = pair[1]
-        if self.subject is not None:
-            self.subject.update_variable(self, "lb", self._lb)
-            self.subject.update_variable(self, "ub", self._ub)
-
-    @property
-    def type(self):
-        """The variable's type (either 'continuous', 'integer', or 'binary')."""
-        return self._type
-
-    @type.setter
-    def type(self, value):
-        if value == 'continuous':
-            self._type = value
-        elif value == 'integer':
-            self._type = value
-            try:
-                self.lb = round(self.lb)
-            except TypeError:
-                pass
-            try:
-                self.ub = round(self.ub)
-            except TypeError:
-                pass
-        elif value == 'binary':
-            self._type = value
-            self._lb = 0
-            self._ub = 1
-        else:
-            raise ValueError(
-                "'{}' is not a valid variable type. Choose between 'continuous,"
-                " 'integer', or 'binary'.".format(value))
-
-    @property
-    def primal(self):
-        """The primal of variable (None if no solution exists)."""
-        return None
-
-    @property
-    def dual(self):
-        """The dual of variable (None if no solution exists)."""
-        return None
+        self.bounds = lb, ub
 
     def __str__(self):
         """Print a string representation of variable.
@@ -221,10 +100,6 @@ class Variable(Symbol):
         return '{} <= {} <= {}'.format(
             lb_str, super(Variable, self).__str__(), ub_str)
 
-    def __repr__(self):
-        """Does exactly the same as __str__ for now."""
-        return self.__str__()
-
     def __getstate__(self):
         return self.__dict__
 
@@ -233,15 +108,159 @@ class Variable(Symbol):
 
     def __reduce__(self):
         return (type(self), (
-            self.name, self.lb, self.ub, self.type, self.subject))
+            self.name, self.lb, self.ub, self.type))
+
+    @staticmethod
+    def _check_binary(value):
+        if not (value is None or value == 0 or value == 1):
+            raise ValueError(
+                "Binary variable's bounds must be 0 or 1, not {}."
+                "".format(value))
+
+    @staticmethod
+    def _check_bounds(lb, ub):
+        if lb is None or ub is None:
+            return
+        if lb > ub:
+            raise ValueError(
+                "Lower bound must be smaller or equal to upper bound "
+                "({} <= {}).".format(lb, ub))
+
+    @classmethod
+    def clone(cls, variable, **kwargs):
+        """
+        Make a copy of a variable.
+
+        Example
+        ----------
+        >>> old_var = Variable("x")
+        >>> var_copy = Variable.clone(old_var)
+        """
+        return cls(name=variable.name, lb=variable.lb, ub=variable.ub,
+                   type=variable.type, **kwargs)
+
+    @property
+    def name(self):
+        """Name of variable."""
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+        observer = getattr(self, "_observer", None)
+        try:
+            observer().update_variable_name(self, value)
+        except (AttributeError, TypeError):
+            # Observer is not set or no longer exists.
+            pass
+
+    @property
+    def type(self):
+        """The variable's type (either 'continuous', 'integer', or 'binary')."""
+        return self._type
+
+    @type.setter
+    def type(self, value):
+        if value not in self._TYPES:
+            raise ValueError(
+                "'{}' is not a recognized variable type. Choose between {}."
+                "".format(value, ", ".join(self._TYPES)))
+        self._type = value
+        try:
+            self._observer().update_variable_type(self, value)
+        except (AttributeError, TypeError):
+            # Observer is not set or no longer exists.
+            pass
+
+    @property
+    def lb(self):
+        """Lower bound of variable."""
+        return self._lb
+
+    @lb.setter
+    def lb(self, value):
+        # TODO: Require method for numeric values for these checks.
+        if self._type == "binary":
+            self._check_binary(value)
+        self._check_bounds(value, self._ub)
+        self._lb = value
+        try:
+            self._observer().update_variable_lb(self, value)
+        except (AttributeError, TypeError):
+            # Observer is not set or no longer exists.
+            pass
+
+    @property
+    def ub(self):
+        """Upper bound of variable."""
+        return self._ub
+
+    @ub.setter
+    def ub(self, value):
+        # TODO: Require method for numeric values for these checks.
+        if self._type == "binary":
+            self._check_binary(value)
+        self._check_bounds(self._lb, value)
+        self._ub = value
+        try:
+            self._observer().update_variable_ub(self, value)
+        except (AttributeError, TypeError):
+            # Observer is not set or no longer exists.
+            pass
+
+    @property
+    def bounds(self):
+        """The variable's lower and upper bound."""
+        return self._lb, self._ub
+
+    @bounds.setter
+    def bounds(self, pair):
+        lb, ub = pair
+        # TODO: Require method for numeric values for these checks.
+        if self._type == "binary":
+            self._check_binary(lb)
+            self._check_binary(ub)
+        self._check_bounds(lb, ub)
+        self._lb = lb
+        self._ub = ub
+        try:
+            self._observer().update_variable_bounds(self, self._lb, self._ub)
+        except (AttributeError, TypeError):
+            # Observer is not set or no longer exists.
+            pass
+
+    @property
+    def primal(self):
+        """The primal of variable (None if no solution exists)."""
+        try:
+            return self._observable().get_variable_primal(self)
+        except (AttributeError, TypeError):
+            # Observable is not set or no longer exists.
+            return None
+
+    @property
+    def dual(self):
+        """The dual of variable (None if no solution exists)."""
+        try:
+            return self._observable().get_variable_dual(self)
+        except (AttributeError, TypeError):
+            # Observable is not set or no longer exists.
+            return None
+
+    def set_observer(self, observer):
+        self._observer = ref(observer)
+
+    def set_observable(self, observable):
+        self._observable = ref(observable)
 
     def to_dict(self):
         """
-        Return an object representation of the Variable.
+        Return an object representation of the variable.
 
         Example
         --------
         >>> import json
+        >>> var = Variable("x")
         >>> with open("path_to_file.json", "w") as outfile:
         >>>     json.dump(var.to_dict(), outfile)
         """
@@ -255,7 +274,12 @@ class Variable(Symbol):
     @classmethod
     def from_dict(cls, obj):
         """
-        Construct a Variable from the provided object.
+        Construct a variable from the provided object.
+
+        Parameters
+        ----------
+        obj : dict
+            A variable representation as returned by ``Variable.to_dict``.
 
         Example
         --------
@@ -263,5 +287,4 @@ class Variable(Symbol):
         >>> with open("path_to_file.json") as infile:
         >>>     var = Variable.from_dict(json.load(infile))
         """
-        return cls(name=obj["name"], lb=obj.get("lb"), ub=obj.get("ub"),
-                   type=obj["type"])
+        return cls(**obj)
