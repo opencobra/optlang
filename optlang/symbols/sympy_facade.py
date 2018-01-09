@@ -45,10 +45,8 @@ class UniqueSymbol(sympy.Dummy):
     ----------
     name : str
         The name of the symbol.
-    """
 
-    # Might want to consider the use of slots in future for memory efficiency.
-    __slots__ = ()
+    """
 
     def __init__(self, name, **kwargs):
         super(UniqueSymbol, self).__init__(**kwargs)

@@ -22,15 +22,16 @@ from itertools import product, repeat, permutations
 
 import pytest
 
-from optlang.interface.variable import Variable
+from optlang.interface.variable import VariableType, Variable
+from optlang.interface.symbolic_parameter import SymbolicParameter
 
 CONTINUOUS_BOUNDS = [-1023, -33.3, None, 33.3, 1023]
 INTEGER_BOUNDS = [-1000, -50, None, 50, 1000]
 BINARY_BOUNDS = frozenset([None, 0, 1])
 BOUNDS = {
-    "continuous": CONTINUOUS_BOUNDS,
-    "integer": INTEGER_BOUNDS,
-    "binary": BINARY_BOUNDS
+    VariableType.CONTINUOUS: CONTINUOUS_BOUNDS,
+    VariableType.INTEGER: INTEGER_BOUNDS,
+    VariableType.BINARY: BINARY_BOUNDS
 }
 
 
@@ -49,19 +50,19 @@ def pytest_generate_tests(metafunc):
     fixtures = frozenset(metafunc.fixturenames)
     if "kind" not in fixtures:
         return
-    if not hasattr(metafunc.cls, "types"):
+    if not hasattr(metafunc.cls, "TYPES"):
         return
     params = list()
     if "lb" in fixtures and "ub" in fixtures:
-        for kind in metafunc.cls.types:
+        for kind in metafunc.cls.TYPES:
             params.extend(get_bounds_params(kind))
         metafunc.parametrize("kind, lb, ub", params)
     elif "bound" in fixtures:
-        for kind in metafunc.cls.types:
+        for kind in metafunc.cls.TYPES:
             params.extend(get_bound_params(kind))
         metafunc.parametrize("kind, bound", params)
     elif "kind" in fixtures:
-        metafunc.parametrize("kind", metafunc.cls.types)
+        metafunc.parametrize("kind", metafunc.cls.TYPES)
 
 
 class TestVariable(object):
@@ -74,7 +75,7 @@ class TestVariable(object):
     the type of variable), or ``kind, lb, ub`` arguments.
     """
 
-    types = ["continuous", "integer", "binary"]
+    TYPES = list(VariableType)
 
     def test_init_type(self, kind):
         Variable("x", type=kind)
@@ -180,27 +181,27 @@ def test_non_binary_bounds(lb, ub):
 
 @pytest.fixture()
 def observable(mocker):
-    return mocker.Mock(spec_set=["get_variable_primal", "get_variable_dual"])
+    return mocker.Mock(spec_set=["get_primal", "get_dual"])
 
 
 class TestObservable(object):
     """Thoroughly test the get calls on the observable."""
 
-    types = ["continuous", "integer", "binary"]
+    TYPES = list(VariableType)
 
     def test_primal(self, observable, kind):
-        observable.get_variable_primal.return_value = 13
+        observable.get_primal.return_value = 13
         var = Variable("x", type=kind)
         var.set_observable(observable)
         assert var.primal == 13
-        observable.get_variable_primal.assert_called_once_with(var)
+        observable.get_primal.assert_called_once_with(var)
 
     def test_dual(self, observable, kind):
-        observable.get_variable_dual.return_value = 13
+        observable.get_dual.return_value = 13
         var = Variable("x", type=kind)
         var.set_observable(observable)
         assert var.dual == 13
-        observable.get_variable_dual.assert_called_once_with(var)
+        observable.get_dual.assert_called_once_with(var)
 
     def test_weakref(self, kind):
         class Observable(object):
@@ -217,11 +218,11 @@ class TestObservable(object):
 @pytest.fixture()
 def observer(mocker):
     return mocker.Mock(spec_set=[
-        "update_variable_name",
-        "update_variable_type",
-        "update_variable_lb",
-        "update_variable_ub",
-        "update_variable_bounds"
+        "update_name",
+        "update_type",
+        "update_lb",
+        "update_ub",
+        "update_bounds"
     ])
 
 
@@ -235,7 +236,7 @@ class TestObserver(object):
     the type of variable), or ``kind, lb, ub`` arguments.
     """
 
-    types = ["continuous", "integer", "binary"]
+    TYPES = list(VariableType)
 
     def test_name_update(self, observer, kind):
         old = "x"
@@ -245,16 +246,16 @@ class TestObserver(object):
         assert var.name == old
         var.name = new
         assert var.name == new
-        observer.update_variable_name.assert_called_once_with(var, new)
+        observer.update_name.assert_called_once_with(var, new)
 
-    @pytest.mark.parametrize("old, new", list(permutations(types, 2)))
+    @pytest.mark.parametrize("old, new", list(permutations(TYPES, 2)))
     def test_type_update(self, observer, old, new):
         var = Variable("x", type=old)
         var.set_observer(observer)
         assert var.type == old
         var.type = new
         assert var.type == new
-        observer.update_variable_type.assert_called_once_with(var, new)
+        observer.update_type.assert_called_once_with(var, new)
 
     def test_lb_update(self, observer, kind, bound):
         var = Variable("x", type=kind)
@@ -262,7 +263,7 @@ class TestObserver(object):
         assert var.lb is None
         var.lb = bound
         assert var.lb == bound
-        observer.update_variable_lb.assert_called_once_with(var, bound)
+        observer.update_lb.assert_called_once_with(var, bound)
 
     def test_ub_update(self, observer, kind, bound):
         var = Variable("x", type=kind)
@@ -270,7 +271,7 @@ class TestObserver(object):
         assert var.ub is None
         var.ub = bound
         assert var.ub == bound
-        observer.update_variable_ub.assert_called_once_with(var, bound)
+        observer.update_ub.assert_called_once_with(var, bound)
 
     def test_bounds_update(self, observer, kind, bound):
         var = Variable("x", type=kind)
@@ -278,5 +279,74 @@ class TestObserver(object):
         assert var.bounds == (None, None)
         var.bounds = bound, bound
         assert var.bounds == (bound, bound)
-        observer.update_variable_bounds.assert_called_once_with(
+        observer.update_bounds.assert_called_once_with(
             var, bound, bound)
+
+
+@pytest.fixture(scope="function")
+def x(mocker):
+    x = SymbolicParameter("x")
+    mocker.patch.object(x, "attach", autospec=True)
+    mocker.patch.object(x, "detach", autospec=True)
+    return x
+
+
+@pytest.fixture(scope="function")
+def y(mocker):
+    y = SymbolicParameter("y")
+    mocker.patch.object(y, "attach", autospec=True)
+    mocker.patch.object(y, "detach", autospec=True)
+    return y
+
+
+class TestSymbolicBounds(object):
+    """
+    Test the expected behavior with integration of symbolic bounds.
+
+    """
+
+    TYPES = list(VariableType)
+
+    def test_lb_param_observation(self, x, y, kind):
+        var = Variable("i", type=kind)
+        var.lb = 1 + x - y
+        assert var.lb == 1 + x - y
+        x.attach.assert_called_once_with(var, "lb")
+        y.attach.assert_called_once_with(var, "lb")
+
+    def test_ub_param_observation(self, x, y, kind):
+        var = Variable("i", type=kind)
+        var.ub = 1 + x - y
+        assert var.ub == 1 + x - y
+        x.attach.assert_called_once_with(var, "ub")
+        y.attach.assert_called_once_with(var, "ub")
+
+    def test_bounds_param_observation(self, x, y, kind):
+        var = Variable("i", type=kind)
+        var.bounds = (x + y, 1 + x - y)
+        assert var.bounds == (x + y, 1 + x - y)
+        x.attach.assert_called_with(var, "bounds")
+        assert x.attach.call_count == 2
+        y.attach.assert_called_with(var, "bounds")
+        assert y.attach.call_count == 2
+
+    def test_lb_param_disregard(self, x, y, kind):
+        var = Variable("i", type=kind)
+        var.lb = 1 + x
+        var.lb = y
+        x.detach.assert_called_once_with(var, "lb")
+
+    def test_ub_param_disregard(self, x, y, kind):
+        var = Variable("i", type=kind)
+        var.ub = 1 + x
+        var.ub = y
+        x.detach.assert_called_once_with(var, "ub")
+
+    def test_bounds_param_disregard(self, x, y, kind):
+        var = Variable("i", type=kind)
+        var.bounds = (x - y, x + y)
+        var.bounds = None, None
+        x.detach.assert_called_with(var, "bounds")
+        assert x.detach.call_count == 2
+        y.detach.assert_called_with(var, "bounds")
+        assert y.detach.call_count == 2

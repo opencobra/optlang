@@ -23,7 +23,7 @@ import swiglpk as glpk
 from six import add_metaclass
 
 from optlang.interface import Model
-from optlang.util import inheritdocstring
+# from optlang.util import inheritdocstring
 from optlang.glpk.config import Configuration, VTYPE_TO_GLPK_VTYPE
 
 __all__ = ("GLPKModel",)
@@ -31,7 +31,7 @@ __all__ = ("GLPKModel",)
 LOGGER = logging.getLogger(__name__)
 
 
-@add_metaclass(inheritdocstring)
+# @add_metaclass(inheritdocstring)
 class GLPKModel(Model):
     def __init__(self, problem=None, **kwargs):
 

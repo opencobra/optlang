@@ -21,6 +21,7 @@ from optlang.container import Container
 from optlang.interface.variable import Variable
 from optlang.interface.constraint import Constraint
 from optlang.interface.objective import Objective
+from optlang.interface.change_tracker import ChangeTracker, VariableChangeTracker
 
 __all__ = ("Model",)
 
@@ -78,14 +79,108 @@ class Model(object):
         self._status = None
         self.name = name
         self._change_set = None
+        self._variable_changes = VariableChangeTracker()
+        self._constraint_changes = ChangeTracker()
+        self._objective_changes = ChangeTracker()
+        self._additive_mode = True
         if variables is not None:
-            self.add_variables(variables)
+            self.add(variables)
+
+    def _add_one(self, elem):
+        if isinstance(elem, Variable):
+            self._variable_changes.add(elem)
+            elem.set_observer(self._variable_changes)
+            elem.set_observable(self)
+        elif isinstance(elem, Constraint):
+            self._constraint_changes.add(elem)
+            elem.set_observer(self._constraint_changes)
+            elem.set_observable(self)
+        else:
+            raise TypeError(
+                "Can only add variables and constraints not '{}'."
+                "".format(type(elem)))
+
+    def add(self, iterable, sloppy=False):
+        if not self._additive_mode:
+            self.update()
+            self._additive_mode = True
+        try:
+            for elem in iterable:
+                self._add_one(elem)
+        except TypeError:
+            self._add_one(iterable)
+
+    def _remove_one(self, elem):
+        if isinstance(elem, Variable):
+            self._variable_changes.remove(elem)
+            elem.unset_observable()
+            elem.unset_observer()
+        elif isinstance(elem, Constraint):
+            self._constraint_changes.remove(elem)
+            elem.unset_observable()
+            elem.unset_observer()
+        else:
+            raise TypeError(
+                "Can only remove variables and constraints not '{}'."
+                "".format(type(elem)))
+
+    def remove(self, iterable):
+        if self._additive_mode:
+            self.update()
+            self._additive_mode = False
+        try:
+            for elem in iterable:
+                self._remove_one(elem)
+        except TypeError:
+            self._remove_one(iterable)
+
+    def update(self):
+        self._add_variables()
+        self._add_constraints()
+
+        self._update_variable_ubs()
+        self._update_constraint_ubs()
+        self._update_variable_lbs()
+        self._update_constraint_lbs()
+        self._update_variable_bounds()
+        self._update_constraint_bounds()
+
+        self._remove_variables()
+        self._remove_constraints()
+
+    def optimize(self):
+        """
+        Solve the optimization problem using the relevant solver back-end.
+        The status returned by this method tells whether an optimal solution was found,
+        if the problem is infeasible etc. Consult optlang.statuses for more elaborate explanations
+        of each status.
+
+        The objective value can be accessed from 'model.objective.value', while the solution can be
+        retrieved by 'model.primal_values'.
+
+        Returns
+        -------
+        status: str
+            Solution status.
+        """
+        self.update()
+        status = self._optimize()
+        if status != OPTIMAL and self.configuration.presolve == "auto":
+            self.configuration.presolve = True
+            status = self._optimize()
+            self.configuration.presolve = "auto"
+        self._status = status
+        return status
+
+    def _optimize(self):
+        raise NotImplementedError(
+            "You're using the high level interface to optlang. Problems cannot be optimized in this mode. Choose from one of the solver specific interfaces.")
 
     @property
     def variables(self):
         return self._variables
 
-    def add_variables(self, variables):
+    def _add_variables(self, variables):
         for variable in variables:
             variable.subject = self
             self._variables.append(variable)

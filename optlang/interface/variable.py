@@ -17,18 +17,28 @@
 
 from __future__ import absolute_import
 
-from weakref import ref
-
-from six import PY2
+import logging
+from enum import Enum, unique
 
 from optlang.symbols import UniqueSymbol
-from optlang.util import is_numeric
+from optlang.interface.mixins import (
+    BoundsMixin, ValueMixin, NameMixin, SymbolicMixin)
 
-__all__ = ("Variable",)
+__all__ = ("VariableType", "Variable")
+
+LOGGER = logging.getLogger(__name__)
+
+
+@unique
+class VariableType(Enum):
+    CONTINUOUS = "continuous"
+    INTEGER = "integer"
+    BINARY = "binary"
 
 
 # noinspection PyShadowingBuiltins
-class Variable(UniqueSymbol):
+class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
+               UniqueSymbol):
     """Optimization variable.
 
     Variable objects are used to represents each variable of the optimization problem. When the optimization is
@@ -62,30 +72,16 @@ class Variable(UniqueSymbol):
     """
 
     # Might want to consider the use of slots in future for memory efficiency.
-    __slots__ = ("_name", "_type", "_lb", "_ub", "_observer", "_observable")
-
-    _TYPES = frozenset(["continuous", "integer", "binary"])
 
     def __init__(self, name, lb=None, ub=None, type="continuous", **kwargs):
-        # Ensure that name is str and not binary or unicode.
-        # Some solvers only support the `str` type in Python 2.
-        if PY2:
-            name = str(name)
-        if len(name) == 0:
-            raise ValueError("The variable's name must not be empty.")
-        if any(char.isspace() for char in name):
-            raise ValueError(
-                "The variable's name cannot contain whitespace characters.")
         super(Variable, self).__init__(name=name, **kwargs)
-        self._name = None
         self._type = None
-        self._lb = None
-        self._ub = None
-        self._observer = None
-        self._observable = None
         self.name = name
         self.type = type
         self.bounds = lb, ub
+
+    def __repr__(self):
+        return "<{} Variable '{}'>".format(self._type.value, self._name)
 
     def __str__(self):
         """Print a string representation of variable.
@@ -100,31 +96,18 @@ class Variable(UniqueSymbol):
         return '{} <= {} <= {}'.format(
             lb_str, super(Variable, self).__str__(), ub_str)
 
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-
     def __reduce__(self):
         return (type(self), (
             self.name, self.lb, self.ub, self.type))
 
     @staticmethod
     def _check_binary(value):
+        # Use equivalence here such that different numeric classes can be
+        # compared, e.g., optlang.symbols.Integer.
         if not (value is None or value == 0 or value == 1):
             raise ValueError(
-                "Binary variable's bounds must be 0 or 1, not {}."
+                "Binary variable's bounds must be None, 0, or 1 not: {}."
                 "".format(value))
-
-    @staticmethod
-    def _check_bounds(lb, ub):
-        if lb is None or ub is None:
-            return
-        if lb > ub:
-            raise ValueError(
-                "Lower bound must be smaller or equal to upper bound "
-                "({} <= {}).".format(lb, ub))
 
     @classmethod
     def clone(cls, variable, **kwargs):
@@ -140,118 +123,54 @@ class Variable(UniqueSymbol):
                    type=variable.type, **kwargs)
 
     @property
-    def name(self):
-        """Name of variable."""
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-        observer = getattr(self, "_observer", None)
-        try:
-            observer().update_variable_name(self, value)
-        except (AttributeError, TypeError):
-            # Observer is not set or no longer exists.
-            pass
-
-    @property
     def type(self):
-        """The variable's type (either 'continuous', 'integer', or 'binary')."""
+        """Modify the variable's type."""
         return self._type
 
     @type.setter
     def type(self, value):
-        if value not in self._TYPES:
-            raise ValueError(
-                "'{}' is not a recognized variable type. Choose between {}."
-                "".format(value, ", ".join(self._TYPES)))
-        self._type = value
+        self._type = VariableType(value)
         try:
-            self._observer().update_variable_type(self, value)
-        except (AttributeError, TypeError):
+            self._observer.update_type(self, self._type)
+        except (AttributeError, ReferenceError):
             # Observer is not set or no longer exists.
             pass
 
-    @property
-    def lb(self):
-        """Lower bound of variable."""
-        return self._lb
-
-    @lb.setter
+    @BoundsMixin.lb.setter
     def lb(self, value):
-        # TODO: Require method for numeric values for these checks.
-        if self._type == "binary":
-            self._check_binary(value)
-        self._check_bounds(value, self._ub)
+        numeric = self._evaluate(value)
+        if self._type is VariableType.BINARY:
+            self._check_binary(numeric)
+        self._set_numeric_lb(numeric)
+        self._disregard_symbols(value, "lb")
+        self._observe_symbols(value, "lb")
         self._lb = value
-        try:
-            self._observer().update_variable_lb(self, value)
-        except (AttributeError, TypeError):
-            # Observer is not set or no longer exists.
-            pass
 
-    @property
-    def ub(self):
-        """Upper bound of variable."""
-        return self._ub
-
-    @ub.setter
+    @BoundsMixin.ub.setter
     def ub(self, value):
-        # TODO: Require method for numeric values for these checks.
-        if self._type == "binary":
-            self._check_binary(value)
-        self._check_bounds(self._lb, value)
+        numeric = self._evaluate(value)
+        if self._type is VariableType.BINARY:
+            self._check_binary(numeric)
+        self._set_numeric_ub(numeric)
+        self._disregard_symbols(value, "ub")
+        self._observe_symbols(value, "ub")
         self._ub = value
-        try:
-            self._observer().update_variable_ub(self, value)
-        except (AttributeError, TypeError):
-            # Observer is not set or no longer exists.
-            pass
 
-    @property
-    def bounds(self):
-        """The variable's lower and upper bound."""
-        return self._lb, self._ub
-
-    @bounds.setter
+    @BoundsMixin.bounds.setter
     def bounds(self, pair):
         lb, ub = pair
-        # TODO: Require method for numeric values for these checks.
-        if self._type == "binary":
-            self._check_binary(lb)
-            self._check_binary(ub)
-        self._check_bounds(lb, ub)
+        num_lb = self._evaluate(lb)
+        num_ub = self._evaluate(ub)
+        if self._type is VariableType.BINARY:
+            self._check_binary(num_lb)
+            self._check_binary(num_ub)
+        self._set_numeric_bounds(num_lb, num_ub)
+        self._disregard_symbols(lb, "bounds")
+        self._disregard_symbols(ub, "bounds")
+        self._observe_symbols(lb, "bounds")
+        self._observe_symbols(ub, "bounds")
         self._lb = lb
         self._ub = ub
-        try:
-            self._observer().update_variable_bounds(self, self._lb, self._ub)
-        except (AttributeError, TypeError):
-            # Observer is not set or no longer exists.
-            pass
-
-    @property
-    def primal(self):
-        """The primal of variable (None if no solution exists)."""
-        try:
-            return self._observable().get_variable_primal(self)
-        except (AttributeError, TypeError):
-            # Observable is not set or no longer exists.
-            return None
-
-    @property
-    def dual(self):
-        """The dual of variable (None if no solution exists)."""
-        try:
-            return self._observable().get_variable_dual(self)
-        except (AttributeError, TypeError):
-            # Observable is not set or no longer exists.
-            return None
-
-    def set_observer(self, observer):
-        self._observer = ref(observer)
-
-    def set_observable(self, observable):
-        self._observable = ref(observable)
 
     def to_dict(self):
         """

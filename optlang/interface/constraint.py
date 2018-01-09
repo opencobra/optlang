@@ -18,11 +18,12 @@
 from __future__ import absolute_import
 
 from optlang.interface.expression import OptimizationExpression
+from optlang.interface.mixins import BoundsMixin, ValueMixin
 
 __all__ = ("Constraint",)
 
 
-class Constraint(OptimizationExpression):
+class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
     """
     Constraint objects represent the mathematical (in-)equalities that constrain an optimization problem.
     A constraint is formulated by a symbolic expression of variables and a lower and/or upper bound.
@@ -64,18 +65,6 @@ class Constraint(OptimizationExpression):
 
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
-    def _check_valid_lower_bound(self, value):
-        if not (value is None or is_numeric(value)):
-            raise TypeError("Constraint bounds must be numeric or None, not {}".format(type(value)))
-        if value is not None and getattr(self, "ub", None) is not None and value > self.ub:
-            raise ValueError("Cannot set a lower bound that is greater than the upper bound.")
-
-    def _check_valid_upper_bound(self, value):
-        if not (value is None or is_numeric(value)):
-            raise TypeError("Constraint bounds must be numeric or None, not {}".format(type(value)))
-        if value is not None and getattr(self, "lb", None) is not None and value < self.lb:
-            raise ValueError("Cannot set an upper bound that is less than the lower bound.")
-
     @classmethod
     def __check_valid_indicator_variable(cls, variable):
         if variable is not None and not cls._INDICATOR_CONSTRAINT_SUPPORT:
@@ -111,35 +100,13 @@ class Constraint(OptimizationExpression):
                    indicator_variable=constraint.indicator_variable, active_when=constraint.active_when,
                    name=constraint.name, sloppy=True, **kwargs)
 
-    def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=1, *args, **kwargs):
-        self._problem = None
-        self.lb = lb
-        self.ub = ub
-        super(Constraint, self).__init__(expression, *args, **kwargs)
+    def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=1, **kwargs):
+        super(Constraint, self).__init__(expression=expression, **kwargs)
         self.__check_valid_indicator_variable(indicator_variable)
         self.__check_valid_active_when(active_when)
         self._indicator_variable = indicator_variable
         self._active_when = active_when
-
-    @property
-    def lb(self):
-        """Lower bound of constraint."""
-        return self._lb
-
-    @lb.setter
-    def lb(self, value):
-        self._check_valid_lower_bound(value)
-        self._lb = value
-
-    @property
-    def ub(self):
-        """Upper bound of constraint."""
-        return self._ub
-
-    @ub.setter
-    def ub(self, value):
-        self._check_valid_upper_bound(value)
-        self._ub = value
+        self.bounds = lb, ub
 
     @property
     def indicator_variable(self):
@@ -194,16 +161,6 @@ class Constraint(OptimizationExpression):
                 % expression
             )
         return expression
-
-    @property
-    def primal(self):
-        """Primal of constraint (None if no solution exists)."""
-        return None
-
-    @property
-    def dual(self):
-        """Dual of constraint (None if no solution exists)."""
-        return None
 
     def _round_primal_to_bounds(self, primal, tolerance=1e-5):
         if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):

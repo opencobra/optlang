@@ -15,111 +15,119 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
+import numbers
+from uuid import uuid4
+
+from optlang.symbols import Integer, Real
+from optlang.interface.variable import Variable
+from optlang.interface.mixins import (
+    NameMixin, SymbolicMixin, ObservableMixin)
 
 __all__ = ("OptimizationExpression",)
 
 
-# noinspection PyPep8Naming
-class OptimizationExpression(object):
+class OptimizationExpression(SymbolicMixin, NameMixin, ObservableMixin):
     """Abstract base class for Objective and Constraint."""
 
-    @classmethod
-    def _substitute_variables(cls, expression, model=None, **kwargs):
-        """Substitutes variables in (optimization)expression (constraint/objective) with variables of the appropriate interface type.
-        Attributes
-        ----------
-        expression: Constraint, Objective
-            An optimization expression.
-        model: Model or None, optional
-            A reference to an optimization model that should be searched for appropriate variables first.
-        """
-        interface = sys.modules[cls.__module__]
-        variable_substitutions = dict()
-        for variable in expression.variables:
-            if model is not None and variable.name in model.variables:
-                # print(variable.name, id(variable.problem))
-                variable_substitutions[variable] = model.variables[variable.name]
-            else:
-                variable_substitutions[variable] = interface.Variable.clone(variable)
-        adjusted_expression = expression.expression.xreplace(variable_substitutions)
-        return adjusted_expression
-
-    def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
-        # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
-        if six.PY2 and name is not None:
-            name = str(name)
-
-        super(OptimizationExpression, self).__init__(*args, **kwargs)
-        self._problem = problem
+    def __init__(self, expression, name=None, sloppy=False, **kwargs):
+        super(OptimizationExpression, self).__init__(**kwargs)
+        self._observe_symbols(expression, "expression")
         if sloppy:
             self._expression = expression
         else:
             self._expression = self._canonicalize(expression)
         if name is None:
-            self._name = str(uuid.uuid1())
+            self.name = str(uuid4())
         else:
-            self._name = name
+            self.name = name
 
-    @property
-    def name(self):
-        """The name of the object"""
-        return self._name
+    def __iadd__(self, other):
+        self._expression += other
+        self._observe_symbols(other, "expression")
+        return self
 
-    @name.setter
-    def name(self, value):
-        self._name = value
+    def __isub__(self, other):
+        self._expression -= other
+        self._observe_symbols(other, "expression")
+        return self
 
-    @property
-    def problem(self):
-        """A reference to the model that the object belongs to (or None)"""
-        return getattr(self, '_problem', None)
+    def __imul__(self, other):
+        self._expression *= other
+        self._observe_symbols(other, "expression")
+        return self
 
-    @problem.setter
-    def problem(self, value):
-        self._problem = value
+    def __idiv__(self, other):
+        self._expression /= other
+        self._observe_symbols(other, "expression")
+        return self
 
-    def _get_expression(self):
-        return self._expression
+    def __itruediv__(self, other):
+        self._expression /= other
+        self._observe_symbols(other, "expression")
+        return self
 
     @property
     def expression(self):
-        """The mathematical expression defining the objective/constraint."""
-        return self._get_expression()
+        """The mathematical expression defining the objective or constraint."""
+        return self._expression
 
     @property
     def variables(self):
-        """Variables in constraint/objective's expression."""
+        """Variables in the constraint's or objective's expression."""
         return self.expression.atoms(Variable)
 
-    def _canonicalize(self, expression):
-        if isinstance(expression, float):
-            return symbolics.Real(expression)
-        elif isinstance(expression, int):
-            return symbolics.Integer(expression)
+    @staticmethod
+    def _canonicalize(expression):
+        if isinstance(expression, numbers.Integral):
+            return Integer(expression)
+        elif isinstance(expression, numbers.Real):
+            return Real(expression)
         else:
-            # expression = expression.expand() This would be a good way to canonicalize, but is quite slow
+            # This would be a good way to canonicalize but is quite slow.
+            # TODO: Re-evaluate speed with symengine.
+            # expression = expression.expand()
             return expression
 
-    @property
-    def is_Linear(self):
-        """Returns True if expression is linear (a polynomial with degree 1 or 0) (read-only)."""
-        coeff_dict = self.expression.as_coefficients_dict()
-        for key in coeff_dict.keys():
-            if len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom):
-                pass
-            else:
-                return False
-            if key.is_Pow and key.args[1] != 1:
-                return False
-        else:
+    @staticmethod
+    def _non_linear(term):
+        if len(term.atoms(Variable)) > 1:
+            return True
+        # What about a power of 0?
+        if term.is_Pow and term.args[1] != 1:
+            return True
+        return False
+
+    def is_linear(self):
+        """
+        Determine if the expression is linear.
+
+        That means the expression is a polynomial of degree 0 or 1.
+
+        """
+        return any(self._non_linear(key)
+                   for key in self._expression.as_coefficients_dict())
+
+    @staticmethod
+    def _is_quadratic(term):
+        if len(term.atoms(Variable)) > 2:
+            return True
+        pass
+
+    def is_quadratic(self):
+        """
+        Determine if the expression is quadratic.
+
+        That means the expression is a polynomial with degree exactly 2.
+
+        """
+        if self._expression.is_Atom:
+            return False
+        if max(len(key.atoms(Variable))
+               for key in self.expression.as_coefficients_dict()) == 2:
             return True
 
-    @property
-    def is_Quadratic(self):
-        """Returns True if the expression is a polynomial with degree exactly 2 (read-only)."""
-        if self.expression.is_Atom:
-            return False
         if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom)
                 for key in self.expression.as_coefficients_dict().keys())):
             return False
@@ -154,26 +162,6 @@ class OptimizationExpression(object):
                 return False
             else:
                 return poly.is_quadratic
-
-    def __iadd__(self, other):
-        self._expression += other
-        return self
-
-    def __isub__(self, other):
-        self._expression -= other
-        return self
-
-    def __imul__(self, other):
-        self._expression *= other
-        return self
-
-    def __idiv__(self, other):
-        self._expression /= other
-        return self
-
-    def __itruediv__(self, other):
-        self._expression /= other
-        return self
 
     def set_linear_coefficients(self, coefficients):
         """Set coefficients of linear terms in constraint or objective.
@@ -212,4 +200,3 @@ class OptimizationExpression(object):
             {var1: coefficient, var2: coefficient ...}
         """
         raise NotImplementedError("Child classes should implement this.")
-

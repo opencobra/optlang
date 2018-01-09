@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2013 Novo Nordisk Foundation Center for Biosustainability,
+# Copyright 2017 Novo Nordisk Foundation Center for Biosustainability,
 # Technical University of Denmark.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,23 +17,22 @@
 
 from __future__ import absolute_import
 
-import io
+import weakref
 
-import versioneer
-from setuptools import setup
+import pytest
 
-
-with io.open('requirements.txt') as file_handle:
-    requirements = file_handle.readlines()
-
-with io.open('test_requirements.txt') as file_handle:
-    test_requirements = file_handle.readlines()
+from optlang.interface.mixins.observable_mixin import ObservableMixin
 
 
-# All other keys are defined in setup.cfg under [metadata] and [options].
-setup(
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
-    install_requires=requirements,
-    tests_require=test_requirements
-)
+@pytest.fixture(scope="function")
+def instance():
+    return ObservableMixin()
+
+
+def test_set_observable(instance, mocker):
+    observable = mocker.Mock()
+    instance.set_observable(observable)
+    assert weakref.getweakrefcount(observable) == 1
+    second = mocker.Mock()
+    instance.set_observable(second)
+    assert weakref.getweakrefcount(observable) == 0

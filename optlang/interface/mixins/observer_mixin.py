@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2013 Novo Nordisk Foundation Center for Biosustainability,
+# Copyright 2017 Novo Nordisk Foundation Center for Biosustainability,
 # Technical University of Denmark.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,23 +17,25 @@
 
 from __future__ import absolute_import
 
-import io
+from weakref import proxy
 
-import versioneer
-from setuptools import setup
-
-
-with io.open('requirements.txt') as file_handle:
-    requirements = file_handle.readlines()
-
-with io.open('test_requirements.txt') as file_handle:
-    test_requirements = file_handle.readlines()
+__all__ = ("ObserverMixin",)
 
 
-# All other keys are defined in setup.cfg under [metadata] and [options].
-setup(
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
-    install_requires=requirements,
-    tests_require=test_requirements
-)
+class ObserverMixin(object):
+    """
+    Provide a method to set an observer on an inheriting class.
+
+    Trying to access methods of the observer may raise an
+    ``AttributeError`` if it is not set (``None``) or a ``ReferenceError`` if
+    the observable no longer exists.
+
+    """
+
+    def __init__(self, **kwargs):
+        super(ObserverMixin, self).__init__(**kwargs)
+        self._observer = None
+
+    def set_observer(self, observer):
+        """Set the instance's observer."""
+        self._observer = proxy(observer)

@@ -17,16 +17,25 @@
 
 from __future__ import absolute_import
 
+from weakref import proxy
 
-class ChangeObserver(object):
+__all__ = ("ObservableMixin",)
+
+
+class ObservableMixin(object):
+    """
+    Provide a method to set an observable on an inheriting class.
+
+    Trying to access methods of the observable may raise an
+    ``AttributeError`` if it is not set (``None``) or a ``ReferenceError`` if
+    the observable no longer exists.
+
+    """
 
     def __init__(self, **kwargs):
-        super(ChangeObserver, self).__init__(**kwargs)
-        self.add_var = []
-        self.rm_var = []
-        self.var_lb = []
-        self.var_ub = []
-        self.toggle = 'add'
+        super(ObservableMixin, self).__init__(**kwargs)
+        self._observable = None
 
-    def __str__(self):
-        return str(self.__dict__)
+    def set_observable(self, observable):
+        """Set the instance's observable."""
+        self._observable = proxy(observable)

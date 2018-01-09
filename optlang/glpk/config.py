@@ -22,7 +22,7 @@ from six import add_metaclass, iteritems
 
 import optlang.interface as interface
 from optlang.interface import MathematicalProgrammingConfiguration
-from optlang.util import inheritdocstring
+# from optlang.util import inheritdocstring
 
 GLPK_STATUS_TO_STATUS = {
     glpk.GLP_UNDEF: interface.UNDEFINED,
@@ -43,7 +43,7 @@ VTYPE_TO_GLPK_VTYPE = {
     val: key for key, val in iteritems(GLPK_VTYPE_TO_VTYPE)}
 
 
-@add_metaclass(inheritdocstring)
+# @add_metaclass(inheritdocstring)
 class Configuration(MathematicalProgrammingConfiguration):
     def __init__(self, presolve="auto", verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)

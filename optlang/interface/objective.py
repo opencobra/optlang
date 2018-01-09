@@ -17,6 +17,7 @@
 
 from __future__ import absolute_import
 
+from optlang.symbols import Basic
 from optlang.interface.expression import OptimizationExpression
 
 __all__ = ("Objective",)
@@ -86,7 +87,7 @@ class Objective(OptimizationExpression):
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
         expression = super(Objective, self)._canonicalize(expression)
-        if isinstance(expression, sympy.Basic):
+        if isinstance(expression, Basic):
             expression *= 1.
         else:  # pragma: no cover   # symengine
             expression = (1. * expression).expand()

@@ -18,18 +18,20 @@ from __future__ import absolute_import
 import logging
 
 from optlang.symbols import *
+from optlang.interface import *
+from optlang.glpk import *
 
 LOGGER = logging.getLogger(__name__)
 
 #import logging
 #import traceback
-#from optlang._version import get_versions
+from optlang._version import get_versions
 #from optlang.util import list_available_solvers
 #from optlang.interface import statuses
 #import optlang.duality
 #
-#__version__ = get_versions()['version']
-#del get_versions
+__version__ = get_versions()['version']
+del get_versions
 #
 #log = logging.getLogger(__name__)
 #

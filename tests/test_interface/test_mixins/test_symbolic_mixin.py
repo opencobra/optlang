@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2013 Novo Nordisk Foundation Center for Biosustainability,
+# Copyright 2017 Novo Nordisk Foundation Center for Biosustainability,
 # Technical University of Denmark.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,25 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Test the expected behavior of the ``SymbolicMixin`` class.
+
+In the current implementation the ``SymbolicMixin`` mostly defines private
+methods and cannot reasonably be tested without actual implementations such
+as in ``optlang.Variable`` or ``optlang.OptimizationExpression``.
+
+"""
+
 from __future__ import absolute_import
 
-import io
-
-import versioneer
-from setuptools import setup
-
-
-with io.open('requirements.txt') as file_handle:
-    requirements = file_handle.readlines()
-
-with io.open('test_requirements.txt') as file_handle:
-    test_requirements = file_handle.readlines()
-
-
-# All other keys are defined in setup.cfg under [metadata] and [options].
-setup(
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
-    install_requires=requirements,
-    tests_require=test_requirements
-)
+from optlang.interface.mixins.symbolic_mixin import (
+    SymbolicMixin, SymbolicParameter)
