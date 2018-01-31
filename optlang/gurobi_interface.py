@@ -54,6 +54,8 @@ _GUROBI_STATUS_TO_STATUS = {
 
 _LP_METHODS = {"auto": -1, "primal": 0, "dual": 1, "barrier": 2, "concurrent": 3, "deterministic_concurrent": 4}
 _REVERSE_LP_METHODS = {v: k for k, v in _LP_METHODS.items()}
+_QP_METHODS = {"auto": -1, "primal": 0, "dual": 1, "barrier": 2}
+_REVERSE_QP_METHODS = {v: k for k, v in _QP_METHODS.items()}
 
 _VTYPE_TO_GUROBI_VTYPE = {'continuous': gurobipy.GRB.CONTINUOUS, 'integer': gurobipy.GRB.INTEGER,
                           'binary': gurobipy.GRB.BINARY}
@@ -329,8 +331,8 @@ class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, *args, **kwargs):
         super(Objective, self).__init__(expression, *args, sloppy=sloppy, **kwargs)
         self._expression_expired = False
-        if not (sloppy or self.is_Linear):  # or self.is_Quadratic: # QP is not yet supported
-            raise ValueError("The given objective is invalid. Must be linear or quadratic (not yet supported")
+        if not (sloppy or self.is_Linear or self.is_Quadratic):
+            raise ValueError("The given objective is invalid. Must be linear or quadratic.")
 
     @property
     def value(self):
@@ -371,22 +373,35 @@ class Objective(interface.Objective):
     def _get_expression(self):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             grb_obj = self.problem.problem.getObjective()
-            terms = []
             variables = self.problem._variables
-            for i in range(grb_obj.size()):
-                terms.append(grb_obj.getCoeff(i) * variables[grb_obj.getVar(i).getAttr('VarName')])
-            expression = symbolics.add(terms)
-            # TODO implement quadratic objectives
-            self._expression = expression + getattr(self.problem, "_objective_offset", 0)
+            if self.problem.IsQP:
+                quadratic_expression = symbolics.add(
+                    [symbolics.Real(grb_obj.getCoeff(i)) *
+                     variables[grb_obj.getVar1(i).VarName] *
+                     variables[grb_obj.getVar2(i).VarName]
+                     for i in range(grb_obj.size())])
+                linear_objective = grb_obj.getLinExpr()
+            else:
+                quadratic_expression = symbolics.Real(0.0)
+                linear_objective = grb_obj
+            linear_expression = symbolics.add(
+                [symbolics.Real(linear_objective.getCoeff(i)) *
+                 variables[linear_objective.getVar(i).VarName]
+                 for i in range(linear_objective.size())]
+            )
+            self._expression = (linear_expression + quadratic_expression +
+                                getattr(self.problem, "_objective_offset", 0))
             self._expression_expired = False
         return self._expression
 
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, lp_method='primal', presolve=False, verbosity=0, timeout=None, *args, **kwargs):
+    def __init__(self, lp_method='primal', qp_method='barrier', presolve=False,
+                 verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
+        self.qp_method = qp_method
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
@@ -401,6 +416,17 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             raise ValueError("Invalid LP method. Please choose among: " + str(list(_LP_METHODS)))
         if getattr(self, "problem", None) is not None:
             self.problem.problem.params.Method = _LP_METHODS[value]
+
+    @property
+    def qp_method(self):
+        return _REVERSE_QP_METHODS[self.problem.problem.params.Method]
+
+    @qp_method.setter
+    def qp_method(self, value):
+        if value not in _QP_METHODS:
+            raise ValueError("Invalid LP method. Please choose among: " + str(list(_QP_METHODS)))
+        if getattr(self, "problem", None) is not None:
+            self.problem.problem.params.Method = _QP_METHODS[value]
 
     @property
     def presolve(self):
@@ -525,13 +551,24 @@ class Model(interface.Model):
             super(Model, self)._add_constraints(constraints, sloppy=True)
 
             gurobi_objective = self.problem.getObjective()
+            if self.problem.IsQP:
+                quadratic_expression = symbolics.add(
+                    [symbolics.Real(gurobi_objective.getCoeff(i)) *
+                     self.variables[gurobi_objective.getVar1(i).VarName] *
+                     self.variables[gurobi_objective.getVar2(i).VarName]
+                     for i in range(gurobi_objective.size())])
+                linear_objective = gurobi_objective.getLinExpr()
+            else:
+                quadratic_expression = symbolics.Real(0.0)
+                linear_objective = gurobi_objective
             linear_expression = symbolics.add(
-                [symbolics.Real(gurobi_objective.getCoeff(i)) * self.variables[gurobi_objective.getVar(i).VarName]
-                 for i in range(gurobi_objective.size())]
+                [symbolics.Real(linear_objective.getCoeff(i)) *
+                 self.variables[linear_objective.getVar(i).VarName]
+                 for i in range(linear_objective.size())]
             )
 
             self._objective = Objective(
-                linear_expression,
+                linear_expression + quadratic_expression,
                 problem=self,
                 direction={1: 'min', -1: 'max'}[self.problem.getAttr('ModelSense')]
             )
@@ -604,7 +641,7 @@ class Model(interface.Model):
                 var1, var2 = key
                 var1 = self.problem.getVarByName(var1.name)
                 var2 = self.problem.getVarByName(var2.name)
-                grb_terms.append(coef, var1, var2)
+                grb_terms.append(coef * var1 * var2)
 
         grb_expression = gurobipy.quicksum(grb_terms)
 
