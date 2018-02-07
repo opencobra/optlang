@@ -21,7 +21,8 @@ from optlang.container import Container
 from optlang.interface.variable import Variable
 from optlang.interface.constraint import Constraint
 from optlang.interface.objective import Objective
-from optlang.interface.change_tracker import ChangeTracker, VariableChangeTracker
+from optlang.interface.trackers import (
+    VariableChangeTracker, ConstraintChangeTracker, ObjectiveChangeTracker)
 
 __all__ = ("Model",)
 
@@ -80,11 +81,15 @@ class Model(object):
         self.name = name
         self._change_set = None
         self._variable_changes = VariableChangeTracker()
-        self._constraint_changes = ChangeTracker()
-        self._objective_changes = ChangeTracker()
+        self._constraint_changes = ConstraintChangeTracker()
+        self._objective_changes = ObjectiveChangeTracker()
         self._additive_mode = True
         if variables is not None:
             self.add(variables)
+        if constraints is not None:
+            self.add(constraints)
+        if objective is not None:
+            self.add(objective)
 
     def _add_one(self, elem):
         if isinstance(elem, Variable):
@@ -94,6 +99,10 @@ class Model(object):
         elif isinstance(elem, Constraint):
             self._constraint_changes.add(elem)
             elem.set_observer(self._constraint_changes)
+            elem.set_observable(self)
+        elif isinstance(elem, Objective):
+            self._objective_changes.add(elem)
+            elem.set_observer(self._objective_changes)
             elem.set_observable(self)
         else:
             raise TypeError(
@@ -119,10 +128,14 @@ class Model(object):
             self._constraint_changes.remove(elem)
             elem.unset_observable()
             elem.unset_observer()
+        elif isinstance(elem, Objective):
+            self._objective_changes.remove(elem)
+            elem.unset_observable()
+            elem.unset_observer()
         else:
-            raise TypeError(
-                "Can only remove variables and constraints not '{}'."
-                "".format(type(elem)))
+            raise ValueError(
+                "Can only remove variables, constraints, and objectives not "
+                "'{}'.".format(repr(elem)))
 
     def remove(self, iterable):
         if self._additive_mode:

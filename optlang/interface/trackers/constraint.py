@@ -17,29 +17,18 @@
 
 from __future__ import absolute_import
 
-from weakref import proxy
+import logging
 
-__all__ = ("ObservableMixin",)
+from optlang.interface.trackers.name import NameChangeTracker
+from optlang.interface.trackers.bounds import BoundsChangeTracker
+from optlang.interface.trackers.expression import ExpressionChangeTracker
+
+__all__ = ("ConstraintChangeTracker",)
+
+LOGGER = logging.getLogger(__name__)
 
 
-class ObservableMixin(object):
-    """
-    Provide a method to set an observable on an inheriting class.
+class ConstraintChangeTracker(ExpressionChangeTracker, BoundsChangeTracker,
+                              NameChangeTracker):
 
-    Trying to access methods of the observable may raise an
-    ``AttributeError`` if it is not set (``None``) or a ``ReferenceError`` if
-    the observable no longer exists.
-
-    """
-
-    def __init__(self, **kwargs):
-        super(ObservableMixin, self).__init__(**kwargs)
-        self._observable = None
-
-    def set_observable(self, observable):
-        """Set the instance's observable."""
-        self._observable = proxy(observable)
-
-    def unset_observable(self):
-        """Unset the instance's observable."""
-        self._observable = None
+    pass

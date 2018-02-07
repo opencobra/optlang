@@ -48,7 +48,7 @@ class Objective(OptimizationExpression):
     """
 
     @classmethod
-    def clone(cls, objective, model=None, **kwargs):
+    def clone(cls, objective, **kwargs):
         """
         Make a copy of an objective. The objective being copied can be of the same type or belong to
         a different solver interface.
@@ -57,13 +57,13 @@ class Objective(OptimizationExpression):
         ----------
         >>> new_objective = Objective.clone(old_objective)
         """
-        return cls(cls._substitute_variables(objective, model=model), name=objective.name,
+        return cls(expression=objective.expression, name=objective.name,
                    direction=objective.direction, sloppy=True, **kwargs)
 
-    def __init__(self, expression, value=None, direction='max', *args, **kwargs):
+    def __init__(self, expression, value=None, direction='max', **kwargs):
         self._value = value
         self._direction = direction
-        super(Objective, self).__init__(expression, *args, **kwargs)
+        super(Objective, self).__init__(expression=expression, **kwargs)
 
     @property
     def value(self):
@@ -79,10 +79,10 @@ class Objective(OptimizationExpression):
         Expression and direction must be the same.
         Name does not have to match"""
         if isinstance(other, Objective):
-            return self.expression == other.expression and self.direction == other.direction
+            return self.direction == other.direction and \
+                   self.expression == other.expression
         else:
             return False
-            #
 
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""
@@ -100,9 +100,14 @@ class Objective(OptimizationExpression):
 
     @direction.setter
     def direction(self, value):
-        if value not in ['max', 'min']:
-            raise ValueError("Provided optimization direction %s is neither 'min' or 'max'." % value)
-        self._direction = value
+        if value.lower().startswith("max"):
+            self._direction = "max"
+        elif value.lower().startswith("min"):
+            self._direction = "min"
+        else:
+            raise ValueError(
+                "Provided optimization direction '{}' is neither 'min' nor "
+                "'max'.".format(value))
 
     def set_linear_coefficients(self, coefficients):
         """Set linear coefficients in objective.

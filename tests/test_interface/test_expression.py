@@ -17,22 +17,26 @@
 
 from __future__ import absolute_import
 
-import weakref
-from itertools import product, repeat, permutations
+from itertools import product
 
 import pytest
 
-from optlang.symbols import UniqueSymbol
+from optlang.symbols import Mul, Integer, Real
+from optlang.interface import Variable, SymbolicParameter
 from optlang.interface.expression import OptimizationExpression
+
+EXPRESSIONS = [
+    Integer(5),
+    Real(3.3),
+    2 * Variable("x"),
+    Variable("x") + 3 * Variable("y")
+]
 
 
 class TestOptimizationExpression(object):
     """Thoroughly test the optimization expression class."""
 
-    @pytest.mark.parametrize("expr", [
-        1,
-        2 * UniqueSymbol("x")
-    ])
+    @pytest.mark.parametrize("expr", EXPRESSIONS)
     def test_init_expression(self, expr):
         OptimizationExpression(expr)
 
@@ -46,81 +50,85 @@ class TestOptimizationExpression(object):
     def test_init_name(self, name):
         OptimizationExpression(1, name)
 
-    # def test_get_bounds(self, kind, lb, ub):
-    #     if lb is not None and ub is not None and lb > ub:
-    #         with pytest.raises(ValueError):
-    #             Variable("x", type=kind, lb=lb, ub=ub)
-    #     else:
-    #         var = Variable("x", type=kind, lb=lb, ub=ub)
-    #         assert var.lb == lb
-    #         assert var.ub == ub
-    #         assert var.bounds == (lb, ub)
+    @pytest.mark.parametrize("expr", EXPRESSIONS)
+    def test_get_expression(self, expr):
+        oexpr = OptimizationExpression(expr)
+        assert oexpr.expression == expr
 
-    # def test_set_bounds(self, kind, lb, ub):
-    #     var = Variable("x", type=kind)
-    #     if lb is not None and ub is not None and lb > ub:
-    #         with pytest.raises(ValueError):
-    #             var.bounds = lb, ub
-    #     else:
-    #         var.bounds = lb, ub
-    #         assert var.lb == lb
-    #         assert var.ub == ub
-    #         assert var.bounds == (lb, ub)
+    @pytest.mark.xfail(reason="Not yet implemented for symbolic paramters.",
+                       strict=True)
+    @pytest.mark.parametrize("expr, is_lin", [
+        (1, True),
+        (Mul(1, 3), True),
+        (1 + Variable("x"), True),
+        (1 + Variable("x") ** 1, True),
+        (1 + Variable("x") ** 2, False),
+        (1 + SymbolicParameter("mu") * Variable("x"), True),
+        (1 + Variable("y") * Variable("x"), False),
+        (1 + Variable("x") ** 3, False),
+        (1 + Variable("z") * Variable("y") ** Variable("x"), False),
+    ])
+    def test_is_linear(self, expr, is_lin):
+        oexpr = OptimizationExpression(expr)
+        assert oexpr.is_linear() == is_lin
 
-    # def test_set_lower_bound(self, kind, bound):
-    #     var = Variable("x", type=kind, ub=0)
-    #     if bound is not None and bound > var.ub:
-    #         with pytest.raises(ValueError):
-    #             var.lb = bound
-    #     else:
-    #         var.lb = bound
-    #         assert var.lb == bound
-    #         assert var.bounds == (bound, var.ub)
+    @pytest.mark.parametrize("expr, is_quad", [
+        (1, False),
+        (Mul(1, 3), False),
+        (1 + Variable("x"), False),
+        (1 + Variable("x") ** 1, False),
+        (1 + Variable("x") ** 2, True),
+        (1 + SymbolicParameter("mu") * Variable("x"), False),
+        (1 + Variable("y") * Variable("x"), True),
+        (1 + Variable("x") ** 3, False),
+        (1 + Variable("z") * Variable("y") ** Variable("x"), False),
+    ])
+    def test_is_quadratic(self, expr, is_quad):
+        oexpr = OptimizationExpression(expr)
+        assert oexpr.is_quadratic() == is_quad
 
-    # def test_set_upper_bound(self, kind, bound):
-    #     var = Variable("x", type=kind, lb=0)
-    #     if bound is not None and var.lb > bound:
-    #         with pytest.raises(ValueError):
-    #             var.ub = bound
-    #     else:
-    #         var.ub = bound
-    #         assert var.ub == bound
-    #         assert var.bounds == (var.lb, bound)
+    @pytest.mark.parametrize("expr, other", list(
+        product(EXPRESSIONS, repeat=2)))
+    def test_dunder_iadd(self, expr, other):
+        oexpr = OptimizationExpression(expr)
+        oexpr += other
+        assert oexpr.expression == expr + other
 
-    # def test_primal(self, kind):
-    #     var = Variable("x", type=kind)
-    #     assert var.primal is None
+    @pytest.mark.parametrize("expr, other", list(
+        product(EXPRESSIONS, repeat=2)))
+    def test_dunder_isub(self, expr, other):
+        oexpr = OptimizationExpression(expr)
+        oexpr -= other
+        assert oexpr.expression == expr - other
 
-    # def test_dual(self, kind):
-    #     var = Variable("x", type=kind)
-    #     assert var.primal is None
+    @pytest.mark.parametrize("expr, other", list(
+        product(EXPRESSIONS, repeat=2)))
+    def test_dunder_imul(self, expr, other):
+        oexpr = OptimizationExpression(expr)
+        oexpr *= other
+        assert oexpr.expression == expr * other
 
-    # def test_clone(self, kind, bound):
-    #     var = Variable(name="x", type=kind, lb=bound, ub=bound)
-    #     new = Variable.clone(var)
-    #     assert new is not var
-    #     assert new.name == var.name
-    #     assert new.type == var.type
-    #     assert new.lb == var.lb
-    #     assert new.ub == var.ub
+    @pytest.mark.parametrize("expr, other", list(
+        product(EXPRESSIONS, repeat=2)))
+    def test_dunder_idiv(self, expr, other):
+        oexpr = OptimizationExpression(expr)
+        # Cannot realiably trigger `__idiv__` by using `/=` since its Python 2.
+        oexpr.__idiv__(other)
+        assert oexpr.expression == expr / other
 
-    # def test_to_dict(self, kind, bound):
-    #     var = Variable(name="x", type=kind, lb=bound, ub=bound)
-    #     assert var.to_dict() == {
-    #         "name": "x",
-    #         "type": kind,
-    #         "lb": bound,
-    #         "ub": bound
-    #     }
+    @pytest.mark.parametrize("expr, other", list(
+        product(EXPRESSIONS, repeat=2)))
+    def test_dunder_itruediv(self, expr, other):
+        oexpr = OptimizationExpression(expr)
+        oexpr.__itruediv__(other)
+        assert oexpr.expression == expr / other
 
-    # def test_from_dict(self, kind, bound):
-    #     var = Variable.from_dict({
-    #         "name": "x",
-    #         "type": kind,
-    #         "lb": bound,
-    #         "ub": bound
-    #     })
-    #     assert var.name == "x"
-    #     assert var.type == kind
-    #     assert var.lb == bound
-    #     assert var.ub == bound
+    def test_get_linear_coefficients(self):
+        oexpr = OptimizationExpression(5)
+        with pytest.raises(NotImplementedError):
+            oexpr.get_linear_coefficients(None)
+
+    def test_set_linear_coefficients(self):
+        oexpr = OptimizationExpression(5)
+        with pytest.raises(NotImplementedError):
+            oexpr.set_linear_coefficients(None)

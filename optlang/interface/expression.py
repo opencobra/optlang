@@ -20,7 +20,7 @@ from __future__ import absolute_import, division
 import numbers
 from uuid import uuid4
 
-from optlang.symbols import Integer, Real
+from optlang.symbols import Integer, Real, Basic, sympify
 from optlang.interface.variable import Variable
 from optlang.interface.mixins import (
     NameMixin, SymbolicMixin, ObservableMixin)
@@ -43,30 +43,52 @@ class OptimizationExpression(SymbolicMixin, NameMixin, ObservableMixin):
         else:
             self.name = name
 
+    def _update_expression(self):
+        try:
+            self._observer.update_expression(
+                self, self._evaluate(self._expression))
+        except (AttributeError, ReferenceError):
+            # Observer is not set or no longer exists.
+            pass
+
     def __iadd__(self, other):
         self._expression += other
         self._observe_symbols(other, "expression")
+        self._update_expression()
         return self
 
     def __isub__(self, other):
         self._expression -= other
         self._observe_symbols(other, "expression")
+        self._update_expression()
         return self
 
     def __imul__(self, other):
         self._expression *= other
         self._observe_symbols(other, "expression")
+        self._update_expression()
         return self
 
     def __idiv__(self, other):
+        # Since we imported `division`, this essentially remaps to `truediv`.
+        # Mostly we handle symbolic expressions anyway, though.
         self._expression /= other
         self._observe_symbols(other, "expression")
+        self._update_expression()
         return self
 
     def __itruediv__(self, other):
         self._expression /= other
         self._observe_symbols(other, "expression")
+        self._update_expression()
         return self
+
+    def notify(self, attr):
+        """Get notified about symbolic parameter value changes."""
+        if attr == "expression":
+            self._update_expression()
+        else:
+            super(OptimizationExpression, self).notify(attr)
 
     @property
     def expression(self):
@@ -127,9 +149,9 @@ class OptimizationExpression(SymbolicMixin, NameMixin, ObservableMixin):
         if max(len(key.atoms(Variable))
                for key in self.expression.as_coefficients_dict()) == 2:
             return True
-
-        if all((len(key.free_symbols) < 2 and (key.is_Add or key.is_Mul or key.is_Atom)
-                for key in self.expression.as_coefficients_dict().keys())):
+        if all((len(key.atoms(Variable)) < 2 and
+                (key.is_Add or key.is_Mul or key.is_Atom)
+                for key in self.expression.as_coefficients_dict())):
             return False
         if self.expression.is_Add:
             terms = self.expression.args
@@ -152,12 +174,12 @@ class OptimizationExpression(SymbolicMixin, NameMixin, ObservableMixin):
                             is_quad = True
             return is_quad
         else:
-            if isinstance(self.expression, sympy.Basic):
+            if isinstance(self.expression, Basic):
                 sympy_expression = self.expression
             else:
-                sympy_expression = sympy.sympify(self.expression)
+                sympy_expression = sympify(self.expression)
             # TODO: Find a way to do this with symengine (Poly is not part of symengine, 23 March 2017)
-            poly = sympy_expression.as_poly(*sympy_expression.atoms(sympy.Symbol))
+            poly = sympy_expression.as_poly(*sympy_expression.atoms(Variable))
             if poly is None:
                 return False
             else:

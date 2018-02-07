@@ -17,29 +17,24 @@
 
 from __future__ import absolute_import
 
-from weakref import proxy
+import logging
 
-__all__ = ("ObservableMixin",)
+from optlang.interface.trackers.base import BaseChangeTracker
+
+__all__ = ("ExpressionChangeTracker",)
+
+LOGGER = logging.getLogger(__name__)
 
 
-class ObservableMixin(object):
-    """
-    Provide a method to set an observable on an inheriting class.
-
-    Trying to access methods of the observable may raise an
-    ``AttributeError`` if it is not set (``None``) or a ``ReferenceError`` if
-    the observable no longer exists.
-
-    """
+class ExpressionChangeTracker(BaseChangeTracker):
 
     def __init__(self, **kwargs):
-        super(ObservableMixin, self).__init__(**kwargs)
-        self._observable = None
+        super(ExpressionChangeTracker, self).__init__(**kwargs)
+        self._expression = list()
 
-    def set_observable(self, observable):
-        """Set the instance's observable."""
-        self._observable = proxy(observable)
+    def update_expression(self, obj, expr):
+        LOGGER.debug("Tracked expression update to '%s'.", str(expr))
+        self._expression.append((obj, expr))
 
-    def unset_observable(self):
-        """Unset the instance's observable."""
-        self._observable = None
+    def iter_expression(self):
+        return self._iter_last_unique(self._expression)

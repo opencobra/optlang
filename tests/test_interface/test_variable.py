@@ -90,6 +90,26 @@ class TestVariable(object):
     def test_init_name(self, kind, name):
         Variable(name, type=kind)
 
+    @pytest.mark.parametrize("var, expected", [
+        (Variable("foo"), "-Inf <= foo <= Inf"),
+        (Variable("foobar", lb=-10), "-10 <= foobar <= Inf"),
+        (Variable("baz", ub=-10), "-Inf <= baz <= -10"),
+        (Variable("baz", lb=-5, ub=5), "-5 <= baz <= 5")
+    ])
+    def test_dunder_str(self, var, expected):
+        # Should probably introduce scientific notation in str and test floats.
+        assert str(var) == expected
+
+    @pytest.mark.parametrize("var, expected", [
+        (Variable("x"), "<continuous Variable 'x'>"),
+        (Variable("foo", type="binary"), "<binary Variable 'foo'>"),
+        (Variable("bar", type="integer"), "<integer Variable 'bar'>"),
+        (Variable("foobar", type="continuous"),
+         "<continuous Variable 'foobar'>"),
+    ])
+    def test_dunder_repr(self, var, expected):
+        assert repr(var) == expected
+
     def test_get_bounds(self, kind, lb, ub):
         if lb is not None and ub is not None and lb > ub:
             with pytest.raises(ValueError):

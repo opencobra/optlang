@@ -39,3 +39,7 @@ class ObserverMixin(object):
     def set_observer(self, observer):
         """Set the instance's observer."""
         self._observer = proxy(observer)
+
+    def unset_observer(self):
+        """Unset the instance's observer."""
+        self._observer = None

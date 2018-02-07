@@ -79,28 +79,28 @@ class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
             raise ValueError('Provided active_when argument %s needs to be either 1 or 0' % active_when)
 
     @classmethod
-    def clone(cls, constraint, model=None, **kwargs):
+    def clone(cls, constraint, **kwargs):
         """
-        Make a copy of another constraint. The constraint being copied can be of the same type or belong to
-        a different solver interface.
+        Copy the attributes of another constraint.
 
         Parameters
         ----------
-        constraint: interface.Constraint (or subclass)
-            The constraint to copy
-        model: Model or None
-            The variables of the new constraint will be taken from this model. If None, new variables will be
-            constructed.
+        constraint: optlang.Constraint (or subclass)
+            The constraint to copy.
 
         Example
         ----------
         >>> const_copy = Constraint.clone(old_constraint)
         """
-        return cls(cls._substitute_variables(constraint, model=model), lb=constraint.lb, ub=constraint.ub,
-                   indicator_variable=constraint.indicator_variable, active_when=constraint.active_when,
-                   name=constraint.name, sloppy=True, **kwargs)
+        return cls(
+            expression=constraint.expression,
+            lb=constraint.lb, ub=constraint.ub,
+            indicator_variable=constraint.indicator_variable,
+            active_when=constraint.active_when,
+            name=constraint.name, sloppy=True, **kwargs)
 
-    def __init__(self, expression, lb=None, ub=None, indicator_variable=None, active_when=1, **kwargs):
+    def __init__(self, expression, lb=None, ub=None, indicator_variable=None,
+                 active_when=1, **kwargs):
         super(Constraint, self).__init__(expression=expression, **kwargs)
         self.__check_valid_indicator_variable(indicator_variable)
         self.__check_valid_active_when(active_when)
