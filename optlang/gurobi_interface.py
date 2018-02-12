@@ -374,7 +374,7 @@ class Objective(interface.Objective):
         if self.problem is not None and self._expression_expired and len(self.problem._variables) > 0:
             grb_obj = self.problem.problem.getObjective()
             variables = self.problem._variables
-            if self.problem.IsQP:
+            if self.problem.problem.IsQP:
                 quadratic_expression = symbolics.add(
                     [symbolics.Real(grb_obj.getCoeff(i)) *
                      variables[grb_obj.getVar1(i).VarName] *
@@ -397,7 +397,7 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, lp_method='primal', qp_method='barrier', presolve=False,
+    def __init__(self, lp_method='primal', qp_method='primal', presolve=False,
                  verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
@@ -568,7 +568,7 @@ class Model(interface.Model):
             )
 
             self._objective = Objective(
-                linear_expression + quadratic_expression,
+                quadratic_expression + linear_expression,
                 problem=self,
                 direction={1: 'min', -1: 'max'}[self.problem.getAttr('ModelSense')]
             )
