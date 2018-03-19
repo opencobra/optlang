@@ -25,12 +25,15 @@ else:
     import pickle
 
     from optlang.gurobi_interface import Variable, Constraint, Model, Objective
+    from gurobipy import GurobiError
     from optlang.tests import abstract_test_cases
     from optlang import gurobi_interface
 
     random.seed(666)
     TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
     TESTMILPMODELPATH = os.path.join(os.path.dirname(__file__), 'data/simple_milp.lp')
+    CONVEX_QP_PATH = os.path.join(os.path.dirname(__file__), 'data/qplib_3256.lp')
+    NONCONVEX_QP_PATH = os.path.join(os.path.dirname(__file__), 'data/qplib_1832.lp')
 
 
     class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
@@ -437,6 +440,76 @@ else:
                 col_name = row.getVar(i).getAttr('VarName')
                 if col_name == 'R_Biomass_Ecoli_core_w_GAM':
                     self.assertEqual(row.getCoeff(i), 666.)
+
+
+    class QuadraticProgrammingTestCase(abstract_test_cases.AbstractQuadraticProgrammingTestCase):
+            def setUp(self):
+                self.model = Model()
+                self.x1 = Variable("x1", lb=0)
+                self.x2 = Variable("x2", lb=0)
+                self.c1 = Constraint(self.x1 + self.x2, lb=1)
+                self.model.add([self.x1, self.x2, self.c1])
+
+            def test_convex_obj(self):
+                model = self.model
+                obj = Objective(self.x1 ** 2 + self.x2 ** 2, direction="min")
+                model.objective = obj
+                model.optimize()
+                self.assertAlmostEqual(model.objective.value, 0.5)
+                self.assertAlmostEqual(self.x1.primal, 0.5)
+                self.assertAlmostEqual(self.x2.primal, 0.5)
+
+                obj_2 = Objective(self.x1, direction="min")
+                model.objective = obj_2
+                model.optimize()
+                self.assertAlmostEqual(model.objective.value, 0.0)
+                self.assertAlmostEqual(self.x1.primal, 0.0)
+                self.assertGreaterEqual(self.x2.primal, 1.0)
+
+            def test_non_convex_obj(self):
+                model = self.model
+                obj = Objective(self.x1 * self.x2, direction="min")
+                model.objective = obj
+                self.assertRaises(GurobiError, model.optimize)
+
+                obj_2 = Objective(self.x1, direction="min")
+                model.objective = obj_2
+                model.optimize()
+                self.assertAlmostEqual(model.objective.value, 0.0)
+                self.assertAlmostEqual(self.x1.primal, 0.0)
+                self.assertGreaterEqual(self.x2.primal, 1.0)
+
+            def test_qp_convex(self):
+                model = Model(problem=gurobipy.read(CONVEX_QP_PATH))
+                self.assertEqual(len(model.variables), 651)
+                self.assertEqual(len(model.constraints), 501)
+                for constraint in model.constraints:
+                    self.assertTrue(constraint.is_Linear, "%s should be linear" % (str(constraint.expression)))
+                    self.assertFalse(constraint.is_Quadratic, "%s should not be quadratic" % (str(constraint.expression)))
+
+                self.assertTrue(model.objective.is_Quadratic, "objective should be quadratic")
+                self.assertFalse(model.objective.is_Linear, "objective should not be linear")
+
+                model.optimize()
+                self.assertAlmostEqual(model.objective.value, 32.2291282)
+
+            def test_qp_non_convex(self):
+                model = Model(problem=gurobipy.read(NONCONVEX_QP_PATH))
+                self.assertEqual(len(model.variables), 31)
+                self.assertEqual(len(model.constraints), 1)
+                for constraint in model.constraints:
+                    self.assertTrue(constraint.is_Linear, "%s should be linear" % (str(constraint.expression)))
+                    self.assertFalse(constraint.is_Quadratic, "%s should not be quadratic" % (str(constraint.expression)))
+
+                self.assertTrue(model.objective.is_Quadratic, "objective should be quadratic")
+                self.assertFalse(model.objective.is_Linear, "objective should not be linear")
+
+                self.assertRaises(GurobiError, model.optimize)
+
+            def test_quadratic_objective_expression(self):
+                objective = Objective(self.x1 ** 2 + self.x2 ** 2, direction="min")
+                self.model.objective = objective
+                self.assertEqual((self.model.objective.expression - (self.x1 ** 2 + self.x2 ** 2)).simplify(), 0)
 
 if __name__ == '__main__':
     nose.runmodule()
