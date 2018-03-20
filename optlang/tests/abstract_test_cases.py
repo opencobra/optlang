@@ -688,13 +688,13 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertAlmostEqual(y.primal, 0)
 
         obj.set_linear_coefficients({y: 1})
-        self.assertEqual((obj.expression - (x + y)).expand(), 0)
+        self.assertEqual(float((obj.expression - (x + y)).expand()), 0.0)
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
         self.assertAlmostEqual(x.primal, 2)
         self.assertAlmostEqual(y.primal, 2)
 
         obj.set_linear_coefficients({x: 0})
-        self.assertEqual((obj.expression - y).expand(), 0)
+        self.assertEqual(float((obj.expression - y).expand()), 0.0)
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
         self.assertAlmostEqual(x.primal, 0)
         self.assertAlmostEqual(y.primal, 3)
