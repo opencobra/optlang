@@ -4,12 +4,16 @@ python:
   - '2.7'
   - '3.4'
   - '3.5'
+  - '3.6'
 env:
   global:
+    - GITHUB_REPO=biosustain/optlang
     - secure: PBcwrLg4ZwVi9Gw25Q2adNd0uK+NCqFSiYl+ZuumkEXs4NQBbSXVd719wrWKUFdIqBy+h9ETo4Vsz/QsTZzI2mSG4zqTkm+oUxMW1tJxYEeKZvCo7GfZ883VlKFgdqvh6iouEvHSjfGbwc5cUp98CbjgI5ni01vGpDQh2hgokkI=
   matrix:
     - OPTLANG_USE_SYMENGINE=False
     - OPTLANG_USE_SYMENGINE=True
+matrix:
+  fast_finish: true
 cache:
   - pip: true
 addons:
@@ -54,14 +58,14 @@ deploy:
     file: dist/optlang*.whl
     skip_cleanup: true
     on:
-      branch: master
       tags: true
-      repo: biosustain/optlang
+      repo: $GITHUB_REPO
+      python: '3.6'
   - provider: pypi
     user: Nikolaus.Sonnenschein
     password:
       secure: Gn23MUvzP1DPJXxRXUOXGBJjyMamawxey5ByrOd+JT90roljHKSk8v1wdBMH7+s1DB/ygUJqB2Zy0cBC3mr0waY6HmxKpXhddgzQzG56Eua/npTxpz58Y8xfSYF+5QqS3gcyBrYEXmeHWuEURERy0b7uYKMx/QcHAHYhTaVy4zE=
     on:
-      branch: master
       tags: true
-      repo: biosustain/optlang
+      repo: $GITHUB_REPO
+      python: '3.6'
