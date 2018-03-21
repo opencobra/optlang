@@ -1,3 +1,9 @@
+branches:
+ only:
+ - master
+ - devel
+ - "/^\\d+\\.\\d+\\.\\d+[a]?\\d*$/"
+
 environment:
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
@@ -19,7 +25,7 @@ environment:
       PYTHON_VERSION: "3.5.2"
       PYTHON_ARCH: "64"
 
-clone_depth: 25
+clone_depth: 2
 
 init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%bit"
