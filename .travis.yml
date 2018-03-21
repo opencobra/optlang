@@ -1,10 +1,17 @@
 language: python
 sudo: false
+git:
+  depth: 1
 python:
   - '2.7'
   - '3.4'
   - '3.5'
   - '3.6'
+branches:
+  only:
+  - master
+  - devel
+  - "/^\\d+\\.\\d+\\.\\d+[a]?\\d*$/"
 env:
   global:
     - GITHUB_REPO=biosustain/optlang
