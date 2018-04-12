@@ -589,7 +589,11 @@ class Model(interface.Model):
     def __setstate__(self, repr_dict):
         with TemporaryFilename(suffix=".glpk", content=repr_dict["glpk_repr"]) as tmp_file_name:
             problem = glp_create_prob()
-            glp_read_prob(problem, 0, tmp_file_name)
+            code = glp_read_prob(problem, 0, tmp_file_name)
+            if code != 0:
+                with open(tmp_file_name) as tmp_file:
+                    invalid_problem = tmp_file.read()
+                raise Exception("The GLPK file " + tmp_file_name + " does not seem to contain a valid GLPK problem:\n\n" + invalid_problem)
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
@@ -645,7 +649,9 @@ class Model(interface.Model):
     def to_lp(self):
         self.update()
         with TemporaryFilename(suffix=".lp") as tmp_file_name:
-            glp_write_lp(self.problem, None, tmp_file_name)
+            code = glp_write_lp(self.problem, None, tmp_file_name)
+            if code != 0:
+                raise Exception("GLPK could not successfully create the LP.")
             with open(tmp_file_name) as tmp_file:
                 lp_form = tmp_file.read()
         return lp_form
@@ -653,8 +659,10 @@ class Model(interface.Model):
     def _glpk_representation(self):
         self.update()
         with TemporaryFilename(suffix=".glpk") as tmp_file_name:
-            glp_write_prob(self.problem, 0, tmp_file_name)
-            with open(tmp_file_name) as tmp_file:
+            code = glp_write_prob(self.problem, 0, tmp_file_name)
+            if code != 0:
+                raise Exception("GLPK could not successfully create the GLPK file.")
+            with open(tmp_file_name, "r") as tmp_file:
                 glpk_form = tmp_file.read()
         return glpk_form
 
