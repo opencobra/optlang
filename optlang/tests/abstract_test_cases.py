@@ -174,6 +174,8 @@ class AbstractVariableTestCase(unittest.TestCase):
         with self.assertRaises(Exception):
             self.var.name = "This\ttab"
 
+        self.assertEqual(self.var.name, 'test')
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractConstraintTestCase(unittest.TestCase):
