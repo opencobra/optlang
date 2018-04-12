@@ -147,10 +147,12 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
+        old_name = getattr(self, "name", None)
+        super(Variable, Variable).name.fset(self, value)
         _glpk_validate_id(value)
         if getattr(self, 'problem', None) is not None:
-            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
-        super(Variable, Variable).name.fset(self, value)
+            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
+
 
 
 @six.add_metaclass(inheritdocstring)
@@ -195,6 +197,7 @@ class Constraint(interface.Constraint):
     def name(self, value):
         _glpk_validate_id(value)
         old_name = getattr(self, 'name', None)
+        super(Constraint, Constraint).name.fset(self, value)
         self._name = value
         if self.problem is not None:
             glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
