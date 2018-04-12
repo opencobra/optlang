@@ -133,6 +133,19 @@ class Variable(symbolics.Symbol):
             raise ValueError(
                 'The provided upper bound %s cannot be assigned to binary variable %s.' % (value, name))
 
+    @staticmethod
+    def __validate_variable_name(name):
+        if name is None:
+            return
+        if len(name) < 1:
+            raise ValueError('Variable name must not be empty string')
+        for char in name:
+            if char.isspace():
+                raise ValueError(
+                    'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
+                        name, char)
+                )
+
     @classmethod
     def clone(cls, variable, **kwargs):
         """
@@ -147,18 +160,12 @@ class Variable(symbolics.Symbol):
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
 
-        # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
+        # Ensure that name is str and not unicode - some solvers only support string type in Python 2.
         if six.PY2:
             name = str(name)
 
-        if len(name) < 1:
-            raise ValueError('Variable name must not be empty string')
+        self.__validate_variable_name(name)
 
-        for char in name:
-            if char.isspace():
-                raise ValueError(
-                    'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
-                        name, char))
         self._name = name
         symbolics.Symbol.__init__(self, name, *args, **kwargs)
         self._lb = lb
@@ -180,6 +187,7 @@ class Variable(symbolics.Symbol):
 
     @name.setter
     def name(self, value):
+        self.__validate_variable_name(value)
         old_name = getattr(self, 'name', None)
         self._name = value
         if getattr(self, 'problem', None) is not None and value != old_name:
@@ -367,6 +375,19 @@ class Variable(symbolics.Symbol):
 class OptimizationExpression(object):
     """Abstract base class for Objective and Constraint."""
 
+    @staticmethod
+    def _validate_optimization_expression_name(name):
+        if name is None:
+            return
+        if len(name) < 1:
+            raise ValueError('Variable name must not be empty string')
+        for char in name:
+            if char.isspace():
+                raise ValueError(
+                    'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
+                        name, char)
+                )
+
     @classmethod
     def _substitute_variables(cls, expression, model=None, **kwargs):
         """Substitutes variables in (optimization)expression (constraint/objective) with variables of the appropriate interface type.
@@ -389,9 +410,11 @@ class OptimizationExpression(object):
         return adjusted_expression
 
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
-        # Ensure that name is str and not binary of unicode - some solvers only support string type in Python 2.
+        # Ensure that name is str and not unicode - some solvers only support string type in Python 2.
         if six.PY2 and name is not None:
             name = str(name)
+
+        self._validate_optimization_expression_name(name)
 
         super(OptimizationExpression, self).__init__(*args, **kwargs)
         self._problem = problem
@@ -411,6 +434,7 @@ class OptimizationExpression(object):
 
     @name.setter
     def name(self, value):
+        self._validate_optimization_expression_name(value)
         self._name = value
 
     @property

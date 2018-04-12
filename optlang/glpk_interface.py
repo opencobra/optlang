@@ -74,11 +74,17 @@ _VTYPE_TO_GLPK_VTYPE = dict(
 )
 
 
+def _glpk_validate_id(name):
+    if name is None:
+        return
+    if len(name) > 256:
+        raise ValueError("GLPK does not support ID's longer than 256 characters")
+
+
 @six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
     def __init__(self, name, index=None, *args, **kwargs):
-        if len(name) > 256:
-            raise ValueError("GLPK does not support ID's longer than 256 characters")
+        _glpk_validate_id(name)
         super(Variable, self).__init__(name, **kwargs)
 
     @property
@@ -141,8 +147,7 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
-        if len(value) > 256:
-            raise ValueError("GLPK does not support ID's longer than 256 characters")
+        _glpk_validate_id(value)
         if getattr(self, 'problem', None) is not None:
             glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
         super(Variable, Variable).name.fset(self, value)
@@ -153,8 +158,7 @@ class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
-        if len(kwargs.get("name", "")) > 256:
-            raise ValueError("GLPK does not support ID's longer than 256 characters")
+        _glpk_validate_id(kwargs.get("name", "GoodName"))
         super(Constraint, self).__init__(expression, sloppy=sloppy, *args, **kwargs)
         if not sloppy:
             if not self.is_Linear:
@@ -189,8 +193,7 @@ class Constraint(interface.Constraint):
 
     @interface.OptimizationExpression.name.setter
     def name(self, value):
-        if len(value) > 256:
-            raise ValueError("GLPK does not support ID's longer than 256 characters")
+        _glpk_validate_id(value)
         old_name = getattr(self, 'name', None)
         self._name = value
         if self.problem is not None:
@@ -486,8 +489,7 @@ class Model(interface.Model):
             self.problem = glp_create_prob()
             glp_create_index(self.problem)
             if self.name is not None:
-                if len(self.name) > 256:
-                    raise ValueError("GLPK does not support ID's longer than 256 characters")
+                _glpk_validate_id(self.name)
                 glp_set_prob_name(self.problem, str(self.name))
 
         else:
