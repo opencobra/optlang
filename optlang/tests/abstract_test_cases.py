@@ -158,6 +158,24 @@ class AbstractVariableTestCase(unittest.TestCase):
         var.lb = None
         self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
+    def test_invalid_name_raises(self):
+        with self.assertRaises(Exception):
+            self.interface.Variable("")
+        with self.assertRaises(Exception):
+            self.interface.Variable("This space")
+        with self.assertRaises(Exception):
+            self.interface.Variable("This\ttab")
+
+    def test_new_invalid_name_raises(self):
+        with self.assertRaises(Exception):
+            self.var.name = ""
+        with self.assertRaises(Exception):
+            self.var.name = "This space"
+        with self.assertRaises(Exception):
+            self.var.name = "This\ttab"
+
+        self.assertEqual(self.var.name, 'test')
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractConstraintTestCase(unittest.TestCase):
@@ -315,6 +333,23 @@ class AbstractConstraintTestCase(unittest.TestCase):
         self.assertEqual(c6.expression - x, 0)
         self.assertEqual(c6.ub, -3)
 
+    def test_invalid_name_raises(self):
+        with self.assertRaises(Exception):
+            self.interface.Constraint(1, name="")
+        with self.assertRaises(Exception):
+            self.interface.Constraint(1, name="This space")
+        with self.assertRaises(Exception):
+            self.interface.Constraint(1, name="This\ttab")
+
+    def test_new_invalid_name_raises(self):
+        const = self.interface.Constraint(1, name="MyConstraint")
+        with self.assertRaises(Exception):
+            const.name = ""
+        with self.assertRaises(Exception):
+            const.name = "This space"
+        with self.assertRaises(Exception):
+            const.name = "This\ttab"
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractObjectiveTestCase(unittest.TestCase):
@@ -337,6 +372,23 @@ class AbstractObjectiveTestCase(unittest.TestCase):
     def test_objective_value_is_none(self):
         objective = self.interface.Objective(0)
         self.assertIs(objective.value, None)
+
+    def test_invalid_name_raises(self):
+        with self.assertRaises(Exception):
+            self.interface.Objective(1, name="")
+        with self.assertRaises(Exception):
+            self.interface.Objective(1, name="This space")
+        with self.assertRaises(Exception):
+            self.interface.Objective(1, name="This\ttab")
+
+    def test_new_invalid_name_raises(self):
+        obj = self.interface.Objective(1, name="MyObjective")
+        with self.assertRaises(Exception):
+            obj.name = ""
+        with self.assertRaises(Exception):
+            obj.name = "This space"
+        with self.assertRaises(Exception):
+            obj.name = "This\ttab"
 
 
 @six.add_metaclass(abc.ABCMeta)

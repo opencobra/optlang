@@ -168,10 +168,11 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
-        if getattr(self, 'problem', None) is not None:
-            self._internal_variable.setAttr('VarName', value)
-            self.problem.problem.update()
+        internal_var = self._internal_variable
         super(Variable, Variable).name.fset(self, value)
+        if getattr(self, 'problem', None) is not None:
+            internal_var.setAttr('VarName', value)
+            self.problem.problem.update()
 
 
 @six.add_metaclass(inheritdocstring)
@@ -265,10 +266,11 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.name.setter
     def name(self, value):
+        old_name = self.name
+        super(Constraint, Constraint).name.fset(self, value)
         if getattr(self, 'problem', None) is not None:
-            grb_constraint = self.problem.problem.getConstrByName(self.name)
+            grb_constraint = self.problem.problem.getConstrByName(old_name)
             grb_constraint.setAttr('ConstrName', value)
-        self._name = value
 
     def _set_constraint_bounds(self, sense, rhs, range_value):
         gurobi_constraint = self.problem.problem.getConstrByName(self.name)
