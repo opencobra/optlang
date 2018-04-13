@@ -135,8 +135,6 @@ class Variable(symbolics.Symbol):
 
     @staticmethod
     def __validate_variable_name(name):
-        if name is None:
-            return
         if len(name) < 1:
             raise ValueError('Variable name must not be empty string')
         for char in name:
