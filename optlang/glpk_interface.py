@@ -74,11 +74,17 @@ _VTYPE_TO_GLPK_VTYPE = dict(
 )
 
 
+def _glpk_validate_id(name):
+    if name is None:
+        return
+    if len(name) > 256:
+        raise ValueError("GLPK does not support ID's longer than 256 characters")
+
+
 @six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
     def __init__(self, name, index=None, *args, **kwargs):
-        if len(name) > 256:
-            raise ValueError("GLPK does not support ID's longer than 256 characters")
+        _glpk_validate_id(name)
         super(Variable, self).__init__(name, **kwargs)
 
     @property
@@ -141,11 +147,12 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
-        if len(value) > 256:
-            raise ValueError("GLPK does not support ID's longer than 256 characters")
-        if getattr(self, 'problem', None) is not None:
-            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, self.name), str(value))
+        old_name = getattr(self, "name", None)
         super(Variable, Variable).name.fset(self, value)
+        _glpk_validate_id(value)
+        if getattr(self, 'problem', None) is not None:
+            glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
+
 
 
 @six.add_metaclass(inheritdocstring)
@@ -153,8 +160,7 @@ class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
-        if len(kwargs.get("name", "")) > 256:
-            raise ValueError("GLPK does not support ID's longer than 256 characters")
+        _glpk_validate_id(kwargs.get("name", "GoodName"))
         super(Constraint, self).__init__(expression, sloppy=sloppy, *args, **kwargs)
         if not sloppy:
             if not self.is_Linear:
@@ -189,9 +195,9 @@ class Constraint(interface.Constraint):
 
     @interface.OptimizationExpression.name.setter
     def name(self, value):
-        if len(value) > 256:
-            raise ValueError("GLPK does not support ID's longer than 256 characters")
+        _glpk_validate_id(value)
         old_name = getattr(self, 'name', None)
+        super(Constraint, Constraint).name.fset(self, value)
         self._name = value
         if self.problem is not None:
             glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
@@ -486,8 +492,7 @@ class Model(interface.Model):
             self.problem = glp_create_prob()
             glp_create_index(self.problem)
             if self.name is not None:
-                if len(self.name) > 256:
-                    raise ValueError("GLPK does not support ID's longer than 256 characters")
+                _glpk_validate_id(self.name)
                 glp_set_prob_name(self.problem, str(self.name))
 
         else:
@@ -589,7 +594,11 @@ class Model(interface.Model):
     def __setstate__(self, repr_dict):
         with TemporaryFilename(suffix=".glpk", content=repr_dict["glpk_repr"]) as tmp_file_name:
             problem = glp_create_prob()
-            glp_read_prob(problem, 0, tmp_file_name)
+            code = glp_read_prob(problem, 0, tmp_file_name)
+            if code != 0:
+                with open(tmp_file_name) as tmp_file:
+                    invalid_problem = tmp_file.read()
+                raise Exception("The GLPK file " + tmp_file_name + " does not seem to contain a valid GLPK problem:\n\n" + invalid_problem)
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
@@ -645,7 +654,9 @@ class Model(interface.Model):
     def to_lp(self):
         self.update()
         with TemporaryFilename(suffix=".lp") as tmp_file_name:
-            glp_write_lp(self.problem, None, tmp_file_name)
+            code = glp_write_lp(self.problem, None, tmp_file_name)
+            if code != 0:
+                raise Exception("GLPK could not successfully create the LP.")
             with open(tmp_file_name) as tmp_file:
                 lp_form = tmp_file.read()
         return lp_form
@@ -653,8 +664,10 @@ class Model(interface.Model):
     def _glpk_representation(self):
         self.update()
         with TemporaryFilename(suffix=".glpk") as tmp_file_name:
-            glp_write_prob(self.problem, 0, tmp_file_name)
-            with open(tmp_file_name) as tmp_file:
+            code = glp_write_prob(self.problem, 0, tmp_file_name)
+            if code != 0:
+                raise Exception("GLPK could not successfully create the GLPK file.")
+            with open(tmp_file_name, "r") as tmp_file:
                 glpk_form = tmp_file.read()
         return glpk_form
 

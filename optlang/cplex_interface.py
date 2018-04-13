@@ -205,9 +205,10 @@ class Variable(interface.Variable):
 
     @interface.Variable.name.setter
     def name(self, value):
-        if getattr(self, "problem", None) is not None:
-            self.problem.problem.variables.set_names(self.name, value)
+        old_name = getattr(self, "name", None)
         super(Variable, Variable).name.fset(self, value)
+        if getattr(self, "problem", None) is not None:
+            self.problem.problem.variables.set_names(old_name, value)
 
 
 @six.add_metaclass(inheritdocstring)
@@ -284,15 +285,16 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.name.setter
     def name(self, value):
+        old_name = self.name
+        super(Constraint, Constraint).name.fset(self, value)
         if getattr(self, 'problem', None) is not None:
             if self.indicator_variable is not None:
                 raise NotImplementedError(
                     "Unfortunately, the CPLEX python bindings don't support changing an indicator constraint's name"
                 )
             else:
-                self.problem.problem.linear_constraints.set_names(self.name, value)
-            self.problem.constraints.update_key(self.name)
-        self._name = value
+                self.problem.problem.linear_constraints.set_names(old_name, value)
+            self.problem.constraints.update_key(old_name)
 
     @interface.Constraint.lb.setter
     def lb(self, value):
