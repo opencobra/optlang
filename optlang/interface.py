@@ -378,11 +378,11 @@ class OptimizationExpression(object):
         if name is None:
             return
         if len(name) < 1:
-            raise ValueError('Variable name must not be empty string')
+            raise ValueError('Name must not be empty string')
         for char in name:
             if char.isspace():
                 raise ValueError(
-                    'Variable names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
+                    'Names cannot contain whitespace characters. "%s" contains whitespace character "%s".' % (
                         name, char)
                 )
 
