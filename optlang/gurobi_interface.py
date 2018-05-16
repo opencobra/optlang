@@ -95,7 +95,7 @@ class Variable(interface.Variable):
 
     @property
     def _internal_variable(self):
-        if self.problem:
+        if getattr(self, 'problem', None) is not None:
 
             internal_variable = self.problem.problem.getVarByName(self._original_name)
 
@@ -170,7 +170,7 @@ class Variable(interface.Variable):
     def name(self, value):
         internal_var = self._internal_variable
         super(Variable, Variable).name.fset(self, value)
-        if getattr(self, 'problem', None) is not None:
+        if internal_var is not None:
             internal_var.setAttr('VarName', value)
             self.problem.problem.update()
 
