@@ -470,7 +470,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             def flush(self):
                 self.logger.debug(self.getvalue())
 
-        logger = logging.getLogger('cplex.problem')
+        logger = logging.getLogger(__name__ + ".Model")  # TODO: Make the logger name specific to each solver instance
         logger.setLevel(logging.CRITICAL)
         error_stream_handler = ErrorStreamHandler(logger)
         warning_stream_handler = WarningStreamHandler(logger)
