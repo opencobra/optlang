@@ -402,10 +402,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def __init__(self, lp_method='primal', qp_method='primal', presolve=False,
                  verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
+        self.verbosity = verbosity
         self.lp_method = lp_method
         self.qp_method = qp_method
         self.presolve = presolve
-        self.verbosity = verbosity
         self.timeout = timeout
 
     @property
