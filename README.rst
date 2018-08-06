@@ -44,7 +44,7 @@ The following dependencies are needed.
 The following are optional dependencies that allow other solvers to be used.
 
 -  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__ (LP, MILP, QP, MIQP)
--  `gurobipy <http://www.gurobi.com>`__ (LP, MILP, QP and MIQP)
+-  `gurobipy <http://www.gurobi.com>`__ (LP, MILP, QP, MIQP)
 -  `scipy <http://www.scipy.org>`__ (LP)
 
 
