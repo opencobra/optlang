@@ -68,10 +68,18 @@ class ExpressionParsingTestCase(unittest.TestCase):
         target = {frozenset([x]): 1, frozenset([y]): 1, frozenset([x, y]): 2, frozenset([z]): -1}
         linear_target = {z: 4}
 
-        offset_const, linear_terms_const, quad_terms_const = parse_optimization_expression(Constraint(expr, lb=0), quadratic=True)
-        offset_obj, linear_terms_obj, quad_terms_obj = parse_optimization_expression(Objective(expr), linear=False)
+        constraint = Constraint(expr, lb=0)
+        offset_const, linear_terms_const, quad_terms_const = parse_optimization_expression(
+            constraint,
+            quadratic=True
+        )
+        offset_obj, linear_terms_obj, quad_terms_obj = parse_optimization_expression(
+            Objective(expr),
+            expression=expr,
+            linear=False
+        )
 
-        self.assertEqual(offset_const, -4)
+        self.assertEqual(offset_const - constraint.lb, -4 + offset)
         self.assertEqual(offset_obj, -4 + offset)
         _compare_term_dicts(self, linear_terms_const, linear_target)
         _compare_term_dicts(self, linear_terms_obj, linear_target)

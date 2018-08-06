@@ -33,6 +33,7 @@ import sympy
 
 import six
 
+import optlang
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
 from optlang.util import parse_expr, expr_to_json, is_numeric, SolverTolerances
@@ -463,7 +464,8 @@ class OptimizationExpression(object):
         elif isinstance(expression, int):
             return symbolics.Integer(expression)
         else:
-            # expression = expression.expand() This would be a good way to canonicalize, but is quite slow
+            if optlang._USING_SYMENGINE:
+                expression = expression.expand()  # This is a good way to canonicalize, but is quite slow for sympy
             return expression
 
     @property
