@@ -44,7 +44,7 @@ The following dependencies are needed.
 The following are optional dependencies that allow other solvers to be used.
 
 -  `cplex <https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__ (LP, MILP, QP, MIQP)
--  `gurobipy <http://www.gurobi.com>`__ (LP, MILP (QP and MIQP support will be added in the future))
+-  `gurobipy <http://www.gurobi.com>`__ (LP, MILP, QP and MIQP)
 -  `scipy <http://www.scipy.org>`__ (LP)
 
 
@@ -133,9 +133,6 @@ Future outlook
    dealing with LP/MILP/QP solvers (like GLPK,
    `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
    etc.)
-
-The optlang `trello board <https://trello.com/b/aiwfbVKO/optlang>`__
-also provides a good overview of the project's roadmap.
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000
    :target: https://pypi.python.org/pypi/optlang
