@@ -1,6 +1,0 @@
-pytest>=3.1
-pytest-raises
-pytest-mock
-pytest-cov
-codecov
-jsonschema
