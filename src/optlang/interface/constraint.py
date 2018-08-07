@@ -25,20 +25,26 @@ __all__ = ("Constraint",)
 
 class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
     """
-    Constraint objects represent the mathematical (in-)equalities that constrain an optimization problem.
-    A constraint is formulated by a symbolic expression of variables and a lower and/or upper bound.
-    Equality constraints can be formulated by setting the upper and lower bounds to the same value.
+    Constraint objects represent the mathematical (in-)equalities that constrain
+    an optimization problem.  A constraint is formulated by a symbolic
+    expression of variables and a lower and/or upper bound.  Equality
+    constraints can be formulated by setting the upper and lower bounds to the
+    same value.
 
-    Some solvers support indicator variables. This lets a binary variable act as a switch that decides whether
-    the constraint should be active (cannot be violated) or inactive (can be violated).
+    Some solvers support indicator variables. This lets a binary variable act as
+    a switch that decides whether the constraint should be active (cannot be
+    violated) or inactive (can be violated).
 
-    The constraint expression can be an arbitrary combination of variables, however the individual solvers
-    have limits to the forms of constraints they allow. Most solvers only allow linear constraints, meaning that
-    the expression should be of the form :code:`a * var1 + b * var2 + c * var3 ...`
+    The constraint expression can be an arbitrary combination of variables,
+    however the individual solvers have limits to the forms of constraints they
+    allow. Most solvers only allow linear constraints, meaning that
+    the expression should be of the form::
+
+        a * var1 + b * var2 + c * var3 ...
 
     Attributes
     ----------
-    expression: sympy
+    expression: sympy or symengine
         The mathematical expression defining the constraint.
     name: str, optional
         The constraint's name.
@@ -50,8 +56,6 @@ class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
         The indicator variable (needs to be binary).
     active_when: 0 or 1 (default 0)
         When the constraint should
-    problem: Model or None, optional
-        A reference to the optimization model the variable belongs to.
 
     Examples
     ----------
@@ -62,8 +66,45 @@ class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
     >>> c2 = Constraint(var2, lb=0, ub=0, indicator_variable=indicator_var, active_when=1) # When the indicator is 1, var2 is constrained to be 0
     """
 
+    __slots__ = (
+        "_observer",
+        "_observable",
+        "_name",
+        "_lb", "_numeric_lb", "_ub", "_numeric_ub",
+        "_expression",
+        "_indicator_variable",
+        "_active_when"
+    )
 
     _INDICATOR_CONSTRAINT_SUPPORT = True
+
+    def __init__(self, expression, lb=None, ub=None, indicator_variable=None,
+                 active_when=1, **kwargs):
+        """
+        Initialize a constraint with an expression.
+
+        Parameters
+        ----------
+        expression: sympy or symengine
+            The mathematical expression defining the constraint.
+        name: str, optional
+            The constraint's name.
+        lb: float or None, optional
+            The lower bound, if None then -inf.
+        ub: float or None, optional
+            The upper bound, if None then inf.
+        indicator_variable: Variable
+            The indicator variable (needs to be binary).
+        active_when: 0 or 1 (default 0)
+            When the constraint should
+
+        """
+        super(Constraint, self).__init__(expression=expression, **kwargs)
+        self.__check_valid_indicator_variable(indicator_variable)
+        self.__check_valid_active_when(active_when)
+        self._indicator_variable = indicator_variable
+        self._active_when = active_when
+        self.bounds = lb, ub
 
     @classmethod
     def __check_valid_indicator_variable(cls, variable):
@@ -98,15 +139,6 @@ class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
             indicator_variable=constraint.indicator_variable,
             active_when=constraint.active_when,
             name=constraint.name, sloppy=True, **kwargs)
-
-    def __init__(self, expression, lb=None, ub=None, indicator_variable=None,
-                 active_when=1, **kwargs):
-        super(Constraint, self).__init__(expression=expression, **kwargs)
-        self.__check_valid_indicator_variable(indicator_variable)
-        self.__check_valid_active_when(active_when)
-        self._indicator_variable = indicator_variable
-        self._active_when = active_when
-        self.bounds = lb, ub
 
     @property
     def indicator_variable(self):

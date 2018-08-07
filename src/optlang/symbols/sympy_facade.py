@@ -46,7 +46,18 @@ class UniqueSymbol(sympy.Dummy):
     name : str
         The name of the symbol.
 
+    Warnings
+    --------
+    As described in the `mixins` package documentation, in order to enable
+    multiple inheritance, the ``__slots__`` attribute is defined to be empty.
+    A child class inheriting from `UniqueSymbol` is expected to define at
+    least the following slots::
+
+        __slots__ = ()
+
     """
+
+    __slots__ = ()
 
     def __init__(self, name, **kwargs):
         super(UniqueSymbol, self).__init__(**kwargs)

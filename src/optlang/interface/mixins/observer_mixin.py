@@ -26,11 +26,24 @@ class ObserverMixin(object):
     """
     Provide a method to set an observer on an inheriting class.
 
+    Notes
+    -----
     Trying to access methods of the observer may raise an
-    ``AttributeError`` if it is not set (``None``) or a ``ReferenceError`` if
+    `AttributeError` if it is not set (`None`) or a `ReferenceError` if
     the observable no longer exists.
 
+    Warnings
+    --------
+    As described in the `mixins` package documentation, in order to enable
+    multiple inheritance from all the mixin classes, the ``__slots__``
+    attribute is defined to be empty. A child class making use of the
+    `ObserverMixin` is expected to define at least the following slots::
+
+        __slots__ = ("_observer",)
+
     """
+
+    __slots__ = ()
 
     def __init__(self, **kwargs):
         super(ObserverMixin, self).__init__(**kwargs)

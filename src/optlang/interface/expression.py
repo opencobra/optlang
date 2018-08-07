@@ -29,7 +29,22 @@ __all__ = ("OptimizationExpression",)
 
 
 class OptimizationExpression(SymbolicMixin, NameMixin, ObservableMixin):
-    """Abstract base class for Objective and Constraint."""
+    """
+    Define an abstract base class for Objective and Constraint.
+
+    Warnings
+    --------
+    As described in the `mixins` package documentation, in order to enable
+    multiple inheritance, the ``__slots__`` attribute is defined to be empty.
+    A child class inheriting from `OptimizationExpression` is expected to
+    define at least the following slots in addition to the slots of the
+    parent mixins::
+
+        __slots__ = ("_expression",)
+
+    """
+
+    __slots__ = ()
 
     def __init__(self, expression, name=None, sloppy=False, **kwargs):
         super(OptimizationExpression, self).__init__(**kwargs)

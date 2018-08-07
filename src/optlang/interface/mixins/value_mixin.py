@@ -27,7 +27,19 @@ class ValueMixin(ObservableMixin):
     Provide bounds properties to an inheriting class.
 
     Also depends on there being an observer for proper functioning.
+
+    Warnings
+    --------
+    As described in the `mixins` package documentation, in order to enable
+    multiple inheritance from all the mixin classes, the ``__slots__``
+    attribute is defined to be empty. A child class making use of the
+    `ValueMixin` is expected to define at least the following slots::
+
+        __slots__ = ()
+
     """
+
+    __slots__ = ()
 
     def __init__(self, **kwargs):
         super(ValueMixin, self).__init__(**kwargs)

@@ -39,7 +39,8 @@ class VariableType(Enum):
 # noinspection PyShadowingBuiltins
 class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
                UniqueSymbol):
-    """Optimization variable.
+    """
+    Define an optimization variable.
 
     Variable objects are used to represents each variable of the optimization problem. When the optimization is
     performed, the combination of variable values that optimizes the objective function, while not violating any
@@ -61,7 +62,8 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
     ub: float or None, optional
         The upper bound, if None then inf.
     type: {'continuous', 'integer', 'binary'}, optional
-        The variable type, 'continuous' or 'integer' or 'binary'.
+        The variable type can be continuous, integer, or binary. The default
+        is continuous.
     subject: optlang.Model or None, optional
         A reference to the optimization model the variable belongs to.
 
@@ -71,9 +73,31 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
     '-10 <= x <= 10'
     """
 
-    # Might want to consider the use of slots in future for memory efficiency.
+    __slots__ = (
+        "_observer",
+        "_observable",
+        "_name",
+        "_lb", "_numeric_lb", "_ub", "_numeric_ub",
+        "_type"
+    )
 
     def __init__(self, name, lb=None, ub=None, type="continuous", **kwargs):
+        """
+        Initialize a variable.
+
+        Parameters
+        ----------
+        name: str
+            The variable's name.
+        lb: float or None, optional
+            The lower bound, if None then -inf.
+        ub: float or None, optional
+            The upper bound, if None then inf.
+        type: {'continuous', 'integer', 'binary'}, optional
+            The variable type can be continuous, integer, or binary. The default
+            is continuous.
+
+        """
         super(Variable, self).__init__(name=name, **kwargs)
         self._type = None
         self.name = name

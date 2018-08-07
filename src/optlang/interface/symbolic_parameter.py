@@ -40,7 +40,13 @@ class SymbolicParameter(UniqueSymbol):
     value : numeric
         The current numeric value of the parameter. Changing the value will
         update all expression this parameter is part of.
+
     """
+
+    __slots__ = (
+        "_observers",
+        "_value"
+    )
 
     def __init__(self, name, value=0, **kwargs):
         super(SymbolicParameter, self).__init__(name=name, **kwargs)

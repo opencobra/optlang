@@ -23,7 +23,21 @@ __all__ = ("SymbolicMixin",)
 
 
 class SymbolicMixin(object):
-    """Provide methods for handling symbolic parameters."""
+    """
+    Provide methods for handling symbolic parameters.
+
+    Warnings
+    --------
+    As described in the `mixins` package documentation, in order to enable
+    multiple inheritance from all the mixin classes, the ``__slots__``
+    attribute is defined to be empty. A child class making use of the
+    `ObserverMixin` is expected to define at least the following slots::
+
+        __slots__ = ()
+
+    """
+
+    __slots__ = ()
 
     def __init__(self, **kwargs):
         super(SymbolicMixin, self).__init__(**kwargs)

@@ -47,6 +47,20 @@ class Objective(OptimizationExpression):
 
     """
 
+    __slots__ = (
+        "_observer",
+        "_observable",
+        "_name",
+        "_expression",
+        "_value",
+        "_direction"
+    )
+
+    def __init__(self, expression, value=None, direction='max', **kwargs):
+        super(Objective, self).__init__(expression=expression, **kwargs)
+        self._value = value
+        self._direction = direction
+
     @classmethod
     def clone(cls, objective, **kwargs):
         """
@@ -59,11 +73,6 @@ class Objective(OptimizationExpression):
         """
         return cls(expression=objective.expression, name=objective.name,
                    direction=objective.direction, sloppy=True, **kwargs)
-
-    def __init__(self, expression, value=None, direction='max', **kwargs):
-        self._value = value
-        self._direction = direction
-        super(Objective, self).__init__(expression=expression, **kwargs)
 
     @property
     def value(self):

@@ -32,7 +32,19 @@ class BoundsMixin(SymbolicMixin, ObserverMixin):
     Provide bounds properties to an inheriting class.
 
     Also depends on there being an observer for proper functioning.
+
+    Warnings
+    --------
+    As described in the `mixins` package documentation, in order to enable
+    multiple inheritance from all the mixin classes, the ``__slots__``
+    attribute is defined to be empty. A child class making use of the
+    `BoundsMixin` is expected to define at least the following slots::
+
+        __slots__ = ("_lb", "_numeric_lb", "_ub", "_numeric_ub")
+
     """
+
+    __slots__ = ()
 
     def __init__(self, **kwargs):
         super(BoundsMixin, self).__init__(**kwargs)

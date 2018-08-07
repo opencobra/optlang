@@ -15,7 +15,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provide mixins for DRYer classes."""
+"""
+Provide mixins for DRYer classes.
+
+All mixins in this sub-package define an empty ``__slots__`` slots attribute.
+
+Why do we define ``__slots__`` in the first place?
+In short, ``__slots__`` are a more memory efficient way to define attributes
+and prevent the creation of the ``__dict__`` and ``__weakref__`` attributes
+thus preventing dynamic attribute assignment.
+
+Why do we define an empty ``__slots__`` attribute?
+In order to allow for multiple inheritance from these mixins, the mixins
+themselves have to not define any slots otherwise Python does not know how to
+create such a class, it will raise::
+
+    TypeError: Error when calling the metaclass bases multiple bases have
+        instance lay-out conflict
+
+This way of defining the mixin-classes was largely inspired by a very elaborate
+answer on StackOverflow [1]_.
+
+References
+----------
+.. [1] https://stackoverflow.com/a/28059785
+
+"""
 
 from __future__ import absolute_import
 

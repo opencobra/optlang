@@ -29,7 +29,19 @@ class NameMixin(ObserverMixin):
     Provide a name property to an inheriting class.
 
     Also depends on there being an observer for proper functioning.
+
+    Warnings
+    --------
+    As described in the `mixins` package documentation, in order to enable
+    multiple inheritance from all the mixin classes, the ``__slots__``
+    attribute is defined to be empty. A child class making use of the
+    `NameMixin` is expected to define at least the following slots::
+
+        __slots__ = ("_name",)
+
     """
+
+    __slots__ = ()
 
     def __init__(self, **kwargs):
         super(NameMixin, self).__init__(**kwargs)
@@ -37,11 +49,12 @@ class NameMixin(ObserverMixin):
 
     @property
     def name(self):
-        """Name of variable."""
+        """Return the name."""
         return self._name
 
     @name.setter
     def name(self, name):
+        """Set the name."""
         # Ensure that name is str and not binary or unicode.
         # Some solvers only support the `str` type in Python 2.
         if PY2:
