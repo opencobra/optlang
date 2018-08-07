@@ -1632,6 +1632,4 @@ if __name__ == '__main__':
 
     # model.remove(x1)
 
-    import optlang
-
     model.interface = optlang.glpk_interface
