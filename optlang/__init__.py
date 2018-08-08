@@ -19,7 +19,7 @@ import logging
 import traceback
 from optlang._version import get_versions
 from optlang.util import list_available_solvers
-from optlang.interface import statuses
+from optlang.interface import statuses, SymbolicParameter
 import optlang.duality
 
 __version__ = get_versions()['version']

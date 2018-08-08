@@ -25,10 +25,8 @@ To use GLPK you need to install the 'swiglpk' python package (with pip or from h
 and make sure that 'import swiglpk' runs without error.
 """
 
-import collections
 import logging
 
-import os
 import six
 
 from optlang.util import inheritdocstring, TemporaryFilename
