@@ -418,6 +418,7 @@ class Constraint(interface.Constraint):
         if self.expression.is_Add:
             coefficient_dict = {variable: coef for variable, coef in
                                 self.expression.as_coefficients_dict().items() if variable.is_Symbol}
+            coefficient_dict = {var: float(coef) for var, coef in coefficient_dict.items()}
         elif self.expression.is_Atom and self.expression.is_Symbol:
             coefficient_dict = {self.expression: 1}
         elif self.expression.is_Mul and len(self.expression.args) <= 2:
@@ -496,7 +497,7 @@ class Objective(interface.Objective):
             coefficient_dict = {}
         else:
             raise ValueError("Invalid expression: " + str(self.expression))
-        coefficient_dict = {var.name: coef for var, coef in coefficient_dict.items()}
+        coefficient_dict = {var.name: float(coef) for var, coef in coefficient_dict.items()}
         return coefficient_dict
 
     def set_linear_coefficients(self, coefficients):
@@ -509,7 +510,7 @@ class Objective(interface.Objective):
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
             self.problem.update()
-            return {v: self.problem.problem.objective.get(v.name, 0) for v in variables}
+            return {v: float(self.problem.problem.objective.get(v.name, 0)) for v in variables}
         else:
             raise Exception("Can't get coefficients from solver if objective is not in a model")
 

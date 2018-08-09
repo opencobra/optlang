@@ -20,6 +20,7 @@ import unittest
 
 import six
 from optlang import interface
+from optlang import symbolics
 import optlang
 import pickle
 import json
@@ -350,6 +351,18 @@ class AbstractConstraintTestCase(unittest.TestCase):
         with self.assertRaises(Exception):
             const.name = "This\ttab"
 
+    def test_construct_with_sloppy(self):
+        x, y, z, w = self.model.variables[:4]
+        const = self.interface.Constraint(
+            symbolics.add([symbolics.mul(symbolics.One, var) for var in [x, y, z]]),
+            lb=0,
+            sloppy=True
+        )
+        self.model.add(const)
+        self.model.update()
+
+        self.assertTrue(const.get_linear_coefficients([x, y, z, w]) == {x: 1, y: 1, z: 1, w: 0})
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractObjectiveTestCase(unittest.TestCase):
@@ -389,6 +402,17 @@ class AbstractObjectiveTestCase(unittest.TestCase):
             obj.name = "This space"
         with self.assertRaises(Exception):
             obj.name = "This\ttab"
+
+    def test_construct_with_sloppy(self):
+        x, y, z, w = self.model.variables[:4]
+        obj = self.interface.Objective(
+            symbolics.add([symbolics.mul((symbolics.One, var)) for var in [x, y, z]]),
+            direction="min",
+            sloppy=True
+        )
+        self.model.objective = obj
+
+        self.assertTrue(obj.get_linear_coefficients([x, y, z, w]) == {x: 1, y: 1, z: 1, w: 0})
 
 
 @six.add_metaclass(abc.ABCMeta)

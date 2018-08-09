@@ -58,9 +58,9 @@ if USE_SYMENGINE:  # pragma: no cover # noqa: C901
     Real = symengine.RealDouble
     Basic = symengine.Basic
     Number = symengine.Number
-    Zero = Integer(0)
-    One = Integer(1)
-    NegativeOne = Integer(-1)
+    Zero = Real(0)
+    One = Real(1)
+    NegativeOne = Real(-1)
     sympify = symengine.sympy_compat.sympify
 
     Add = symengine.Add
@@ -113,9 +113,9 @@ else:  # Use sympy
     Real = sympy.RealNumber
     Basic = sympy.Basic
     Number = sympy.Number
-    Zero = Integer(0)
-    One = Integer(1)
-    NegativeOne = Integer(-1)
+    Zero = Real(0)
+    One = Real(1)
+    NegativeOne = Real(-1)
     sympify = sympy.sympify
 
     Add = sympy.Add

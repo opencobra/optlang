@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from optlang.symbolics import One
+from optlang.symbolics import Integer
+
+one = Integer(1)
 
 
 def parse_optimization_expression(obj, linear=True, quadratic=False, expression=None, **kwargs):
@@ -84,7 +86,7 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
 
     for var in coefficients:
         if not (var.is_Symbol):
-            if var == One:
+            if var == one:
                 constant = var
                 offset = float(coefficients[var])
             elif expanded:
