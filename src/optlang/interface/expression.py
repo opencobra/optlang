@@ -23,12 +23,12 @@ from uuid import uuid4
 from optlang.symbols import Integer, Real, Basic, sympify
 from optlang.interface.variable import Variable
 from optlang.interface.mixins import (
-    NameMixin, SymbolicMixin, ObservableMixin)
+    NameMixin, SymbolicMixin, SolverStateMixin)
 
 __all__ = ("OptimizationExpression",)
 
 
-class OptimizationExpression(SymbolicMixin, NameMixin, ObservableMixin):
+class OptimizationExpression(SymbolicMixin, NameMixin, SolverStateMixin):
     """
     Define an abstract base class for Objective and Constraint.
 
@@ -98,12 +98,12 @@ class OptimizationExpression(SymbolicMixin, NameMixin, ObservableMixin):
         self._update_expression()
         return self
 
-    def notify(self, attr):
+    def update(self, attr):
         """Get notified about symbolic parameter value changes."""
         if attr == "expression":
             self._update_expression()
         else:
-            super(OptimizationExpression, self).notify(attr)
+            super(OptimizationExpression, self).update(attr)
 
     @property
     def expression(self):

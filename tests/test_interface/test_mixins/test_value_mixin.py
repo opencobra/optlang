@@ -24,9 +24,16 @@ from optlang.interface.mixins.value_mixin import ValueMixin
 VALUES = [-1000, -33.3, 0, None, 7.5, 100]
 
 
+class Child(ValueMixin):
+
+    __slots__ = (
+        "_solver",
+    )
+
+
 @pytest.fixture(scope="function")
 def instance():
-    return ValueMixin()
+    return Child()
 
 
 def test_primal_without_observable(instance):
@@ -41,7 +48,7 @@ def test_dual_without_observable(instance):
 def test_primal_with_observable(instance, mocker, value):
     observable = mocker.Mock(spec_set=["get_primal"])
     observable.get_primal.return_value = value
-    instance.set_observable(observable)
+    instance.set_solver(observable)
     assert instance.primal == value
     observable.get_primal.assert_called_once()
 
@@ -50,21 +57,21 @@ def test_primal_with_observable(instance, mocker, value):
 def test_dual_with_observable(instance, mocker, value):
     observable = mocker.Mock(spec_set=["get_dual"])
     observable.get_dual.return_value = value
-    instance.set_observable(observable)
+    instance.set_solver(observable)
     assert instance.dual == value
     observable.get_dual.assert_called_once()
 
 
 def test_primal_with_stale_observable(instance, mocker):
     observable = mocker.Mock(spec_set=["get_primal"])
-    instance.set_observable(observable)
+    instance.set_solver(observable)
     del observable
     assert instance.primal is None
 
 
 def test_dual_with_stale_observable(instance, mocker):
     observable = mocker.Mock(spec_set=["get_dual"])
-    instance.set_observable(observable)
+    instance.set_solver(observable)
     del observable
     assert instance.dual is None
 

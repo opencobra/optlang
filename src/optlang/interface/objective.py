@@ -49,7 +49,7 @@ class Objective(OptimizationExpression):
 
     __slots__ = (
         "_observer",
-        "_observable",
+        "_solver",
         "_name",
         "_expression",
         "_value",
@@ -80,8 +80,11 @@ class Objective(OptimizationExpression):
         return self._value
 
     def __str__(self):
-        return {'max': 'Maximize', 'min': 'Minimize'}[self.direction] + '\n' + str(self.expression)
-        # return ' '.join((self.direction, str(self.expression)))
+        if self.direction == "max":
+            direction = "Maximize"
+        else:
+            direction = "Minimize"
+        return "{}:\n\t{}".format(direction, str(self.expression))
 
     def __eq__(self, other):
         """Tests *mathematical* equality for two Objectives. Solver specific type does NOT have to match.
@@ -104,11 +107,12 @@ class Objective(OptimizationExpression):
 
     @property
     def direction(self):
-        """The direction of optimization. Either 'min' or 'max'."""
+        """Return the direction of optimization. Either 'min' or 'max'."""
         return self._direction
 
     @direction.setter
     def direction(self, value):
+        """Set the direction of optimization. Either 'min' or 'max'."""
         if value.lower().startswith("max"):
             self._direction = "max"
         elif value.lower().startswith("min"):

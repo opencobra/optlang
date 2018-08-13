@@ -44,13 +44,13 @@ References
 
 from __future__ import absolute_import
 
-from optlang.interface.mixins.observer_mixin import ObserverMixin
-from optlang.interface.mixins.observable_mixin import ObservableMixin
+from optlang.interface.mixins.subject_mixin import SubjectMixin
+from optlang.interface.mixins.solver_state_mixin import SolverStateMixin
 from optlang.interface.mixins.name_mixin import NameMixin
 from optlang.interface.mixins.bounds_mixin import BoundsMixin
 from optlang.interface.mixins.value_mixin import ValueMixin
 from optlang.interface.mixins.symbolic_mixin import SymbolicMixin
 
 __all__ = (
-    "ObserverMixin", "ObservableMixin", "NameMixin", "BoundsMixin",
+    "SubjectMixin", "SolverStateMixin", "NameMixin", "BoundsMixin",
     "ValueMixin", "SymbolicMixin")

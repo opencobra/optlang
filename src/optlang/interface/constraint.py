@@ -64,11 +64,12 @@ class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
 
     >>> indicator_var = Variable("var3", type="binary") # Only possible with some solvers
     >>> c2 = Constraint(var2, lb=0, ub=0, indicator_variable=indicator_var, active_when=1) # When the indicator is 1, var2 is constrained to be 0
+
     """
 
     __slots__ = (
         "_observer",
-        "_observable",
+        "_solver",
         "_name",
         "_lb", "_numeric_lb", "_ub", "_numeric_ub",
         "_expression",

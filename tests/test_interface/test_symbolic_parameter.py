@@ -53,12 +53,12 @@ def test_attach_observer(mocker, parameter, num):
 
 @pytest.mark.parametrize("num", [1, 3, 9])
 def test_notify_observer(mocker, parameter, num):
-    observers = [mocker.Mock(spec_set=["notify"]) for _ in range(num)]
+    observers = [mocker.Mock(spec_set=["update"]) for _ in range(num)]
     for o in observers:
         parameter.attach(o, "foo")
     parameter.value = 10
     for o in observers:
-        o.notify.assert_called_once_with("foo")
+        o.update.assert_called_once_with("foo")
 
 
 @pytest.mark.parametrize("attributes, num", [
@@ -68,11 +68,11 @@ def test_notify_observer(mocker, parameter, num):
     (["foo", "bar", "baz"], 3)
 ])
 def test_notify_many(mocker, parameter, attributes, num):
-    observer = mocker.Mock(spec_set=["notify"])
+    observer = mocker.Mock(spec_set=["update"])
     for attr in attributes:
         parameter.attach(observer, attr)
     parameter.value = 10
-    assert observer.notify.call_count == num
+    assert observer.update.call_count == num
 
 
 @pytest.mark.parametrize("num", [1, 3, 9])
@@ -91,7 +91,7 @@ def test_detach_observer(mocker, parameter, num):
     ["foo", "bar", "baz"]
 ])
 def test_weak_value_dict(mocker, parameter, attributes):
-    observer = mocker.Mock(spec_set=["notify"])
+    observer = mocker.Mock(spec_set=["update"])
     for attr in attributes:
         parameter.attach(observer, attr)
     assert weakref.getweakrefcount(observer) == 1

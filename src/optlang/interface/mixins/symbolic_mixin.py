@@ -31,7 +31,7 @@ class SymbolicMixin(object):
     As described in the `mixins` package documentation, in order to enable
     multiple inheritance from all the mixin classes, the ``__slots__``
     attribute is defined to be empty. A child class making use of the
-    `ObserverMixin` is expected to define at least the following slots::
+    `SubjectMixin` is expected to define at least the following slots::
 
         __slots__ = ()
 
@@ -47,6 +47,7 @@ class SymbolicMixin(object):
             for sym in expression.atoms(SymbolicParameter):
                 sym.attach(self, attr)
         except AttributeError:
+            # `expression` is a single numeric value and not an expression.
             pass
 
     def _disregard_symbols(self, expression, attr):
@@ -54,11 +55,12 @@ class SymbolicMixin(object):
             for sym in expression.atoms(SymbolicParameter):
                 sym.detach(self, attr)
         except AttributeError:
+            # `expression` is a single numeric value and not an expression.
             pass
 
-    def notify(self, attr):
-        """Notify an attribute of a symbolic parameter value change."""
-        # For now this is an easy way to trigger all the needed updates.
+    def update(self, attr):
+        """Update an attribute due to a symbolic parameter value change."""
+        # For now this is an easy way to trigger the needed updates.
         setattr(self, attr, getattr(self, attr))
 
     @staticmethod

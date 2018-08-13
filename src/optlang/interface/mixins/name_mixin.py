@@ -19,12 +19,12 @@ from __future__ import absolute_import
 
 from six import PY2
 
-from optlang.interface.mixins.observer_mixin import ObserverMixin
+from optlang.interface.mixins.subject_mixin import SubjectMixin
 
 __all__ = ("NameMixin",)
 
 
-class NameMixin(ObserverMixin):
+class NameMixin(SubjectMixin):
     """
     Provide a name property to an inheriting class.
 
@@ -49,12 +49,12 @@ class NameMixin(ObserverMixin):
 
     @property
     def name(self):
-        """Return the name."""
+        """Return the name attribute."""
         return self._name
 
     @name.setter
     def name(self, name):
-        """Set the name."""
+        """Set the name attribute."""
         # Ensure that name is str and not binary or unicode.
         # Some solvers only support the `str` type in Python 2.
         if PY2:
@@ -65,12 +65,8 @@ class NameMixin(ObserverMixin):
             raise ValueError(
                 "The name cannot contain whitespace characters.")
         self._name = name
-        # We have to access the observer in this way because sympy uses slots
-        #  with a ``name`` attribute during instantiation and thus accesses
-        # this property before ``_observer`` exists.
-        observer = getattr(self, "_observer", None)
         try:
-            observer.update_name(self, name)
+            self._observer.update_name(self, name)
         except (AttributeError, ReferenceError):
             # Observer is not set or no longer exists.
             pass

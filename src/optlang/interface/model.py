@@ -94,16 +94,16 @@ class Model(object):
     def _add_one(self, elem):
         if isinstance(elem, Variable):
             self._variable_changes.add(elem)
-            elem.set_observer(self._variable_changes)
-            elem.set_observable(self)
+            elem.subscribe(self._variable_changes)
+            elem.subscribe_to(self)
         elif isinstance(elem, Constraint):
             self._constraint_changes.add(elem)
-            elem.set_observer(self._constraint_changes)
-            elem.set_observable(self)
+            elem.subscribe(self._constraint_changes)
+            elem.subscribe_to(self)
         elif isinstance(elem, Objective):
             self._objective_changes.add(elem)
-            elem.set_observer(self._objective_changes)
-            elem.set_observable(self)
+            elem.subscribe(self._objective_changes)
+            elem.subscribe_to(self)
         else:
             raise TypeError(
                 "Can only add variables and constraints not '{}'."
@@ -122,16 +122,16 @@ class Model(object):
     def _remove_one(self, elem):
         if isinstance(elem, Variable):
             self._variable_changes.remove(elem)
-            elem.unset_observable()
-            elem.unset_observer()
+            elem.unsubscribe_from()
+            elem.unsubscribe()
         elif isinstance(elem, Constraint):
             self._constraint_changes.remove(elem)
-            elem.unset_observable()
-            elem.unset_observer()
+            elem.unsubscribe_from()
+            elem.unsubscribe()
         elif isinstance(elem, Objective):
             self._objective_changes.remove(elem)
-            elem.unset_observable()
-            elem.unset_observer()
+            elem.unsubscribe_from()
+            elem.unsubscribe()
         else:
             raise ValueError(
                 "Can only remove variables, constraints, and objectives not "

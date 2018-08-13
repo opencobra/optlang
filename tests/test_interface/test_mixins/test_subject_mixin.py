@@ -21,18 +21,31 @@ import weakref
 
 import pytest
 
-from optlang.interface.mixins.observer_mixin import ObserverMixin
+from optlang.interface.mixins.subject_mixin import SubjectMixin
+
+
+class Child(SubjectMixin):
+
+    __slots__ = ("_observer",)
 
 
 @pytest.fixture(scope="function")
 def instance():
-    return ObserverMixin()
+    return Child()
 
 
-def test_set_observer(instance, mocker):
+def test_subscribe(instance, mocker):
     observer = mocker.Mock()
-    instance.set_observer(observer)
+    instance.subscribe(observer)
     assert weakref.getweakrefcount(observer) == 1
     second = mocker.Mock()
-    instance.set_observer(second)
+    instance.subscribe(second)
+    assert weakref.getweakrefcount(observer) == 0
+
+
+def test_unsubscribe(instance, mocker):
+    observer = mocker.Mock()
+    instance.subscribe(observer)
+    assert weakref.getweakrefcount(observer) == 1
+    instance.unsubscribe()
     assert weakref.getweakrefcount(observer) == 0

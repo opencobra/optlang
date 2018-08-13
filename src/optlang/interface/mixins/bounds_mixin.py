@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 import logging
 
-from optlang.interface.mixins.observer_mixin import ObserverMixin
+from optlang.interface.mixins.subject_mixin import SubjectMixin
 from optlang.interface.mixins.symbolic_mixin import SymbolicMixin
 
 __all__ = ("BoundsMixin",)
@@ -27,7 +27,7 @@ __all__ = ("BoundsMixin",)
 LOGGER = logging.getLogger(__name__)
 
 
-class BoundsMixin(SymbolicMixin, ObserverMixin):
+class BoundsMixin(SymbolicMixin, SubjectMixin):
     """
     Provide bounds properties to an inheriting class.
 
@@ -60,7 +60,7 @@ class BoundsMixin(SymbolicMixin, ObserverMixin):
             return
         if lb > ub:
             raise ValueError(
-                "Lower bound must be less than or equal to upper bound "
+                "The lower bound must be less than or equal to the upper bound "
                 "({} <= {}).".format(lb, ub))
 
     @property

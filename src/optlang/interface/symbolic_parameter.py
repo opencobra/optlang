@@ -33,13 +33,21 @@ LOGGER = logging.getLogger(__name__)
 
 class SymbolicParameter(UniqueSymbol):
     """
-    A symbolic parameter to be used in bounds and constraints.
+    Instantiate a symbolic parameter to be used in bounds and constraints.
+
+    A `SymbolicParameter` instance can be subscribed to and it will publish
+    updates to the observing expressions. It can also be unsubscribed from. It
+    thus follows the common Observer design pattern [1]_.
 
     Attributes
     ----------
     value : numeric
         The current numeric value of the parameter. Changing the value will
         update all expression this parameter is part of.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Observer_pattern
 
     """
 
@@ -60,14 +68,14 @@ class SymbolicParameter(UniqueSymbol):
 
     @value.setter
     def value(self, other):
-        """Set a new value and update all expressions."""
+        """Set a new value and update all observers."""
         self._value = other
         for observer, attributes in iteritems(self._observers):
             for attr in attributes:
                 try:
-                    observer.notify(attr)
+                    observer.update(attr)
                 except ReferenceError:
-                    LOGGER.error(
+                    LOGGER.warning(
                         "The referenced observer no longer exists. This "
                         "suggests an inconsistent state.")
                     continue

@@ -212,14 +212,14 @@ class TestObservable(object):
     def test_primal(self, observable, kind):
         observable.get_primal.return_value = 13
         var = Variable("x", type=kind)
-        var.set_observable(observable)
+        var.subscribe_to(observable)
         assert var.primal == 13
         observable.get_primal.assert_called_once_with(var)
 
     def test_dual(self, observable, kind):
         observable.get_dual.return_value = 13
         var = Variable("x", type=kind)
-        var.set_observable(observable)
+        var.subscribe_to(observable)
         assert var.dual == 13
         observable.get_dual.assert_called_once_with(var)
 
@@ -229,7 +229,7 @@ class TestObservable(object):
 
         obj = Observable()
         var = Variable("x", type=kind)
-        var.set_observable(obj)
+        var.subscribe_to(obj)
         assert weakref.getweakrefcount(obj) == 1
         del obj
         assert var.primal is None
@@ -262,7 +262,7 @@ class TestObserver(object):
         old = "x"
         new = "y"
         var = Variable(old, type=kind)
-        var.set_observer(observer)
+        var.subscribe(observer)
         assert var.name == old
         var.name = new
         assert var.name == new
@@ -271,7 +271,7 @@ class TestObserver(object):
     @pytest.mark.parametrize("old, new", list(permutations(TYPES, 2)))
     def test_type_update(self, observer, old, new):
         var = Variable("x", type=old)
-        var.set_observer(observer)
+        var.subscribe(observer)
         assert var.type == old
         var.type = new
         assert var.type == new
@@ -279,7 +279,7 @@ class TestObserver(object):
 
     def test_lb_update(self, observer, kind, bound):
         var = Variable("x", type=kind)
-        var.set_observer(observer)
+        var.subscribe(observer)
         assert var.lb is None
         var.lb = bound
         assert var.lb == bound
@@ -287,7 +287,7 @@ class TestObserver(object):
 
     def test_ub_update(self, observer, kind, bound):
         var = Variable("x", type=kind)
-        var.set_observer(observer)
+        var.subscribe(observer)
         assert var.ub is None
         var.ub = bound
         assert var.ub == bound
@@ -295,7 +295,7 @@ class TestObserver(object):
 
     def test_bounds_update(self, observer, kind, bound):
         var = Variable("x", type=kind)
-        var.set_observer(observer)
+        var.subscribe(observer)
         assert var.bounds == (None, None)
         var.bounds = bound, bound
         assert var.bounds == (bound, bound)

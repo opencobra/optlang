@@ -1,0 +1,27 @@
+@startuml
+
+participant Model
+participant ObjectiveChangeTracker
+participant Objective
+
+[-> Model: add(Objective)
+Model -> ObjectiveChangeTracker: subscribe_to(Objective)
+ObjectiveChangeTracker -> Objective: subscribe()
+
+activate Objective
+
+]-> Objective: .name = "foo"
+Objective -> ObjectiveChangeTracker: update_name("foo")
+
+]-> Objective: .expression = a + b
+Objective -> ObjectiveChangeTracker: update_expression(a + b)
+
+]-> Objective: .direction = "min"
+Objective -> ObjectiveChangeTracker: update_direction("min")
+
+]-> Objective: .value
+Objective -> Model: get_objective_value()
+Model -> Objective: 42
+Objective ->]: 42
+
+@enduml

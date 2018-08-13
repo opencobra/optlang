@@ -24,9 +24,17 @@ from optlang.interface.mixins.bounds_mixin import BoundsMixin
 VALUES = [-1000, -33.3, 0, None, 7.5, 100]
 
 
+class Child(BoundsMixin):
+
+    __slots__ = (
+        "_observer",
+        "_lb", "_numeric_lb", "_ub", "_numeric_ub"
+    )
+
+
 @pytest.fixture(scope="function")
 def instance():
-    return BoundsMixin()
+    return Child()
 
 
 def test_init(instance):
@@ -85,20 +93,20 @@ def test_check_numeric_bounds(instance, lb, ub):
 
 def test_update_numeric_lb(instance, mocker):
     observer = mocker.Mock(spec_set=["update_lb"])
-    instance.set_observer(observer)
+    instance.subscribe(observer)
     instance.lb = 10
     observer.update_lb.assert_called_once_with(instance, 10)
 
 
 def test_update_numeric_ub(instance, mocker):
     observer = mocker.Mock(spec_set=["update_ub"])
-    instance.set_observer(observer)
+    instance.subscribe(observer)
     instance.ub = 10
     observer.update_ub.assert_called_once_with(instance, 10)
 
 
 def test_update_numeric_bounds(instance, mocker):
     observer = mocker.Mock(spec_set=["update_bounds"])
-    instance.set_observer(observer)
+    instance.subscribe(observer)
     instance.bounds = 10, 10
     observer.update_bounds.assert_called_once_with(instance, 10, 10)

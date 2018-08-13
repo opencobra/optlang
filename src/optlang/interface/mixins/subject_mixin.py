@@ -19,12 +19,20 @@ from __future__ import absolute_import
 
 from weakref import proxy
 
-__all__ = ("ObserverMixin",)
+__all__ = ("SubjectMixin",)
 
 
-class ObserverMixin(object):
+class SubjectMixin(object):
     """
-    Provide a method to set an observer on an inheriting class.
+    Turn an inheriting class into an observable subject.
+
+    An instance can be subscribed to and it will publish updates to the
+    observing object. It can also be unsubscribed from. It thus follows the
+    common Observer design pattern [1]_.
+
+    In a variation to the common pattern, only one observer at a time is
+    allowed. (This could fairly easily be changed in future but is probably
+    unwanted in the context of variables, constraints, and solvers.)
 
     Notes
     -----
@@ -37,22 +45,26 @@ class ObserverMixin(object):
     As described in the `mixins` package documentation, in order to enable
     multiple inheritance from all the mixin classes, the ``__slots__``
     attribute is defined to be empty. A child class making use of the
-    `ObserverMixin` is expected to define at least the following slots::
+    `SubjectMixin` is expected to define at least the following slots::
 
         __slots__ = ("_observer",)
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Observer_pattern
 
     """
 
     __slots__ = ()
 
     def __init__(self, **kwargs):
-        super(ObserverMixin, self).__init__(**kwargs)
+        super(SubjectMixin, self).__init__(**kwargs)
         self._observer = None
 
-    def set_observer(self, observer):
-        """Set the instance's observer."""
+    def subscribe(self, observer):
+        """Set an observer on the instance."""
         self._observer = proxy(observer)
 
-    def unset_observer(self):
-        """Unset the instance's observer."""
+    def unsubscribe(self):
+        """Unset the observer from the instance."""
         self._observer = None

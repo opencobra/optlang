@@ -22,9 +22,14 @@ import pytest
 from optlang.interface.mixins.name_mixin import NameMixin
 
 
+class Child(NameMixin):
+
+    __slots__ = ("_observer", "_name")
+
+
 @pytest.fixture(scope="function")
 def instance():
-    return NameMixin()
+    return Child()
 
 
 def test_get_name(instance):
@@ -44,6 +49,6 @@ def test_set_name(instance, value):
 
 def test_update_name(instance, mocker):
     observer = mocker.Mock(spec_set=["update_name"])
-    instance.set_observer(observer)
+    instance.subscribe(observer)
     instance.name = "foo"
     observer.update_name.assert_called_once_with(instance, "foo")

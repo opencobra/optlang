@@ -17,16 +17,16 @@
 
 from __future__ import absolute_import
 
-from optlang.interface.mixins.observable_mixin import ObservableMixin
+from optlang.interface.mixins.solver_state_mixin import SolverStateMixin
 
 __all__ = ("ValueMixin",)
 
 
-class ValueMixin(ObservableMixin):
+class ValueMixin(SolverStateMixin):
     """
-    Provide bounds properties to an inheriting class.
+    Provide primal and dual value properties to a child class.
 
-    Also depends on there being an observer for proper functioning.
+    Also depends on there being a solver state reference for proper functioning.
 
     Warnings
     --------
@@ -48,7 +48,7 @@ class ValueMixin(ObservableMixin):
     def primal(self):
         """Return the primal value (None if no solution exists)."""
         try:
-            return self._observable.get_primal(self)
+            return self._solver.get_primal(self)
         except (AttributeError, ReferenceError):
             # Observable is not set or no longer exists.
             return None
@@ -57,7 +57,7 @@ class ValueMixin(ObservableMixin):
     def dual(self):
         """Return the dual value (None if no solution exists)."""
         try:
-            return self._observable.get_dual(self)
+            return self._solver.get_dual(self)
         except (AttributeError, ReferenceError):
             # Observable is not set or no longer exists.
             return None

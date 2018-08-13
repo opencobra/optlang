@@ -21,18 +21,31 @@ import weakref
 
 import pytest
 
-from optlang.interface.mixins.observable_mixin import ObservableMixin
+from optlang.interface.mixins.solver_state_mixin import SolverStateMixin
+
+
+class Child(SolverStateMixin):
+
+    __slots__ = ("_solver",)
 
 
 @pytest.fixture(scope="function")
 def instance():
-    return ObservableMixin()
+    return Child()
 
 
-def test_set_observable(instance, mocker):
-    observable = mocker.Mock()
-    instance.set_observable(observable)
-    assert weakref.getweakrefcount(observable) == 1
+def test_set_solver(instance, mocker):
+    solver = mocker.Mock()
+    instance.set_solver(solver)
+    assert weakref.getweakrefcount(solver) == 1
     second = mocker.Mock()
-    instance.set_observable(second)
-    assert weakref.getweakrefcount(observable) == 0
+    instance.set_solver(second)
+    assert weakref.getweakrefcount(solver) == 0
+
+
+def test_unset_solver(instance, mocker):
+    solver = mocker.Mock()
+    instance.set_solver(solver)
+    assert weakref.getweakrefcount(solver) == 1
+    instance.unset_solver()
+    assert weakref.getweakrefcount(solver) == 0
