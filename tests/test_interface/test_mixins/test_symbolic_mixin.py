@@ -16,15 +16,53 @@
 # limitations under the License.
 
 """
-Test the expected behavior of the ``SymbolicMixin`` class.
+Test the expected behavior of the `SymbolicMixin` class.
 
-In the current implementation the ``SymbolicMixin`` mostly defines private
+In the current implementation the `SymbolicMixin` mostly defines private
 methods and cannot reasonably be tested without actual implementations such
-as in ``optlang.Variable`` or ``optlang.OptimizationExpression``.
+as in `optlang.Variable` or `optlang.OptimizationExpression`.
 
 """
 
 from __future__ import absolute_import
 
-from optlang.interface.mixins.symbolic_mixin import (
-    SymbolicMixin, SymbolicParameter)
+import pytest
+
+from optlang.interface.mixins.symbolic_mixin import SymbolicMixin
+
+
+class Child(SymbolicMixin):
+
+    __slots__ = ("_foo",)
+
+    def __init__(self, **kwargs):
+        super(Child, self).__init__(**kwargs)
+        self.foo = "bar"
+
+    @property
+    def foo(self):
+        return self._foo
+
+    @foo.setter
+    def foo(self, value):
+        self._foo = value
+
+
+@pytest.fixture(scope="function")
+def instance():
+    return Child()
+
+
+def test_init(instance):
+    assert instance.foo == "bar"
+
+
+def test_update(instance, mocker):
+    mocked_attr = mocker.patch.object(Child, "foo",
+                                      new_callable=mocker.PropertyMock,
+                                      return_value="baz")
+    # This line is expect to get and set the attribute, i.e., `call_count + 2`.
+    instance.update("foo")
+    assert instance.foo == "baz"
+    assert mocked_attr.call_count == 3
+
