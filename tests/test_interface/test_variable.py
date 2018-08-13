@@ -200,34 +200,35 @@ def test_non_binary_bounds(lb, ub):
 
 
 @pytest.fixture()
-def observable(mocker):
+def solver(mocker):
     return mocker.Mock(spec_set=["get_primal", "get_dual"])
 
 
-class TestObservable(object):
-    """Thoroughly test the get calls on the observable."""
+class TestSolverState(object):
+    """Thoroughly test the get calls on the solver state reference."""
 
     TYPES = list(VariableType)
 
-    def test_primal(self, observable, kind):
-        observable.get_primal.return_value = 13
+    def test_primal(self, solver, kind):
+        solver.get_primal.return_value = 13
         var = Variable("x", type=kind)
-        var.set_solver(observable)
+        var.set_solver(solver)
         assert var.primal == 13
-        observable.get_primal.assert_called_once_with(var)
+        solver.get_primal.assert_called_once_with(var)
 
-    def test_dual(self, observable, kind):
-        observable.get_dual.return_value = 13
+    def test_dual(self, solver, kind):
+        solver.get_dual.return_value = 13
         var = Variable("x", type=kind)
-        var.set_solver(observable)
+        var.set_solver(solver)
         assert var.dual == 13
-        observable.get_dual.assert_called_once_with(var)
+        solver.get_dual.assert_called_once_with(var)
 
     def test_weakref(self, kind):
-        class Observable(object):
+
+        class SolverState(object):
             pass
 
-        obj = Observable()
+        obj = SolverState()
         var = Variable("x", type=kind)
         var.set_solver(obj)
         assert weakref.getweakrefcount(obj) == 1
@@ -304,73 +305,77 @@ class TestObserver(object):
 
 
 @pytest.fixture(scope="function")
-def x(mocker):
-    x = SymbolicParameter("x")
-    mocker.patch.object(x, "attach",
-                        new_callable=mocker.PropertyMock)
-    mocker.patch.object(x, "detach",
-                        new_callable=mocker.PropertyMock)
-    return x
+def x():
+    return SymbolicParameter("x")
 
 
 @pytest.fixture(scope="function")
-def y(mocker):
-    y = SymbolicParameter("y")
-    mocker.patch.object(y, "attach",
-                        new_callable=mocker.PropertyMock)
-    mocker.patch.object(y, "detach",
-                        new_callable=mocker.PropertyMock)
-    return y
+def y():
+    return SymbolicParameter("y")
 
 
 class TestSymbolicBounds(object):
     """
     Test the expected behavior with integration of symbolic bounds.
 
+    Since we use ``__slots__``, the instance attributes and methods cannot be
+    mocked directly. They are read-only but mock tries to add and remove the
+    attribute or method. Hence we mock the class definition.
+
     """
 
     TYPES = list(VariableType)
 
-    def test_lb_param_observation(self, x, y, kind):
+    def test_lb_param_observation(self, x, y, kind, mocker):
+        mocked_attach = mocker.patch.object(SymbolicParameter, "attach")
         var = Variable("i", type=kind)
         var.lb = 1 + x - y
         assert var.lb == 1 + x - y
-        x.attach.assert_called_once_with(var, "lb")
-        y.attach.assert_called_once_with(var, "lb")
+        assert mocked_attach.call_count == 2
+        assert mocked_attach.call_args_list == [
+            mocker.call(var, "lb"), mocker.call(var, "lb")]
 
-    def test_ub_param_observation(self, x, y, kind):
+    def test_ub_param_observation(self, x, y, kind, mocker):
+        mocked_attach = mocker.patch.object(SymbolicParameter, "attach")
         var = Variable("i", type=kind)
         var.ub = 1 + x - y
         assert var.ub == 1 + x - y
-        x.attach.assert_called_once_with(var, "ub")
-        y.attach.assert_called_once_with(var, "ub")
+        assert mocked_attach.call_count == 2
+        assert mocked_attach.call_args_list == [
+            mocker.call(var, "ub"), mocker.call(var, "ub")]
 
-    def test_bounds_param_observation(self, x, y, kind):
+    def test_bounds_param_observation(self, x, y, kind, mocker):
+        mocked_attach = mocker.patch.object(SymbolicParameter, "attach")
         var = Variable("i", type=kind)
         var.bounds = (x + y, 1 + x - y)
         assert var.bounds == (x + y, 1 + x - y)
-        x.attach.assert_called_with(var, "bounds")
-        assert x.attach.call_count == 2
-        y.attach.assert_called_with(var, "bounds")
-        assert y.attach.call_count == 2
+        assert mocked_attach.call_count == 4
+        assert mocked_attach.call_args_list == [
+            mocker.call(var, "bounds"), mocker.call(var, "bounds"),
+            mocker.call(var, "bounds"), mocker.call(var, "bounds")
+        ]
 
-    def test_lb_param_disregard(self, x, y, kind):
+    def test_lb_param_disregard(self, x, y, kind, mocker):
+        mocked_detach = mocker.patch.object(SymbolicParameter, "detach")
         var = Variable("i", type=kind)
         var.lb = 1 + x
         var.lb = y
-        x.detach.assert_called_once_with(var, "lb")
+        mocked_detach.assert_called_once_with(var, "lb")
 
-    def test_ub_param_disregard(self, x, y, kind):
+    def test_ub_param_disregard(self, x, y, kind, mocker):
+        mocked_detach = mocker.patch.object(SymbolicParameter, "detach")
         var = Variable("i", type=kind)
         var.ub = 1 + x
         var.ub = y
-        x.detach.assert_called_once_with(var, "ub")
+        mocked_detach.assert_called_once_with(var, "ub")
 
-    def test_bounds_param_disregard(self, x, y, kind):
+    def test_bounds_param_disregard(self, x, y, kind, mocker):
+        mocked_detach = mocker.patch.object(SymbolicParameter, "detach")
         var = Variable("i", type=kind)
         var.bounds = (x - y, x + y)
         var.bounds = None, None
-        x.detach.assert_called_with(var, "bounds")
-        assert x.detach.call_count == 2
-        y.detach.assert_called_with(var, "bounds")
-        assert y.detach.call_count == 2
+        assert mocked_detach.call_count == 4
+        assert mocked_detach.call_args_list == [
+            mocker.call(var, "bounds"), mocker.call(var, "bounds"),
+            mocker.call(var, "bounds"), mocker.call(var, "bounds")
+        ]

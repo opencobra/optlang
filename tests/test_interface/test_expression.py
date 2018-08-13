@@ -23,7 +23,7 @@ import pytest
 
 from optlang.symbols import Mul, Integer, Real
 from optlang.interface import Variable, SymbolicParameter
-from optlang.interface.expression import OptimizationExpression
+from optlang.interface.optimization_expression import OptimizationExpression
 
 EXPRESSIONS = [
     Integer(5),

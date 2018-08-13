@@ -59,9 +59,18 @@ class TestConstraint(object):
     def test_active_when(self):
         pass
 
-    @pytest.mark.skip("Not implemented yet in v 2.0.")
-    def test_dunder_str(self):
-        pass
+    @pytest.mark.parametrize("constr, expected", [
+        (Constraint(Variable("x") + 3, name="foo"),
+         "-Inf <= foo <= Inf"),
+        (Constraint(Variable("x") + 3, name="foobar", lb=-10),
+         "-10 <= foobar <= Inf"),
+        (Constraint(Variable("x") + 3, name="baz", ub=-10),
+         "-Inf <= baz <= -10"),
+        (Constraint(Variable("x") + 3, name="baz", lb=-5, ub=5),
+         "-5 <= baz <= 5")
+    ])
+    def test_dunder_str(self, constr, expected):
+        assert str(constr) == expected
 
     @pytest.mark.skip("Not implemented yet in v 2.0.")
     def test_to_dict(self):

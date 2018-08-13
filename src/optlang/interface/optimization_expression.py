@@ -17,6 +17,7 @@
 
 from __future__ import absolute_import, division
 
+import logging
 import numbers
 from uuid import uuid4
 
@@ -25,7 +26,10 @@ from optlang.interface.variable import Variable
 from optlang.interface.mixins import (
     NameMixin, SymbolicMixin, SolverStateMixin)
 
+
 __all__ = ("OptimizationExpression",)
+
+LOGGER = logging.getLogger(__name__)
 
 
 class OptimizationExpression(SymbolicMixin, NameMixin, SolverStateMixin):

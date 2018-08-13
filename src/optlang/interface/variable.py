@@ -82,7 +82,8 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
         "_solver",
         "_name",
         "_lb", "_numeric_lb", "_ub", "_numeric_ub",
-        "_type"
+        "_type",
+        "__weakref__"
     )
 
     def __init__(self, name, lb=None, ub=None, type="continuous", **kwargs):
@@ -167,35 +168,41 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
 
     @BoundsMixin.lb.setter
     def lb(self, value):
+        # Conversion to a numeric value is done at this place because if it
+        # fails the attributes are not yet changed.
         numeric = self._evaluate(value)
         if self._type is VariableType.BINARY:
             self._check_binary(numeric)
         self._set_numeric_lb(numeric)
-        self._disregard_symbols(value, "lb")
+        self._disregard_symbols(self.lb, "lb")
         self._observe_symbols(value, "lb")
         self._lb = value
 
     @BoundsMixin.ub.setter
     def ub(self, value):
+        # Conversion to a numeric value is done at this place because if it
+        # fails the attributes are not yet changed.
         numeric = self._evaluate(value)
         if self._type is VariableType.BINARY:
             self._check_binary(numeric)
-        self._set_numeric_ub(numeric)
-        self._disregard_symbols(value, "ub")
+        self._disregard_symbols(self.ub, "ub")
         self._observe_symbols(value, "ub")
         self._ub = value
+        self._set_numeric_ub(numeric)
 
     @BoundsMixin.bounds.setter
     def bounds(self, pair):
         lb, ub = pair
+        # Conversion to a numeric value is done at this place because if it
+        # fails the attributes are not yet changed.
         num_lb = self._evaluate(lb)
         num_ub = self._evaluate(ub)
         if self._type is VariableType.BINARY:
             self._check_binary(num_lb)
             self._check_binary(num_ub)
         self._set_numeric_bounds(num_lb, num_ub)
-        self._disregard_symbols(lb, "bounds")
-        self._disregard_symbols(ub, "bounds")
+        self._disregard_symbols(self.lb, "bounds")
+        self._disregard_symbols(self.ub, "bounds")
         self._observe_symbols(lb, "bounds")
         self._observe_symbols(ub, "bounds")
         self._lb = lb

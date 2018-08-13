@@ -18,7 +18,7 @@
 from __future__ import absolute_import
 
 from optlang.symbols import Basic
-from optlang.interface.expression import OptimizationExpression
+from optlang.interface.optimization_expression import OptimizationExpression
 
 __all__ = ("Objective",)
 
@@ -53,7 +53,8 @@ class Objective(OptimizationExpression):
         "_name",
         "_expression",
         "_value",
-        "_direction"
+        "_direction",
+        "__weakref__"
     )
 
     def __init__(self, expression, value=None, direction='max', **kwargs):

@@ -17,13 +17,13 @@
 
 from __future__ import absolute_import
 
-from optlang.interface.expression import OptimizationExpression
+from optlang.interface.optimization_expression import OptimizationExpression
 from optlang.interface.mixins import BoundsMixin, ValueMixin
 
 __all__ = ("Constraint",)
 
 
-class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
+class Constraint(OptimizationExpression, BoundsMixin, ValueMixin):
     """
     Constraint objects represent the mathematical (in-)equalities that constrain
     an optimization problem.  A constraint is formulated by a symbolic
@@ -74,7 +74,8 @@ class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
         "_lb", "_numeric_lb", "_ub", "_numeric_ub",
         "_expression",
         "_indicator_variable",
-        "_active_when"
+        "_active_when",
+        "__weakref__"
     )
 
     _INDICATOR_CONSTRAINT_SUPPORT = True
@@ -190,8 +191,8 @@ class Constraint(BoundsMixin, ValueMixin, OptimizationExpression):
             self.ub = self.ub - float(coeff)
         else:
             raise ValueError(
-                "%s cannot be shaped into canonical form if neither lower or upper constraint bounds are set."
-                % expression
+                "{} cannot be shaped into canonical form if neither lower or "
+                "upper constraint bounds are set.".format(expression)
             )
         return expression
 

@@ -24,7 +24,7 @@ __all__ = ("SubjectMixin",)
 
 class SubjectMixin(object):
     """
-    Turn an inheriting class into an observable subject.
+    Turn an inheriting class into an solver subject.
 
     An instance can be subscribed to and it will publish updates to the
     observing object. It can also be unsubscribed from. It thus follows the
@@ -38,7 +38,7 @@ class SubjectMixin(object):
     -----
     Trying to access methods of the observer may raise an
     `AttributeError` if it is not set (`None`) or a `ReferenceError` if
-    the observable no longer exists.
+    the solver no longer exists.
 
     Warnings
     --------

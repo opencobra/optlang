@@ -70,9 +70,11 @@ class BoundsMixin(SymbolicMixin, SubjectMixin):
 
     @lb.setter
     def lb(self, value):
+        # Conversion to a numeric value is done at this place because if it
+        # fails the attributes are not yet changed.
         numeric = self._evaluate(value)
         self._set_numeric_lb(numeric)
-        self._disregard_symbols(value, "lb")
+        self._disregard_symbols(self.lb, "lb")
         self._observe_symbols(value, "lb")
         self._lb = value
 
@@ -92,9 +94,11 @@ class BoundsMixin(SymbolicMixin, SubjectMixin):
 
     @ub.setter
     def ub(self, value):
+        # Conversion to a numeric value is done at this place because if it
+        # fails the attributes are not yet changed.
         numeric = self._evaluate(value)
         self._set_numeric_ub(numeric)
-        self._disregard_symbols(value, "ub")
+        self._disregard_symbols(self.ub, "ub")
         self._observe_symbols(value, "ub")
         self._ub = value
 
@@ -115,11 +119,13 @@ class BoundsMixin(SymbolicMixin, SubjectMixin):
     @bounds.setter
     def bounds(self, pair):
         lb, ub = pair
+        # Conversion to a numeric value is done at this place because if it
+        # fails the attributes are not yet changed.
         num_lb = self._evaluate(lb)
         num_ub = self._evaluate(ub)
         self._set_numeric_bounds(num_lb, num_ub)
-        self._disregard_symbols(lb, "bounds")
-        self._disregard_symbols(ub, "bounds")
+        self._disregard_symbols(self.lb, "bounds")
+        self._disregard_symbols(self.ub, "bounds")
         self._observe_symbols(lb, "bounds")
         self._observe_symbols(ub, "bounds")
         self._lb = lb
