@@ -40,7 +40,7 @@ class VariableType(Enum):
 class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
                UniqueSymbol):
     """
-    Define an optimization variable.
+    Represent an optimization variable.
 
     `Variable` objects are used to represents each variable of the optimization
     problem. When the optimization is performed, the combination of variable
@@ -49,7 +49,7 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
     'integer' or 'binary') can be set using the type keyword of the constructor
     or it can be changed after initialization by :code:`var.type = 'binary'`.
 
-    The variable class subclasses the :code:`sympy.Symbol` class, which means
+    The variable class inherits from the `UniqueSymbol` class, which means
     that symbolic expressions of variables can be constructed by using regular
     python syntax, e.g. :code:`my_expression = 2 * var1 + 3 * var2 ** 2`.
     Expressions like this are used when constructing `Constraint` and
@@ -68,8 +68,8 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
     type: {'continuous', 'integer', 'binary'}, optional
         The variable type can be continuous, integer, or binary. The default
         is continuous.
-    subject: optlang.Model or None, optional
-        A reference to the optimization model the variable belongs to.
+    bounds: tuple
+        The lower and upper bound as a pair `lb, ub`.
 
     Examples
     --------
@@ -112,7 +112,8 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
         return "<{} Variable '{}'>".format(self._type.value, self._name)
 
     def __str__(self):
-        """Print a string representation of variable.
+        """
+        Return a string representation of the variable.
 
         Examples
         --------

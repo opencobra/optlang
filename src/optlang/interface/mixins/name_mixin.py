@@ -47,6 +47,9 @@ class NameMixin(SubjectMixin):
         super(NameMixin, self).__init__(**kwargs)
         self._name = None
 
+    def __str__(self):
+        return self.name
+
     @property
     def name(self):
         """Return the name attribute."""

@@ -35,13 +35,13 @@ BOUNDS = {
 }
 
 
-def get_bounds_params(kind):
+def get_separate_bounds(kind):
     bounds = BOUNDS[kind]
     return [(k,) + pair
             for k, pair in zip(repeat(kind), product(bounds, repeat=2))]
 
 
-def get_bound_params(kind):
+def get_bounds(kind):
     bounds = BOUNDS[kind]
     return list(zip(repeat(kind), bounds))
 
@@ -55,11 +55,11 @@ def pytest_generate_tests(metafunc):
     params = list()
     if "lb" in fixtures and "ub" in fixtures:
         for kind in metafunc.cls.TYPES:
-            params.extend(get_bounds_params(kind))
+            params.extend(get_separate_bounds(kind))
         metafunc.parametrize("kind, lb, ub", params)
     elif "bound" in fixtures:
         for kind in metafunc.cls.TYPES:
-            params.extend(get_bound_params(kind))
+            params.extend(get_bounds(kind))
         metafunc.parametrize("kind, bound", params)
     elif "kind" in fixtures:
         metafunc.parametrize("kind", metafunc.cls.TYPES)
@@ -212,14 +212,14 @@ class TestObservable(object):
     def test_primal(self, observable, kind):
         observable.get_primal.return_value = 13
         var = Variable("x", type=kind)
-        var.subscribe_to(observable)
+        var.set_solver(observable)
         assert var.primal == 13
         observable.get_primal.assert_called_once_with(var)
 
     def test_dual(self, observable, kind):
         observable.get_dual.return_value = 13
         var = Variable("x", type=kind)
-        var.subscribe_to(observable)
+        var.set_solver(observable)
         assert var.dual == 13
         observable.get_dual.assert_called_once_with(var)
 
@@ -229,7 +229,7 @@ class TestObservable(object):
 
         obj = Observable()
         var = Variable("x", type=kind)
-        var.subscribe_to(obj)
+        var.set_solver(obj)
         assert weakref.getweakrefcount(obj) == 1
         del obj
         assert var.primal is None
@@ -306,16 +306,20 @@ class TestObserver(object):
 @pytest.fixture(scope="function")
 def x(mocker):
     x = SymbolicParameter("x")
-    mocker.patch.object(x, "attach", autospec=True)
-    mocker.patch.object(x, "detach", autospec=True)
+    mocker.patch.object(x, "attach",
+                        new_callable=mocker.PropertyMock)
+    mocker.patch.object(x, "detach",
+                        new_callable=mocker.PropertyMock)
     return x
 
 
 @pytest.fixture(scope="function")
 def y(mocker):
     y = SymbolicParameter("y")
-    mocker.patch.object(y, "attach", autospec=True)
-    mocker.patch.object(y, "detach", autospec=True)
+    mocker.patch.object(y, "attach",
+                        new_callable=mocker.PropertyMock)
+    mocker.patch.object(y, "detach",
+                        new_callable=mocker.PropertyMock)
     return y
 
 
