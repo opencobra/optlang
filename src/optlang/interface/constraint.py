@@ -80,8 +80,8 @@ class Constraint(OptimizationExpression, BoundsMixin, ValueMixin):
 
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
-    def __init__(self, expression, lb=None, ub=None, indicator_variable=None,
-                 active_when=1, **kwargs):
+    def __init__(self, expression, lb=None, ub=None, sloppy=False,
+                 indicator_variable=None, active_when=1, **kwargs):
         """
         Initialize a constraint with an expression.
 
@@ -102,11 +102,15 @@ class Constraint(OptimizationExpression, BoundsMixin, ValueMixin):
 
         """
         super(Constraint, self).__init__(expression=expression, **kwargs)
+        self.bounds = lb, ub
+        if sloppy:
+            self._expression = expression
+        else:
+            self._expression = self._canonicalize(expression)
         self.__check_valid_indicator_variable(indicator_variable)
         self.__check_valid_active_when(active_when)
         self._indicator_variable = indicator_variable
         self._active_when = active_when
-        self.bounds = lb, ub
 
     @classmethod
     def __check_valid_indicator_variable(cls, variable):

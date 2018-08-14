@@ -50,13 +50,9 @@ class OptimizationExpression(SymbolicMixin, NameMixin, SolverStateMixin):
 
     __slots__ = ()
 
-    def __init__(self, expression, name=None, sloppy=False, **kwargs):
+    def __init__(self, expression, name=None, **kwargs):
         super(OptimizationExpression, self).__init__(**kwargs)
         self._observe_symbols(expression, "expression")
-        if sloppy:
-            self._expression = expression
-        else:
-            self._expression = self._canonicalize(expression)
         if name is None:
             self.name = str(uuid4())
         else:
@@ -71,18 +67,21 @@ class OptimizationExpression(SymbolicMixin, NameMixin, SolverStateMixin):
             pass
 
     def __iadd__(self, other):
+        # TODO: The expression should be canonicalized.
         self._expression += other
         self._observe_symbols(other, "expression")
         self._update_expression()
         return self
 
     def __isub__(self, other):
+        # TODO: The expression should be canonicalized.
         self._expression -= other
         self._observe_symbols(other, "expression")
         self._update_expression()
         return self
 
     def __imul__(self, other):
+        # TODO: The expression should be canonicalized.
         self._expression *= other
         self._observe_symbols(other, "expression")
         self._update_expression()
@@ -91,12 +90,14 @@ class OptimizationExpression(SymbolicMixin, NameMixin, SolverStateMixin):
     def __idiv__(self, other):
         # Since we imported `division`, this essentially remaps to `truediv`.
         # Mostly we handle symbolic expressions anyway, though.
+        # TODO: The expression should be canonicalized.
         self._expression /= other
         self._observe_symbols(other, "expression")
         self._update_expression()
         return self
 
     def __itruediv__(self, other):
+        # TODO: The expression should be canonicalized.
         self._expression /= other
         self._observe_symbols(other, "expression")
         self._update_expression()

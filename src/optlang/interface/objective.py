@@ -57,8 +57,13 @@ class Objective(OptimizationExpression):
         "__weakref__"
     )
 
-    def __init__(self, expression, value=None, direction='max', **kwargs):
+    def __init__(self, expression, value=None, direction='max', sloppy=False,
+                 **kwargs):
         super(Objective, self).__init__(expression=expression, **kwargs)
+        if sloppy:
+            self._expression = expression
+        else:
+            self._expression = self._canonicalize(expression)
         self._value = value
         self._direction = direction
 

@@ -91,21 +91,42 @@ class TestVariable(object):
         Variable(name, type=kind)
 
     @pytest.mark.parametrize("var, expected", [
-        (Variable("foo"), "-Inf <= foo <= Inf"),
-        (Variable("foobar", lb=-10), "-10 <= foobar <= Inf"),
-        (Variable("baz", ub=-10), "-Inf <= baz <= -10"),
-        (Variable("baz", lb=-5, ub=5), "-5 <= baz <= 5")
+        (Variable("foo"),
+         "<continuous Variable '-Inf <= foo <= Inf'>"),
+        (Variable("foobar", lb=-10),
+         "<continuous Variable '-10 <= foobar <= Inf'>"),
+        (Variable("baz", ub=-10),
+         "<continuous Variable '-Inf <= baz <= -10'>"),
+        (Variable("baz", lb=-5, ub=5),
+         "<continuous Variable '-5 <= baz <= 5'>")
+    ])
+    def test_dunder_repr(self, var, expected):
+        # Should probably introduce scientific notation in str and test floats.
+        assert repr(var) == expected
+
+    @pytest.mark.parametrize("var, expected", [
+        (Variable("foo"), "foo"),
+        (Variable("foobar", lb=-10), "foobar"),
+        (Variable("baz", ub=-10), "baz"),
+        (Variable("baz", lb=-5, ub=5), "baz")
     ])
     def test_dunder_str(self, var, expected):
         # Should probably introduce scientific notation in str and test floats.
         assert str(var) == expected
 
     @pytest.mark.parametrize("var, expected", [
-        (Variable("x"), "<continuous Variable 'x'>"),
-        (Variable("foo", type="binary"), "<binary Variable 'foo'>"),
-        (Variable("bar", type="integer"), "<integer Variable 'bar'>"),
-        (Variable("foobar", type="continuous"),
-         "<continuous Variable 'foobar'>"),
+        (Variable("x"), "<continuous Variable '-Inf <= x <= Inf'>"),
+        (Variable("foobar", lb=-10),
+         "<continuous Variable '-10 <= foobar <= Inf'>"),
+        (Variable("baz", ub=-10),
+         "<continuous Variable '-Inf <= baz <= -10'>"),
+        (Variable("baz", lb=-5, ub=5),
+         "<continuous Variable '-5 <= baz <= 5'>"),
+        # TODO: Should default bounds become [0, 1] for binary variables?
+        (Variable("foo", type="binary"),
+         "<binary Variable '-Inf <= foo <= Inf'>"),
+        (Variable("bar", type="integer"),
+         "<integer Variable '-Inf <= bar <= Inf'>")
     ])
     def test_dunder_repr(self, var, expected):
         assert repr(var) == expected
