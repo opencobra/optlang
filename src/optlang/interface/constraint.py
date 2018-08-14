@@ -102,6 +102,12 @@ class Constraint(OptimizationExpression, BoundsMixin, ValueMixin):
 
         """
         super(Constraint, self).__init__(expression=expression, **kwargs)
+        if lb is None and ub is None:
+            raise ValueError(
+                "Unbounded or 'free' constraints are currently not supported. "
+                "If you need this feature, please open an issue at "
+                "https://github.com/biosustain/optlang/issues."
+            )
         self.bounds = lb, ub
         if sloppy:
             self._expression = expression

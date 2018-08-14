@@ -37,11 +37,33 @@ CONTINUOUS_BOUNDS = [-1023, -33.3, None, 33.3, 1023]
 class TestConstraint(object):
     """Thoroughly test the constraint class."""
 
+    @pytest.mark.parametrize("name", [
+        "R2D2",
+        pytest.mark.raises("", exception=ValueError,
+                           message="must not be empty"),
+        pytest.mark.raises("foo bar", exception=ValueError,
+                           message="cannot contain whitespace characters"),
+    ])
+    def test_init_name(self, name):
+        Constraint(1, name=name, lb=1)
+
+    @pytest.mark.parametrize("lb, ub", [
+        pytest.mark.raises(
+            (None, None), exception=ValueError, message="free"),
+        (-5.1, None),
+        (None, 5.3),
+        (-5.1, 5.3)
+    ])
+    def test_init_bounds(self, lb, ub):
+        Constraint(1, lb=lb, ub=ub)
+
     @pytest.mark.parametrize("expr, name, lb, ub", [
         (Integer(5), "foo", -1023, 33.3),
         (Real(3.3), "bar", 77.7, None),
         (2 * Variable("x"), "baz", None, -1000),
-        (Variable("x") + 3 * Variable("y"), "foobar", None, None)
+        pytest.mark.raises(
+            (Variable("x") + 3 * Variable("y"), "foobar", None, None),
+            exception=ValueError, message="free"),
     ])
     def test_clone(self, expr, name, lb, ub):
         constr = Constraint(expr, name=name, lb=lb, ub=ub)
@@ -62,7 +84,7 @@ class TestConstraint(object):
     @pytest.mark.parametrize("kwargs, expected", [
         pytest.mark.raises(
             ({"expression": Variable("x") + 3, "name": "foo"}, None),
-            exception=ValueError, message="canonical form"),
+            exception=ValueError, message="free"),
         ({"expression": Variable("x") + 3, "lb": -10, "name": "foobar"},
          "foobar: -13.0 <= x"),
         ({"expression": Variable("x") + 3, "ub": 10, "name": "bar"},
