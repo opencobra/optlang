@@ -52,20 +52,19 @@ class Objective(OptimizationExpression):
         "_solver",
         "_name",
         "_expression",
-        "_value",
         "_direction",
         "__weakref__"
     )
 
-    def __init__(self, expression, value=None, direction='max', sloppy=False,
+    def __init__(self, expression, direction='max', sloppy=False,
                  **kwargs):
         super(Objective, self).__init__(expression=expression, **kwargs)
         if sloppy:
             self._expression = expression
         else:
             self._expression = self._canonicalize(expression)
-        self._value = value
-        self._direction = direction
+        self._direction = None
+        self.direction = direction
 
     @classmethod
     def clone(cls, objective, **kwargs):
@@ -82,15 +81,21 @@ class Objective(OptimizationExpression):
 
     @property
     def value(self):
-        """The objective value."""
-        return self._value
+        """Return the objective value if it exists."""
+        return self._solver.get_objective_value()
+
+    def _direction2str(self):
+        if self.direction == "max":
+            return "Maximize"
+        else:
+            return "Minimize"
 
     def __str__(self):
-        if self.direction == "max":
-            direction = "Maximize"
-        else:
-            direction = "Minimize"
-        return "{}:\n\t{}".format(direction, str(self.expression))
+        return "{}:\n\t{}".format(self._direction2str(), str(self.expression))
+
+    def __repr__(self):
+        return "<{} '{}: {}'>".format(
+            type(self).__name__, self._direction2str(), str(self.expression))
 
     def __eq__(self, other):
         """Tests *mathematical* equality for two Objectives. Solver specific type does NOT have to match.
