@@ -206,19 +206,6 @@ class Constraint(OptimizationExpression, BoundsMixin, ValueMixin):
             )
         return expression
 
-    def _round_primal_to_bounds(self, primal, tolerance=1e-5):
-        if (self.lb is None or primal >= self.lb) and (self.ub is None or primal <= self.ub):
-            return primal
-        else:
-            if (primal <= self.lb) and ((self.lb - primal) <= tolerance):
-                return self.lb
-            elif (primal >= self.ub) and ((self.ub - primal) >= -tolerance):
-                return self.ub
-            else:
-                raise AssertionError(
-                    'The primal value %s returned by the solver is out of bounds for variable %s (lb=%s, ub=%s)' % (
-                        primal, self.name, self.lb, self.ub))
-
     def to_dict(self):
         """
         Returns a json-compatible object from the constraint that can be saved using the json module.

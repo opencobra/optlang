@@ -25,6 +25,7 @@ from optlang.symbols import Mul, Integer, Real
 from optlang.interface import Variable, SymbolicParameter
 from optlang.interface.optimization_expression import OptimizationExpression
 
+
 EXPRESSIONS = [
     Integer(5),
     Real(3.3),
@@ -33,12 +34,21 @@ EXPRESSIONS = [
 ]
 
 
+class Child(OptimizationExpression):
+
+    __slots__ = ("_solver", "_observer", "_name", "__weakref__", "_expression")
+
+    def __init__(self, expression, **kwargs):
+        super(Child, self).__init__(expression=expression, **kwargs)
+        self._expression = expression
+
+
 class TestOptimizationExpression(object):
     """Thoroughly test the optimization expression class."""
 
     @pytest.mark.parametrize("expr", EXPRESSIONS)
     def test_init_expression(self, expr):
-        OptimizationExpression(expr)
+        Child(expr)
 
     @pytest.mark.parametrize("name", [
         "R2D2",
@@ -48,17 +58,17 @@ class TestOptimizationExpression(object):
                            message="cannot contain whitespace characters"),
     ])
     def test_init_name(self, name):
-        OptimizationExpression(1, name)
+        Child(1, name=name)
 
     @pytest.mark.parametrize("expr", EXPRESSIONS)
     def test_get_expression(self, expr):
-        oexpr = OptimizationExpression(expr)
+        oexpr = Child(expr)
         assert oexpr.expression == expr
 
-    @pytest.mark.xfail(reason="Not yet implemented for symbolic paramters.",
+    @pytest.mark.xfail(reason="Not yet implemented for symbolic parameters.",
                        strict=True)
     @pytest.mark.parametrize("expr, is_lin", [
-        (1, True),
+        (Integer(1), False),
         (Mul(1, 3), True),
         (1 + Variable("x"), True),
         (1 + Variable("x") ** 1, True),
@@ -69,11 +79,11 @@ class TestOptimizationExpression(object):
         (1 + Variable("z") * Variable("y") ** Variable("x"), False),
     ])
     def test_is_linear(self, expr, is_lin):
-        oexpr = OptimizationExpression(expr)
+        oexpr = Child(expr)
         assert oexpr.is_linear() == is_lin
 
     @pytest.mark.parametrize("expr, is_quad", [
-        (1, False),
+        (Integer(1), False),
         (Mul(1, 3), False),
         (1 + Variable("x"), False),
         (1 + Variable("x") ** 1, False),
@@ -84,34 +94,34 @@ class TestOptimizationExpression(object):
         (1 + Variable("z") * Variable("y") ** Variable("x"), False),
     ])
     def test_is_quadratic(self, expr, is_quad):
-        oexpr = OptimizationExpression(expr)
+        oexpr = Child(expr)
         assert oexpr.is_quadratic() == is_quad
 
     @pytest.mark.parametrize("expr, other", list(
         product(EXPRESSIONS, repeat=2)))
     def test_dunder_iadd(self, expr, other):
-        oexpr = OptimizationExpression(expr)
+        oexpr = Child(expr)
         oexpr += other
         assert oexpr.expression == expr + other
 
     @pytest.mark.parametrize("expr, other", list(
         product(EXPRESSIONS, repeat=2)))
     def test_dunder_isub(self, expr, other):
-        oexpr = OptimizationExpression(expr)
+        oexpr = Child(expr)
         oexpr -= other
         assert oexpr.expression == expr - other
 
     @pytest.mark.parametrize("expr, other", list(
         product(EXPRESSIONS, repeat=2)))
     def test_dunder_imul(self, expr, other):
-        oexpr = OptimizationExpression(expr)
+        oexpr = Child(expr)
         oexpr *= other
         assert oexpr.expression == expr * other
 
     @pytest.mark.parametrize("expr, other", list(
         product(EXPRESSIONS, repeat=2)))
     def test_dunder_idiv(self, expr, other):
-        oexpr = OptimizationExpression(expr)
+        oexpr = Child(expr)
         # Cannot realiably trigger `__idiv__` by using `/=` since its Python 2.
         oexpr.__idiv__(other)
         assert oexpr.expression == expr / other
@@ -119,16 +129,16 @@ class TestOptimizationExpression(object):
     @pytest.mark.parametrize("expr, other", list(
         product(EXPRESSIONS, repeat=2)))
     def test_dunder_itruediv(self, expr, other):
-        oexpr = OptimizationExpression(expr)
+        oexpr = Child(expr)
         oexpr.__itruediv__(other)
         assert oexpr.expression == expr / other
 
     def test_get_linear_coefficients(self):
-        oexpr = OptimizationExpression(5)
+        oexpr = Child(5)
         with pytest.raises(NotImplementedError):
             oexpr.get_linear_coefficients(None)
 
     def test_set_linear_coefficients(self):
-        oexpr = OptimizationExpression(5)
+        oexpr = Child(5)
         with pytest.raises(NotImplementedError):
             oexpr.set_linear_coefficients(None)
