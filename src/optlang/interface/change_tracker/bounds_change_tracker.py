@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 import logging
 
-from optlang.interface.trackers.base import BaseChangeTracker
+from optlang.interface.change_tracker.base_change_tracker import BaseChangeTracker
 
 __all__ = ("BoundsChangeTracker",)
 

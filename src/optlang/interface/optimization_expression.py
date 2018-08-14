@@ -23,7 +23,7 @@ from uuid import uuid4
 
 from optlang.symbols import Integer, Real, Basic, sympify
 from optlang.interface.variable import Variable
-from optlang.interface.mixins import (
+from optlang.interface.mixin import (
     NameMixin, SymbolicMixin, SolverStateMixin)
 
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2017 Novo Nordisk Foundation Center for Biosustainability,
+# Copyright 2018 Novo Nordisk Foundation Center for Biosustainability,
 # Technical University of Denmark.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

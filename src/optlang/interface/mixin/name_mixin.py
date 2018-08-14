@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 from six import PY2
 
-from optlang.interface.mixins.subject_mixin import SubjectMixin
+from optlang.interface.mixin.subject_mixin import SubjectMixin
 
 __all__ = ("NameMixin",)
 

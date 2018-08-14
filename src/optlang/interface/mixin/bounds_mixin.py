@@ -19,8 +19,8 @@ from __future__ import absolute_import
 
 import logging
 
-from optlang.interface.mixins.subject_mixin import SubjectMixin
-from optlang.interface.mixins.symbolic_mixin import SymbolicMixin
+from optlang.interface.mixin.subject_mixin import SubjectMixin
+from optlang.interface.mixin.symbolic_mixin import SymbolicMixin
 
 __all__ = ("BoundsMixin",)
 

@@ -21,7 +21,7 @@ from optlang.container import Container
 from optlang.interface.variable import Variable
 from optlang.interface.constraint import Constraint
 from optlang.interface.objective import Objective
-from optlang.interface.trackers import (
+from optlang.interface.change_tracker import (
     VariableChangeTracker, ConstraintChangeTracker, ObjectiveChangeTracker)
 
 __all__ = ("Model",)

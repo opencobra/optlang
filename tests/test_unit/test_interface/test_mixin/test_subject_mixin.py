@@ -17,16 +17,35 @@
 
 from __future__ import absolute_import
 
-import logging
+import weakref
 
-from optlang.interface.trackers.name import NameChangeTracker
-from optlang.interface.trackers.expression import ExpressionChangeTracker
+import pytest
 
-__all__ = ("ObjectiveChangeTracker",)
-
-LOGGER = logging.getLogger(__name__)
+from optlang.interface.mixin.subject_mixin import SubjectMixin
 
 
-class ObjectiveChangeTracker(ExpressionChangeTracker, NameChangeTracker):
+class Child(SubjectMixin):
 
-    pass
+    __slots__ = ("_observer",)
+
+
+@pytest.fixture(scope="function")
+def instance():
+    return Child()
+
+
+def test_subscribe(instance, mocker):
+    observer = mocker.Mock()
+    instance.subscribe(observer)
+    assert weakref.getweakrefcount(observer) == 1
+    second = mocker.Mock()
+    instance.subscribe(second)
+    assert weakref.getweakrefcount(observer) == 0
+
+
+def test_unsubscribe(instance, mocker):
+    observer = mocker.Mock()
+    instance.subscribe(observer)
+    assert weakref.getweakrefcount(observer) == 1
+    instance.unsubscribe()
+    assert weakref.getweakrefcount(observer) == 0

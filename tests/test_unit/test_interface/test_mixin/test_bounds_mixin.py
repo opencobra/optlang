@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 import pytest
 
-from optlang.interface.mixins.bounds_mixin import BoundsMixin
+from optlang.interface.mixin.bounds_mixin import BoundsMixin
 
 VALUES = [-1000, -33.3, 0, None, 7.5, 100]
 

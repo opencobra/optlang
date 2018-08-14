@@ -19,23 +19,15 @@ from __future__ import absolute_import
 
 import logging
 
-from optlang.interface.trackers.name import NameChangeTracker
-from optlang.interface.trackers.bounds import BoundsChangeTracker
+from optlang.interface.change_tracker.name_change_tracker import NameChangeTracker
+from optlang.interface.change_tracker.expression_change_tracker import ExpressionChangeTracker
 
-__all__ = ("VariableChangeTracker",)
+__all__ = ("ObjectiveChangeTracker",)
 
 LOGGER = logging.getLogger(__name__)
 
 
-class VariableChangeTracker(BoundsChangeTracker, NameChangeTracker):
+class ObjectiveChangeTracker(ExpressionChangeTracker, NameChangeTracker):
 
     def __init__(self, **kwargs):
-        super(VariableChangeTracker, self).__init__(**kwargs)
-        self._type = list()
-
-    def update_type(self, obj, kind):
-        LOGGER.debug("Tracked type update to '%s'.", kind)
-        self._type.append((obj, kind))
-
-    def iter_type(self):
-        return self._iter_last_unique(self._type)
+        super(ObjectiveChangeTracker, self).__init__(**kwargs)

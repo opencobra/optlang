@@ -18,7 +18,7 @@
 from __future__ import absolute_import
 
 from optlang.interface.optimization_expression import OptimizationExpression
-from optlang.interface.mixins import BoundsMixin, ValueMixin
+from optlang.interface.mixin import BoundsMixin, ValueMixin
 
 __all__ = ("Constraint",)
 

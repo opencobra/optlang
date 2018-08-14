@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 import pytest
 
-from optlang.interface.mixins.name_mixin import NameMixin
+from optlang.interface.mixin.name_mixin import NameMixin
 
 
 class Child(NameMixin):

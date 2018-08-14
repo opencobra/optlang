@@ -21,7 +21,7 @@ import logging
 from enum import Enum, unique
 
 from optlang.symbols import UniqueSymbol
-from optlang.interface.mixins import (
+from optlang.interface.mixin import (
     BoundsMixin, ValueMixin, NameMixin, SymbolicMixin)
 
 __all__ = ("VariableType", "Variable")

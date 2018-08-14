@@ -28,7 +28,7 @@ from __future__ import absolute_import
 
 import pytest
 
-from optlang.interface.mixins.symbolic_mixin import SymbolicMixin
+from optlang.interface.mixin.symbolic_mixin import SymbolicMixin
 
 
 class Child(SymbolicMixin):

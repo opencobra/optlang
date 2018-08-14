@@ -19,9 +19,9 @@
 
 from __future__ import absolute_import
 
-from optlang.interface.trackers.variable import VariableChangeTracker
-from optlang.interface.trackers.constraint import ConstraintChangeTracker
-from optlang.interface.trackers.objective import ObjectiveChangeTracker
+from optlang.interface.change_tracker.variable_change_tracker import VariableChangeTracker
+from optlang.interface.change_tracker.constraint_change_tracker import ConstraintChangeTracker
+from optlang.interface.change_tracker.objective_change_tracker import ObjectiveChangeTracker
 
 __all__ = (
     "VariableChangeTracker",

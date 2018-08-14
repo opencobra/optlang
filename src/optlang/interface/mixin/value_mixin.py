@@ -17,7 +17,7 @@
 
 from __future__ import absolute_import
 
-from optlang.interface.mixins.solver_state_mixin import SolverStateMixin
+from optlang.interface.mixin.solver_state_mixin import SolverStateMixin
 
 __all__ = ("ValueMixin",)
 

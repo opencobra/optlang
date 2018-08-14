@@ -19,22 +19,22 @@ from __future__ import absolute_import
 
 import logging
 
-from optlang.interface.trackers.base import BaseChangeTracker
+from optlang.interface.change_tracker.base_change_tracker import BaseChangeTracker
 
-__all__ = ("NameChangeTracker",)
+__all__ = ("ExpressionChangeTracker",)
 
 LOGGER = logging.getLogger(__name__)
 
 
-class NameChangeTracker(BaseChangeTracker):
+class ExpressionChangeTracker(BaseChangeTracker):
 
     def __init__(self, **kwargs):
-        super(NameChangeTracker, self).__init__(**kwargs)
-        self._name = list()
+        super(ExpressionChangeTracker, self).__init__(**kwargs)
+        self._expression = list()
 
-    def update_name(self, obj, name):
-        LOGGER.debug("Tracked name update to '%s'.", name)
-        self._name.append((obj, name))
+    def update_expression(self, obj, expr):
+        LOGGER.debug("Tracked expression update to '%s'.", str(expr))
+        self._expression.append((obj, expr))
 
-    def iter_name(self):
-        return self._iter_last_unique(self._name)
+    def iter_expression(self):
+        return self._iter_last_unique(self._expression)

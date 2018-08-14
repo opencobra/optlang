@@ -17,35 +17,25 @@
 
 from __future__ import absolute_import
 
-import weakref
+import logging
 
-import pytest
+from optlang.interface.change_tracker.name_change_tracker import NameChangeTracker
+from optlang.interface.change_tracker.bounds_change_tracker import BoundsChangeTracker
 
-from optlang.interface.mixins.solver_state_mixin import SolverStateMixin
+__all__ = ("VariableChangeTracker",)
 
-
-class Child(SolverStateMixin):
-
-    __slots__ = ("_solver",)
+LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="function")
-def instance():
-    return Child()
+class VariableChangeTracker(BoundsChangeTracker, NameChangeTracker):
 
+    def __init__(self, **kwargs):
+        super(VariableChangeTracker, self).__init__(**kwargs)
+        self._type = list()
 
-def test_set_solver(instance, mocker):
-    solver = mocker.Mock()
-    instance.set_solver(solver)
-    assert weakref.getweakrefcount(solver) == 1
-    second = mocker.Mock()
-    instance.set_solver(second)
-    assert weakref.getweakrefcount(solver) == 0
+    def update_type(self, obj, kind):
+        LOGGER.debug("Tracked type update to '%s'.", kind)
+        self._type.append((obj, kind))
 
-
-def test_unset_solver(instance, mocker):
-    solver = mocker.Mock()
-    instance.set_solver(solver)
-    assert weakref.getweakrefcount(solver) == 1
-    instance.unset_solver()
-    assert weakref.getweakrefcount(solver) == 0
+    def iter_type(self):
+        return self._iter_last_unique(self._type)

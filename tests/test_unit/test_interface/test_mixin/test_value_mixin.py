@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 import pytest
 
-from optlang.interface.mixins.value_mixin import ValueMixin
+from optlang.interface.mixin.value_mixin import ValueMixin
 
 VALUES = [-1000, -33.3, 0, None, 7.5, 100]
 

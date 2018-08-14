@@ -19,9 +19,12 @@ from __future__ import absolute_import
 
 import logging
 
-from optlang.interface.trackers.name import NameChangeTracker
-from optlang.interface.trackers.bounds import BoundsChangeTracker
-from optlang.interface.trackers.expression import ExpressionChangeTracker
+from optlang.interface.change_tracker.name_change_tracker import (
+    NameChangeTracker,)
+from optlang.interface.change_tracker.bounds_change_tracker import (
+    BoundsChangeTracker,)
+from optlang.interface.change_tracker.expression_change_tracker import (
+    ExpressionChangeTracker,)
 
 __all__ = ("ConstraintChangeTracker",)
 
@@ -31,4 +34,5 @@ LOGGER = logging.getLogger(__name__)
 class ConstraintChangeTracker(ExpressionChangeTracker, BoundsChangeTracker,
                               NameChangeTracker):
 
-    pass
+    def __init__(self, **kwargs):
+        super(ConstraintChangeTracker, self).__init__(**kwargs)
