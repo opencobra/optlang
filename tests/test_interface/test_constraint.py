@@ -17,12 +17,10 @@
 
 from __future__ import absolute_import
 
-from itertools import product
-
 import pytest
 
-from optlang.symbols import Mul, Integer, Real
-from optlang.interface import Variable, SymbolicParameter
+from optlang.symbols import Integer, Real
+from optlang.interface import Variable
 from optlang.interface.constraint import Constraint
 
 EXPRESSIONS = [

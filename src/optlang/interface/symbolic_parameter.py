@@ -61,6 +61,29 @@ class SymbolicParameter(UniqueSymbol):
         self._observers = WeakKeyDictionary()
         self._value = value
 
+    def __str__(self):
+        """
+        Return a string representation of the parameter.
+
+        Examples
+        --------
+        >>> SymbolicParameter('mu')
+        'mu'
+        """
+        return self.name
+
+    def __repr__(self):
+        """
+        Return a full representation of the parameter.
+
+        Examples
+        --------
+        >>> SymbolicParameter('mu', value=10)
+        "<SymbolicParameter 'mu = 10'>"
+        """
+        return "<{} '{} = {}'>".format(
+            type(self).__name__, self.name, self.value)
+
     @property
     def value(self):
         """Return the associated numeric value."""

@@ -178,7 +178,7 @@ class Constraint(OptimizationExpression, BoundsMixin, ValueMixin):
             rhs = ''
         if self.indicator_variable is not None:
             lhs = self.indicator_variable.name + ' = ' + str(self.active_when) + ' -> ' + lhs
-        return str(self.name) + ": " + lhs + self.expression.__str__() + rhs
+        return str(self.name) + ": " + lhs + str(self.expression) + rhs
 
     def _canonicalize(self, expression):
         expression = super(Constraint, self)._canonicalize(expression)

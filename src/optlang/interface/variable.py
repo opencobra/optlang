@@ -109,12 +109,6 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
         self.type = type
         self.bounds = lb, ub
 
-    def __repr__(self):
-        lb_str = str(self.lb) if self.lb is not None else "-Inf"
-        ub_str = str(self.ub) if self.ub is not None else "Inf"
-        return "<{} Variable '{} <= {} <= {}'>".format(
-            self._type.value, lb_str, super(Variable, self).__str__(), ub_str)
-
     def __str__(self):
         """
         Return a string representation of the variable.
@@ -124,7 +118,22 @@ class Variable(NameMixin, BoundsMixin, ValueMixin, SymbolicMixin,
         >>> Variable('x', lb=-10, ub=10)
         'x'
         """
-        return super(Variable, self).__str__()
+        return self.name
+
+    def __repr__(self):
+        """
+        Return a full representation of the variable.
+
+        Examples
+        --------
+        >>> Variable('x', lb=-10, ub=10)
+        "<continuous Variable '-10 <= x <= 10'>"
+        """
+        lb_str = str(self.lb) if self.lb is not None else "-Inf"
+        ub_str = str(self.ub) if self.ub is not None else "Inf"
+        return "<{} {} '{} <= {} <= {}'>".format(
+            self._type.value, type(self).__name__, lb_str, self.name,
+            ub_str)
 
     def __reduce__(self):
         return (type(self), (
