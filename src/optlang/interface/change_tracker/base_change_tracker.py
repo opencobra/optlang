@@ -28,11 +28,11 @@ class BaseChangeTracker(object):
 
     def __init__(self, **kwargs):
         super(BaseChangeTracker, self).__init__(**kwargs)
-        self._to_add = list()
-        self._to_rm = list()
+        self._to_add = []
+        self._to_rm = []
 
     @staticmethod
-    def _iter_unique(iterable):
+    def _iter_last_unique(iterable):
         seen = set()
         for obj in reversed(iterable):
             if obj in seen:
@@ -42,7 +42,7 @@ class BaseChangeTracker(object):
         iterable.clear()
 
     @staticmethod
-    def _iter_last_unique(iterable):
+    def _iter_last_unique_obj(iterable):
         seen = set()
         for pack in reversed(iterable):
             obj = pack[0]
@@ -57,11 +57,11 @@ class BaseChangeTracker(object):
         self._to_add.append(obj)
 
     def iter_to_add(self):
-        return self._iter_unique(self._to_add)
+        return self._iter_last_unique(self._to_add)
 
     def remove(self, obj):
         LOGGER.debug("Tracked removal of '%s'.", obj.name)
         self._to_rm.append(obj)
 
     def iter_to_remove(self):
-        return self._iter_unique(self._to_rm)
+        return self._iter_last_unique(self._to_rm)

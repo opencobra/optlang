@@ -31,11 +31,11 @@ class VariableChangeTracker(BoundsChangeTracker, NameChangeTracker):
 
     def __init__(self, **kwargs):
         super(VariableChangeTracker, self).__init__(**kwargs)
-        self._type = list()
+        self._type = []
 
     def update_type(self, obj, kind):
         LOGGER.debug("Tracked type update to '%s'.", kind)
         self._type.append((obj, kind))
 
     def iter_type(self):
-        return self._iter_last_unique(self._type)
+        return self._iter_last_unique_obj(self._type)

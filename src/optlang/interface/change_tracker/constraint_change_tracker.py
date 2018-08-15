@@ -36,3 +36,5 @@ class ConstraintChangeTracker(ExpressionChangeTracker, BoundsChangeTracker,
 
     def __init__(self, **kwargs):
         super(ConstraintChangeTracker, self).__init__(**kwargs)
+
+    # TODO: Include updating indicator variables?

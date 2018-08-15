@@ -28,13 +28,19 @@ def tracker():
     return BaseChangeTracker()
 
 
-@pytest.fixture(scope="function")
-def items(request, mocker):
-    return [mocker.Mock(spec_set=["name"], return_value=name)
-            for name in request.param]
-
-
 class TestBaseChangeTracker(object):
+
+    @pytest.fixture(scope="function")
+    def items(self, request, mocker):
+        memory = {name: mocker.Mock(spec_set=["name"], return_value=name)
+                  for name in request.param}
+        return [memory[name] for name in request.param]
+
+    @pytest.fixture(scope="function")
+    def tuples(self, request, mocker):
+        memory = {t[0]: mocker.Mock(spec_set=["name"], return_value=t[0])
+                  for t in request.param}
+        return [(memory[t[0]],) + t[1:] for t in request.param]
 
     def test_init(self):
         BaseChangeTracker()
@@ -54,10 +60,31 @@ class TestBaseChangeTracker(object):
         (["foo", "bar", "baz"], 3),
         (["foo", "bar", "foo"], 2),
     ], indirect=["items"])
-    def test_lazy_add(self, tracker, items, num_unique):
-        # TODO: Mocks are not unique by name thus this fails.
+    def test_iter_to_add(self, tracker, items, num_unique):
         for elem in items:
             tracker.add(elem)
         res = list(tracker.iter_to_add())
+        assert len(res) == num_unique
+        assert set(res) == set(items)
+
+    @pytest.mark.parametrize("items", [
+        ["foo"],
+        ["foo", "bar"],
+        ["foo", "bar", "baz"]
+    ], indirect=["items"])
+    def test_remove(self, tracker, items):
+        for elem in items:
+            tracker.remove(elem)
+
+    @pytest.mark.parametrize("items, num_unique", [
+        (["foo"], 1),
+        (["foo", "bar"], 2),
+        (["foo", "bar", "baz"], 3),
+        (["foo", "bar", "foo"], 2),
+    ], indirect=["items"])
+    def test_iter_to_remove(self, tracker, items, num_unique):
+        for elem in items:
+            tracker.remove(elem)
+        res = list(tracker.iter_to_remove())
         assert len(res) == num_unique
         assert set(res) == set(items)

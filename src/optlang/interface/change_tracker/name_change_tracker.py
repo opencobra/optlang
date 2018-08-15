@@ -30,11 +30,11 @@ class NameChangeTracker(BaseChangeTracker):
 
     def __init__(self, **kwargs):
         super(NameChangeTracker, self).__init__(**kwargs)
-        self._name = list()
+        self._name = []
 
     def update_name(self, obj, name):
         LOGGER.debug("Tracked name update to '%s'.", name)
         self._name.append((obj, name))
 
     def iter_name(self):
-        return self._iter_last_unique(self._name)
+        return self._iter_last_unique_obj(self._name)

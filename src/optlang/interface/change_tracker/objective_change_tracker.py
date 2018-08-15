@@ -31,3 +31,11 @@ class ObjectiveChangeTracker(ExpressionChangeTracker, NameChangeTracker):
 
     def __init__(self, **kwargs):
         super(ObjectiveChangeTracker, self).__init__(**kwargs)
+        self._direction = []
+
+    def update_direction(self, obj, direction):
+        LOGGER.debug("Tracked direction update to '%s'.", direction)
+        self._direction.append((obj, direction))
+
+    def iter_direction(self):
+        return self._iter_last_unique_obj(self._direction)

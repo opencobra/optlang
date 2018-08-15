@@ -30,11 +30,11 @@ class ExpressionChangeTracker(BaseChangeTracker):
 
     def __init__(self, **kwargs):
         super(ExpressionChangeTracker, self).__init__(**kwargs)
-        self._expression = list()
+        self._expression = []
 
     def update_expression(self, obj, expr):
         LOGGER.debug("Tracked expression update to '%s'.", str(expr))
         self._expression.append((obj, expr))
 
     def iter_expression(self):
-        return self._iter_last_unique(self._expression)
+        return self._iter_last_unique_obj(self._expression)

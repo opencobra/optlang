@@ -30,27 +30,27 @@ class BoundsChangeTracker(BaseChangeTracker):
 
     def __init__(self, **kwargs):
         super(BoundsChangeTracker, self).__init__(**kwargs)
-        self._lb = list()
-        self._ub = list()
-        self._bounds = list()
+        self._lb = []
+        self._ub = []
+        self._bounds = []
 
     def update_lb(self, obj, value):
         LOGGER.debug("Tracked lower bound update to %f.", value)
         self._lb.append((obj, value))
 
     def iter_lb(self):
-        return self._iter_last_unique(self._lb)
+        return self._iter_last_unique_obj(self._lb)
 
     def update_ub(self, obj, value):
         LOGGER.debug("Tracked upper bound update to %f.", value)
         self._ub.append((obj, value))
 
     def iter_ub(self):
-        return self._iter_last_unique(self._ub)
+        return self._iter_last_unique_obj(self._ub)
 
     def update_bounds(self, obj, lb, ub):
         LOGGER.debug("Tracked bounds update to %f, %f.", lb, ub)
         self._bounds.append((obj, lb, ub))
 
     def iter_bounds(self):
-        return self._iter_last_unique(self._bounds)
+        return self._iter_last_unique_obj(self._bounds)
