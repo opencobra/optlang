@@ -26,17 +26,17 @@ from __future__ import absolute_import
 
 import os
 
-SYMENGINE_PREFERENCE = os.environ.get("OPTLANG_USE_SYMENGINE", "")
 
-# TODO: Should the environment variable allow not using symengine?
-try:
+if "OPTLANG_USE_SYMENGINE" not in os.environ:
+    try:
+        from optlang.symbols.symengine_facade import *
+    except ImportError:
+        from optlang.symbols.sympy_facade import *
+elif os.environ["OPTLANG_USE_SYMENGINE"].lower() in ("true", "yes", "on", "1"):
     from optlang.symbols.symengine_facade import *
-except ImportError as err:
-    # When symengine is preferred, this should always raise an exception.
-    if SYMENGINE_PREFERENCE.lower() in ("true", "yes", "on", "1"):
-        raise ImportError(
-            "Optlang is configured to use symengine but failed to import it.")
+else:
     from optlang.symbols.sympy_facade import *
+
 
 __all__ = (
     "Integer",
