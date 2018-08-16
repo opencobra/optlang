@@ -115,6 +115,14 @@ class OptimizationExpression(SymbolicMixin, NameMixin, SolverStateMixin):
         """The mathematical expression defining the objective or constraint."""
         return self._expression
 
+    @expression.setter
+    def expression(self, expr):
+        """Set the expression defining the objective or constraint."""
+        self._disregard_symbols(self._expression, "expression")
+        self._expression = self._canonicalize(expr)
+        self._observe_symbols(expr, "expression")
+        self._update_expression()
+
     @property
     def variables(self):
         """Variables in the constraint's or objective's expression."""

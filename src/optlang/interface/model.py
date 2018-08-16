@@ -95,18 +95,18 @@ class Model(object):
         if isinstance(elem, Variable):
             self._variable_changes.add(elem)
             elem.subscribe(self._variable_changes)
-            elem.subscribe_to(self)
+            elem.set_solver(self)
         elif isinstance(elem, Constraint):
             self._constraint_changes.add(elem)
             elem.subscribe(self._constraint_changes)
-            elem.subscribe_to(self)
+            elem.set_solver(self)
         elif isinstance(elem, Objective):
             self._objective_changes.add(elem)
             elem.subscribe(self._objective_changes)
-            elem.subscribe_to(self)
+            elem.set_solver(self)
         else:
             raise TypeError(
-                "Can only add variables and constraints not '{}'."
+                "Can only add variables, constraints, and objectives not '{}'."
                 "".format(type(elem)))
 
     def add(self, iterable, sloppy=False):
@@ -122,20 +122,20 @@ class Model(object):
     def _remove_one(self, elem):
         if isinstance(elem, Variable):
             self._variable_changes.remove(elem)
-            elem.unsubscribe_from()
             elem.unsubscribe()
+            elem.unset_solver()
         elif isinstance(elem, Constraint):
             self._constraint_changes.remove(elem)
-            elem.unsubscribe_from()
             elem.unsubscribe()
+            elem.unset_solver()
         elif isinstance(elem, Objective):
             self._objective_changes.remove(elem)
-            elem.unsubscribe_from()
             elem.unsubscribe()
+            elem.unset_solver()
         else:
             raise ValueError(
                 "Can only remove variables, constraints, and objectives not "
-                "'{}'.".format(repr(elem)))
+                "'{}'.".format(type(elem)))
 
     def remove(self, iterable):
         if self._additive_mode:
@@ -187,7 +187,9 @@ class Model(object):
 
     def _optimize(self):
         raise NotImplementedError(
-            "You're using the high level interface to optlang. Problems cannot be optimized in this mode. Choose from one of the solver specific interfaces.")
+            "You're using the high level interface to optlang. Problems "
+            "cannot be optimized in this mode. Choose from one of the "
+            "solver specific interfaces.")
 
     @property
     def variables(self):

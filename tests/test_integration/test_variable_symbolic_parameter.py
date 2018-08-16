@@ -17,33 +17,22 @@
 
 from __future__ import absolute_import
 
-import pytest
-
+import helper_symbolic_bounds as bounds
 from optlang.interface.variable import VariableType, Variable
-from optlang.interface.symbolic_parameter import SymbolicParameter
 
 
 def pytest_generate_tests(metafunc):
     fixtures = frozenset(metafunc.fixturenames)
-    if "kind" not in fixtures:
+    if "obj" not in fixtures:
         return
     if not hasattr(metafunc.cls, "TYPES"):
         return
-    if "kind" in fixtures:
-        metafunc.parametrize("kind", metafunc.cls.TYPES)
+    if "obj" in fixtures:
+        metafunc.parametrize("obj", [Variable("i", type=t)
+                                     for t in metafunc.cls.TYPES])
 
 
-@pytest.fixture(scope="function")
-def x():
-    return SymbolicParameter("x")
-
-
-@pytest.fixture(scope="function")
-def y():
-    return SymbolicParameter("y")
-
-
-class TestSymbolicBounds(object):
+class TestVariableSymbolicBounds(bounds.TestSymbolicBounds):
     """
     Test the expected behavior with integration of symbolic bounds.
 
@@ -55,56 +44,4 @@ class TestSymbolicBounds(object):
 
     TYPES = list(VariableType)
 
-    def test_lb_param_observation(self, x, y, kind, mocker):
-        mocked_attach = mocker.patch.object(SymbolicParameter, "attach")
-        var = Variable("i", type=kind)
-        var.lb = 1 + x - y
-        assert var.lb == 1 + x - y
-        assert mocked_attach.call_count == 2
-        assert mocked_attach.call_args_list == [
-            mocker.call(var, "lb"), mocker.call(var, "lb")]
 
-    def test_ub_param_observation(self, x, y, kind, mocker):
-        mocked_attach = mocker.patch.object(SymbolicParameter, "attach")
-        var = Variable("i", type=kind)
-        var.ub = 1 + x - y
-        assert var.ub == 1 + x - y
-        assert mocked_attach.call_count == 2
-        assert mocked_attach.call_args_list == [
-            mocker.call(var, "ub"), mocker.call(var, "ub")]
-
-    def test_bounds_param_observation(self, x, y, kind, mocker):
-        mocked_attach = mocker.patch.object(SymbolicParameter, "attach")
-        var = Variable("i", type=kind)
-        var.bounds = (x + y, 1 + x - y)
-        assert var.bounds == (x + y, 1 + x - y)
-        assert mocked_attach.call_count == 4
-        assert mocked_attach.call_args_list == [
-            mocker.call(var, "bounds"), mocker.call(var, "bounds"),
-            mocker.call(var, "bounds"), mocker.call(var, "bounds")
-        ]
-
-    def test_lb_param_disregard(self, x, y, kind, mocker):
-        mocked_detach = mocker.patch.object(SymbolicParameter, "detach")
-        var = Variable("i", type=kind)
-        var.lb = 1 + x
-        var.lb = y
-        mocked_detach.assert_called_once_with(var, "lb")
-
-    def test_ub_param_disregard(self, x, y, kind, mocker):
-        mocked_detach = mocker.patch.object(SymbolicParameter, "detach")
-        var = Variable("i", type=kind)
-        var.ub = 1 + x
-        var.ub = y
-        mocked_detach.assert_called_once_with(var, "ub")
-
-    def test_bounds_param_disregard(self, x, y, kind, mocker):
-        mocked_detach = mocker.patch.object(SymbolicParameter, "detach")
-        var = Variable("i", type=kind)
-        var.bounds = (x - y, x + y)
-        var.bounds = None, None
-        assert mocked_detach.call_count == 4
-        assert mocked_detach.call_args_list == [
-            mocker.call(var, "bounds"), mocker.call(var, "bounds"),
-            mocker.call(var, "bounds"), mocker.call(var, "bounds")
-        ]
