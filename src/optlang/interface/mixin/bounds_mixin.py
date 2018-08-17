@@ -55,7 +55,7 @@ class BoundsMixin(SymbolicMixin, SubjectMixin):
 
     @staticmethod
     def _check_bounds(lb, ub):
-        LOGGER.debug("Comparing %s with %s.", str(lb), str(ub))
+        LOGGER.debug("Validating that %s <= %s.", str(lb), str(ub))
         if lb is None or ub is None:
             return
         if lb > ub:

@@ -22,6 +22,7 @@ from six import add_metaclass, iteritems
 
 import optlang.interface as interface
 from optlang.interface import MathematicalProgrammingConfiguration
+from optlang.interface.variable import VariableType
 # from optlang.util import inheritdocstring
 
 GLPK_STATUS_TO_STATUS = {
@@ -34,9 +35,9 @@ GLPK_STATUS_TO_STATUS = {
 }
 
 GLPK_VTYPE_TO_VTYPE = {
-    glpk.GLP_CV: 'continuous',
-    glpk.GLP_IV: 'integer',
-    glpk.GLP_BV: 'binary'
+    glpk.GLP_CV: VariableType.CONTINUOUS,
+    glpk.GLP_IV: VariableType.INTEGER,
+    glpk.GLP_BV: VariableType.BINARY
 }
 
 VTYPE_TO_GLPK_VTYPE = {

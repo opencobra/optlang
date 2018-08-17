@@ -19,77 +19,88 @@ from __future__ import absolute_import
 
 import pytest
 
-from optlang.symbols import Integer, Real
-from optlang.interface import Variable
+from optlang.symbols import Zero
+from optlang.interface.constraint import Constraint
+from optlang.interface.objective import Objective
+from optlang.interface.variable import Variable
 from optlang.interface.model import Model
 
 
 class TestModel(object):
     """Thoroughly test the constraint class."""
 
+    @pytest.fixture(scope="function")
+    def model(self):
+        return Model()
+
+    def test_init(self):
+        Model()
+
     @pytest.mark.parametrize("name", [
+        None,
         "R2D2",
-        pytest.mark.raises("", exception=ValueError,
-                           message="must not be empty"),
-        pytest.mark.raises("foo bar", exception=ValueError,
-                           message="cannot contain whitespace characters"),
+        "",
+        "foo bar"
     ])
     def test_init_name(self, name):
         Model(name=name)
 
-    @pytest.mark.parametrize("lb, ub", [
-        pytest.mark.raises(
-            (None, None), exception=ValueError, message="free"),
-        (-5.1, None),
-        (None, 5.3),
-        (-5.1, 5.3)
+    @pytest.mark.parametrize("objective", [
+        None,
+        Objective(Zero),
+        pytest.mark.raises(1, exception=TypeError, message="not <class 'int'>")
     ])
-    def test_init_bounds(self, lb, ub):
-        Constraint(1, lb=lb, ub=ub)
+    def test_init_objective(self, objective):
+        Model(objective=objective)
 
-    @pytest.mark.parametrize("expr, name, lb, ub", [
-        (Integer(5), "foo", -1023, 33.3),
-        (Real(3.3), "bar", 77.7, None),
-        (2 * Variable("x"), "baz", None, -1000),
-        pytest.mark.raises(
-            (Variable("x") + 3 * Variable("y"), "foobar", None, None),
-            exception=ValueError, message="free"),
+    @pytest.mark.parametrize("variables", [
+        None,
+        Variable("x"),
+        [Variable("x"), Variable("y")],
+        [Variable("x"), Variable("y"), Variable("z")]
     ])
-    def test_clone(self, expr, name, lb, ub):
-        constr = Constraint(expr, name=name, lb=lb, ub=ub)
-        new = Constraint.clone(constr)
-        assert new is not constr
-        assert new.name == constr.name
-        assert new.lb == constr.lb
-        assert new.ub == constr.ub
+    def test_init_variables(self, variables):
+        Model(variables=variables)
 
-    @pytest.mark.skip("Not implemented yet in v 2.0.")
-    def test_indicator_variable(self):
-        pass
-
-    @pytest.mark.skip("Not implemented yet in v 2.0.")
-    def test_active_when(self):
-        pass
-
-    @pytest.mark.parametrize("kwargs, expected", [
-        pytest.mark.raises(
-            ({"expression": Variable("x") + 3, "name": "foo"}, None),
-            exception=ValueError, message="free"),
-        ({"expression": Variable("x") + 3, "lb": -10, "name": "foobar"},
-         "foobar: -13.0 <= x"),
-        ({"expression": Variable("x") + 3, "ub": 10, "name": "bar"},
-         "bar: x <= 7.0"),
-        ({"expression": Variable("x") + 2, "lb": -5, "ub": 5, "name": "baz"},
-         "baz: -7.0 <= x <= 3.0"),
+    @pytest.mark.parametrize("constraints", [
+        None,
+        Constraint(Zero, lb=-1),
+        [Constraint(Zero, lb=-1), Constraint(Zero, lb=-1)],
+        [Constraint(Zero, lb=-1), Constraint(Zero, lb=-1),
+         Constraint(Zero, lb=-1)]
     ])
-    def test_dunder_str(self, kwargs, expected):
-        constr = Constraint(**kwargs)
-        assert str(constr) == expected
+    def test_init_constraints(self, constraints):
+        Model(constraints=constraints)
 
-    @pytest.mark.skip("Not implemented yet in v 2.0.")
-    def test_to_dict(self):
-        pass
+    @pytest.mark.parametrize("elements", [
+        Variable("x"),
+        Constraint(Zero, lb=-1),
+        Objective(Zero),
+        [],
+        [Variable("x")],
+        [Constraint(Zero, lb=-1)],
+        [Objective(Zero)],
+        [Variable("x"), Variable("y")],
+        [Constraint(Zero, lb=-1), Constraint(Zero, lb=-1)],
+        [Objective(Zero), Objective(Zero)],
+    ])
+    def test_add(self, model, elements):
+        model.add(elements)
 
-    @pytest.mark.skip("Not implemented yet in v 2.0.")
-    def test_from_dict(self):
-        pass
+    def test_add_sloppy(self, model, elements):
+        model.add(elements, sloppy=True)
+
+    def test_remove(self, model):
+        assert False
+
+    def test_update(self, model, mocker):
+        mocker.spy(model, "update")
+        var = Variable("x")
+        model.add(var)
+        model.remove(var)
+        assert model.update.call_count == 1
+
+    @pytest.mark.raises(NotImplementedError, message="high level interface")
+    def test_optimize(self, model):
+        model.optimize()
+

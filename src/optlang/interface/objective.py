@@ -97,15 +97,18 @@ class Objective(OptimizationExpression):
         return "<{} '{}: {}'>".format(
             type(self).__name__, self._direction2str(), str(self.expression))
 
-    def __eq__(self, other):
-        """Tests *mathematical* equality for two Objectives. Solver specific type does NOT have to match.
-        Expression and direction must be the same.
-        Name does not have to match"""
-        if isinstance(other, Objective):
-            return self.direction == other.direction and \
-                   self.expression == other.expression
-        else:
-            return False
+    # def __eq__(self, other):
+    # FIXME: Defining the comparison operation breaks the hash method.
+    # FIXME: Do we need the comparison? If so, `__hash__` also needs to be
+    # FIXME: defined.
+    #     """Tests *mathematical* equality for two Objectives. Solver specific type does NOT have to match.
+    #     Expression and direction must be the same.
+    #     Name does not have to match"""
+    #     if isinstance(other, type(self)):
+    #         return self.direction == other.direction and \
+    #                self.expression == other.expression
+    #     else:
+    #         return False
 
     def _canonicalize(self, expression):
         """For example, changes x + y to 1.*x + 1.*y"""

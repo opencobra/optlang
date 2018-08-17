@@ -18,11 +18,13 @@
 from __future__ import absolute_import
 
 from optlang.container import Container
+from optlang.interface import OPTIMAL
 from optlang.interface.variable import Variable
 from optlang.interface.constraint import Constraint
 from optlang.interface.objective import Objective
 from optlang.interface.change_tracker import (
     VariableChangeTracker, ConstraintChangeTracker, ObjectiveChangeTracker)
+from optlang.symbols import Zero
 
 __all__ = ("Model",)
 
@@ -76,6 +78,8 @@ class Model(object):
                  constraints=None, **kwargs):
         super(Model, self).__init__(**kwargs)
         self._variables = Container()
+        self._constraints = Container()
+        self._objective = Objective(Zero)
         self._var2constraints = dict()
         self._status = None
         self.name = name
@@ -95,19 +99,17 @@ class Model(object):
         if isinstance(elem, Variable):
             self._variable_changes.add(elem)
             elem.subscribe(self._variable_changes)
-            elem.set_solver(self)
         elif isinstance(elem, Constraint):
             self._constraint_changes.add(elem)
             elem.subscribe(self._constraint_changes)
-            elem.set_solver(self)
         elif isinstance(elem, Objective):
             self._objective_changes.add(elem)
             elem.subscribe(self._objective_changes)
-            elem.set_solver(self)
         else:
             raise TypeError(
-                "Can only add variables, constraints, and objectives not '{}'."
+                "Can only add variables, constraints, and objectives not {}."
                 "".format(type(elem)))
+        elem.set_solver(self)
 
     def add(self, iterable, sloppy=False):
         if not self._additive_mode:
@@ -122,20 +124,16 @@ class Model(object):
     def _remove_one(self, elem):
         if isinstance(elem, Variable):
             self._variable_changes.remove(elem)
-            elem.unsubscribe()
-            elem.unset_solver()
         elif isinstance(elem, Constraint):
             self._constraint_changes.remove(elem)
-            elem.unsubscribe()
-            elem.unset_solver()
         elif isinstance(elem, Objective):
             self._objective_changes.remove(elem)
-            elem.unsubscribe()
-            elem.unset_solver()
         else:
-            raise ValueError(
+            raise TypeError(
                 "Can only remove variables, constraints, and objectives not "
-                "'{}'.".format(type(elem)))
+                "{}.".format(type(elem)))
+        elem.unsubscribe()
+        elem.unset_solver()
 
     def remove(self, iterable):
         if self._additive_mode:
@@ -148,18 +146,18 @@ class Model(object):
             self._remove_one(iterable)
 
     def update(self):
-        self._add_variables()
-        self._add_constraints()
+        self._add_variables(self._variable_changes.iter_to_add())
+        self._add_constraints(self._constraint_changes.iter_to_add())
 
-        self._update_variable_ubs()
-        self._update_constraint_ubs()
-        self._update_variable_lbs()
-        self._update_constraint_lbs()
-        self._update_variable_bounds()
-        self._update_constraint_bounds()
+        # self._update_variable_ubs()
+        # self._update_constraint_ubs()
+        # self._update_variable_lbs()
+        # self._update_constraint_lbs()
+        # self._update_variable_bounds()
+        # self._update_constraint_bounds()
 
-        self._remove_variables()
-        self._remove_constraints()
+        # self._remove_variables()
+        # self._remove_constraints()
 
     def optimize(self):
         """
@@ -193,10 +191,56 @@ class Model(object):
 
     @property
     def variables(self):
+        self.update()
         return self._variables
+
+    @property
+    def constraints(self):
+        """The model constraints."""
+        self.update()
+        return self._constraints
+
+    @property
+    def objective(self):
+        self.update()
+        return self._objective
+
+    # TODO: Do we need a setter or is `Model.add(new)` enough?
+    # TODO: Do we need a change tracker for objectives at all?
+    @objective.setter
+    def objective(self, new):
+        self._objective.unsubscribe()
+        self._objective.unset_solver()
+        self.update()
+        self._objective = new
+        self._objective.subscribe(self._objective_changes)
+        self._objective.set_solver(self)
+
+    @property
+    def status(self):
+        """The solver status of the model."""
+        return self._status
 
     def _add_variables(self, variables):
         for variable in variables:
-            variable.subject = self
             self._variables.append(variable)
             self._var2constraints[variable.name] = set()
+
+    def _add_constraints(self, constraints, sloppy=False):
+        for constraint in constraints:
+            constraint_id = constraint.name
+            if not sloppy:
+                variables = constraint.variables
+                if constraint.indicator_variable is not None:
+                    variables.add(constraint.indicator_variable)
+                missing_vars = [v for v in variables
+                                if v not in self._variables]
+                if len(missing_vars) > 0:
+                    self._add_variables(missing_vars)
+                for var in variables:
+                    try:
+                        self._variables_to_constraints_mapping[var.name].add(constraint_id)
+                    except KeyError:
+                        self._variables_to_constraints_mapping[var.name] = set([constraint_id])
+            self._constraints.append(constraint)
+            constraint._problem = self
