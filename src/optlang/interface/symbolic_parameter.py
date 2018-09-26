@@ -21,7 +21,7 @@ import logging
 from weakref import WeakKeyDictionary
 
 from six import iteritems
-from sympy import Le, Dummy
+from sympy import Le, Dummy, oo
 from sympy.solvers.inequalities import reduce_inequalities
 
 from optlang.symbols import UniqueSymbol
@@ -131,12 +131,14 @@ class SymbolicParameter(UniqueSymbol):
             if len(bounds & attributes) == 0:
                 # The symbolic parameter is not part of the bounds.
                 continue
+            lower = -oo if observer.lb is None else observer.lb
+            upper = oo if observer.ub is None else observer.ub
             try:
-                inequalities.append(Le(observer.lb, observer.ub))
+                inequalities.append(Le(lower, upper))
             except ReferenceError:
                 continue
         if len(inequalities) == 0:
-            raise RuntimeError(
+            raise ValueError(
                 "The symbolic parameter '{}' is not set on any bounds."
                 "".format(self.name))
         # Reducing inequalities is currently not possible in symengine. Thus
