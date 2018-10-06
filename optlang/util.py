@@ -288,6 +288,9 @@ class SolverTolerances(object):
             raise AttributeError(key + " is not an available tolerance parameter with this solver")
         self._functions[key][1](value)
 
+    def to_dict(self):
+        return {key: getattr(self, key) for key in self._functions.keys()}
+
     def __dir__(self):
         return list(self._functions)
 
