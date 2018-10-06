@@ -401,7 +401,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 'verbosity': self.verbosity,
                 'timeout': self.timeout,
                 'tolerances': {"feasibility": self.tolerances.feasibility}
-               }
+                }
 
     def __setstate__(self, state):
         self.__init__()

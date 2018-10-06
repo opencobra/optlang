@@ -528,7 +528,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 "tolerances": {"feasibility": self.tolerances.feasibility,
                                "optimality": self.tolerances.optimality,
                                "integrality": self.tolerances.integrality}
-               }
+                }
 
     def __setstate__(self, state):
         for key, val in six.iteritems(state):
