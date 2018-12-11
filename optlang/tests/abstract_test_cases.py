@@ -804,7 +804,7 @@ class AbstractModelTestCase(unittest.TestCase):
         objective = self.interface.Objective(self.model.objective.expression + offset)
         self.model.objective = objective
         self.model.optimize()
-        self.assertEqual(self.model.objective.value, optimal + offset)
+        self.assertAlmostEqual(self.model.objective.value, optimal + offset)
 
     # def test_objective_handles_constants_3(self):
     #     offset = 3
