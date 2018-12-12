@@ -458,7 +458,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         class WarningStreamHandler(StreamHandler):
 
             def flush(self):
-                self.logger.warn(self.getvalue())
+                self.logger.warning(self.getvalue())
 
         class LogStreamHandler(StreamHandler):
 
