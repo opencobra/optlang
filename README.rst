@@ -118,6 +118,11 @@ Contributing
 
 Please read `<CONTRIBUTING.md>`__.
 
+Funding
+~~~~~~~
+
+The development of optlang was partly support by the Novo Nordisk Foundation.
+
 Future outlook
 ~~~~~~~~~~~~~~
 
