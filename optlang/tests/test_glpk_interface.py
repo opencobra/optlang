@@ -121,6 +121,13 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         model = self.interface.Model(name="empty_problem")
         self.assertEqual(glp_get_prob_name(model.problem), "empty_problem")
 
+    def test_glpk_link_objective_in_constructor(self):
+        var = self.interface.Variable("a", ub=5)
+        obj = self.interface.Objective(var, direction="max")
+        model = self.interface.Model(objective=obj, variables=var)
+        model.optimize()
+        self.assertEqual(model.objective.value, 5.0)
+
     def test_pickle_ability(self):
         self.model.optimize()
         value = self.model.objective.value

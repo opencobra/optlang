@@ -577,6 +577,8 @@ class Model(interface.Model):
                 problem=self,
                 direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
         glp_scale_prob(self.problem, GLP_SF_AUTO)
+        if "objective" in kwargs:
+            self.objective = kwargs["objective"]
 
     @classmethod
     def from_lp(cls, lp_form):
