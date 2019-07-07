@@ -604,6 +604,15 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_initial_objective(self):
         self.assertEqual(self.model.objective.expression, 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])
+        
+    def test_set_objective_in_constructor(self):
+        var = self.interface.Variable("x", ub=5)
+        obj = self.interface.Objective(var, direction="max")
+        model = self.interface.Model(objective=obj, variables=[var])
+        model.optimize()
+        self.assertIs(model.objective, obj)
+        self.assertAlmostEqual(model.objective.value, 5)
+        
 
     def test_optimize(self):
         self.model.optimize()
