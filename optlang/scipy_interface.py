@@ -559,19 +559,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
-    def __init__(self, problem=None, *args, **kwargs):
+    def _initialize_problem(self):
+        self.problem = Problem()
 
-        super(Model, self).__init__(*args, **kwargs)
-
-        if problem is None:
-            self.problem = Problem()
+    def _initialize_model_from_problem(self, problem):
+        if isinstance(problem, Problem):
+            self.problem = problem
         else:
-            if isinstance(problem, Problem):
-                self.problem = problem
-            else:
-                raise TypeError("Problem must be an instance of scipy_interface.Problem, not " + repr(type(problem)))
-
-        self.configuration = Configuration(problem=self)
+            raise TypeError("Problem must be an instance of scipy_interface.Problem, not " + repr(type(problem)))
 
     # def _add_variable(self, variable):
     #     print("added", variable.name)
