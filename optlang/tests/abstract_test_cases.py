@@ -961,7 +961,16 @@ class AbstractModelTestCase(unittest.TestCase):
         model.remove(var3)
         model.optimize()
         self.assertAlmostEqual(model.reduced_costs["x"], 0)
-
+        
+    def test_change_constraint_name(self):
+        model = self.model
+        const = model.constraints[0]
+        old_name = const.name
+        new_name = "test"
+        const.name = new_name
+        self.assertEqual(const.name, new_name)
+        const.name = old_name
+        self.assertEqual(const.name, old_name)
 
 
 @six.add_metaclass(abc.ABCMeta)
