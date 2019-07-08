@@ -1148,7 +1148,7 @@ class Model(object):
 
     def __init__(self, name=None, objective=None, variables=None, constraints=None, problem=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
-        
+
         self._objective = self.interface.Objective(0)
         self._objective.problem = self
         self._variables = Container()
@@ -1156,7 +1156,7 @@ class Model(object):
         self._variables_to_constraints_mapping = dict()
         self._status = None
         self.name = name
-        
+
         class Modifications():
 
             def __init__(self):
@@ -1171,14 +1171,14 @@ class Model(object):
 
             def __str__(self):
                 return str(self.__dict__)
-                
+
         self._pending_modifications = Modifications()
-        
+
         if problem is not None:
             if not (objective is None and variables is None and constraints is None):
                 raise ValueError("Models constructor must be called with the problem argument OR with variables, constraints and objective")
             self._initialize_model_from_problem(problem)
-            
+
         else:
             self._initialize_problem()
             if variables is not None:
@@ -1188,14 +1188,14 @@ class Model(object):
             if objective is not None:
                 self.objective = objective
         self._initialize_configuration()
-    
+
     def _initialize_problem(self):
         """
         Constructs an empty solver-specific problem. Is called during construction of new Model objects when problem=None.
         Should be implemented in all solver interfaces.
         """
         pass
-        
+
     def _initialize_model_from_problem(self, problem):
         """
         Parses a solver-specific problem object and initializes the Model object to a state that is consistent with the problem.
@@ -1203,13 +1203,13 @@ class Model(object):
         Should be implemented in all solver interfaces.
         """
         raise NotImplementedError
-        
+
     def _initialize_configuration(self):
         """
         Initializes a Configuration object. Should be implemented in solver interfaces if non-standard behaviour is needed
         """
         self.configuration = self.interface.Configuration()
-    
+
     @property
     def interface(self):
         """Provides access to the solver interface the model belongs to

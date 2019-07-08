@@ -488,7 +488,7 @@ class Model(interface.Model):
         if self.name is not None:
             _glpk_validate_id(self.name)
             glp_set_prob_name(self.problem, str(self.name))
-        
+
     def _initialize_model_from_problem(self, problem):
         try:
             self.problem = problem
