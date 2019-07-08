@@ -700,6 +700,13 @@ class Constraint(OptimizationExpression):
         self._check_valid_upper_bound(value)
         self._ub = value
 
+    @OptimizationExpression.name.setter
+    def name(self, value):
+        old_name = getattr(self, 'name', None)
+        super(Constraint, Constraint).name.fset(self, value)
+        if getattr(self, 'problem', None) is not None and value != old_name:
+            self.problem.constraints.update_key(old_name)
+
     @property
     def indicator_variable(self):
         """The indicator variable of constraint (if available)."""

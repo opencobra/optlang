@@ -294,7 +294,6 @@ class Constraint(interface.Constraint):
                 )
             else:
                 self.problem.problem.linear_constraints.set_names(old_name, value)
-            self.problem.constraints.update_key(old_name)
 
     @interface.Constraint.lb.setter
     def lb(self, value):

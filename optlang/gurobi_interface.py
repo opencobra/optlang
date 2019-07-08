@@ -266,11 +266,11 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.name.setter
     def name(self, value):
-        old_name = self.name
+        internal_const = self._internal_constraint
         super(Constraint, Constraint).name.fset(self, value)
-        if getattr(self, 'problem', None) is not None:
-            grb_constraint = self.problem.problem.getConstrByName(old_name)
-            grb_constraint.setAttr('ConstrName', value)
+        if internal_const is not None:
+            internal_const.setAttr('ConstrName', value)
+            self.problem.problem.update()
 
     def _set_constraint_bounds(self, sense, rhs, range_value):
         gurobi_constraint = self.problem.problem.getConstrByName(self.name)

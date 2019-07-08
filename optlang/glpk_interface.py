@@ -201,7 +201,6 @@ class Constraint(interface.Constraint):
         self._name = value
         if self.problem is not None:
             glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
-            self.problem.constraints.update_key(old_name)
 
     @property
     def problem(self):
