@@ -507,18 +507,15 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 class Model(interface.Model):
 
-    def __init__(self, problem=None, *args, **kwargs):
+    def _initialize_problem(self):
+        self.problem = gurobipy.Model()
+        self.problem.params.OutputFlag = 0
+        if self.name is not None:
+            self.problem.setAttr('ModelName', self.name)
+            self.problem.update()
 
-        super(Model, self).__init__(*args, **kwargs)
-
-        if problem is None:
-            self.problem = gurobipy.Model()
-            self.problem.params.OutputFlag = 0
-            if self.name is not None:
-                self.problem.setAttr('ModelName', self.name)
-                self.problem.update()
-
-        elif isinstance(problem, gurobipy.Model):
+    def _initialize_model_from_problem(self, problem):
+        if isinstance(problem, gurobipy.Model):
             self.problem = problem
             variables = []
             for gurobi_variable in self.problem.getVars():
@@ -576,8 +573,6 @@ class Model(interface.Model):
             )
         else:
             raise TypeError("Provided problem is not a valid Gurobi model.")
-
-        self.configuration = Configuration(problem=self, verbosity=0)
 
     @classmethod
     def from_lp(cls, lp_form):

@@ -669,9 +669,6 @@ class Model(interface.Model):
         else:
             raise TypeError("Provided problem is not a valid CPLEX model.")
 
-    def _initialize_configuration(self):
-        self.configuration = Configuration(problem=self, verbosity=0)
-
     @classmethod
     def from_lp(cls, lp_form):
         problem = cplex.Cplex()
