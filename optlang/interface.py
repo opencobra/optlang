@@ -1208,7 +1208,7 @@ class Model(object):
         """
         Initializes a Configuration object. Should be implemented in solver interfaces if non-standard behaviour is needed
         """
-        self.configuration = self.interface.Configuration()
+        self.configuration = self.interface.Configuration(problem=self)
 
     @property
     def interface(self):
