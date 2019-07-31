@@ -402,6 +402,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.timeout = timeout
         self.solution_target = solution_target
         self.qp_method = qp_method
+        if "tolerances" in kwargs:
+            for key, val in six.iteritems(kwargs["tolerances"]):
+                setattr(self.tolerances, key, val)
 
     @property
     def lp_method(self):
@@ -518,11 +521,18 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._timeout = value
 
     def __getstate__(self):
-        return {"presolve": self.presolve, "timeout": self.timeout, "verbosity": self.verbosity}
+        return {"presolve": self.presolve,
+                "timeout": self.timeout,
+                "verbosity": self.verbosity,
+                "tolerances": {"feasibility": self.tolerances.feasibility,
+                               "optimality": self.tolerances.optimality,
+                               "integrality": self.tolerances.integrality}
+                }
 
     def __setstate__(self, state):
         for key, val in six.iteritems(state):
-            setattr(self, key, val)
+            if key != "tolerances":
+                setattr(self, key, val)
 
     @property
     def solution_target(self):

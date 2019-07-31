@@ -391,14 +391,24 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
+        if "tolerances" in kwargs:
+            for key, val in six.iteritems(kwargs["tolerances"]):
+                setattr(self.tolerances, key, val)
 
     def __getstate__(self):
-        return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
+        return {'presolve': self.presolve,
+                'verbosity': self.verbosity,
+                'timeout': self.timeout,
+                'tolerances': {"feasibility": self.tolerances.feasibility}
+                }
 
     def __setstate__(self, state):
         self.__init__()
         for key, val in six.iteritems(state):
-            setattr(self, key, val)
+            if key != "tolerances":
+                setattr(self, key, val)
+        for key, val in six.iteritems(state["tolerances"]):
+            setattr(self.tolerances, key, val)
 
     def _set_presolve(self, value):
         self._smcp.presolve = {False: GLP_OFF, True: GLP_ON, "auto": GLP_OFF}[value]
@@ -435,21 +445,16 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             self._smcp.tm_lim = value * 1000  # milliseconds to seconds
             self._iocp.tm_lim = value * 1000
 
+    def _get_feasibility(self):
+        return getattr(self._smcp, "tol_bnd")
+
+    def _set_feasibility(self, value):
+        return setattr(self._smcp, "tol_bnd", value)
+
     def _tolerance_functions(self):
         return {
-            "feasibility": (
-                lambda: self._smcp.tol_bnd,
-                lambda x: setattr(self._smcp, 'tol_bnd', x)
-            ),
-            "optimality": (
-                lambda: self._iocp.tol_obj,
-                lambda x: setattr(self._iocp, 'tol_obj', x)
-            ),
-            "integrality": (
-                lambda: self._iocp.tol_int,
-                lambda x: setattr(self._iocp, 'tol_int', x)
-            )
-        }
+            "feasibility": (self._get_feasibility, self._set_feasibility)
+            }
 
     @property
     def presolve(self):
