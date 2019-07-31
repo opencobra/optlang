@@ -294,7 +294,6 @@ class Constraint(interface.Constraint):
                 )
             else:
                 self.problem.problem.linear_constraints.set_names(old_name, value)
-            self.problem.constraints.update_key(old_name)
 
     @interface.Constraint.lb.setter
     def lb(self, value):
@@ -591,14 +590,11 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
-    def __init__(self, problem=None, *args, **kwargs):
+    def _initialize_problem(self):
+        self.problem = cplex.Cplex()
 
-        super(Model, self).__init__(*args, **kwargs)
-
-        if problem is None:
-            self.problem = cplex.Cplex()
-
-        elif isinstance(problem, cplex.Cplex):
+    def _initialize_model_from_problem(self, problem):
+        if isinstance(problem, cplex.Cplex):
             self.problem = problem
             zipped_var_args = zip(self.problem.variables.get_names(),
                                   self.problem.variables.get_lower_bounds(),
@@ -672,7 +668,6 @@ class Model(interface.Model):
                 )
         else:
             raise TypeError("Provided problem is not a valid CPLEX model.")
-        self.configuration = Configuration(problem=self, verbosity=0)
 
     @classmethod
     def from_lp(cls, lp_form):

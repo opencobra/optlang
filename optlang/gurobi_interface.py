@@ -266,11 +266,11 @@ class Constraint(interface.Constraint):
 
     @interface.Constraint.name.setter
     def name(self, value):
-        old_name = self.name
+        internal_const = self._internal_constraint
         super(Constraint, Constraint).name.fset(self, value)
-        if getattr(self, 'problem', None) is not None:
-            grb_constraint = self.problem.problem.getConstrByName(old_name)
-            grb_constraint.setAttr('ConstrName', value)
+        if internal_const is not None:
+            internal_const.setAttr('ConstrName', value)
+            self.problem.problem.update()
 
     def _set_constraint_bounds(self, sense, rhs, range_value):
         gurobi_constraint = self.problem.problem.getConstrByName(self.name)
@@ -507,18 +507,15 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 class Model(interface.Model):
 
-    def __init__(self, problem=None, *args, **kwargs):
+    def _initialize_problem(self):
+        self.problem = gurobipy.Model()
+        self.problem.params.OutputFlag = 0
+        if self.name is not None:
+            self.problem.setAttr('ModelName', self.name)
+            self.problem.update()
 
-        super(Model, self).__init__(*args, **kwargs)
-
-        if problem is None:
-            self.problem = gurobipy.Model()
-            self.problem.params.OutputFlag = 0
-            if self.name is not None:
-                self.problem.setAttr('ModelName', self.name)
-                self.problem.update()
-
-        elif isinstance(problem, gurobipy.Model):
+    def _initialize_model_from_problem(self, problem):
+        if isinstance(problem, gurobipy.Model):
             self.problem = problem
             variables = []
             for gurobi_variable in self.problem.getVars():
@@ -577,8 +574,6 @@ class Model(interface.Model):
         else:
             raise TypeError("Provided problem is not a valid Gurobi model.")
 
-        self.configuration = Configuration(problem=self, verbosity=0)
-
     @classmethod
     def from_lp(cls, lp_form):
         with TemporaryFilename(suffix=".lp", content=lp_form) as tmp_file_name:
@@ -632,9 +627,11 @@ class Model(interface.Model):
         self._objective_offset = offset
         grb_terms = []
         for var, coef in linear_coefficients.items():
+            coef = float(coef)
             var = self.problem.getVarByName(var.name)
             grb_terms.append(coef * var)
         for key, coef in quadratic_coefficients.items():
+            coef = float(coef)
             if len(key) == 1:
                 var = six.next(iter(key))
                 var = self.problem.getVarByName(var.name)
@@ -700,7 +697,7 @@ class Model(interface.Model):
             if constraint.is_Linear:
                 offset, coef_dict, _ = parse_optimization_expression(constraint, linear=True)
 
-                lhs = gurobipy.quicksum([coef * var._internal_variable for var, coef in coef_dict.items()])
+                lhs = gurobipy.quicksum([float(coef) * var._internal_variable for var, coef in coef_dict.items()])
                 sense, rhs, range_value = _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(constraint.lb,
                                                                                                     constraint.ub)
 

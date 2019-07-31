@@ -604,6 +604,15 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_initial_objective(self):
         self.assertEqual(self.model.objective.expression, 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])
+        
+    def test_set_objective_in_constructor(self):
+        var = self.interface.Variable("x", ub=5)
+        obj = self.interface.Objective(var, direction="max")
+        model = self.interface.Model(objective=obj, variables=[var])
+        model.optimize()
+        self.assertIs(model.objective, obj)
+        self.assertAlmostEqual(model.objective.value, 5)
+        
 
     def test_optimize(self):
         self.model.optimize()
@@ -952,7 +961,16 @@ class AbstractModelTestCase(unittest.TestCase):
         model.remove(var3)
         model.optimize()
         self.assertAlmostEqual(model.reduced_costs["x"], 0)
-
+        
+    def test_change_constraint_name(self):
+        model = self.model
+        const = model.constraints[0]
+        old_name = const.name
+        new_name = "test"
+        const.name = new_name
+        self.assertEqual(const.name, new_name)
+        const.name = old_name
+        self.assertEqual(const.name, old_name)
 
 
 @six.add_metaclass(abc.ABCMeta)
