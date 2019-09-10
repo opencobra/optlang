@@ -21,7 +21,6 @@ Wraps the cplex solver by subclassing and extending :class:`Model`,
 To use this interface, install the cplex solver and the bundled python interface.
 Make sure that 'import cplex' runs without error.
 """
-import collections
 import logging
 import sys
 
