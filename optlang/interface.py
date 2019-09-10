@@ -23,7 +23,13 @@ This module defines the API of optlang objects and indicates which methods need 
 subclassed solver interfaces.
 The classes in this module can be used to construct and modify problems, but no optimizations can be done.
 """
-import collections
+from collections import OrderedDict
+
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
+
 import inspect
 import logging
 import sys
@@ -1232,7 +1238,7 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        return collections.OrderedDict(
+        return OrderedDict(
             zip(self._get_variables_names(), self._get_primal_values())
         )
 
@@ -1254,7 +1260,7 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        return collections.OrderedDict(
+        return OrderedDict(
             zip(self._get_variables_names(), self._get_reduced_costs())
         )
 
@@ -1285,7 +1291,7 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        return collections.OrderedDict(
+        return OrderedDict(
             zip(self._get_constraint_names(), self._get_constraint_values())
         )
 
@@ -1307,7 +1313,7 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        return collections.OrderedDict(
+        return OrderedDict(
             zip(self._get_constraint_names(), self._get_shadow_prices())
         )
 
@@ -1355,7 +1361,7 @@ class Model(object):
         if self._pending_modifications.toggle == 'remove':
             self.update()
             self._pending_modifications.toggle = 'add'
-        if isinstance(stuff, collections.Iterable):
+        if isinstance(stuff, Iterable):
             for elem in stuff:
                 self.add(elem, sloppy=sloppy)
         elif isinstance(stuff, Variable):
@@ -1404,7 +1410,7 @@ class Model(object):
             self._pending_modifications.rm_var.append(stuff)
         elif isinstance(stuff, Constraint):
             self._pending_modifications.rm_constr.append(stuff)
-        elif isinstance(stuff, collections.Iterable):
+        elif isinstance(stuff, Iterable):
             for elem in stuff:
                 self.remove(elem)
         elif isinstance(stuff, Objective):
