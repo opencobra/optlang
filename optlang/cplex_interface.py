@@ -349,10 +349,10 @@ class Objective(interface.Objective):
     def value(self):
         if getattr(self, 'problem', None) is None:
             return None
-        try:
-            return self.problem.problem.solution.get_objective_value() + getattr(self.problem, "_objective_offset", 0)
-        except CplexSolverError as err:
-            raise SolverError(str(err))
+        if self.problem.problem.obj_value is None:
+            return None
+        return (self.problem.problem.obj_value +
+                getattr(self.problem, "_objective_offset", 0))
 
     @interface.Objective.direction.setter
     def direction(self, value):
