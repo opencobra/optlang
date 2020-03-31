@@ -135,6 +135,13 @@ def list_available_solvers():
     except Exception:
         log.debug('CPLEX python bindings not available.')
     try:
+        import osqp
+
+        solvers['OSQP'] = True
+        log.debug('OSQP python bindings found at %s' % os.path.dirname(osqp.__file__))
+    except Exception:
+        log.debug('OSQP python bindings not available.')
+    try:
         from scipy import optimize
         optimize.linprog
 
