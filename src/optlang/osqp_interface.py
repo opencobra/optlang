@@ -28,7 +28,7 @@ import sys
 import six
 import os
 from six.moves import StringIO
-from numpy import nan, array, concatenate, Infinity
+from numpy import nan, array, concatenate, Infinity, zeros
 
 import osqp
 
@@ -49,10 +49,6 @@ _STATUS_MAP = {
     'interrupted by user': interface.ABORTED,
     'run time limit reached': interface.TIME_LIMIT,
     'feasible': interface.FEASIBLE,
-    'feasible_relaxed_inf': interface.SPECIAL,
-    'feasible_relaxed_quad': interface.SPECIAL,
-    'feasible_relaxed_sum': interface.SPECIAL,
-    'first_order': interface.SPECIAL,
     'primal infeasible': interface.INFEASIBLE,
     'dual infeasible': interface.INFEASIBLE,
     'primal infeasible inaccurate': interface.INFEASIBLE,
@@ -73,6 +69,13 @@ _TYPES = ["continuous"]
 
 
 class OSQPProblem(object):
+    """A concise representation of an OSQP problem.
+
+    OSQP assumes that the problem will be pretty much immutable. This is
+    a small intermediate layer based on dictionaries that is fast to modify
+    but can also be converted to an OSQP problem without too much hassle.
+    """
+
     variables = set()
     constraints = set()
     constraint_coefs = dict()
@@ -102,90 +105,120 @@ class OSQPProblem(object):
     }
 
     def solve(self):
+        """Solve the OSQP problem."""
         d = self.direction
-        self.clean()
-        vmap = {k: i for i, k in enumerate(self.variables)}
-        cmap = {k: i for i, k in enumerate(self.constraints)}
-        P = array([
-            [vmap[vn[0]], vmap[vn[1]], coef * d * (1.0 + vn[0] == vn[1])]
-            for vn, coef in self.obj_quadratic_coefs.items()
-        ])
-        P = csc_matrix((P[:, 2], (P[:, 0], P[:, 1])))
-        q = array([
-            [vmap[vn], 0, coef * d]
-            for vn, coef in self.obj_linear_coefs.items()
-        ])
-        q = csc_matrix((q[:, 2], (q[:, 0], q[:, 1])))
-        q = q.toarray()[:, 0]
-        A = array([
-            [cmap[vn[0]], vmap[vn[1]], coef * d * 2.0]
-            for vn, coef in self.constraint_coefs.items()
-        ])
-        Av = array([
-            [i, i, 1.0] for i in vmap.values()
-        ])
-        A = concatenate((A, Av), axis=0)
-        A = csc_matrix((A[:, 2], (A[:, 0], A[:, 1])))
-        lb = array([self.constraint_lbs[k] for k in cmap] +
-                   [self.variable_lbs[k] for k in vmap])
-        ub = array([self.constraint_ubs[k] for k in cmap] +
-                   [self.variable_ubs[k] for k in vmap])
+        vmap = dict(zip(self.variables, range(len(self.variables))))
+        nv = len(self.variables)
+        cmap = dict(zip(self.constraints, range(len(self.constraints))))
+        nc = len(self.constraints)
+        nq = len(self.obj_quadratic_coefs)
+        if len(self.obj_quadratic_coefs) > 0:
+            P = array([
+                [vmap[vn[0]], vmap[vn[1]], coef * d * (1.0 + (vn[0] == vn[1]))]
+                for vn, coef in six.iteritems(self.obj_quadratic_coefs)
+            ])
+            P = csc_matrix((
+                P[:, 2],
+                (P[:, 0].astype("int64"), P[:, 1].astype("int64"))
+                ), shape=(nq, nv))
+            log.debug("P = \n%s", str(P.todense()))
+        else:
+            P = None
+        q = zeros(nv)
+        q[[vmap[vn] for vn in self.obj_linear_coefs]] = \
+            list(self.obj_linear_coefs.values())
+        q = q * d
+        log.debug("q = \n%s", str(q))
+        Av = array([[vmap[k] + nc, vmap[k], 1.0] for k in self.variables])
+        vbounds = array([
+            [self.variable_lbs[vn], self.variable_ubs[vn]]
+            for vn in self.variables
+            ])
+        if len(self.constraint_coefs) > 0:
+            A = array([
+                [cmap[vn[0]], vmap[vn[1]], coef]
+                for vn, coef in six.iteritems(self.constraint_coefs)
+            ])
+            bounds = array([
+                [self.constraint_lbs[cn], self.constraint_ubs[cn]]
+                for cn in self.constraints
+                ])
+            A = concatenate((A, Av))
+            bounds = concatenate((bounds, vbounds))
+        else:
+            A = Av
+            bounds = vbounds
+        A = csc_matrix(
+            (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
+            shape = (nc + nv, nv))
+        log.debug("A = \n%s", str(A.todense()))
+        log.debug("bounds = \n%s", str(bounds))
         solution = osqp.solve(
-            P=P, q=q, A=A, l=lb, u=ub, **self.settings)  # noqa
+            P=P, q=q, A=A,
+            l=bounds[:, 0], u=bounds[:, 1],  # noqa
+            **self.settings)
         self.primals = solution.x
         self.duals = solution.y
+        self.obj_value = solution.info.obj_val
         self.status = solution.info.status
         self.info = solution.info
 
     def clean(self):
-        self.variable_lbs = {k: v for k, v in self.variable_lbs.items()
+        """Remove unused variables and constraints."""
+        self.variable_lbs = {k: v for k, v in six.iteritems(self.variable_lbs)
                              if k in self.variables}
-        self.variable_ubs = {k: v for k, v in self.variable_ubs.items()
+        self.variable_ubs = {k: v for k, v in six.iteritems(self.variable_ubs)
                              if k in self.variables}
-        self.constraint_coefs = {k: v for k, v in self.constraint_coefs.items()
+        self.constraint_coefs = {k: v for k, v in
+                                 six.iteritems(self.constraint_coefs)
                                  if k[0] in self.constraints and
                                  k[1] in self.variables}
-        self.obj_linear_coefs = {k: v for k, v in self.obj_linear_coefs.items()
+        self.obj_linear_coefs = {k: v for k, v in
+                                 six.iteritems(self.obj_linear_coefs)
                                  if k in self.variables}
         self.obj_quadratic_coefs = {
-            k: v for k, v in self.obj_quadratic_coefs.items()
+            k: v for k, v in six.iteritems(self.obj_quadratic_coefs)
             if k[0] in self.variables and k[1] in self.variables}
-        self.constraint_lbs = {k: v for k, v in self.constraint_lbs.items()
+        self.constraint_lbs = {k: v for k, v in
+                               six.iteritems(self.constraint_lbs)
                                if k[0] in self.constraints}
-        self.constraint_ubs = {k: v for k, v in self.constraint_ubs.items()
+        self.constraint_ubs = {k: v for k, v in
+                               six.iteritems(self.constraint_ubs)
                                if k[0] in self.constraints}
 
     def rename_constraint(self, old, new):
+        """Rename a constraint."""
         self.constraints.remove(old)
         self.constraints.add(new)
         name_map = {k: k for k in self.constraints}
         name_map[old] = new
         self.constraint_coefs = {
             (name_map[k[0]], k[1]): v
-            for k, v in self.constraint_coefs.items()
+            for k, v in six.iteritems(self.constraint_coefs)
         }
-        self.constraint_lbs[new] = self.constraint_lbs[old]
-        self.constraint_ubs[new] = self.constraint_ubs[old]
+        self.constraint_lbs[new] = self.constraint_lbs.pop(old)
+        self.constraint_ubs[new] = self.constraint_ubs.pop(old)
 
     def rename_variable(self, old, new):
+        """Rename a variable."""
         self.variables.remove(old)
         self.variables.add(new)
         name_map = {k: k for k in self.variables}
         name_map[old] = new
         self.constraint_coefs = {
             (k[0], name_map[k[1]]): v
-            for k, v in self.constraint_coefs.items()
+            for k, v in six.iteritems(self.constraint_coefs)
         }
         self.obj_quadratic_coefs = {
             (name_map[k[0]], name_map[k[1]]): v
-            for k, v in self.obj_quadratic_coefs.items()
+            for k, v in six.iteritems(self.obj_quadratic_coefs)
         }
         self.obj_linear_coefs = {
             name_map[k]: v
-            for k, v in self.obj_linear_coefs.items()
+            for k, v in six.iteritems(self.obj_linear_coefs)
         }
-        self.constraint_lbs[new] = self.constraint_lbs[old]
-        self.constraint_ubs[new] = self.constraint_ubs[old]
+        self.variable_lbs[new] = self.variable_lbs.pop(old)
+        self.variable_ubs[new] = self.variable_ubs.pop(old)
 
 
 @six.add_metaclass(inheritdocstring)
@@ -205,15 +238,13 @@ class Variable(interface.Variable):
         super(Variable, Variable).type.fset(self, value)
 
     def _get_primal(self):
-        return self.problem.problem.primals[
-            self.problem.problem.variables[self.name]]
+        return self.problem.problem.primals.get(self.name, nan)
 
     @property
     def dual(self):
         if self.problem is None:
             return nan
-        return self.problem.problem.duals[
-            self.problem.problem.variables[self.name]]
+        return self.problem.problem.duals.get()
 
     @interface.Variable.name.setter
     def name(self, value):
@@ -235,11 +266,10 @@ class Constraint(interface.Constraint):
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
             self.problem.update()
-            triplets = [
-                (self.name, var.name, float(coeff))
-                for var, coeff in six.iteritems(coefficients)
-            ]
-            self.problem._set_constraint_coefficient(triplets)
+            for var, coef in six.iteritems(coefficients):
+                if coef != 0.0:
+                    self.problem.problem.constraint_coefs[
+                        (self.name, var.name)] = float(coef)
         else:
             raise Exception(
                 "Can't change coefficients if constraint is not associated "
@@ -248,9 +278,12 @@ class Constraint(interface.Constraint):
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
             self.problem.update()
-            coefs = self.problem.problem._get_constraint_coefficients(
-                [(self.name, v.name) for v in variables])
-            return {v: c for v, c in zip(variables, coefs)}
+            coefs = {
+                v: self.problem.problem.constraint_coefs.get(
+                    (self.name, v.name), 0.0)
+                for v in variables
+                }
+            return coefs
         else:
             raise Exception(
                 "Can't get coefficients from solver if constraint is not "
@@ -262,12 +295,11 @@ class Constraint(interface.Constraint):
                 raise ValueError("There is no constraint with name `%s` :(",
                                  self.name)
             variables = self.problem._variables
-            coefs = self.problem._get_constraint_coefficients(
-                [(self.name, v.name) for v in variables]
-            )
-            expression = add(
-                [mul((symbolics.Real(coefs[i]), v)) for i, v in
-                 enumerate(variables)])
+            all_coefs = self.problem.problem.constraint_coefs
+            coefs = [(v, all_coefs.get((self.name, v.name), 0.0))
+                     for v in variables]
+            expression = add([
+                mul((symbolics.Real(co), v)) for (v, co) in coefs])
             self._expression = expression
         return self._expression
 
@@ -306,16 +338,16 @@ class Constraint(interface.Constraint):
     def lb(self, value):
         self._check_valid_lower_bound(value)
         if getattr(self, 'problem', None) is not None:
-            self.problem.problem.constraint_lbs[
-                self.problem.problem.constraints[self.name]] = value
+            lb = -Infinity if value is None else float(value)
+            self.problem.problem.constraint_lbs[self.name] = lb
         self._lb = value
 
     @interface.Constraint.ub.setter
     def ub(self, value):
         self._check_valid_upper_bound(value)
         if getattr(self, 'problem', None) is not None:
-            self.problem.problem.constraint_ubs[
-                self.problem.problem.constraints[self.name]] = value
+            ub = Infinity if value is None else float(value)
+            self.problem.problem.constraint_ubs[self.name] = ub
         self._ub = value
 
     def __iadd__(self, other):
@@ -358,20 +390,17 @@ class Objective(interface.Objective):
         if (self.problem is not None and self._expression_expired and
                 len(self.problem._variables) > 0):
             model = self.problem
-            vars = {v.name: v for v in model._variables}
+            vars = model._variables
             expression = add([
                 coef * vars[vn]
-                for vn, coef in model.problem.obj_linear_coefficients.items()
-                if coef != 0.0
+                for vn, coef in six.iteritems(model.problem.obj_linear_coefs)
             ])
-            if len(model.problem.obj_quadratic_coefs) > 0:
-                q_ex = expression = add([
-                    coef * vars[vn[0]] * vars[vn[1]]
-                    for vn, coef in
-                    model.problem.obj_quadratic_coefficients.items()
-                    if coef != 0.0
-                ])
-                expression += q_ex
+            q_ex = add([
+                coef * vars[vn[0]] * vars[vn[1]]
+                for vn, coef in
+                six.iteritems(model.problem.obj_quadratic_coefs)
+            ])
+            expression += q_ex
             self._expression = expression
             self._expression_expired = False
         return self._expression
@@ -379,8 +408,10 @@ class Objective(interface.Objective):
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
             self.problem.update()
-            self.problem._set_linear_obj_coefficients(
-                [(v.name, float(coef)) for v, coef in coefficients.items()])
+            for v, coef in six.iteritems(coefficients):
+                if coef != 0.0:
+                    self.problem.problem.obj_linear_coefs[v.name] = \
+                        float(coef)
             self._expression_expired = True
         else:
             raise Exception(
@@ -390,9 +421,11 @@ class Objective(interface.Objective):
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
             self.problem.update()
-            coefs = self.problem._get_linear_obj_coefficients(
-                [v.name for v in variables])
-            return {v: c for v, c in zip(variables, coefs)}
+            coefs = {
+                v: self.problem.problem.obj_linear_coefs.get(v.name, 0.0)
+                for v in variables
+                }
+            return coefs
         else:
             raise Exception(
                 "Can't get coefficients from solver if objective "
@@ -550,8 +583,8 @@ class Model(interface.Model):
             super(Model, self)._add_variables([var])
 
         for name in self.problem.constraints:
-            # Since constraint expressions are lazily retrieved from the solver they don't have to be built here
-            # lhs = _unevaluated_Add(*[val * variables[i - 1] for i, val in zip(row.ind, row.val)])
+            # Since constraint expressions are lazily retrieved from the
+            # solver they don't have to be built here
             lhs = symbolics.Integer(0)
             constr = Constraint(lhs, lb=self.problem.constraint_lbs[name],
                                 ub=self.problem.constraint_ubs[name],
@@ -571,12 +604,12 @@ class Model(interface.Model):
 
             linear_expression = add([
                 coef * self._variables[vn]
-                for vn, coef in self.problem.obj_linear_coefficients.items()
+                for vn, coef in six.iteritems(self.problem.obj_linear_coefs)
             ])
             quadratic_expression = add([
                 coef * self._variables[vn[0]] * self._variables[vn[1]]
                 for vn, coef in
-                self.problem.obj_quadratic_coefficients.items()
+                six.iteritems(self.problem.obj_quadratic_coefs)
             ])
 
             self._objective = Objective(
@@ -593,11 +626,10 @@ class Model(interface.Model):
 
     @objective.setter
     def objective(self, value):
-        self.update()
         value.problem = None
         if self._objective is not None:  # Reset previous objective
-            self.problem.problem.obj_linear_coefs = dict()
-            self.problem.problem.obj_quadratic_coefs = dict()
+            self.problem.obj_linear_coefs = dict()
+            self.problem.obj_quadratic_coefs = dict()
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
         expression = self._objective._expression
@@ -608,10 +640,10 @@ class Model(interface.Model):
         self._objective_offset = offset
         if linear_coefficients:
             self.problem.obj_linear_coefs = {
-                v.name: c for v, c in linear_coefficients
+                v.name: float(c) for v, c in linear_coefficients
             }
 
-        for key, coef in quadratic_coeffients.items():
+        for key, coef in six.iteritems(quadratic_coeffients):
             if len(key) == 1:
                 var = six.next(iter(key))
                 self.problem.obj_quadratic_coefs[(var.name, var.name)] = \
@@ -622,7 +654,6 @@ class Model(interface.Model):
                     float(coef)
 
         self._set_objective_direction(value.direction)
-        self.problem.objective.set_name(value.name)
         value.problem = self
 
     def _set_objective_direction(self, direction):
@@ -672,10 +703,9 @@ class Model(interface.Model):
 
     def _add_variables(self, variables):
         super(Model, self)._add_variables(variables)
-        lb, ub = list(), list()
         for variable in variables:
-            lb = -Infinity if variable.lb is None else variable.lb
-            ub = Infinity if variable.ub is None else variable.ub
+            lb = -Infinity if variable.lb is None else float(variable.lb)
+            ub = Infinity if variable.ub is None else float(variable.ub)
             self.problem.variables.add(variable.name)
             self.problem.variable_lbs[variable.name] = lb
             self.problem.variable_ubs[variable.name] = ub
@@ -691,17 +721,26 @@ class Model(interface.Model):
             variable.problem = None
             del self._variables[variable.name]
             self.problem.variables.remove(variable.name)
+        self.problem.clean()
 
     def _add_constraints(self, constraints, sloppy=False):
         super(Model, self)._add_constraints(constraints, sloppy=sloppy)
         for constraint in constraints:
             constraint._problem = None  # This needs to be done in order to not trigger constraint._get_expression()
             if constraint.is_Linear:
-                offset, coeff_dict, _ = parse_optimization_expression(constraint)
-                self.problem.constraint_coefs.extend({
-                    (constraint.name, v.name): co
-                    for v, co in coeff_dict.items()
+                _, coeff_dict, _ = parse_optimization_expression(constraint)
+                lb = (-Infinity if constraint.lb is None
+                      else float(constraint.lb))
+                ub = (Infinity if constraint.ub is None
+                      else float(constraint.ub))
+                self.problem.constraints.add(constraint.name)
+                self.problem.constraint_coefs.update({
+                    (constraint.name, v.name): float(co)
+                    for v, co in six.iteritems(coeff_dict)
                 })
+                self.problem.constraint_lbs[constraint.name] = lb
+                self.problem.constraint_ubs[constraint.name] = ub
+                constraint.problem = self
             elif constraint.is_Quadratic:
                 raise NotImplementedError(
                     "Quadratic constraints (like %s) are not supported "
@@ -710,30 +749,13 @@ class Model(interface.Model):
                 raise ValueError(
                     "OSQP only supports linear or quadratic constraints. "
                     "%s is neither linear nor quadratic." % constraint)
-            constraint.problem = self
 
     def _remove_constraints(self, constraints):
         super(Model, self)._remove_constraints(constraints)
         for constraint in constraints:
             self.problem.constraints.remove(constraint.name)
-
-    def _get_quadratic_expression(self, quadratic=None):
-        if quadratic is None:
-            vars = self._variables
-            return add(co * vars[k[0]] * vars[[1]]
-                       for k, co in self.problem.obj_quadratic_coefs)
-        terms = []
-        vars = list(self.problem.variables)
-        for i, sparse_pair in enumerate(quadratic):
-            for j, val in zip(sparse_pair.ind, sparse_pair.val):
-                i_name, j_name = vars[i], vars[j]
-                if i <= j:
-                    terms.append(val * self._variables[i_name] *
-                                 self._variables[j_name])
-                else:
-                    pass  # Only look at upper triangle
-        return add(terms)
+        self.problem.clean()
 
     def _get_variable_indices(self, names):
-        vmap = {vn: i for i, vn in enumerate(self.problem.variables)}
+        vmap = dict(zip(self.variables, range(len(self.variables))))
         return [vmap[n] for n in names]
