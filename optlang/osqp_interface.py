@@ -93,42 +93,45 @@ class OSQPProblem(object):
     status = None
     settings = {
         "linsys_solver": "qdldl",
-        "max_iter": 10000,
-        "eps_abs": 1e-6,
-        "eps_rel": 1e-6,
+        "max_iter": 100000,
+        "eps_abs": 1e-4,
+        "eps_rel": 1e-4,
         "eps_prim_inf": 1e-6,
         "eps_dual_inf": 1e-6,
         "polish": True,
         "verbose": False,
-        "scaling": 8,
-        "time_limit": 0
+        "scaling": 10,
+        "time_limit": 0,
+        "adaptive_rho": True,
+        "rho": 0.1,
+        "alpha": 1.6
     }
+    __solution = None
 
-    def solve(self):
-        """Solve the OSQP problem."""
+    def build(self):
+        """Build the problem instance."""
         d = self.direction
         vmap = dict(zip(self.variables, range(len(self.variables))))
         nv = len(self.variables)
         cmap = dict(zip(self.constraints, range(len(self.constraints))))
         nc = len(self.constraints)
-        nq = len(self.obj_quadratic_coefs)
         if len(self.obj_quadratic_coefs) > 0:
             P = array([
-                [vmap[vn[0]], vmap[vn[1]], coef * d * (1.0 + (vn[0] == vn[1]))]
+                [vmap[vn[0]], vmap[vn[1]], coef * d * 2.0]
                 for vn, coef in six.iteritems(self.obj_quadratic_coefs)
             ])
+            log.debug("P = \n%s" % str(P))
             P = csc_matrix((
                 P[:, 2],
                 (P[:, 0].astype("int64"), P[:, 1].astype("int64"))
-                ), shape=(nq, nv))
-            log.debug("P = \n%s", str(P.todense()))
+                ), shape=(nv, nv))
         else:
             P = None
         q = zeros(nv)
         q[[vmap[vn] for vn in self.obj_linear_coefs]] = \
             list(self.obj_linear_coefs.values())
         q = q * d
-        log.debug("q = \n%s", str(q))
+        log.debug("q = \n%s" % str(q))
         Av = array([[vmap[k] + nc, vmap[k], 1.0] for k in self.variables])
         vbounds = array([
             [self.variable_lbs[vn], self.variable_ubs[vn]]
@@ -148,23 +151,51 @@ class OSQPProblem(object):
         else:
             A = Av
             bounds = vbounds
+        log.debug("A = \n%s" % str(A))
         A = csc_matrix(
             (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
             shape = (nc + nv, nv))
-        log.debug("A = \n%s", str(A.todense()))
-        log.debug("bounds = \n%s", str(bounds))
-        solution = osqp.solve(
+        log.debug("bounds = \n%s" % str(bounds))
+        return P, q, A, bounds
+
+    def solve(self):
+        """Solve the OSQP problem."""
+        settings = self.settings.copy()
+        P, q, A, bounds = self.build()
+        solver = osqp.OSQP()
+        if P is None:
+            # see https://github.com/cvxgrp/cvxpy/issues/898
+            settings.update({
+                "adaptive_rho": 0,
+                "rho": 1,
+                "alpha": 1
+            })
+        solver.setup(
             P=P, q=q, A=A,
             l=bounds[:, 0], u=bounds[:, 1],  # noqa
-            **self.settings)
-        self.primals = solution.x
-        self.duals = solution.y
-        self.obj_value = solution.info.obj_val
+            **settings)
+        if self.__solution is not None:
+            solver.warm_start(x=self.__solution["x"], y=self.__solution["y"])
+            solver.update_settings(rho=self.__solution["rho"])
+        solution = solver.solve()
+        self.primals = dict(zip(self.variables, solution.x))
+        self.duals = dict(zip(self.variables, solution.y))
+        self.obj_value = solution.info.obj_val * self.direction
         self.status = solution.info.status
         self.info = solution.info
+        self.__solution = {
+            "x": solution.x,
+            "y": solution.y,
+            "rho": solution.info.rho_estimate
+        }
+
+    def reset(self):
+        """Reset the solver."""
+        self.__solution = None
 
     def clean(self):
         """Remove unused variables and constraints."""
+        self.reset()
         self.variable_lbs = {k: v for k, v in six.iteritems(self.variable_lbs)
                              if k in self.variables}
         self.variable_ubs = {k: v for k, v in six.iteritems(self.variable_ubs)
@@ -181,13 +212,14 @@ class OSQPProblem(object):
             if k[0] in self.variables and k[1] in self.variables}
         self.constraint_lbs = {k: v for k, v in
                                six.iteritems(self.constraint_lbs)
-                               if k[0] in self.constraints}
+                               if k in self.constraints}
         self.constraint_ubs = {k: v for k, v in
                                six.iteritems(self.constraint_ubs)
-                               if k[0] in self.constraints}
+                               if k in self.constraints}
 
     def rename_constraint(self, old, new):
         """Rename a constraint."""
+        self.problem.reset()
         self.constraints.remove(old)
         self.constraints.add(new)
         name_map = {k: k for k in self.constraints}
@@ -201,6 +233,7 @@ class OSQPProblem(object):
 
     def rename_variable(self, old, new):
         """Rename a variable."""
+        self.problem.reset()
         self.variables.remove(old)
         self.variables.add(new)
         name_map = {k: k for k in self.variables}
@@ -291,9 +324,6 @@ class Constraint(interface.Constraint):
 
     def _get_expression(self):
         if self.problem is not None:
-            if self.name not in self.problem.constraints:
-                raise ValueError("There is no constraint with name `%s` :(",
-                                 self.name)
             variables = self.problem._variables
             all_coefs = self.problem.problem.constraint_coefs
             coefs = [(v, all_coefs.get((self.name, v.name), 0.0))
@@ -458,6 +488,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             raise ValueError(
                 "LP Method %s is not valid (choose one of: %s)" %
                 (lp_method, ", ".join(_LP_METHODS)))
+        if lp_method == "auto":
+            lp_method = "qdldl"
         self.problem.problem.settings["linsys_solver"] = lp_method
 
     def _set_presolve(self, value):
@@ -620,6 +652,19 @@ class Model(interface.Model):
                 name = "osqp_objective"
             )
 
+    @classmethod
+    def clone(cls, model, use_json=True, use_lp=False):
+        use_json = True
+        use_lp = False
+        lp = model.configuration.lp_method
+        qp = model.configuration.qp_method
+        model.configuration.lp_method = "auto"
+        model.configuration.qp_method = "auto"
+        new_model = super(Model, cls).clone(model, use_json, use_lp)
+        model.configuration.lp_method = lp
+        model.configuration.qp_method = qp
+        return new_model
+
     @property
     def objective(self):
         return self._objective
@@ -640,7 +685,7 @@ class Model(interface.Model):
         self._objective_offset = offset
         if linear_coefficients:
             self.problem.obj_linear_coefs = {
-                v.name: float(c) for v, c in linear_coefficients
+                v.name: float(c) for v, c in six.iteritems(linear_coefficients)
             }
 
         for key, coef in six.iteritems(quadratic_coeffients):
@@ -651,7 +696,9 @@ class Model(interface.Model):
             else:
                 var1, var2 = key
                 self.problem.obj_quadratic_coefs[(var1.name, var2.name)] = \
-                    float(coef)
+                    0.5 * float(coef)
+                self.problem.obj_quadratic_coefs[(var2.name, var1.name)] = \
+                    0.5 * float(coef)
 
         self._set_objective_direction(value.direction)
         value.problem = self
@@ -660,13 +707,13 @@ class Model(interface.Model):
         self.problem.direction = {'min': 1, 'max': -1}[direction]
 
     def _get_primal_values(self):
-        primal_values = self.problem.primals
+        primal_values = [self.problem.primals[v.name] for v in self._variables]
         if len(primal_values) == 0:
             raise SolverError("The problem has not been solved yet!")
         return primal_values
 
     def _get_reduced_costs(self):
-        dual_values = self.problem.duals
+        dual_values = [self.problem.primals[v.name] for v in self._variables]
         if len(dual_values) == 0:
             raise SolverError("The problem has not been solved yet!")
         return dual_values
@@ -687,6 +734,7 @@ class Model(interface.Model):
         return False
 
     def _optimize(self):
+        self.update()
         self.problem.solve()
         osqp_status = self.problem.status
         self._original_status = osqp_status
@@ -703,6 +751,7 @@ class Model(interface.Model):
 
     def _add_variables(self, variables):
         super(Model, self)._add_variables(variables)
+        self.problem.reset()
         for variable in variables:
             lb = -Infinity if variable.lb is None else float(variable.lb)
             ub = Infinity if variable.ub is None else float(variable.ub)
@@ -725,6 +774,7 @@ class Model(interface.Model):
 
     def _add_constraints(self, constraints, sloppy=False):
         super(Model, self)._add_constraints(constraints, sloppy=sloppy)
+        self.problem.reset()
         for constraint in constraints:
             constraint._problem = None  # This needs to be done in order to not trigger constraint._get_expression()
             if constraint.is_Linear:
