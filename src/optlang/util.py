@@ -233,7 +233,7 @@ def parse_expr(expr, local_dict=None):
     elif expr["type"] == "Mul":
         return mul([parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Pow":
-        return Pow(parse_expr(arg, local_dict) for arg in expr["args"])
+        return Pow(*[parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Symbol":
         try:
             return local_dict[expr["name"]]
