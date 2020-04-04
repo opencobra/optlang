@@ -28,12 +28,13 @@ import sys
 import six
 import os
 from six.moves import StringIO
-from numpy import nan, array, concatenate, Infinity, zeros
+from numpy import (nan, array, concatenate, Infinity,
+                   zeros, isnan, isfinite, in1d, where, logical_not,
+                   logical_or)
 
 import osqp
 
-from optlang import interface
-from optlang import symbolics
+from optlang import interface, symbolics, available_solvers
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang.exceptions import SolverError
@@ -76,37 +77,38 @@ class OSQPProblem(object):
     but can also be converted to an OSQP problem without too much hassle.
     """
 
-    variables = set()
-    constraints = set()
-    constraint_coefs = dict()
-    constraint_lbs = dict()
-    constraint_ubs = dict()
-    variable_lbs = dict()
-    variable_ubs = dict()
-    obj_linear_coefs = dict()
-    obj_quadratic_coefs = dict()
-    primals = list()
-    duals = list()
-    obj_value = None
-    direction = -1
-    info = None
-    status = None
-    settings = {
-        "linsys_solver": "qdldl",
-        "max_iter": 100000,
-        "eps_abs": 1e-4,
-        "eps_rel": 1e-4,
-        "eps_prim_inf": 1e-6,
-        "eps_dual_inf": 1e-6,
-        "polish": True,
-        "verbose": False,
-        "scaling": 10,
-        "time_limit": 0,
-        "adaptive_rho": True,
-        "rho": 0.1,
-        "alpha": 1.6
-    }
-    __solution = None
+    def __init__(self):
+        self.variables = set()
+        self.constraints = set()
+        self.constraint_coefs = dict()
+        self.constraint_lbs = dict()
+        self.constraint_ubs = dict()
+        self.variable_lbs = dict()
+        self.variable_ubs = dict()
+        self.obj_linear_coefs = dict()
+        self.obj_quadratic_coefs = dict()
+        self.primals = {}
+        self.duals = {}
+        self.obj_value = None
+        self.direction = -1
+        self.info = None
+        self.status = None
+        self.settings = {
+            "linsys_solver": "qdldl",
+            "max_iter": 100000,
+            "eps_abs": 1e-4,
+            "eps_rel": 1e-4,
+            "eps_prim_inf": 1e-6,
+            "eps_dual_inf": 1e-6,
+            "polish": True,
+            "verbose": False,
+            "scaling": 10,
+            "time_limit": 0,
+            "adaptive_rho": True,
+            "rho": 0.1,
+            "alpha": 1.6
+        }
+        self.__solution = None
 
     def build(self):
         """Build the problem instance."""
@@ -151,10 +153,13 @@ class OSQPProblem(object):
         else:
             A = Av
             bounds = vbounds
-        log.debug("A = \n%s" % str(A))
-        A = csc_matrix(
-            (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
-            shape = (nc + nv, nv))
+        if A.shape[0] == 0:
+            A = None
+        else:
+            log.debug("A = \n%s" % str(A))
+            A = csc_matrix(
+                (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
+                shape = (nc + nv, nv))
         log.debug("bounds = \n%s" % str(bounds))
         return P, q, A, bounds
 
@@ -180,8 +185,12 @@ class OSQPProblem(object):
         solution = solver.solve()
         self.primals = dict(zip(self.variables, solution.x))
         self.duals = dict(zip(self.variables, solution.y))
-        self.obj_value = solution.info.obj_val * self.direction
-        self.status = solution.info.status
+        if not isnan(solution.info.obj_val):
+            self.obj_value = solution.info.obj_val * self.direction
+            self.status = solution.info.status
+        else:
+            self.status = "primal infeasible"
+            self.obj_value = None
         self.info = solution.info
         self.__solution = {
             "x": solution.x,
@@ -192,6 +201,8 @@ class OSQPProblem(object):
     def reset(self):
         """Reset the solver."""
         self.__solution = None
+        self.primals = {}
+        self.duals = {}
 
     def clean(self):
         """Remove unused variables and constraints."""
@@ -219,7 +230,7 @@ class OSQPProblem(object):
 
     def rename_constraint(self, old, new):
         """Rename a constraint."""
-        self.problem.reset()
+        self.reset()
         self.constraints.remove(old)
         self.constraints.add(new)
         name_map = {k: k for k in self.constraints}
@@ -233,7 +244,7 @@ class OSQPProblem(object):
 
     def rename_variable(self, old, new):
         """Rename a variable."""
-        self.problem.reset()
+        self.reset()
         self.variables.remove(old)
         self.variables.add(new)
         name_map = {k: k for k in self.variables}
@@ -271,13 +282,13 @@ class Variable(interface.Variable):
         super(Variable, Variable).type.fset(self, value)
 
     def _get_primal(self):
-        return self.problem.problem.primals.get(self.name, nan)
+        return self.problem.problem.primals.get(self.name, None)
 
     @property
     def dual(self):
         if self.problem is None:
-            return nan
-        return self.problem.problem.duals.get()
+            return None
+        return self.problem.problem.duals.get(self.name, None)
 
     @interface.Variable.name.setter
     def name(self, value):
@@ -300,9 +311,8 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             self.problem.update()
             for var, coef in six.iteritems(coefficients):
-                if coef != 0.0:
-                    self.problem.problem.constraint_coefs[
-                        (self.name, var.name)] = float(coef)
+                self.problem.problem.constraint_coefs[
+                    (self.name, var.name)] = float(coef)
         else:
             raise Exception(
                 "Can't change coefficients if constraint is not associated "
@@ -347,10 +357,12 @@ class Constraint(interface.Constraint):
     @property
     def primal(self):
         if self.problem is None:
-            return nan
+            return None
+        if len(self.problem.problem.primals) == 0:
+            return None
         var_primals = {v: v._get_primal() for v in self.variables}
         p = self._expression.subs(var_primals).n(16, real=True)
-        return p
+        return float(p)
 
     @property
     def dual(self):
@@ -405,7 +417,7 @@ class Objective(interface.Objective):
     @property
     def value(self):
         if getattr(self, 'problem', None) is None:
-            return nan
+            return None
         return self.problem.problem.obj_value
 
     @interface.Objective.direction.setter
@@ -439,9 +451,8 @@ class Objective(interface.Objective):
         if self.problem is not None:
             self.problem.update()
             for v, coef in six.iteritems(coefficients):
-                if coef != 0.0:
-                    self.problem.problem.obj_linear_coefs[v.name] = \
-                        float(coef)
+                self.problem.problem.obj_linear_coefs[v.name] = \
+                    float(coef)
             self._expression_expired = True
         else:
             raise Exception(
@@ -547,6 +558,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         for key, val in six.iteritems(state):
             if key != "tolerances":
                 setattr(self, key, val)
+        for key, val in six.iteritems(state["tolerances"]):
+            setattr(self.tolerances, key, val)
 
     @property
     def qp_method(self):
@@ -652,19 +665,6 @@ class Model(interface.Model):
                 name = "osqp_objective"
             )
 
-    @classmethod
-    def clone(cls, model, use_json=True, use_lp=False):
-        use_json = True
-        use_lp = False
-        lp = model.configuration.lp_method
-        qp = model.configuration.qp_method
-        model.configuration.lp_method = "auto"
-        model.configuration.qp_method = "auto"
-        new_model = super(Model, cls).clone(model, use_json, use_lp)
-        model.configuration.lp_method = lp
-        model.configuration.qp_method = qp
-        return new_model
-
     @property
     def objective(self):
         return self._objective
@@ -707,15 +707,15 @@ class Model(interface.Model):
         self.problem.direction = {'min': 1, 'max': -1}[direction]
 
     def _get_primal_values(self):
-        primal_values = [self.problem.primals[v.name] for v in self._variables]
-        if len(primal_values) == 0:
+        if len(self.problem.primals) == 0:
             raise SolverError("The problem has not been solved yet!")
+        primal_values = [self.problem.primals[v.name] for v in self._variables]
         return primal_values
 
     def _get_reduced_costs(self):
-        dual_values = [self.problem.primals[v.name] for v in self._variables]
-        if len(dual_values) == 0:
+        if len(self.problem.duals) == 0:
             raise SolverError("The problem has not been solved yet!")
+        dual_values = [self.problem.duals[v.name] for v in self._variables]
         return dual_values
 
     def _get_constraint_values(self):
@@ -742,12 +742,13 @@ class Model(interface.Model):
         return status
 
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):
+        self.problem.reset()
         for var, val in var_lb:
-            lb = -Infinity if val is None else val
+            lb = -Infinity if val is None else float(val)
             self.problem.variable_lbs[var.name] = lb
         for var, val in var_ub:
             ub = Infinity if val is None else val
-            self.problem.variable_ubs[var.name] = ub
+            self.problem.variable_ubs[var.name] = float(ub)
 
     def _add_variables(self, variables):
         super(Model, self)._add_variables(variables)
@@ -809,3 +810,23 @@ class Model(interface.Model):
     def _get_variable_indices(self, names):
         vmap = dict(zip(self.variables, range(len(self.variables))))
         return [vmap[n] for n in names]
+
+    @classmethod
+    def from_lp(self, lp_problem_str):
+        """Read a model from an LP file.
+
+        OSQP does not have an integrated LP reader so it will either use
+        cplex or glpk to read the model. This means that QP problems will
+        currently require cplex to be read :(
+        """
+        if available_solvers["CPLEX"]:
+            from optlang import cplex_interface
+            mod = cplex_interface.Model.from_lp(lp_problem_str)
+            mod.configuration.lp_method = "auto"
+            mod.configuration.qp_method = "auto"
+            return super(Model, self).clone(mod)
+        else:
+            from optlang import glpk_interface
+            mod = glpk_interface.Model.from_lp(lp_problem_str)
+            mod.configuration.lp_method = "auto"
+            return super(Model, self).clone(mod)
