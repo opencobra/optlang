@@ -88,7 +88,7 @@ class AbstractVariableTestCase(unittest.TestCase):
     def test_setting_lower_bound_higher_than_upper_bound_raises(self):
         self.model.add(self.var)
         self.var.ub = 0
-        self.assertRaises(ValueError, setattr, self.model.variables[0], 'lb', 100.)
+        self.assertRaises(ValueError, setattr, self.model.variables["test"], 'lb', 100.)
 
     def test_setting_nonnumerical_bounds_raises(self):
         self.assertRaises(TypeError, setattr, self.var, "lb", "Minestrone")
@@ -263,17 +263,17 @@ class AbstractConstraintTestCase(unittest.TestCase):
 
         c.ub = 5
         model.optimize()
-        self.assertEqual(var.primal, 5)
+        self.assertAlmostEqual(var.primal, 5)
         c.ub = 4
         model.optimize()
-        self.assertEqual(var.primal, 4)
+        self.assertAlmostEqual(var.primal, 4)
         c.lb = -3
         model.objective.direction = "min"
         model.optimize()
-        self.assertEqual(var.primal, -3)
+        self.assertAlmostEqual(var.primal, -3)
         c.lb = sympy.Number(-4)  # Sympy numbers should be valid bounds
         model.optimize()
-        self.assertEqual(var.primal, -4)
+        self.assertAlmostEqual(var.primal, -4)
 
     def test_setting_nonnumerical_bounds_raises(self):
         var = self.interface.Variable("test")
@@ -604,7 +604,7 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_initial_objective(self):
         self.assertEqual(self.model.objective.expression, 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])
-        
+
     def test_set_objective_in_constructor(self):
         var = self.interface.Variable("x", ub=5)
         obj = self.interface.Objective(var, direction="max")
@@ -612,7 +612,7 @@ class AbstractModelTestCase(unittest.TestCase):
         model.optimize()
         self.assertIs(model.objective, obj)
         self.assertAlmostEqual(model.objective.value, 5)
-        
+
 
     def test_optimize(self):
         self.model.optimize()
@@ -961,7 +961,7 @@ class AbstractModelTestCase(unittest.TestCase):
         model.remove(var3)
         model.optimize()
         self.assertAlmostEqual(model.reduced_costs["x"], 0)
-        
+
     def test_change_constraint_name(self):
         model = self.model
         const = model.constraints[0]
@@ -984,6 +984,7 @@ class AbstractConfigurationTestCase(unittest.TestCase):
         params = dir(model.configuration.tolerances)
         for param in params:
             val = getattr(model.configuration.tolerances, param)
+            print(val)
             setattr(model.configuration.tolerances, param, 2 * val)
             self.assertEqual(
                 getattr(model.configuration.tolerances, param), 2 * val
