@@ -61,7 +61,6 @@ else:
             self.assertEqual(self.var.primal, None)
             with open(TESTMODELPATH) as tp:
                 model = Model.from_lp(tp.read())
-            model.configuration.tolerances.optimality = 1e-6
             print(model.problem.settings)
             model.optimize()
             self.assertEqual(model.status, 'optimal')
@@ -551,6 +550,7 @@ else:
                 nv, nc, ref_sol = info
                 prob = json.load(open(qp))
                 model = Model.from_json(prob)
+                model.configuration.tolerances.optimality = 1e-4
                 model.optimize()
                 self.assertEqual(len(model.variables), nv)
                 self.assertEqual(len(model.constraints), nc)

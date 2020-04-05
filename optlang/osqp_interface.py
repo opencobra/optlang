@@ -42,8 +42,6 @@ from optlang.exceptions import SolverError
 import pickle
 from scipy.sparse import csc_matrix
 
-log = logging.getLogger(__name__)
-
 from optlang.symbolics import add, mul, One, Zero
 
 _STATUS_MAP = {
@@ -96,8 +94,8 @@ class OSQPProblem(object):
         self.settings = {
             "linsys_solver": "qdldl",
             "max_iter": 100000,
-            "eps_abs": 1e-4,
-            "eps_rel": 1e-4,
+            "eps_abs": 1e-6,
+            "eps_rel": 1e-6,
             "eps_prim_inf": 1e-6,
             "eps_dual_inf": 1e-6,
             "polish": True,
@@ -122,7 +120,6 @@ class OSQPProblem(object):
                 [vmap[vn[0]], vmap[vn[1]], coef * d * 2.0]
                 for vn, coef in six.iteritems(self.obj_quadratic_coefs)
             ])
-            log.debug("P = \n%s" % str(P))
             P = csc_matrix((
                 P[:, 2],
                 (P[:, 0].astype("int64"), P[:, 1].astype("int64"))
@@ -133,7 +130,6 @@ class OSQPProblem(object):
         q[[vmap[vn] for vn in self.obj_linear_coefs]] = \
             list(self.obj_linear_coefs.values())
         q = q * d
-        log.debug("q = \n%s" % str(q))
         Av = array([[vmap[k] + nc, vmap[k], 1.0] for k in self.variables])
         vbounds = array([
             [self.variable_lbs[vn], self.variable_ubs[vn]]
@@ -156,11 +152,9 @@ class OSQPProblem(object):
         if A.shape[0] == 0:
             A = None
         else:
-            log.debug("A = \n%s" % str(A))
             A = csc_matrix(
                 (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
                 shape = (nc + nv, nv))
-        log.debug("bounds = \n%s" % str(bounds))
         return P, q, A, bounds
 
     def solve(self):
@@ -361,7 +355,7 @@ class Constraint(interface.Constraint):
         if len(self.problem.problem.primals) == 0:
             return None
         var_primals = {v: v._get_primal() for v in self.variables}
-        p = self._expression.subs(var_primals).n(16, real=True)
+        p = self._expression.subs(var_primals).n(16)
         return float(p)
 
     @property
