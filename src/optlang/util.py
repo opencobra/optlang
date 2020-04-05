@@ -105,7 +105,8 @@ def list_available_solvers():
     dict
         A dict like {'GLPK': True, 'GUROBI': False, ...}
     """
-    solvers = dict(GUROBI=False, GLPK=False, MOSEK=False, CPLEX=False, SCIPY=False)
+    solvers = dict(GUROBI=False, GLPK=False, MOSEK=False, CPLEX=False,
+                   SCIPY=False, OSQP=False)
     try:
         import gurobipy
 
