@@ -104,7 +104,6 @@ else:
             model.update()
             self.assertEqual(model.problem.variable_ubs[var.name], 2)
 
-        @unittest.skip("seems to be a problem with OSQP")
         def test_set_bounds_to_none(self):
             model = self.model
             var = self.var
