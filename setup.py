@@ -44,7 +44,7 @@ else:
 extra_requirements = {
     'test': [
         'nose>=1.3.7',
-        'colorama==0.4.0',
+        'colorama==0.3.9',
         'rednose>=0.4.3',
         'coverage>=4.0.3',
         'jsonschema>=2.5'

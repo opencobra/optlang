@@ -29,7 +29,7 @@ before_install:
   - 'echo "this is a build for: $TRAVIS_BRANCH"'
   - 'if [[ "$TRAVIS_PYTHON_VERSION" < "3.5" ]]; then bash ./.travis/install_cplex.sh; fi'
 install:
-  - pip install nose nose-progressive colorama==0.4.0 rednose coverage docutils flake8 codecov jsonschema
+  - pip install nose nose-progressive colorama==0.3.9 rednose coverage docutils flake8 codecov jsonschema
   - pip install -r requirements.txt
   - pip install scipy
   - 'if [[ "$OPTLANG_USE_SYMENGINE" = "True" ]]; then pip install symengine; fi'
