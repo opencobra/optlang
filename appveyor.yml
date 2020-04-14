@@ -1,8 +1,8 @@
 branches:
- only:
- - master
- - devel
- - "/^\\d+\\.\\d+\\.\\d+[a]?\\d*$/"
+  only:
+    - master
+    - devel
+    - "/^\\d+\\.\\d+\\.\\d+[a]?\\d*$/"
 
 environment:
   global:
@@ -31,14 +31,12 @@ init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%bit"
 
 cache:
-    - pip_cache -> appveyor.yml
-
+  - pip_cache -> appveyor.yml
 
 install:
   - "powershell appveyor\\install.ps1"
   - "%PYTHON%/python -m pip install pip setuptools wheel --upgrade"
-  - "%PYTHON%/python -m pip install nose rednose swiglpk coverage jsonschema numpy"
-
+  - "%PYTHON%/python -m pip install nose colorama==0.3.9 rednose swiglpk coverage jsonschema numpy"
 
 build: off
 
