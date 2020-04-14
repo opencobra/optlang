@@ -42,7 +42,13 @@ else:
 
 
 extra_requirements = {
-    'test': ['nose>=1.3.7', 'rednose>=0.4.3', 'coverage>=4.0.3', 'jsonschema>=2.5'],
+    'test': [
+        'nose>=1.3.7',
+        'colorama==0.4.0',
+        'rednose>=0.4.3',
+        'coverage>=4.0.3',
+        'jsonschema>=2.5'
+    ],
 }
 extra_requirements['all'] = list(set(chain(*extra_requirements.values())))
 

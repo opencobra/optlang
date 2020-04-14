@@ -3,15 +3,15 @@ sudo: false
 git:
   depth: 2
 python:
-  - '2.7'
-  - '3.4'
-  - '3.5'
-  - '3.6'
+  - "2.7"
+  - "3.4"
+  - "3.5"
+  - "3.6"
 branches:
   only:
-  - master
-  - devel
-  - "/^\\d+\\.\\d+\\.\\d+[a]?\\d*$/"
+    - master
+    - devel
+    - "/^\\d+\\.\\d+\\.\\d+[a]?\\d*$/"
 env:
   global:
     - GITHUB_REPO=biosustain/optlang
@@ -29,7 +29,7 @@ before_install:
   - 'echo "this is a build for: $TRAVIS_BRANCH"'
   - 'if [[ "$TRAVIS_PYTHON_VERSION" < "3.5" ]]; then bash ./.travis/install_cplex.sh; fi'
 install:
-  - pip install nose nose-progressive rednose coverage docutils flake8 codecov jsonschema
+  - pip install nose nose-progressive colorama==0.4.0 rednose coverage docutils flake8 codecov jsonschema
   - pip install -r requirements.txt
   - pip install scipy
   - 'if [[ "$OPTLANG_USE_SYMENGINE" = "True" ]]; then pip install symengine; fi'
@@ -50,7 +50,7 @@ deploy:
     on:
       tags: true
       repo: $GITHUB_REPO
-      python: '3.6'
+      python: "3.6"
       condition: $OPTLANG_USE_SYMENGINE = False
   - provider: pypi
     skip_cleanup: true
@@ -61,5 +61,5 @@ deploy:
     on:
       tags: true
       repo: $GITHUB_REPO
-      python: '3.6'
+      python: "3.6"
       condition: $OPTLANG_USE_SYMENGINE = False
