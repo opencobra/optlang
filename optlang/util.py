@@ -24,8 +24,6 @@ log = logging.getLogger(__name__)
 import tempfile
 import inspect
 from subprocess import check_output
-from sympy.printing.str import StrPrinter
-import sympy
 from optlang import symbolics
 from optlang.symbolics import mul, add, Pow
 
@@ -287,6 +285,9 @@ class SolverTolerances(object):
         if key not in self._functions:
             raise AttributeError(key + " is not an available tolerance parameter with this solver")
         self._functions[key][1](value)
+
+    def to_dict(self):
+        return {key: getattr(self, key) for key in self._functions.keys()}
 
     def __dir__(self):
         return list(self._functions)

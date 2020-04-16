@@ -24,8 +24,6 @@ GLPK is an open source LP solver, with MILP capabilities.
 To use GLPK you need to install the 'swiglpk' python package (with pip or from http://github.com/biosustain/swiglpk)
 and make sure that 'import swiglpk' runs without error.
 """
-
-import collections
 import logging
 
 import os
@@ -201,7 +199,6 @@ class Constraint(interface.Constraint):
         self._name = value
         if self.problem is not None:
             glp_set_row_name(self.problem.problem, glp_find_row(self.problem.problem, old_name), str(value))
-            self.problem.constraints.update_key(old_name)
 
     @property
     def problem(self):
@@ -392,14 +389,24 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
+        if "tolerances" in kwargs:
+            for key, val in six.iteritems(kwargs["tolerances"]):
+                setattr(self.tolerances, key, val)
 
     def __getstate__(self):
-        return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
+        return {'presolve': self.presolve,
+                'verbosity': self.verbosity,
+                'timeout': self.timeout,
+                'tolerances': {"feasibility": self.tolerances.feasibility}
+                }
 
     def __setstate__(self, state):
         self.__init__()
         for key, val in six.iteritems(state):
-            setattr(self, key, val)
+            if key != "tolerances":
+                setattr(self, key, val)
+        for key, val in six.iteritems(state["tolerances"]):
+            setattr(self.tolerances, key, val)
 
     def _set_presolve(self, value):
         self._smcp.presolve = {False: GLP_OFF, True: GLP_ON, "auto": GLP_OFF}[value]
@@ -436,21 +443,16 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             self._smcp.tm_lim = value * 1000  # milliseconds to seconds
             self._iocp.tm_lim = value * 1000
 
+    def _get_feasibility(self):
+        return getattr(self._smcp, "tol_bnd")
+
+    def _set_feasibility(self, value):
+        return setattr(self._smcp, "tol_bnd", value)
+
     def _tolerance_functions(self):
         return {
-            "feasibility": (
-                lambda: self._smcp.tol_bnd,
-                lambda x: setattr(self._smcp, 'tol_bnd', x)
-            ),
-            "optimality": (
-                lambda: self._iocp.tol_obj,
-                lambda x: setattr(self._iocp, 'tol_obj', x)
-            ),
-            "integrality": (
-                lambda: self._iocp.tol_int,
-                lambda x: setattr(self._iocp, 'tol_int', x)
-            )
-        }
+            "feasibility": (self._get_feasibility, self._set_feasibility)
+            }
 
     @property
     def presolve(self):
@@ -482,100 +484,95 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
-    def __init__(self, problem=None, *args, **kwargs):
+    def _initialize_problem(self):
+        self.problem = glp_create_prob()
+        glp_create_index(self.problem)
+        glp_scale_prob(self.problem, GLP_SF_AUTO)
+        if self.name is not None:
+            _glpk_validate_id(self.name)
+            glp_set_prob_name(self.problem, str(self.name))
 
-        super(Model, self).__init__(*args, **kwargs)
-
-        self.configuration = Configuration()
-
-        if problem is None:
-            self.problem = glp_create_prob()
+    def _initialize_model_from_problem(self, problem):
+        try:
+            self.problem = problem
             glp_create_index(self.problem)
-            if self.name is not None:
-                _glpk_validate_id(self.name)
-                glp_set_prob_name(self.problem, str(self.name))
-
-        else:
-            try:
-                self.problem = problem
-                glp_create_index(self.problem)
-            except TypeError:
-                raise TypeError("Provided problem is not a valid GLPK model.")
-            row_num = glp_get_num_rows(self.problem)
-            col_num = glp_get_num_cols(self.problem)
-            for i in range(1, col_num + 1):
-                var = Variable(
-                    glp_get_col_name(self.problem, i),
-                    lb=glp_get_col_lb(self.problem, i),
-                    ub=glp_get_col_ub(self.problem, i),
-                    problem=self,
-                    type=_GLPK_VTYPE_TO_VTYPE[
-                        glp_get_col_kind(self.problem, i)]
-                )
-                # This avoids adding the variable to the glpk problem
-                super(Model, self)._add_variables([var])
-            variables = self.variables
-
-            for j in range(1, row_num + 1):
-                ia = intArray(col_num + 1)
-                da = doubleArray(col_num + 1)
-                nnz = glp_get_mat_row(self.problem, j, ia, da)
-                constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
-
-                # Since constraint expressions are lazily retrieved from the solver they don't have to be built here
-                # lhs = _unevaluated_Add(*[da[i] * constraint_variables[i - 1]
-                #                         for i in range(1, nnz + 1)])
-                lhs = 0
-
-                glpk_row_type = glp_get_row_type(self.problem, j)
-                if glpk_row_type == GLP_FX:
-                    row_lb = glp_get_row_lb(self.problem, j)
-                    row_ub = row_lb
-                elif glpk_row_type == GLP_LO:
-                    row_lb = glp_get_row_lb(self.problem, j)
-                    row_ub = None
-                elif glpk_row_type == GLP_UP:
-                    row_lb = None
-                    row_ub = glp_get_row_ub(self.problem, j)
-                elif glpk_row_type == GLP_DB:
-                    row_lb = glp_get_row_lb(self.problem, j)
-                    row_ub = glp_get_row_ub(self.problem, j)
-                elif glpk_row_type == GLP_FR:
-                    row_lb = None
-                    row_ub = None
-                else:
-                    raise Exception(
-                        "Currently, optlang does not support glpk row type %s"
-                        % str(glpk_row_type)
-                    )
-                    log.exception()
-                if isinstance(lhs, int):
-                    lhs = symbolics.Integer(lhs)
-                elif isinstance(lhs, float):
-                    lhs = symbolics.Real(lhs)
-                constraint_id = glp_get_row_name(self.problem, j)
-                for variable in constraint_variables:
-                    try:
-                        self._variables_to_constraints_mapping[variable.name].add(constraint_id)
-                    except KeyError:
-                        self._variables_to_constraints_mapping[variable.name] = set([constraint_id])
-
-                super(Model, self)._add_constraints(
-                    [Constraint(lhs, lb=row_lb, ub=row_ub, name=constraint_id, problem=self, sloppy=True)],
-                    sloppy=True
-                )
-
-            term_generator = (
-                (glp_get_obj_coef(self.problem, index), variables[index - 1])
-                for index in range(1, glp_get_num_cols(problem) + 1)
-            )
-            self._objective = Objective(
-                symbolics.add(
-                    [symbolics.mul((symbolics.Real(term[0]), term[1])) for term in term_generator if
-                     term[0] != 0.]
-                ),
+        except TypeError:
+            raise TypeError("Provided problem is not a valid GLPK model.")
+        row_num = glp_get_num_rows(self.problem)
+        col_num = glp_get_num_cols(self.problem)
+        for i in range(1, col_num + 1):
+            var = Variable(
+                glp_get_col_name(self.problem, i),
+                lb=glp_get_col_lb(self.problem, i),
+                ub=glp_get_col_ub(self.problem, i),
                 problem=self,
-                direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
+                type=_GLPK_VTYPE_TO_VTYPE[
+                    glp_get_col_kind(self.problem, i)]
+            )
+            # This avoids adding the variable to the glpk problem
+            super(Model, self)._add_variables([var])
+        variables = self.variables
+
+        for j in range(1, row_num + 1):
+            ia = intArray(col_num + 1)
+            da = doubleArray(col_num + 1)
+            nnz = glp_get_mat_row(self.problem, j, ia, da)
+            constraint_variables = [variables[ia[i] - 1] for i in range(1, nnz + 1)]
+
+            # Since constraint expressions are lazily retrieved from the solver they don't have to be built here
+            # lhs = _unevaluated_Add(*[da[i] * constraint_variables[i - 1]
+            #                         for i in range(1, nnz + 1)])
+            lhs = 0
+
+            glpk_row_type = glp_get_row_type(self.problem, j)
+            if glpk_row_type == GLP_FX:
+                row_lb = glp_get_row_lb(self.problem, j)
+                row_ub = row_lb
+            elif glpk_row_type == GLP_LO:
+                row_lb = glp_get_row_lb(self.problem, j)
+                row_ub = None
+            elif glpk_row_type == GLP_UP:
+                row_lb = None
+                row_ub = glp_get_row_ub(self.problem, j)
+            elif glpk_row_type == GLP_DB:
+                row_lb = glp_get_row_lb(self.problem, j)
+                row_ub = glp_get_row_ub(self.problem, j)
+            elif glpk_row_type == GLP_FR:
+                row_lb = None
+                row_ub = None
+            else:
+                raise Exception(
+                    "Currently, optlang does not support glpk row type %s"
+                    % str(glpk_row_type)
+                )
+                log.exception()
+            if isinstance(lhs, int):
+                lhs = symbolics.Integer(lhs)
+            elif isinstance(lhs, float):
+                lhs = symbolics.Real(lhs)
+            constraint_id = glp_get_row_name(self.problem, j)
+            for variable in constraint_variables:
+                try:
+                    self._variables_to_constraints_mapping[variable.name].add(constraint_id)
+                except KeyError:
+                    self._variables_to_constraints_mapping[variable.name] = set([constraint_id])
+
+            super(Model, self)._add_constraints(
+                [Constraint(lhs, lb=row_lb, ub=row_ub, name=constraint_id, problem=self, sloppy=True)],
+                sloppy=True
+            )
+
+        term_generator = (
+            (glp_get_obj_coef(self.problem, index), variables[index - 1])
+            for index in range(1, glp_get_num_cols(problem) + 1)
+        )
+        self._objective = Objective(
+            symbolics.add(
+                [symbolics.mul((symbolics.Real(term[0]), term[1])) for term in term_generator if
+                 term[0] != 0.]
+            ),
+            problem=self,
+            direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
         glp_scale_prob(self.problem, GLP_SF_AUTO)
 
     @classmethod

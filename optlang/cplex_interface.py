@@ -21,7 +21,6 @@ Wraps the cplex solver by subclassing and extending :class:`Model`,
 To use this interface, install the cplex solver and the bundled python interface.
 Make sure that 'import cplex' runs without error.
 """
-import collections
 import logging
 import sys
 
@@ -294,7 +293,6 @@ class Constraint(interface.Constraint):
                 )
             else:
                 self.problem.problem.linear_constraints.set_names(old_name, value)
-            self.problem.constraints.update_key(old_name)
 
     @interface.Constraint.lb.setter
     def lb(self, value):
@@ -403,6 +401,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.timeout = timeout
         self.solution_target = solution_target
         self.qp_method = qp_method
+        if "tolerances" in kwargs:
+            for key, val in six.iteritems(kwargs["tolerances"]):
+                setattr(self.tolerances, key, val)
 
     @property
     def lp_method(self):
@@ -519,11 +520,18 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._timeout = value
 
     def __getstate__(self):
-        return {"presolve": self.presolve, "timeout": self.timeout, "verbosity": self.verbosity}
+        return {"presolve": self.presolve,
+                "timeout": self.timeout,
+                "verbosity": self.verbosity,
+                "tolerances": {"feasibility": self.tolerances.feasibility,
+                               "optimality": self.tolerances.optimality,
+                               "integrality": self.tolerances.integrality}
+                }
 
     def __setstate__(self, state):
         for key, val in six.iteritems(state):
-            setattr(self, key, val)
+            if key != "tolerances":
+                setattr(self, key, val)
 
     @property
     def solution_target(self):
@@ -591,14 +599,11 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
-    def __init__(self, problem=None, *args, **kwargs):
+    def _initialize_problem(self):
+        self.problem = cplex.Cplex()
 
-        super(Model, self).__init__(*args, **kwargs)
-
-        if problem is None:
-            self.problem = cplex.Cplex()
-
-        elif isinstance(problem, cplex.Cplex):
+    def _initialize_model_from_problem(self, problem):
+        if isinstance(problem, cplex.Cplex):
             self.problem = problem
             zipped_var_args = zip(self.problem.variables.get_names(),
                                   self.problem.variables.get_lower_bounds(),
@@ -672,7 +677,6 @@ class Model(interface.Model):
                 )
         else:
             raise TypeError("Provided problem is not a valid CPLEX model.")
-        self.configuration = Configuration(problem=self, verbosity=0)
 
     @classmethod
     def from_lp(cls, lp_form):

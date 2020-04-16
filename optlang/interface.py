@@ -23,7 +23,13 @@ This module defines the API of optlang objects and indicates which methods need 
 subclassed solver interfaces.
 The classes in this module can be used to construct and modify problems, but no optimizations can be done.
 """
-import collections
+from collections import OrderedDict
+
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
+
 import inspect
 import logging
 import sys
@@ -700,6 +706,13 @@ class Constraint(OptimizationExpression):
         self._check_valid_upper_bound(value)
         self._ub = value
 
+    @OptimizationExpression.name.setter
+    def name(self, value):
+        old_name = getattr(self, 'name', None)
+        super(Constraint, Constraint).name.fset(self, value)
+        if getattr(self, 'problem', None) is not None and value != old_name:
+            self.problem.constraints.update_key(old_name)
+
     @property
     def indicator_variable(self):
         """The indicator variable of constraint (if available)."""
@@ -985,6 +998,8 @@ class Configuration(object):
         properties = (k for k, v in inspect.getmembers(cls, predicate=inspect.isdatadescriptor) if
                       not k.startswith('__'))
         parameters = {property: getattr(config, property) for property in properties if hasattr(config, property)}
+        if hasattr(config, "tolerances"):
+            parameters["tolerances"] = config.tolerances.to_dict()
         return cls(problem=problem, **parameters)
 
     def __init__(self, problem=None, *args, **kwargs):
@@ -1139,16 +1154,16 @@ class Model(object):
         new_model.configuration = interface.Configuration.clone(model.configuration, problem=new_model)
         return new_model
 
-    def __init__(self, name=None, objective=None, variables=None, constraints=None, *args, **kwargs):
+    def __init__(self, name=None, objective=None, variables=None, constraints=None, problem=None, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
-        if objective is None:
-            objective = self.interface.Objective(0)
-        self._objective = objective
+
+        self._objective = self.interface.Objective(0)
         self._objective.problem = self
         self._variables = Container()
         self._constraints = Container()
         self._variables_to_constraints_mapping = dict()
         self._status = None
+        self.name = name
 
         class Modifications():
 
@@ -1166,11 +1181,42 @@ class Model(object):
                 return str(self.__dict__)
 
         self._pending_modifications = Modifications()
-        self.name = name
-        if variables is not None:
-            self.add(variables)
-        if constraints is not None:
-            self.add(constraints)
+
+        if problem is not None:
+            if not (objective is None and variables is None and constraints is None):
+                raise ValueError("Models constructor must be called with the problem argument OR with variables, constraints and objective")
+            self._initialize_model_from_problem(problem)
+
+        else:
+            self._initialize_problem()
+            if variables is not None:
+                self.add(variables)
+            if constraints is not None:
+                self.add(constraints)
+            if objective is not None:
+                self.objective = objective
+        self._initialize_configuration()
+
+    def _initialize_problem(self):
+        """
+        Constructs an empty solver-specific problem. Is called during construction of new Model objects when problem=None.
+        Should be implemented in all solver interfaces.
+        """
+        pass
+
+    def _initialize_model_from_problem(self, problem):
+        """
+        Parses a solver-specific problem object and initializes the Model object to a state that is consistent with the problem.
+        The problem is set as the Model's corresponding problem.
+        Should be implemented in all solver interfaces.
+        """
+        raise NotImplementedError
+
+    def _initialize_configuration(self):
+        """
+        Initializes a Configuration object. Should be implemented in solver interfaces if non-standard behaviour is needed
+        """
+        self.configuration = self.interface.Configuration(problem=self)
 
     @property
     def interface(self):
@@ -1232,7 +1278,7 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        return collections.OrderedDict(
+        return OrderedDict(
             zip(self._get_variables_names(), self._get_primal_values())
         )
 
@@ -1254,7 +1300,7 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        return collections.OrderedDict(
+        return OrderedDict(
             zip(self._get_variables_names(), self._get_reduced_costs())
         )
 
@@ -1285,7 +1331,7 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        return collections.OrderedDict(
+        return OrderedDict(
             zip(self._get_constraint_names(), self._get_constraint_values())
         )
 
@@ -1307,7 +1353,7 @@ class Model(object):
         -------
         collections.OrderedDict
         """
-        return collections.OrderedDict(
+        return OrderedDict(
             zip(self._get_constraint_names(), self._get_shadow_prices())
         )
 
@@ -1355,7 +1401,7 @@ class Model(object):
         if self._pending_modifications.toggle == 'remove':
             self.update()
             self._pending_modifications.toggle = 'add'
-        if isinstance(stuff, collections.Iterable):
+        if isinstance(stuff, Iterable):
             for elem in stuff:
                 self.add(elem, sloppy=sloppy)
         elif isinstance(stuff, Variable):
@@ -1404,7 +1450,7 @@ class Model(object):
             self._pending_modifications.rm_var.append(stuff)
         elif isinstance(stuff, Constraint):
             self._pending_modifications.rm_constr.append(stuff)
-        elif isinstance(stuff, collections.Iterable):
+        elif isinstance(stuff, Iterable):
             for elem in stuff:
                 self.remove(elem)
         elif isinstance(stuff, Objective):

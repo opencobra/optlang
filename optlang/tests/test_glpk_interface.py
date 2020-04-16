@@ -112,6 +112,21 @@ class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
 
 class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
     interface = glpk_interface
+    
+    def test_pickle_ability(self):
+        config = self.interface.Configuration()
+        config.tolerances.feasibility = 1e-01
+        value = config.tolerances.feasibility
+        pickle_string = pickle.dumps(config)
+        from_pickle = pickle.loads(pickle_string)
+        self.assertEqual(value, from_pickle.tolerances.feasibility)
+
+    def test_clone(self):
+        config = self.interface.Configuration()
+        config.tolerances.feasibility = 1e-01
+        value = config.tolerances.feasibility
+        cloned_config = config.clone(config, problem=config.problem)
+        self.assertEqual(value, cloned_config.tolerances.feasibility)
 
 
 class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
