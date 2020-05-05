@@ -60,11 +60,11 @@ _STATUS_MAP = {
     'non-existing-status': 'Here for testing that missing statuses are handled.'
 }
 
-_LP_METHODS = ["auto", "qdldl", "mkl pardiso"]
+_LP_METHODS = ("auto", "primal")
 
-_QP_METHODS = ("auto", )
+_QP_METHODS = ("auto", "primal")
 
-_TYPES = ["continuous"]
+_TYPES = ("continuous", )
 
 
 class OSQPProblem(object):
@@ -469,23 +469,25 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, lp_method="qdldl", presolve="auto", verbosity=0,
-                 timeout=None, qp_method="auto", *args, **kwargs):
+    def __init__(self, lp_method="primal", presolve="auto", verbosity=0,
+                 timeout=None, qp_method="primal", linear_solver="qdldl",
+                 *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
         self.presolve = presolve
         self.verbosity = verbosity
         self.timeout = timeout
         self.qp_method = qp_method
+        self.linear_solver = linear_solver
         if "tolerances" in kwargs:
             for key, val in six.iteritems(kwargs["tolerances"]):
-                setattr(self.tolerances, key, val)
+                if key in self._tolerance_functions():
+                    setattr(self.tolerances, key, val)
 
     @property
     def lp_method(self):
         """The algorithm used to solve LP problems."""
-        lpmethod = self.problem.problem.settings["linsys_solver"]
-        return lpmethod
+        return "primal"
 
     @lp_method.setter
     def lp_method(self, lp_method):
@@ -493,9 +495,21 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             raise ValueError(
                 "LP Method %s is not valid (choose one of: %s)" %
                 (lp_method, ", ".join(_LP_METHODS)))
-        if lp_method == "auto":
-            lp_method = "qdldl"
-        self.problem.problem.settings["linsys_solver"] = lp_method
+
+    @property
+    def linear_solver(self):
+        return self._linear_solver
+
+    @linear_solver.setter
+    def linear_solver(self, solver):
+        if solver not in ("qdldl", "mkl pardiso"):
+            raise ValueError(
+                "%s is not valid (choose either `qdldl` or `mkl pardiso`)" %
+                solver
+            )
+        if getattr(self, 'problem', None) is not None:
+            self.problem.problem.settings["linsys_solver"] = solver
+        self._linear_solver = solver
 
     def _set_presolve(self, value):
         if getattr(self, 'problem', None) is not None:
@@ -524,7 +538,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @verbosity.setter
     def verbosity(self, value):
-        self.problem.problem.settings["verbose"] = value > 0
+        if getattr(self, 'problem', None) is not None:
+            self.problem.problem.settings["verbose"] = int(value > 0)
         self._verbosity = value
 
     @property
@@ -543,22 +558,25 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         return {"presolve": self.presolve,
                 "timeout": self.timeout,
                 "verbosity": self.verbosity,
+                "linear_solver": self.linear_solver,
                 "tolerances": {"feasibility": self.tolerances.feasibility,
                                "optimality": self.tolerances.optimality,
                                "integrality": self.tolerances.integrality}
                 }
 
     def __setstate__(self, state):
+        print(state)
         for key, val in six.iteritems(state):
             if key != "tolerances":
                 setattr(self, key, val)
         for key, val in six.iteritems(state["tolerances"]):
-            setattr(self.tolerances, key, val)
+            if key in self._tolerance_functions():
+                setattr(self.tolerances, key, val)
 
     @property
     def qp_method(self):
         """Change the algorithm used to optimize QP problems."""
-        return "auto"
+        return "primal"
 
     @qp_method.setter
     def qp_method(self, value):
@@ -804,6 +822,19 @@ class Model(interface.Model):
     def _get_variable_indices(self, names):
         vmap = dict(zip(self.variables, range(len(self.variables))))
         return [vmap[n] for n in names]
+
+    def __setstate__(self, d):
+        self.__init__()
+        self._init_from_json(d["json"])
+        self.configuration = Configuration()
+        self.configuration.problem = self
+        self.configuration.__setstate__(d["config"])
+
+    def __getstate__(self):
+        return {
+            "json": self.to_json(),
+            "config": self.configuration.__getstate__()
+        }
 
     @classmethod
     def from_lp(self, lp_problem_str):

@@ -250,12 +250,11 @@ else:
             self.assertEqual([(constr.lb, constr.ub, constr.name) for constr in from_pickle.constraints],
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
-        @unittest.skip("can't figure this out")
         def test_config_gets_copied_too(self):
             self.assertEquals(self.model.configuration.verbosity, 0)
-            self.model.configuration.verbosity = True
+            self.model.configuration.verbosity = 1
             model_copy = copy.copy(self.model)
-            self.assertTrue(model_copy.configuration.verbosity)
+            self.assertEqual(model_copy.configuration.verbosity, 1)
 
         def test_init_from_existing_problem(self):
             inner_prob = self.model.problem
@@ -480,19 +479,25 @@ else:
                     getattr(model.configuration.tolerances, param), 2 * val
                 )
 
+        def test_solver(self):
+            for option in ("qdldl", "mkl pardiso"):
+                self.configuration.linear_solver = option
+                self.assertEqual(self.configuration.linear_solver, option)
+                self.assertEqual(self.model.problem.settings["linsys_solver"], option)
+
+            self.assertRaises(ValueError, setattr, self.configuration, "lp_method", "weird_stuff")
+
         def test_lp_method(self):
-            for option in self.interface._LP_METHODS[1:3]:
+            for option in ("auto", "primal"):
                 self.configuration.lp_method = option
-                self.assertEqual(self.configuration.lp_method, option)
-                self.assertEqual(self.model.problem.settings["linsys_solver"],
-                    option)
+                self.assertEqual(self.configuration.lp_method, "primal")
 
             self.assertRaises(ValueError, setattr, self.configuration, "lp_method", "weird_stuff")
 
         def test_qp_method(self):
             for option in osqp_interface._QP_METHODS:
                 self.configuration.qp_method = option
-                self.assertEqual(self.configuration.qp_method, option)
+                self.assertEqual(self.configuration.qp_method, "primal")
 
             self.assertRaises(ValueError, setattr, self.configuration, "qp_method", "weird_stuff")
 
