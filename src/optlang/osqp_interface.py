@@ -26,6 +26,7 @@ import logging
 import sys
 
 import six
+import pickle
 import os
 from six.moves import StringIO
 from numpy import (nan, array, concatenate, Infinity,
@@ -195,6 +196,7 @@ class OSQPProblem(object):
     def reset(self):
         """Reset the solver."""
         self.__solution = None
+        self.info = None
         self.primals = {}
         self.duals = {}
 
@@ -565,7 +567,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 }
 
     def __setstate__(self, state):
-        print(state)
         for key, val in six.iteritems(state):
             if key != "tolerances":
                 setattr(self, key, val)
@@ -629,7 +630,7 @@ class Model(interface.Model):
     def _initialize_problem(self):
         self.problem = OSQPProblem()
 
-    def _initialize_model_from_problem(self, problem):
+    def _initialize_model_from_problem(self, problem, vc_mapping=None):
         if not isinstance(problem, OSQPProblem):
             raise TypeError("Provided problem is not a valid OSQP model.")
         self.problem = problem
@@ -646,36 +647,42 @@ class Model(interface.Model):
             constr = Constraint(lhs, lb=self.problem.constraint_lbs[name],
                                 ub=self.problem.constraint_ubs[name],
                                 name=name, problem=self)
-            for variable in constr.variables:
-                try:
-                    self._variables_to_constraints_mapping[
-                        variable.name].add(name)
-                except KeyError:
-                    self._variables_to_constraints_mapping[
-                        variable.name] = set([name])
 
             super(Model, self)._add_constraints(
                 [constr],
                 sloppy=True
             )
 
-            linear_expression = add([
-                coef * self._variables[vn]
-                for vn, coef in six.iteritems(self.problem.obj_linear_coefs)
-            ])
-            quadratic_expression = add([
-                coef * self._variables[vn[0]] * self._variables[vn[1]]
-                for vn, coef in
-                six.iteritems(self.problem.obj_quadratic_coefs)
-            ])
+        if vc_mapping is None:
+            for constr in self.constraints:
+                name = constr.name
+                for variable in constr.variables:
+                    try:
+                        self._variables_to_constraints_mapping[
+                            variable.name].add(name)
+                    except KeyError:
+                        self._variables_to_constraints_mapping[
+                            variable.name] = set([name])
+        else:
+            self._variables_to_constraints_mapping = vc_mapping
 
-            self._objective = Objective(
-                linear_expression + quadratic_expression,
-                problem=self,
-                direction=
-                {-1: 'max', 1: 'min'}[self.problem.direction],
-                name = "osqp_objective"
-            )
+        linear_expression = add([
+            coef * self._variables[vn]
+            for vn, coef in six.iteritems(self.problem.obj_linear_coefs)
+        ])
+        quadratic_expression = add([
+            coef * self._variables[vn[0]] * self._variables[vn[1]]
+            for vn, coef in
+            six.iteritems(self.problem.obj_quadratic_coefs)
+        ])
+
+        self._objective = Objective(
+            linear_expression + quadratic_expression,
+            problem=self,
+            direction=
+            {-1: 'max', 1: 'min'}[self.problem.direction],
+            name = "osqp_objective"
+        )
 
     @property
     def objective(self):
@@ -825,14 +832,25 @@ class Model(interface.Model):
 
     def __setstate__(self, d):
         self.__init__()
-        self._init_from_json(d["json"])
+        osqp = pickle.loads(d["osqp"])
+        # workaround to conserve the order
+        osqp.variables = d["variables"]
+        osqp.constraints = d["constraints"]
+        self._initialize_model_from_problem(osqp, vc_mapping=d["v_to_c"])
+        osqp.variables = set(osqp.variables)
+        osqp.constraints = set(osqp.constraints)
         self.configuration = Configuration()
         self.configuration.problem = self
         self.configuration.__setstate__(d["config"])
 
     def __getstate__(self):
+        self.problem.reset()
+        self.update()
         return {
-            "json": self.to_json(),
+            "osqp": pickle.dumps(self.problem),
+            "variables": [v.name for v in self._variables],
+            "constraints": [c.name for c in self._constraints],
+            "v_to_c": self._variables_to_constraints_mapping,
             "config": self.configuration.__getstate__()
         }
 
