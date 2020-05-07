@@ -40,7 +40,6 @@ from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang.exceptions import SolverError
 
-import pickle
 from scipy.sparse import csc_matrix
 
 from optlang.symbolics import add, mul, One, Zero
@@ -104,7 +103,7 @@ class OSQPProblem(object):
             "scaling": 10,
             "time_limit": 0,
             "adaptive_rho": True,
-            "rho": 0.1,
+            "rho": 1.0,
             "alpha": 1.6
         }
         self.__solution = None
@@ -167,7 +166,6 @@ class OSQPProblem(object):
             # see https://github.com/cvxgrp/cvxpy/issues/898
             settings.update({
                 "adaptive_rho": 0,
-                "rho": 1,
                 "alpha": 1
             })
         solver.setup(
