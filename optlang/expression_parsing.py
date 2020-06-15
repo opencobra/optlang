@@ -80,7 +80,7 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
     elif expression.is_Symbol:
         coefficients = {expression: 1}
     elif expression.is_Number:
-        coefficients = {}
+        return float(expression), {}
     else:
         raise ValueError("Expression {} seems to be invalid".format(expression))
 
