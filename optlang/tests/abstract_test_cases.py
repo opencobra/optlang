@@ -434,14 +434,14 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_pickle_empty_model(self):
         model = self.interface.Model()
-        self.assertEquals(model.objective.expression - 0, 0)
-        self.assertEquals(len(model.variables), 0)
-        self.assertEquals(len(model.constraints), 0)
+        self.assertEqual(model.objective.expression - 0, 0)
+        self.assertEqual(len(model.variables), 0)
+        self.assertEqual(len(model.constraints), 0)
         pickle_string = pickle.dumps(model)
         from_pickle = pickle.loads(pickle_string)
-        self.assertEquals(from_pickle.objective.expression - 0, 0)
-        self.assertEquals(len(from_pickle.variables), 0)
-        self.assertEquals(len(from_pickle.constraints), 0)
+        self.assertEqual(from_pickle.objective.expression - 0, 0)
+        self.assertEqual(len(from_pickle.variables), 0)
+        self.assertEqual(len(from_pickle.constraints), 0)
 
     def test_copy(self):
         self.model.optimize()
@@ -719,38 +719,38 @@ class AbstractModelTestCase(unittest.TestCase):
         self.model.objective = self.interface.Objective(self.model.variables[1] * 2)
 
     def test_clone_model_with_json(self):
-        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.assertEqual(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
         self.model.optimize()
         opt = self.model.objective.value
         cloned_model = self.interface.Model.clone(self.model)
-        self.assertEquals(cloned_model.configuration.verbosity, 3)
-        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        self.assertEqual(cloned_model.configuration.verbosity, 3)
+        self.assertEqual(len(cloned_model.variables), len(self.model.variables))
+        self.assertEqual(len(cloned_model.constraints), len(self.model.constraints))
         cloned_model.optimize()
         self.assertAlmostEqual(cloned_model.objective.value, opt)
 
     def test_clone_model_with_lp(self):
-        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.assertEqual(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
         self.model.optimize()
         opt = self.model.objective.value
         cloned_model = self.interface.Model.clone(self.model, use_lp=True)
-        self.assertEquals(cloned_model.configuration.verbosity, 3)
-        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        self.assertEqual(cloned_model.configuration.verbosity, 3)
+        self.assertEqual(len(cloned_model.variables), len(self.model.variables))
+        self.assertEqual(len(cloned_model.constraints), len(self.model.constraints))
         cloned_model.optimize()
         self.assertAlmostEqual(cloned_model.objective.value, opt)
 
     def test_clone_model_without_json(self):
-        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.assertEqual(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
         self.model.optimize()
         opt = self.model.objective.value
         cloned_model = self.interface.Model.clone(self.model, use_json=False)
-        self.assertEquals(cloned_model.configuration.verbosity, 3)
-        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        self.assertEqual(cloned_model.configuration.verbosity, 3)
+        self.assertEqual(len(cloned_model.variables), len(self.model.variables))
+        self.assertEqual(len(cloned_model.constraints), len(self.model.constraints))
         cloned_model.optimize()
         self.assertAlmostEqual(cloned_model.objective.value, opt)
 

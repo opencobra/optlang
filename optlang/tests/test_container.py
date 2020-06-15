@@ -208,4 +208,4 @@ class ContainerTestCase(unittest.TestCase):
         variables = [Variable("v" + str(i), lb=10, ub=100) for i in range(100)]
         self.container.extend(variables)
         unpickled = pickle.loads(pickle.dumps(self.container))
-        self.assertEquals(unpickled[0].name, variables[0].name)
+        self.assertEqual(unpickled[0].name, variables[0].name)
