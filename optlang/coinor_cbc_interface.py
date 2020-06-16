@@ -35,30 +35,28 @@ from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
 from optlang import symbolics
 
+import mip
 from math import isclose, ceil, floor
-from mip import Model as mipModel
-from mip import (BINARY, INTEGER, CONTINUOUS, OptimizationStatus,
-                 MINIMIZE, MAXIMIZE, xsum)
 
 log = logging.getLogger(__name__)
 
 _MIP_STATUS_TO_STATUS = {
-    OptimizationStatus.CUTOFF: interface.CUTOFF,
-    OptimizationStatus.ERROR: interface.ABORTED,
-    OptimizationStatus.FEASIBLE: interface.FEASIBLE,
-    OptimizationStatus.INFEASIBLE: interface.INFEASIBLE,
-    OptimizationStatus.INT_INFEASIBLE: interface.SPECIAL,
-    OptimizationStatus.LOADED: interface.LOADED,
-    OptimizationStatus.NO_SOLUTION_FOUND: interface.NOFEASIBLE,
-    OptimizationStatus.OPTIMAL: interface.OPTIMAL,
-    OptimizationStatus.UNBOUNDED: interface.UNBOUNDED,
-    OptimizationStatus.OTHER: interface.SPECIAL
+    mip.OptimizationStatus.CUTOFF: interface.CUTOFF,
+    mip.OptimizationStatus.ERROR: interface.ABORTED,
+    mip.OptimizationStatus.FEASIBLE: interface.FEASIBLE,
+    mip.OptimizationStatus.INFEASIBLE: interface.INFEASIBLE,
+    mip.OptimizationStatus.INT_INFEASIBLE: interface.SPECIAL,
+    mip.OptimizationStatus.LOADED: interface.LOADED,
+    mip.OptimizationStatus.NO_SOLUTION_FOUND: interface.NOFEASIBLE,
+    mip.OptimizationStatus.OPTIMAL: interface.OPTIMAL,
+    mip.OptimizationStatus.UNBOUNDED: interface.UNBOUNDED,
+    mip.OptimizationStatus.OTHER: interface.SPECIAL
 }
 
 _MIP_VTYPE_TO_VTYPE = {
-    CONTINUOUS: 'continuous',
-    INTEGER: 'integer',
-    BINARY: 'binary'
+    mip.CONTINUOUS: 'continuous',
+    mip.INTEGER: 'integer',
+    mip.BINARY: 'binary'
 }
 
 _VTYPE_TO_MIP_VTYPE = dict(
@@ -66,8 +64,8 @@ _VTYPE_TO_MIP_VTYPE = dict(
 )
 
 _MIP_DIRECTION = {
-    'max': MAXIMIZE,
-    'min': MINIMIZE
+    'max': mip.MAXIMIZE,
+    'min': mip.MINIMIZE
 }
 
 def to_float(number, is_lb=True):
@@ -144,7 +142,7 @@ class Variable(interface.Variable):
     def name(self, value):
         super(Variable, Variable).name.fset(self, value)
         if getattr(self, 'problem', None) is not None:
-            raise Exception('COIN-OR Cbc doesn\'t support variable name change')
+            raise Exception('COIN-OR CBC doesn\'t support variable name change')
 
 
 @six.add_metaclass(inheritdocstring)
@@ -207,7 +205,7 @@ class Constraint(interface.Constraint):
     def name(self, value):
         super(Constraint, Constraint).name.fset(self, value)
         if getattr(self, 'problem', None) is not None:
-            raise Exception('COIN-OR Cbc doesn\'t support constraint name change')
+            raise Exception('COIN-OR CBC doesn\'t support constraint name change')
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is None:
@@ -238,7 +236,7 @@ class Objective(interface.Objective):
         super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         if not (sloppy or self.is_Linear):
             raise ValueError(
-                'COIN-OR Cbc only supports linear objectives. %s is not linear.' % self)
+                'COIN-OR CBC only supports linear objectives. %s is not linear.' % self)
 
     @property
     def value(self):
@@ -323,10 +321,10 @@ class Model(interface.Model):
         self.problem.max_seconds = self.configuration.timeout
 
     def _initialize_problem(self):
-        self.problem = mipModel()
+        self.problem = mip.Model(solver_name=mip.CBC)
 
     def _initialize_model_from_problem(self, problem):
-        if not isinstance(problem, mipModel):
+        if not isinstance(problem, mip.Model):
             raise TypeError('Problem must be an instance of mip.Model, not ' + repr(type(problem)))
         self.problem = problem
 
@@ -374,8 +372,8 @@ class Model(interface.Model):
     def _expr_to_mip_expr(self, expr):
         """Parses mip linear expression from expression."""
         offset, coeffs, _ = parse_optimization_expression(expr)
-        return offset + xsum(to_float(coef) * self.problem.var_by_name(var.name)
-                             for var, coef in coeffs.items())
+        return offset + mip.xsum(to_float(coef) * self.problem.var_by_name(var.name)
+                                 for var, coef in coeffs.items())
 
     def _remove_mip_constraint(self, con, is_lb):
         name = con.constraint_name(is_lb)
