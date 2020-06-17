@@ -286,23 +286,54 @@ class Objective(interface.Objective):
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
     def __init__(self, verbosity=0, tolerance=1e-10, timeout=float('inf'),
-                 max_nodes=None, max_solutions=None, relax=False, *args, **kwargs):
+                 max_nodes=None, max_solutions=None, relax=False,
+                 emphasis=0, cuts=-1, threads=0, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
+
         self.verbosity = verbosity
+
         # Tolerance for the quality of the optimal solution, if a solution with
         # cost c and a lower bound b are available and c - b < mip_gap_abs,
         # the search will be concluded
         self.tolerance = tolerance
+
         # Time limit in seconds for search
         self.timeout = timeout
+
         # Maximum number of nodes to be explored in the search tree
         self.max_nodes = max_nodes
+
         # Solution limit, search will be stopped when max_solutions are found
         self.max_solutions = max_solutions
+
         # If true only the linear programming relaxation will be solved, i.e.
         # integrality constraints will be temporarily discarded. Changes the
         # type of all integer and binary variables to continuous. Bounds are preserved.
         self.relax = relax
+
+        # 0. default setting: tries to balance between the search of improved feasible
+        #    solutions and improvedlower bounds
+        # 1. feasibility: focus on finding improved feasible solutions in the first
+        #    moments of the search process,activates heuristics
+        # 2. optimality: activates procedures that produce improved lower bounds,
+        #    focusing in pruning thesearch tree even if the production of the first
+        #    feasible solutions is delayed
+        self.emphasis = emphasis
+
+        # Controls the generation of cutting planes, -1 means automatic,
+        # 0 disables completely, 1 (de-fault) generates cutting planes in
+        # a moderate way, 2 generates cutting planes aggressively and 3
+        # generates even more cutting planes. Cutting planes usually improve
+        # the LP relaxation bound but also make the solution time of the LP
+        # relaxation larger, so the overall effect is hardto predict and
+        # experimenting different values for this parameter may be beneficial.
+        self.cuts = cuts
+
+        # Number of threads to be used when solving the problem. 0 uses solver
+        # default configuration, -1 uses the number of available processing cores
+        # and >= 1 uses the specified number of threads. An increased number of
+        # threads may improve the solution time but also increases the memory consumption
+        self.threads = threads
 
     @property
     def verbosity(self):
@@ -362,6 +393,30 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def relax(self, value):
         self._relax = value
 
+    @property
+    def emphasis(self):
+        return self._emphasis
+
+    @emphasis.setter
+    def emphasis(self, value):
+        self._emphasis = value
+
+    @property
+    def cuts(self):
+        return self._cuts
+
+    @cuts.setter
+    def cuts(self, value):
+        self._cuts = value
+
+    @property
+    def threads(self):
+        return self._threads
+
+    @threads.setter
+    def threads(self, value):
+        self._threads = value
+
 
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
@@ -370,6 +425,9 @@ class Model(interface.Model):
         self.problem.verbose = 1 if self.configuration.verbosity > 1 else 0
         self.problem.max_mip_gap_abs = self.configuration.tolerance
         self.problem.max_seconds = self.configuration.timeout
+        self.problem.threads = self.configuration.threads
+        self.problem.emphasis = self.configuration.emphasis
+        self.problem.cuts = self.configuration.cuts
         if self.configuration.max_nodes is not None:
             self.problem.max_nodes = self.configuration.max_nodes
         if self.configuration.max_solutions is not None:

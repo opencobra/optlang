@@ -452,7 +452,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         model.configuration.relax = True
 
         status = model.optimize()
-
+        self.assertTrue(model.problem.relax)
         self.assertEqual(model.status, 'optimal')
         self.assertTrue(model.objective.value >= 41.0)
 
@@ -476,11 +476,41 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         model.configuration.max_nodes = 0
         model.configuration.max_solutions = 0
         status = model.optimize()
+        self.assertEqual(model.problem.max_nodes, 0)
+        self.assertEqual(model.problem.max_solutions, 0)
         self.assertEqual(model.status, 'feasible')
 
         model.configuration.max_solutions = 10
         status = model.optimize()
+        self.assertEqual(model.problem.max_solutions, 10)
         self.assertEqual(model.status, 'optimal')
+
+    def test_threads_cuts_emphasis_with_knapsack(self):
+
+        p = [10, 13, 18, 31, 7, 15]
+        w = [11, 15, 20, 35, 10, 33]
+        c, I = 47, range(len(w))
+
+        x = [self.interface.Variable(type='binary', name=f'x{i}') for i in I]
+
+        obj = self.interface.Objective(sum(p[i] * x[i] for i in I), direction='max')
+
+        c1 = self.interface.Constraint(sum(w[i] * x[i] for i in I), ub=c)
+
+        model = self.interface.Model(name='knapsack')
+        model.objective = obj
+        model.add([c1])
+
+        model.configuration.threads = -1
+        model.configuration.cuts = 1
+        model.configuration.emphasis = 2
+
+        status = model.optimize()
+        self.assertEqual(model.problem.threads, -1)
+        self.assertEqual(model.problem.cuts, 1)
+        self.assertEqual(model.problem.emphasis, 2)
+        self.assertEqual(model.status, 'optimal')
+
 
 
 class MIPExamples(unittest.TestCase):
