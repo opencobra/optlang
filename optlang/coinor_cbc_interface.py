@@ -63,18 +63,31 @@ _VTYPE_TO_MIP_VTYPE = dict(
     [(val, key) for key, val in six.iteritems(_MIP_VTYPE_TO_VTYPE)]
 )
 
-_MIP_DIRECTION = {
+_DIR_TO_MIP_DIR = {
     'max': mip.MAXIMIZE,
     'min': mip.MINIMIZE
 }
+
+_MIP_DIR_TO_DIR = dict(
+    [(val, key) for key, val in six.iteritems(_DIR_TO_MIP_DIR)]
+)
+
+# Needs to be used for to_bound during _initialize_model_from_problem
+INFINITY = 1.7976931348623157e+308
 
 def to_float(number, is_lb=True):
     """Converts None type and sympy.core.numbers.Float to float."""
     if number is not None:
         return float(number)
     if is_lb:
-        return -float('inf')
-    return float('inf')
+        return -INFINITY
+    return INFINITY
+
+def to_bound(number):
+    """Convert float with infs to None."""
+    if abs(number) == INFINITY:
+        return None
+    return number
 
 def to_symbolic_expr(coeffs):
     """Converts coeffs dict to symbolic expression."""
@@ -248,7 +261,7 @@ class Objective(interface.Objective):
     def direction(self, value):
         super(Objective, self.__class__).direction.fset(self, value)
         if getattr(self, 'problem', None) is not None:
-            self.problem.problem.sense = _MIP_DIRECTION[value]
+            self.problem.problem.sense = _DIR_TO_MIP_DIR[value]
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is None:
@@ -326,28 +339,60 @@ class Model(interface.Model):
     def _initialize_model_from_problem(self, problem):
         if not isinstance(problem, mip.Model):
             raise TypeError('Problem must be an instance of mip.Model, not ' + repr(type(problem)))
+
+        # Set problem
         self.problem = problem
 
+        # Set variables
+        for v in problem.vars:
+            self.variables.append(Variable(name=v.name[2:],
+                                           lb=to_bound(v.lb),
+                                           ub=to_bound(v.ub),
+                                           type=_MIP_VTYPE_TO_VTYPE[v.var_type],
+                                           problem=self))
+
+        # Set constraints
+        for c in problem.constrs:
+            name, suffix = c.name[2:-6], c.name[-6:]
+            if name not in self.constraints:
+                expr = sum(coef * self.variables[var.name[2:]]
+                           for var, coef in c.expr.expr.items())
+                if suffix == '_lower':
+                    expr *= -1
+                self.constraints.append(Constraint(expr, name=name, problem=self))
+
+            if suffix == '_lower':
+                self.constraints[name].lb = to_bound(-1*c.rhs)
+            else:
+                self.constraints[name].ub = to_bound(c.rhs)
+
+        # Set objective
+        terms = sum(coef * self.variables[var.name[2:]]
+                    for var, coef in problem.objective.expr.items())
+        self._objective = Objective(terms + problem.objective.const,
+                              direction=_MIP_DIR_TO_DIR[problem.sense],
+                              problem=self)
+
     def _var_primal(self, name):
-        return self.problem.var_by_name(name).x
+        return self.problem.var_by_name('v_' + name).x
 
     def _var_dual(self, name):
-        return self.problem.var_by_name(name).rc
+        return self.problem.var_by_name('v_' + name).rc
 
     def _update_var_lb(self, name, lb):
-        self.problem.var_by_name(name).lb = to_float(lb, True)
+        self.problem.var_by_name('v_' + name).lb = to_float(lb, True)
 
     def _update_var_ub(self, name, ub):
-        self.problem.var_by_name(name).ub = to_float(ub, False)
+        self.problem.var_by_name('v_' + name).ub = to_float(ub, False)
 
     def _update_var_type(self, name, var_type):
-        self.problem.var_by_name(name).var_type = var_type
+        self.problem.var_by_name('v_' + name).var_type = var_type
 
     def _add_variables(self, variables):
         super(Model, self)._add_variables(variables)
         for var in variables:
             # TODO: may need to handle obj, column options
-            self.problem.add_var(name=var.name,
+            self.problem.add_var(name='v_' + var.name,
                                  var_type=_VTYPE_TO_MIP_VTYPE[var.type],
                                  lb=to_float(var.lb, True),
                                  ub=to_float(var.ub, False))
@@ -355,29 +400,29 @@ class Model(interface.Model):
     def _remove_variables(self, variables):
         super(Model, self)._remove_variables(variables)
         for var in variables:
-            self.problem.remove(self.problem.var_by_name(var.name))
+            self.problem.remove(self.problem.var_by_name('v_' + var.name))
 
     def _constr_primal(self, con, is_lb):
-        slack = self.problem.constr_by_name(con.constraint_name(is_lb)).slack
+        slack = self.problem.constr_by_name('c_' + con.constraint_name(is_lb)).slack
         return con.lb + slack if is_lb else con.ub - slack
 
     def _constr_dual(self, con, is_lb):
-        return self.problem.constr_by_name(con.constraint_name(is_lb)).pi
+        return self.problem.constr_by_name('c_' + con.constraint_name(is_lb)).pi
 
     def _update_constraint_bound(self, con, is_lb):
         name = con.constraint_name(is_lb)
-        constr = self.problem.constr_by_name(name)
+        constr = self.problem.constr_by_name('c_' + name)
         constr.rhs = to_float(-1*con.lb if is_lb else con.ub)
 
     def _expr_to_mip_expr(self, expr):
         """Parses mip linear expression from expression."""
         offset, coeffs, _ = parse_optimization_expression(expr)
-        return offset + mip.xsum(to_float(coef) * self.problem.var_by_name(var.name)
+        return offset + mip.xsum(to_float(coef) * self.problem.var_by_name('v_' + var.name)
                                  for var, coef in coeffs.items())
 
     def _remove_mip_constraint(self, con, is_lb):
         name = con.constraint_name(is_lb)
-        constr = self.problem.constr_by_name(name)
+        constr = self.problem.constr_by_name('c_' + name)
         if constr is not None:
             self.problem.remove(constr)
 
@@ -387,10 +432,11 @@ class Model(interface.Model):
             constr = self._expr_to_mip_expr(con)
 
         # TODO: check if mip supports indicator_variable
+        name = 'c_' + con.constraint_name(is_lb)
         if is_lb and con.lb is not None:
-           self.problem.add_constr(-constr <= -con.lb, con.constraint_name(True))
+           self.problem.add_constr(-constr <= -con.lb, name)
         elif not is_lb and con.ub is not None:
-            self.problem.add_constr(constr <= con.ub, con.constraint_name(False))
+            self.problem.add_constr(constr <= con.ub, name)
 
     def _add_constraints(self, constraints, sloppy=False):
         super(Model, self)._add_constraints(constraints, sloppy=sloppy)
@@ -422,7 +468,6 @@ class Model(interface.Model):
         #       handle INT_INFEASIBLE case. mip.Model has a relax method that
         #       changes all integer and binary variable types to continuous.
         #       if we call this, make sure to update the associated Variable objects.
-
         return _MIP_STATUS_TO_STATUS[status]
 
     @interface.Model.objective.setter
@@ -431,7 +476,7 @@ class Model(interface.Model):
         self.update()
 
         self.problem.objective = self._expr_to_mip_expr(value)
-        self.problem.sense = _MIP_DIRECTION[value.direction]
+        self.problem.sense = _DIR_TO_MIP_DIR[value.direction]
         value.problem = self
 
     def __copy__(self):
@@ -439,3 +484,33 @@ class Model(interface.Model):
         result = cls.__new__(cls)
         result.__dict__.update(self.__dict__)
         return result
+
+    def to_lp(self):
+        self.update()
+
+        lp_form = ('Maximize' if self.problem.sense == mip.MAXIMIZE else 'Minimize') + '\n'
+        for i, (var, coef) in enumerate(self.problem.objective.expr.items()):
+            if i == 0:
+                lp_form += f'OBJROW: {coef} {var.name}'
+            else:
+                sign = '+' if coef > 0 else '-'
+                lp_form += f' {sign} {abs(coef)} {var.name}'
+
+        lp_form += '\nSubject To\n'
+        for con in self.problem.constrs:
+            lp_form += f'{con}\n'
+
+        lp_form += 'Bounds\n'
+        for v in self.problem.vars:
+            lp_form += f'{v.lb} <= {v} <= {v.ub}\n'
+        lp_form += 'End\n'
+
+        return lp_form
+
+    @classmethod
+    def from_lp(cls, lp_form):
+        problem = mip.Model(solver_name=mip.CBC)
+        with TemporaryFilename(suffix=".lp", content=lp_form) as tmp_file_name:
+            problem.read(tmp_file_name)
+        model = cls(problem=problem)
+        return model

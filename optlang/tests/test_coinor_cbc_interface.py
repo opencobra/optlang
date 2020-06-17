@@ -153,14 +153,14 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         # Divide by 2 because upper and lower constraints are represented seperately
         self.assertEqual(len(self.model.constraints), len(self.model.problem.constrs) / 2)
         self.assertEqual(self.model.variables.keys(),
-                         [var.name for var in self.model.problem.vars])
+                         [var.name[2:] for var in self.model.problem.vars])
         # Collect _lower and _upper constraints
         constrs= []
         for con in self.model.constraints:
             constrs.append(con.constraint_name(True))
             constrs.append(con.constraint_name(False))
 
-        self.assertEqual(constrs, [constr.name for constr in self.model.problem.constrs])
+        self.assertEqual(constrs, [constr.name[2:] for constr in self.model.problem.constrs])
 
     def test_add_non_cplex_conform_variable(self):
         var = self.interface.Variable('12x!!@#5_3', lb=-666, ub=666)
@@ -170,15 +170,74 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.assertEqual(self.model.variables['12x!!@#5_3'].ub, 666)
         repickled = pickle.loads(pickle.dumps(self.model))
         var_from_pickle = repickled.variables['12x!!@#5_3']
-        self.assertTrue(var_from_pickle.name in [var.name for var in self.model.problem.vars])
+        self.assertTrue('v_' + var_from_pickle.name in [var.name for var in self.model.problem.vars])
 
     @unittest.skip("COIN-OR Cbc doesn't support constraint name change")
     def test_change_constraint_name(self):
         pass
 
-    @unittest.skip("TODO: Currently not supported")
     def test_clone_model_with_lp(self):
-        pass
+        self.assertEqual(self.model.configuration.verbosity, 0)
+        self.model.configuration.verbosity = 3
+        self.model.optimize()
+        opt = self.model.objective.value
+        cloned_model = self.interface.Model.clone(self.model, use_lp=True)
+        self.assertEqual(cloned_model.configuration.verbosity, 3)
+        self.assertEqual(len(cloned_model.variables), len(self.model.variables))
+        for var in self.model.variables:
+            self.assertTrue(var.name in cloned_model.variables)
+            var_clone = cloned_model.variables[var.name]
+            self.assertEqual(var_clone.lb, var.lb)
+            self.assertEqual(var_clone.ub, var.ub)
+        self.assertEqual(len(cloned_model.constraints), len(self.model.constraints))
+        for con in self.model.constraints:
+            self.assertTrue(con.name in cloned_model.constraints)
+            con_clone = cloned_model.constraints[con.name]
+            self.assertEqual(con_clone.lb, con.lb)
+            self.assertEqual(con_clone.ub, con.ub)
+        print(cloned_model)
+        cloned_model.optimize()
+        self.assertAlmostEqual(cloned_model.objective.value, opt)
+
+    def test_clone_small_model_with_lp(self):
+        x1 = self.interface.Variable('x1', lb=0)
+        x2 = self.interface.Variable('x2', lb=0)
+        x3 = self.interface.Variable('x3', lb=0)
+
+        # A constraint is constructed from an expression of variables and a lower and/or upper bound (lb and ub).
+        c1 = self.interface.Constraint(x1 + x2 + x3, ub=100, name='c1')
+        c2 = self.interface.Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600, name='c2')
+        c3 = self.interface.Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300, name='c3')
+
+        # An objective can be formulated
+        obj = self.interface.Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
+
+        # Variables, constraints and objective are combined in a Model object, which can subsequently be optimized.
+        model = self.interface.Model(name='Simple model')
+        model.objective = obj
+        model.add([c1, c2, c3])
+        model.update()
+
+        self.assertEqual(model.configuration.verbosity, 0)
+        model.configuration.verbosity = 3
+        model.optimize()
+        opt = model.objective.value
+        cloned_model = self.interface.Model.clone(model, use_lp=True)
+        self.assertEqual(cloned_model.configuration.verbosity, 3)
+        self.assertEqual(len(cloned_model.variables), len(model.variables))
+        for var in model.variables:
+            self.assertTrue(var.name in cloned_model.variables)
+            var_clone = cloned_model.variables[var.name]
+            self.assertEqual(var_clone.lb, var.lb)
+            self.assertEqual(var_clone.ub, var.ub)
+        self.assertEqual(len(cloned_model.constraints), len(model.constraints))
+        for con in model.constraints:
+            self.assertTrue(con.name in cloned_model.constraints)
+            con_clone = cloned_model.constraints[con.name]
+            self.assertEqual(con_clone.lb, con.lb)
+            self.assertEqual(con_clone.ub, con.ub)
+        cloned_model.optimize()
+        self.assertAlmostEqual(cloned_model.objective.value, opt)
 
     def test_change_of_constraint_is_reflected_in_low_level_solver(self):
         x = self.interface.Variable('x', lb=0, ub=1, type='continuous')
@@ -187,17 +246,17 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         constr1 = self.interface.Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
         self.model.add(constr1)
         self.model.update()
-        self.assertEqual(self.model.problem.constr_by_name('test_lower').rhs, 100)
-        self.assertEqual(self.model.problem.constr_by_name('test_upper').rhs, 0)
+        self.assertEqual(self.model.problem.constr_by_name('c_test_lower').rhs, 100)
+        self.assertEqual(self.model.problem.constr_by_name('c_test_upper').rhs, 0)
         constr1.lb = -9
         constr1.ub = 10
-        self.assertEqual(self.model.problem.constr_by_name('test_lower').rhs, 9)
-        self.assertEqual(self.model.problem.constr_by_name('test_upper').rhs, 10)
+        self.assertEqual(self.model.problem.constr_by_name('c_test_lower').rhs, 9)
+        self.assertEqual(self.model.problem.constr_by_name('c_test_upper').rhs, 10)
         self.model.optimize()
         constr1.lb = -90
         constr1.ub = 100
-        self.assertEqual(self.model.problem.constr_by_name('test_lower').rhs, 90)
-        self.assertEqual(self.model.problem.constr_by_name('test_upper').rhs, 100)
+        self.assertEqual(self.model.problem.constr_by_name('c_test_lower').rhs, 90)
+        self.assertEqual(self.model.problem.constr_by_name('c_test_upper').rhs, 100)
 
     def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
         x = self.interface.Variable('x', lb=-83.3, ub=1324422.)
@@ -219,8 +278,8 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         objective = self.interface.Objective(0.3 * x + 0.4 * y, name='test', direction='max')
         self.model.objective = objective
         self.model.update()
-        grb_x = self.model.problem.var_by_name(x.name)
-        grb_y = self.model.problem.var_by_name(y.name)
+        grb_x = self.model.problem.var_by_name('v_' + x.name)
+        grb_y = self.model.problem.var_by_name('v_' + y.name)
         expected = {grb_x: 0.3, grb_y: 0.4}
 
         self.assertEqual(self.model.problem.objective.expr, expected)
@@ -228,7 +287,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         z = self.interface.Variable('z', lb=4, ub=4, type='integer')
         self.model.objective += 77. * z
         self.model.update()
-        grb_z = self.model.problem.var_by_name(z.name)
+        grb_z = self.model.problem.var_by_name('v_' + z.name)
         expected[grb_z] = 77.
 
         self.assertEqual(self.model.problem.objective.expr, expected)
@@ -257,8 +316,8 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         constraint.lb = value
         self.assertEqual(constraint.lb, value)
         name = constraint.name
-        self.assertEqual(self.model.problem.constr_by_name(name + '_upper').rhs, value)
-        self.assertEqual(self.model.problem.constr_by_name(name + '_lower').rhs, -1*value)
+        self.assertEqual(self.model.problem.constr_by_name('c_' + name + '_upper').rhs, value)
+        self.assertEqual(self.model.problem.constr_by_name('c_' + name + '_lower').rhs, -1*value)
 
     def test_initial_objective(self):
         self.assertIn('BIOMASS_Ecoli_core_w_GAM', self.model.objective.expression.__str__(), )
@@ -318,7 +377,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_set_linear_coefficients_objective(self):
         self.model.objective.set_linear_coefficients({self.model.variables.BIOMASS_Ecoli_core_w_GAM: 666.})
-        var = self.model.problem.var_by_name(self.model.variables.BIOMASS_Ecoli_core_w_GAM.name)
+        var = self.model.problem.var_by_name('v_' + self.model.variables.BIOMASS_Ecoli_core_w_GAM.name)
         self.assertEqual(self.model.problem.objective.expr[var], 666.)
 
     def test_set_linear_coefficients_constraint(self):
@@ -329,7 +388,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         coeff_dict = constraint.expression.as_coefficients_dict()
         self.assertEqual(coeff_dict[self.model.variables.GAPD_reverse_459c1], 666.)
 
-    def test_scipy_coefficient_dict(self):
+    def test_coinor_cbc_coefficient_dict(self):
         x = self.interface.Variable("x")
         c = self.interface.Constraint(2 ** x, lb=0, sloppy=True)
         obj = self.interface.Objective(2 ** x, sloppy=True)
