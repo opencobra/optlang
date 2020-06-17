@@ -413,7 +413,7 @@ class Objective(interface.Objective):
     def value(self):
         if getattr(self, 'problem', None) is None:
             return None
-        return self.problem.problem.obj_value
+        return self.problem.problem.obj_value + self.problem._objective_offset
 
     @interface.Objective.direction.setter
     def direction(self, value):
