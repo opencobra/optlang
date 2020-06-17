@@ -195,7 +195,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
             con_clone = cloned_model.constraints[con.name]
             self.assertEqual(con_clone.lb, con.lb)
             self.assertEqual(con_clone.ub, con.ub)
-        print(cloned_model)
         cloned_model.optimize()
         self.assertAlmostEqual(cloned_model.objective.value, opt)
 
@@ -413,7 +412,6 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         model.objective = self.interface.Objective(x)
 
         model.optimize()
-        print("x dual ", x.dual)
         self.assertEqual(y.dual, -1)
 
         x.type = "integer"
@@ -434,6 +432,55 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
     @unittest.skip('TODO: fix. Not working correctly')
     def test_integer_batch_duals(self):
         pass
+
+    def test_relax_with_knapsack(self):
+
+        p = [10, 13, 18, 31, 7, 15]
+        w = [11, 15, 20, 35, 10, 33]
+        c, I = 47, range(len(w))
+
+        x = [self.interface.Variable(type='binary', name=f'x{i}') for i in I]
+
+        obj = self.interface.Objective(sum(p[i] * x[i] for i in I), direction='max')
+
+        c1 = self.interface.Constraint(sum(w[i] * x[i] for i in I), ub=c)
+
+        model = self.interface.Model(name='knapsack')
+        model.objective = obj
+        model.add([c1])
+
+        model.configuration.relax = True
+
+        status = model.optimize()
+
+        self.assertEqual(model.status, 'optimal')
+        self.assertTrue(model.objective.value >= 41.0)
+
+
+    def test_max_nodes_max_solutions_with_knapsack(self):
+
+        p = [10, 13, 18, 31, 7, 15]
+        w = [11, 15, 20, 35, 10, 33]
+        c, I = 47, range(len(w))
+
+        x = [self.interface.Variable(type='binary', name=f'x{i}') for i in I]
+
+        obj = self.interface.Objective(sum(p[i] * x[i] for i in I), direction='max')
+
+        c1 = self.interface.Constraint(sum(w[i] * x[i] for i in I), ub=c)
+
+        model = self.interface.Model(name='knapsack')
+        model.objective = obj
+        model.add([c1])
+
+        model.configuration.max_nodes = 0
+        model.configuration.max_solutions = 0
+        status = model.optimize()
+        self.assertEqual(model.status, 'feasible')
+
+        model.configuration.max_solutions = 10
+        status = model.optimize()
+        self.assertEqual(model.status, 'optimal')
 
 
 class MIPExamples(unittest.TestCase):
@@ -458,8 +505,6 @@ class MIPExamples(unittest.TestCase):
         c, I = 47, range(len(w))
 
         x = [self.interface.Variable(type='binary', name=f'x{i}') for i in I]
-
-        assert x[0].lb == 0 and x[0].ub == 1
 
         obj = self.interface.Objective(sum(p[i] * x[i] for i in I), direction='max')
 

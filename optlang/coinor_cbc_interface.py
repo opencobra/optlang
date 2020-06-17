@@ -285,11 +285,24 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, verbosity=0, tolerance=1e-10, timeout=float('inf'), *args, **kwargs):
+    def __init__(self, verbosity=0, tolerance=1e-10, timeout=float('inf'),
+                 max_nodes=None, max_solutions=None, relax=False, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self.verbosity = verbosity
+        # Tolerance for the quality of the optimal solution, if a solution with
+        # cost c and a lower bound b are available and c - b < mip_gap_abs,
+        # the search will be concluded
         self.tolerance = tolerance
+        # Time limit in seconds for search
         self.timeout = timeout
+        # Maximum number of nodes to be explored in the search tree
+        self.max_nodes = max_nodes
+        # Solution limit, search will be stopped when max_solutions are found
+        self.max_solutions = max_solutions
+        # If true only the linear programming relaxation will be solved, i.e.
+        # integrality constraints will be temporarily discarded. Changes the
+        # type of all integer and binary variables to continuous. Bounds are preserved.
+        self.relax = relax
 
     @property
     def verbosity(self):
@@ -325,6 +338,31 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def tolerance(self, value):
         self._tolerance = value
 
+    @property
+    def max_nodes(self):
+        return self._max_nodes
+
+    @max_nodes.setter
+    def max_nodes(self, value):
+        self._max_nodes = value
+
+    @property
+    def max_solutions(self):
+        return self._max_solutions
+
+    @max_solutions.setter
+    def max_solutions(self, value):
+        self._max_solutions = value
+
+    @property
+    def relax(self):
+        return self._relax
+
+    @relax.setter
+    def relax(self, value):
+        self._relax = value
+
+
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
 
@@ -332,6 +370,13 @@ class Model(interface.Model):
         self.problem.verbose = 1 if self.configuration.verbosity > 1 else 0
         self.problem.max_mip_gap_abs = self.configuration.tolerance
         self.problem.max_seconds = self.configuration.timeout
+        if self.configuration.max_nodes is not None:
+            self.problem.max_nodes = self.configuration.max_nodes
+        if self.configuration.max_solutions is not None:
+            self.problem.max_solutions = self.configuration.max_solutions
+        if self.configuration.relax:
+            self.problem.relax()
+            self._initialize_model_from_problem(self.problem)
 
     def _initialize_problem(self):
         self.problem = mip.Model(solver_name=mip.CBC)
@@ -343,6 +388,7 @@ class Model(interface.Model):
         # Set problem
         self.problem = problem
 
+        self.variables.clear()
         # Set variables
         for v in problem.vars:
             self.variables.append(Variable(name=v.name[2:],
@@ -351,6 +397,7 @@ class Model(interface.Model):
                                            type=_MIP_VTYPE_TO_VTYPE[v.var_type],
                                            problem=self))
 
+        self.constraints.clear()
         # Set constraints
         for c in problem.constrs:
             name, suffix = c.name[2:-6], c.name[-6:]
