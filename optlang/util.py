@@ -105,7 +105,8 @@ def list_available_solvers():
     dict
         A dict like {'GLPK': True, 'GUROBI': False, ...}
     """
-    solvers = dict(GUROBI=False, GLPK=False, MOSEK=False, CPLEX=False, SCIPY=False)
+    solvers = dict(GUROBI=False, GLPK=False, MOSEK=False, CPLEX=False,
+                   COINOR_CBC=False, SCIPY=False)
     try:
         import gurobipy
 
@@ -134,6 +135,13 @@ def list_available_solvers():
         log.debug('CPLEX python bindings found at %s' % os.path.dirname(cplex.__file__))
     except Exception:
         log.debug('CPLEX python bindings not available.')
+    try:
+        import mip
+
+        solvers['COINOR_CBC'] = True
+        log.debug('COINOR_CBC python bindings found at %s' % os.path.dirname(mip.__file__))
+    except Exception:
+        log.debug('COINOR_CBC python bindings not available.')
     try:
         from scipy import optimize
         optimize.linprog
