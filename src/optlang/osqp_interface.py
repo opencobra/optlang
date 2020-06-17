@@ -178,7 +178,7 @@ class OSQPProblem(object):
             solver.update_settings(rho=self.__solution["rho"])
         solution = solver.solve()
         self.primals = dict(zip(self.variables, solution.x))
-        self.duals = dict(zip(self.variables, solution.y))
+        self.duals = dict(zip(self.constraints, solution.y))
         if not isnan(solution.info.obj_val):
             self.obj_value = solution.info.obj_val * self.direction
             self.status = solution.info.status
@@ -733,19 +733,18 @@ class Model(interface.Model):
     def _get_reduced_costs(self):
         if len(self.problem.duals) == 0:
             raise SolverError("The problem has not been solved yet!")
-        dual_values = [self.problem.duals[v.name] for v in self._variables]
-        return dual_values
+        return [nan for v in self._variables]
 
     def _get_constraint_values(self):
         if len(self.problem.primals) == 0:
             raise SolverError("The problem has not been solved yet!")
         return [c.primal for c in self.constraints]
 
-
     def _get_shadow_prices(self):
         if len(self.problem.primals) == 0:
             raise SolverError("The problem has not been solved yet!")
-        return [nan for c in self.constraints]
+        dual_values = [-self.problem.duals[c.name] for c in self._constraints]
+        return dual_values
 
     @property
     def is_integer(self):
