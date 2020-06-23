@@ -160,7 +160,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
             constrs.append(con.constraint_name(True))
             constrs.append(con.constraint_name(False))
 
-        self.assertEqual(constrs, [constr.name[2:] for constr in self.model.problem.constrs])
+        self.assertEqual(constrs, [constr.name for constr in self.model.problem.constrs])
 
     def test_add_non_cplex_conform_variable(self):
         var = self.interface.Variable('12x!!@#5_3', lb=-666, ub=666)
