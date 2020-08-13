@@ -35,9 +35,10 @@ jobs:
     - name: Test with tox
       run: tox -- --cov-report=xml
     - name: Report coverage
-      uses: codecov/codecov-action@v1
-      with:
-        fail_ci_if_error: true
+      run: codecov
+#      uses: codecov/codecov-action@v1
+#      with:
+#        fail_ci_if_error: true
 
   release:
     needs: test
