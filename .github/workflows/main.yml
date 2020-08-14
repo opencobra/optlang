@@ -3,14 +3,14 @@ name: CI-CD
 on:
   push:
     branches:
-    - stable
+    - master
     - devel
     tags:
     - '[0-9]+.[0-9]+.[0-9]+'
     - '[0-9]+.[0-9]+.[0-9]+rc[0-9]+'
   pull_request:
     branches:
-    - stable
+    - master
     - devel
 
 jobs:
