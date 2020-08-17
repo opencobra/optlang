@@ -166,7 +166,8 @@ class OSQPProblem(object):
             # see https://github.com/cvxgrp/cvxpy/issues/898
             settings.update({
                 "adaptive_rho": 0,
-                "alpha": 1
+                "rho": 1.0,
+                "alpha": 1.0
             })
         solver.setup(
             P=P, q=q, A=A,
@@ -469,7 +470,7 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, lp_method="primal", presolve="auto", verbosity=0,
+    def __init__(self, lp_method="primal", presolve=True, verbosity=0,
                  timeout=None, qp_method="primal", linear_solver="qdldl",
                  *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
@@ -514,8 +515,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def _set_presolve(self, value):
         if getattr(self, 'problem', None) is not None:
             if value is True:
-                self.problem.problem.settings["scaling"] = 8
-            elif value is False or value == "auto":
+                self.problem.problem.settings["scaling"] = 10
+            elif value is False:
                 self.problem.problem.settings["scaling"] = 0
             else:
                 raise ValueError(
