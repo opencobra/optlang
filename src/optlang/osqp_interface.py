@@ -29,6 +29,7 @@ import six
 import pickle
 import os
 from six.moves import StringIO
+import numpy as np
 from numpy import (nan, array, concatenate, Infinity,
                    zeros, isnan, isfinite, in1d, where, logical_not,
                    logical_or)
@@ -174,8 +175,9 @@ class OSQPProblem(object):
             l=bounds[:, 0], u=bounds[:, 1],  # noqa
             **settings)
         if self.__solution is not None:
-            solver.warm_start(x=self.__solution["x"], y=self.__solution["y"])
-            solver.update_settings(rho=self.__solution["rho"])
+            if self.still_valid(A, bounds):
+                solver.warm_start(x=self.__solution["x"], y=self.__solution["y"])
+                solver.update_settings(rho=self.__solution["rho"])
         solution = solver.solve()
         self.primals = dict(zip(self.variables, solution.x))
         self.duals = dict(zip(self.constraints, solution.y))
@@ -193,11 +195,24 @@ class OSQPProblem(object):
         }
 
     def reset(self):
-        """Reset the solver."""
-        self.__solution = None
+        """Reset the public solver solution."""
         self.info = None
         self.primals = {}
         self.duals = {}
+
+    def still_valid(self, A, bounds):
+        """Check if previous solutions is still feasible."""
+        if (len(self.__solution["x"]) != len(self.variables) or
+                len(self.__solution["y"]) != len(self.constraints)):
+            return False
+        c = A.dot(self.__solution["x"])
+        ea = self.settings["eps_abs"]
+        er = self.settings["eps_rel"]
+        valid = np.all(
+            (c + er * np.abs(c) + ea >= bounds[:, 0]) &
+            (c - er * np.abs(c) - ea <= bounds[:, 1])
+        )
+        return(valid)
 
     def clean(self):
         """Remove unused variables and constraints."""
@@ -303,6 +318,7 @@ class Constraint(interface.Constraint):
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
             self.problem.update()
+            self.problem.problem.reset()
             for var, coef in six.iteritems(coefficients):
                 self.problem.problem.constraint_coefs[
                     (self.name, var.name)] = float(coef)
