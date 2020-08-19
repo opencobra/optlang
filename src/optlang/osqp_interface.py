@@ -100,7 +100,7 @@ class OSQPProblem(object):
             "eps_dual_inf": 1e-6,
             "polish": True,
             "verbose": False,
-            "scaling": 10,
+            "scaling": 0,
             "time_limit": 0,
             "adaptive_rho": True,
             "rho": 1.0,
@@ -281,9 +281,7 @@ class Variable(interface.Variable):
 
     @property
     def dual(self):
-        if self.problem is None:
-            return None
-        return self.problem.problem.duals.get(self.name, None)
+        raise ValueError("Not supported with OSQP :(")
 
     @interface.Variable.name.setter
     def name(self, value):
@@ -361,7 +359,12 @@ class Constraint(interface.Constraint):
 
     @property
     def dual(self):
-        raise ValueError("Not supported with OSQP :(")
+        if self.problem is None:
+            return None
+        d = self.problem.problem.duals.get(self.name, None)
+        if d is not None:
+            d = -d
+        return(d)
 
     @interface.Constraint.name.setter
     def name(self, value):
@@ -412,6 +415,8 @@ class Objective(interface.Objective):
     @property
     def value(self):
         if getattr(self, 'problem', None) is None:
+            return None
+        if self.problem.problem.obj_value is None:
             return None
         return self.problem.problem.obj_value + self.problem._objective_offset
 
@@ -470,7 +475,7 @@ class Objective(interface.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, lp_method="primal", presolve=True, verbosity=0,
+    def __init__(self, lp_method="primal", presolve=False, verbosity=0,
                  timeout=None, qp_method="primal", linear_solver="qdldl",
                  *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
@@ -516,7 +521,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         if getattr(self, 'problem', None) is not None:
             if value is True:
                 self.problem.problem.settings["scaling"] = 10
-            elif value is False:
+            elif value is False or value == "auto":
                 self.problem.problem.settings["scaling"] = 0
             else:
                 raise ValueError(
@@ -629,7 +634,7 @@ class Model(interface.Model):
     def _initialize_problem(self):
         self.problem = OSQPProblem()
 
-    def _initialize_model_from_problem(self, problem, vc_mapping=None):
+    def _initialize_model_from_problem(self, problem, vc_mapping=None, offset=0):
         if not isinstance(problem, OSQPProblem):
             raise TypeError("Provided problem is not a valid OSQP model.")
         self.problem = problem
@@ -675,8 +680,9 @@ class Model(interface.Model):
             six.iteritems(self.problem.obj_quadratic_coefs)
         ])
 
+        self._objective_offset = offset
         self._objective = Objective(
-            linear_expression + quadratic_expression,
+            linear_expression + quadratic_expression + offset,
             problem=self,
             direction=
             {-1: 'max', 1: 'min'}[self.problem.direction],
@@ -834,7 +840,8 @@ class Model(interface.Model):
         # workaround to conserve the order
         osqp.variables = d["variables"]
         osqp.constraints = d["constraints"]
-        self._initialize_model_from_problem(osqp, vc_mapping=d["v_to_c"])
+        self._initialize_model_from_problem(
+            osqp, vc_mapping=d["v_to_c"], offset=d["offset"])
         osqp.variables = set(osqp.variables)
         osqp.constraints = set(osqp.constraints)
         self.configuration = Configuration()
@@ -849,7 +856,8 @@ class Model(interface.Model):
             "variables": [v.name for v in self._variables],
             "constraints": [c.name for c in self._constraints],
             "v_to_c": self._variables_to_constraints_mapping,
-            "config": self.configuration.__getstate__()
+            "config": self.configuration.__getstate__(),
+            "offset": getattr(self, "_objective_offset", 0.0)
         }
 
     @classmethod
