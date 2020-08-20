@@ -34,8 +34,6 @@ from numpy import (nan, array, concatenate, Infinity,
                    zeros, isnan, isfinite, in1d, where, logical_not,
                    logical_or)
 
-import osqp
-
 from optlang import interface, symbolics, available_solvers
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
@@ -44,6 +42,15 @@ from optlang.exceptions import SolverError
 from scipy.sparse import csc_matrix
 
 from optlang.symbolics import add, mul, One, Zero
+
+try:
+    import cuosqp as osqp
+except ImportError:
+    try:
+        import osqp
+    except ImportError:
+        raise ImportError("The osqp_interface requires osqp or cuosqp!")
+
 
 _STATUS_MAP = {
     'interrupted by user': interface.ABORTED,

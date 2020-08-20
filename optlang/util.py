@@ -135,13 +135,24 @@ def list_available_solvers():
         log.debug('CPLEX python bindings found at %s' % os.path.dirname(cplex.__file__))
     except Exception:
         log.debug('CPLEX python bindings not available.')
+
+    # OSQP can be provided by the base or CUDA package
+    solvers['OSQP'] = False
+    try:
+        import cuosqp
+        solvers['OSQP'] = True
+        log.debug('OSQP python bindings found at %s' % os.path.dirname(cuosqp.__file__))
+    except Exception:
+        pass
     try:
         import osqp
-
         solvers['OSQP'] = True
         log.debug('OSQP python bindings found at %s' % os.path.dirname(osqp.__file__))
     except Exception:
+        pass
+    if not solvers['OSQP']:
         log.debug('OSQP python bindings not available.')
+
     try:
         from scipy import optimize
         optimize.linprog
