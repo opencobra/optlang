@@ -94,7 +94,9 @@ class OSQPProblem(object):
         self.obj_linear_coefs = dict()
         self.obj_quadratic_coefs = dict()
         self.primals = {}
+        self.cprimals = {}
         self.duals = {}
+        self.vduals = {}
         self.obj_value = None
         self.direction = -1
         self.info = None
@@ -186,8 +188,14 @@ class OSQPProblem(object):
                 solver.warm_start(x=self.__solution["x"], y=self.__solution["y"])
                 solver.update_settings(rho=self.__solution["rho"])
         solution = solver.solve()
-        self.primals = dict(zip(self.variables, solution.x))
-        self.duals = dict(zip(self.constraints, solution.y))
+        nc = len(self.constraints)
+        nv = len(self.variables)
+        if not solution.x[0] is None:
+            self.primals = dict(zip(self.variables, solution.x))
+            self.vduals = dict(zip(self.variables, solution.y[nc:(nc + nv)]))
+            if nc > 0:
+                self.cprimals = dict(zip(self.constraints, A.dot(solution.x)[0:nc]))
+                self.duals = dict(zip(self.constraints, solution.y[0:nc]))
         if not isnan(solution.info.obj_val):
             self.obj_value = solution.info.obj_val * self.direction
             self.status = solution.info.status
@@ -201,11 +209,15 @@ class OSQPProblem(object):
             "rho": solution.info.rho_estimate
         }
 
-    def reset(self):
+    def reset(self, everything=False):
         """Reset the public solver solution."""
         self.info = None
         self.primals = {}
+        self.cprimals = {}
         self.duals = {}
+        self.vduals
+        if everything:
+            self.__solution = None
 
     def still_valid(self, A, bounds):
         """Check if previous solutions is still feasible."""
@@ -374,11 +386,7 @@ class Constraint(interface.Constraint):
     def primal(self):
         if self.problem is None:
             return None
-        if len(self.problem.problem.primals) == 0:
-            return None
-        var_primals = {v: v._get_primal() for v in self.variables}
-        p = self._expression.subs(var_primals).n(16)
-        return float(p)
+        return self.problem.problem.cprimals.get(self.name, None)
 
     @property
     def dual(self):
