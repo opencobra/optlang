@@ -22,7 +22,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
     """
     if six.PY3:
         nose.SkipTest('Skipping because py3')
-    elif os.getenv('TRAVIS'):
+    elif os.getenv('CI'):
         nose.SkipTest('Skipping because travis (solving problems exactly takes very long.)')
     else:
         with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl'), 'rb') as fhandle:
@@ -95,7 +95,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
                     netlib_id, os.path.basename(str(__file__)))
                 yield func
 
-                if not os.getenv('TRAVIS', False):
+                if not os.getenv('CI', False):
                     # check that a cloned model also gives the correct result
                     model = Model.clone(model, use_json=False, use_lp=False)
                     model.optimize()
@@ -104,7 +104,7 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
                     else:
                         raise Exception('No optimal solution found for netlib model %s' % netlib_id)
 
-                    if not os.getenv('TRAVIS', False):
+                    if not os.getenv('CI', False):
                         func = partial(check_objval_against_the_final_netlib_results, netlib_id, model_objval)
                         func.description = "test_netlib_check_objective_value__against_the_final_netlib_results_after_cloning_%s (%s)" % (
                             netlib_id, os.path.basename(str(__file__)))
