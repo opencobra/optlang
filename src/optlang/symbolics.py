@@ -41,8 +41,6 @@ else:  # pragma: no cover
     except ImportError as e:
         if SYMENGINE_PREFERENCE.lower() in ("true", "yes", "on"):
             logger.warn("Symengine could not be imported: " + str(e))
-            if os.getenv('TRAVIS', None) is not None:  # Travis should error here # pragma: no cover
-                raise RuntimeError("Symengine should be used but could not be!")
         USE_SYMENGINE = False
     else:
         USE_SYMENGINE = True

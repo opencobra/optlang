@@ -123,7 +123,7 @@ else:
                         netlib_id, os.path.basename(str(__file__)))
                     yield func
 
-                    if not os.getenv('TRAVIS', False):
+                    if os.getenv('CI', 'false') != 'true':
                         # check that a cloned model also gives the correct result
                         model = Model.clone(model, use_json=False, use_lp=False)
                         model.optimize()

@@ -3,7 +3,7 @@ optlang
 
 *Sympy based mathematical programming language*
 
-|PyPI| |License| |Travis| |Appveyor| |Coverage Status| |Documentation Status| |Gitter| |JOSS| |DOI|
+|PyPI| |Python Versions| |License| |Code of Conduct| |GitHub Actions| |Coverage Status| |Documentation Status| |Gitter| |JOSS| |DOI|
 
 Optlang is a Python package for solving mathematical optimization
 problems, i.e. maximizing or minimizing an objective function over a set
@@ -139,23 +139,34 @@ Future outlook
    `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`__
    etc.)
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/optlang.svg?maxAge=2592000
-   :target: https://pypi.python.org/pypi/optlang
-.. |License| image:: http://img.shields.io/badge/license-APACHE2-blue.svg
-   :target: http://img.shields.io/badge/license-APACHE2-blue.svg
-.. |Travis| image:: https://img.shields.io/travis/biosustain/optlang/master.svg
-   :target: https://travis-ci.org/biosustain/optlang
-.. |Coverage Status| image:: https://img.shields.io/codecov/c/github/biosustain/optlang/master.svg
-   :target: https://codecov.io/gh/biosustain/optlang/branch/master
+.. |PyPI| image:: https://img.shields.io/pypi/v/optlang.svg
+   :target: https://pypi.org/project/optlang/
+   :alt: Current PyPI Version
+.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/optlang.svg
+   :target: https://pypi.org/project/optlang/
+   :alt: Supported Python Versions
+.. |License| image:: https://img.shields.io/pypi/l/optlang.svg
+   :target: https://www.apache.org/licenses/LICENSE-2.0
+   :alt: Apache Software License Version 2.0
+.. |Code of Conduct| image:: https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg
+   :target: .github/CODE_OF_CONDUCT.md
+   :alt: Code of Conduct
+.. |GitHub Actions| image:: https://github.com/opencobra/optlang/workflows/CI-CD/badge.svg
+   :target: https://github.com/opencobra/optlang/workflows/CI-CD
+   :alt: GitHub Actions
+.. |Coverage Status| image:: https://codecov.io/gh/opencobra/optlang/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/opencobra/optlang
+   :alt: Codecov
 .. |Documentation Status| image:: https://readthedocs.org/projects/optlang/badge/?version=latest
    :target: https://readthedocs.org/projects/optlang/?badge=latest
+   :alt: Documentation Status
 .. |JOSS|  image:: http://joss.theoj.org/papers/cd848071a664d696e214a3950c840e15/status.svg
    :target: http://joss.theoj.org/papers/cd848071a664d696e214a3950c840e15
+   :alt: Publication
 .. |DOI| image:: https://zenodo.org/badge/5031/biosustain/optlang.svg
    :target: https://zenodo.org/badge/latestdoi/5031/biosustain/optlang
-.. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/443yp8hf25c6748h/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/phantomas1234/optlang/branch/master
+   :alt: Zenodo Source Code
 .. |Gitter| image:: https://badges.gitter.im/biosustain/optlang.svg
-   :alt: Join the chat at https://gitter.im/biosustain/optlang
    :target: https://gitter.im/biosustain/optlang?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+   :alt: Join the chat at https://gitter.im/biosustain/optlang
 
