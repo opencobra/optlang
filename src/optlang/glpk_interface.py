@@ -391,7 +391,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.timeout = timeout
         if "tolerances" in kwargs:
             for key, val in six.iteritems(kwargs["tolerances"]):
-                setattr(self.tolerances, key, val)
+                try:
+                    setattr(self.tolerances, key, val)
+                except AttributeError:
+                    pass
 
     def __getstate__(self):
         return {'presolve': self.presolve,
