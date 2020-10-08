@@ -74,7 +74,8 @@ try:
                 self.assertIs(constraint.__class__, cplex.Constraint)
 
         def test_clone_to_glpk(self):
-            glpk_model = glpk.Model.clone(self.model)
+            cplex_model = cplex.Model.clone(self.model)
+            glpk_model = glpk.Model.clone(cplex_model)
             self.assertEqual(glpk_model.__class__, glpk.Model)
             for variable in glpk_model.variables.values():
                 self.assertIs(variable.__class__, glpk.Variable)
