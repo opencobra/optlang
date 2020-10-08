@@ -403,7 +403,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.qp_method = qp_method
         if "tolerances" in kwargs:
             for key, val in six.iteritems(kwargs["tolerances"]):
-                setattr(self.tolerances, key, val)
+                try:
+                    setattr(self.tolerances, key, val)
+                except AttributeError:
+                    pass
 
     @property
     def lp_method(self):
