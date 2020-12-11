@@ -70,7 +70,12 @@ else:
             assert_allclose(primals, ref_sol, 1e-4, 1e-4)
 
         def test_get_dual(self):
-            pass
+            with open(TESTMODELPATH) as tp:
+                model = Model.from_lp(tp.read())
+            model.optimize()
+            self.assertEqual(model.status, 'optimal')
+            assert_allclose(model.objective.value, 0.8739215069684305, 1e-4, 1e-4)
+            self.assertTrue(isinstance(model.variables[0].dual, float))
 
         def test_changing_variable_names_is_reflected_in_the_solver(self):
             with open(TESTMODELPATH) as tp:
@@ -320,9 +325,6 @@ else:
         def test_is_integer(self):
             pass
 
-        def test_objective_handles_constants_2(self):
-            pass
-
         def test_optimize(self):
             self.model.optimize()
             self.assertEqual(self.model.status, 'optimal')
@@ -332,9 +334,6 @@ else:
             pass
 
         def test_non_convex_obj(self):
-            pass
-
-        def test_reduced_costs(self):
             pass
 
         def test_constraint_set_problem_to_None_caches_the_latest_expression_from_solver_instance(self):
@@ -559,6 +558,7 @@ else:
                 assert_allclose(model.objective.value, ref_sol, 1e-3, 1e-3)
 
         def test_qp_non_convex(self):
+            # unsupported by OSQP
             pass
 
         def test_quadratic_objective_expression(self):
@@ -594,7 +594,7 @@ else:
             self.assertIs(self.continuous_var.primal, None)
 
         def test_variable_dual(self):
-            pass
+            self.assertIs(self.continuous_var.primal, None)
 
         def test_constraint_primal(self):
             self.assertIs(self.constraint.primal, None)
@@ -613,7 +613,9 @@ else:
             self.assertIn("not been solved", str(context.exception))
 
         def test_reduced_costs(self):
-            pass
+            with self.assertRaises(SolverError) as context:
+                self.model.reduced_costs
+            self.assertIn("not been solved", str(context.exception))
 
         def test_shadow_prices(self):
             with self.assertRaises(SolverError) as context:

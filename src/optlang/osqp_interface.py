@@ -164,7 +164,7 @@ class OSQPProblem(object):
         else:
             A = csc_matrix(
                 (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
-                shape = (nc + nv, nv))
+                shape=(nc + nv, nv))
         return P, q, A, bounds
 
     def solve(self):
@@ -215,7 +215,7 @@ class OSQPProblem(object):
         self.primals = {}
         self.cprimals = {}
         self.duals = {}
-        self.vduals
+        self.vduals = {}
         if everything:
             self.__solution = None
 
@@ -315,7 +315,9 @@ class Variable(interface.Variable):
 
     @property
     def dual(self):
-        raise ValueError("Not supported with OSQP :(")
+        if self.problem is not None:
+            return self.problem.problem.vduals.get(self.name, None)
+        return None
 
     @interface.Variable.name.setter
     def name(self, value):
@@ -770,12 +772,14 @@ class Model(interface.Model):
     def _get_reduced_costs(self):
         if len(self.problem.duals) == 0:
             raise SolverError("The problem has not been solved yet!")
-        return [nan for v in self._variables]
+        reduced_costs = [self.problem.vduals[v.name] for v in self._variables]
+        return reduced_costs
 
     def _get_constraint_values(self):
         if len(self.problem.primals) == 0:
             raise SolverError("The problem has not been solved yet!")
-        return [c.primal for c in self.constraints]
+        constraint_primals = [self.problem.cprimals[c.name] for c in self._constraints]
+        return constraint_primals
 
     def _get_shadow_prices(self):
         if len(self.problem.primals) == 0:
