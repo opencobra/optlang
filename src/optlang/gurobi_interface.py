@@ -407,6 +407,12 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.qp_method = qp_method
         self.presolve = presolve
         self.timeout = timeout
+        if "tolerances" in kwargs:
+            for key, val in six.iteritems(kwargs["tolerances"]):
+                try:
+                    setattr(self.tolerances, key, val)
+                except AttributeError:
+                    pass
 
     @property
     def lp_method(self):
