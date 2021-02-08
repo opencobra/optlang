@@ -54,8 +54,7 @@ if available_solvers['COINOR_CBC']:
     try:
         from optlang import coinor_cbc_interface
     except Exception:
-        log.error('COINOR_CBC is available but could not load with error:\n  ' +
-            str(traceback.format_exc()).strip().replace('\n','\n  '))
+        log.error('COINOR_CBC is available but could not load with error:\n  ' + str(traceback.format_exc()).strip().replace('\n','\n  '))
 
 if available_solvers['SCIPY']:
     try:
