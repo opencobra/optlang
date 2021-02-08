@@ -512,19 +512,22 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             self.problem.problem.threads = value
 
     def __getstate__(self):
-        return {'presolve': self.presolve,
-                'timeout': self.timeout,
-                'verbosity': self.verbosity,
-                'max_nodes': self.max_nodes,
-                'max_solutions': self.max_solutions,
-                'relax': self.relax,
-                'emphasis': self.emphasis,
-                'cuts': self.cuts,
-                'threads': self.threads,
-                'tolerances': {'feasibility': self.tolerances.feasibility,
-                               'optimality': self.tolerances.optimality,
-                               'integrality': self.tolerances.integrality}
+        return {
+            'presolve': self.presolve,
+            'timeout': self.timeout,
+            'verbosity': self.verbosity,
+            'max_nodes': self.max_nodes,
+            'max_solutions': self.max_solutions,
+            'relax': self.relax,
+            'emphasis': self.emphasis,
+            'cuts': self.cuts,
+            'threads': self.threads,
+            'tolerances': {
+                'feasibility': self.tolerances.feasibility,
+                'optimality': self.tolerances.optimality,
+                'integrality': self.tolerances.integrality
                 }
+            }
 
     def __setstate__(self, state):
         for key, val in six.iteritems(state):
@@ -638,6 +641,16 @@ class Model(interface.Model):
         dual = self.problem.var_by_name('v_' + name).rc
         return 0. if dual is None else dual
 
+    def _get_primal_values(self):
+        if getattr(self, '_status', '') == 'optimal':
+            return super(Model, self)._get_primal_values()
+        return [0. for _ in self.variables]
+
+    def _get_reduced_costs(self):
+        if getattr(self, '_status', '') == 'optimal':
+            return super(Model, self)._get_reduced_costs()
+        return [0. for _ in self.variables]
+
     def _update_var_lb(self, name, lb):
         self.problem.var_by_name('v_' + name).lb = to_float(lb, True)
 
@@ -675,6 +688,16 @@ class Model(interface.Model):
 
     def _constr_dual(self, con, is_lb):
         return self.problem.constr_by_name(con.constraint_name(is_lb)).pi
+
+    def _get_constraint_values(self):
+        if getattr(self, '_status', '') == 'optimal':
+            return super(Model, self)._get_constraint_values()
+        return [0. for _ in self.constraints]
+
+    def _get_shadow_prices(self):
+        if getattr(self, '_status', '') == 'optimal':
+            return super(Model, self)._get_shadow_prices()
+        return [0. for _ in self.constraints]
 
     def _update_constraint_bound(self, con, is_lb):
         name = con.constraint_name(is_lb)
@@ -746,7 +769,6 @@ class Model(interface.Model):
 
         status = self.problem.optimize()
         # TODO: make more robust. See glpk_interface.py
-
         return _MIP_STATUS_TO_STATUS[status]
 
     @interface.Model.objective.setter
