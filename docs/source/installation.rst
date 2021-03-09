@@ -12,8 +12,8 @@ Or download the source distribution and run::
 You can run optlang's test suite like this (you need to install nose first though)::
 
   python setup.py test
-  
-  
+
+
 Solvers
 ----------
 To solve optimization problems, at least one supported solver must be installed.
@@ -24,7 +24,7 @@ to the solver can be imported without errors the solver interface should be avai
 
 The required python modules for the currently supported solvers are:
 
-- GLPK: :code:`swiglpk` (automatically installed by :code:`pip install optlang`) 
+- GLPK: :code:`swiglpk` (automatically installed by :code:`pip install optlang`)
 
   - GLPK is an open source Linear Programming library. Swiglpk can be installed from binary wheels or from source. Installing from source requires swig and GLPK.
 
@@ -39,6 +39,11 @@ The required python modules for the currently supported solvers are:
 - SciPy: :code:`scipy.optimize.linprog`
 
   - The SciPy linprog function is a very basic implementation of the simplex algorithm for solving linear optimization problems. Linprog is included in all recent versions of SciPy.
+
+- OSQP: :code:`osqp | cuosqp`
+
+  - OSQP is an efficient open source solver for Quadratic Programs. It is self-contained and can be installed via pip. Alternatively, cuOSQP provides an experimental cuda-enabled implementation.
+
 
 After importing optlang you can check :code:`optlang.available_solvers` to verify that a solver is recognized.
 

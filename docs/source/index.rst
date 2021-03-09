@@ -15,6 +15,7 @@ Currently supported solvers are:
 * `CPLEX <http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/>`_ (LP/MILP/QP)
 * `Gurobi <http://www.gurobi.com/>`_ (LP/MILP/QP)
 * `inspyred <https://pypi.python.org/pypi/inspyred>`_ (heuristic optimization; experimental)
+* `OSQP <https://osqp.org/>`_ (LP/QP) OSQP is an efficient open source solver for Quadratic Programs. Alternatively, optlang can use cuOSQP which provides an experimental cuda-enabled implementation.
 
 Support for the following solvers is in the works:
 
@@ -46,20 +47,20 @@ Formulating and solving the problem is straightforward
 .. code-block:: python
 
    from optlang import Model, Variable, Constraint, Objective
-   
+
    # All the (symbolic) variables are declared, with a name and optionally a lower and/or upper bound.
    x1 = Variable('x1', lb=0)
    x2 = Variable('x2', lb=0)
    x3 = Variable('x3', lb=0)
-   
+
    # A constraint is constructed from an expression of variables and a lower and/or upper bound (lb and ub).
    c1 = Constraint(x1 + x2 + x3, ub=100)
    c2 = Constraint(10 * x1 + 4 * x2 + 5 * x3, ub=600)
    c3 = Constraint(2 * x1 + 2 * x2 + 6 * x3, ub=300)
-   
+
    # An objective can be formulated
    obj = Objective(10 * x1 + 6 * x2 + 4 * x3, direction='max')
-   
+
    # Variables, constraints and objective are combined in a Model object, which can subsequently be optimized.
    model = Model(name='Simple model')
    model.objective = obj
@@ -169,7 +170,7 @@ The GAMS example (http://www.gams.com/docs/example.htm) can be formulated and so
     print("")
     for var in model.variables:
         print(var.name, ":", var.primal)
-        
+
 Outputting the following::
 
     Minimize
@@ -190,7 +191,7 @@ Outputting the following::
     San_Diego_to_Chicago : 0
     San_Diego_to_Topeka : 275
     San_Diego_to_New_York : 275
-    
+
 Here we forced all variables to have integer values. To allow non-integer values, leave out :code:`type="integer"` in the Variable constructor (defaults to :code:`'continuous'`).
 
 Users's guide

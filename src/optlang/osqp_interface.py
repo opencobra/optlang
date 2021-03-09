@@ -23,56 +23,58 @@ interface.
 Make sure that 'import osqp' runs without error.
 """
 import logging
-import sys
-
 import six
 import pickle
-import os
-from six.moves import StringIO
 import numpy as np
-from numpy import (nan, array, concatenate, Infinity,
-                   zeros, isnan, isfinite, in1d, where, logical_not,
-                   logical_or)
+from numpy import array, concatenate, Infinity, zeros, isnan
 
 from optlang import interface, symbolics, available_solvers
-from optlang.util import inheritdocstring, TemporaryFilename
+from optlang.util import inheritdocstring
 from optlang.expression_parsing import parse_optimization_expression
 from optlang.exceptions import SolverError
 
 from scipy.sparse import csc_matrix
 
-from optlang.symbolics import add, mul, One, Zero
+from optlang.symbolics import add, mul
+
+log = logging.getLogger(__name__)
 
 try:
-    import cuosqp as osqp
+    import osqp as osqp
 except ImportError:
     try:
-        import osqp
+        import cuosqp as osqp
+
+        log.warning(
+            "cuOSQP is still experimental and may not work for all problems. "
+            "It may not converge as fast as the normal osqp package or not "
+            "converge at all."
+        )
     except ImportError:
         raise ImportError("The osqp_interface requires osqp or cuosqp!")
 
 
 _STATUS_MAP = {
-    'interrupted by user': interface.ABORTED,
-    'run time limit reached': interface.TIME_LIMIT,
-    'feasible': interface.FEASIBLE,
-    'primal infeasible': interface.INFEASIBLE,
-    'dual infeasible': interface.INFEASIBLE,
-    'primal infeasible inaccurate': interface.INFEASIBLE,
-    'dual infeasible inaccurate': interface.INFEASIBLE,
-    'solved inaccurate': interface.NUMERIC,
-    'solved': interface.OPTIMAL,
-    'maximum iterations reached': interface.ITERATION_LIMIT,
-    'unsolved': interface.SPECIAL,
-    'problem non convex': interface.SPECIAL,
-    'non-existing-status': 'Here for testing that missing statuses are handled.'
+    "interrupted by user": interface.ABORTED,
+    "run time limit reached": interface.TIME_LIMIT,
+    "feasible": interface.FEASIBLE,
+    "primal infeasible": interface.INFEASIBLE,
+    "dual infeasible": interface.INFEASIBLE,
+    "primal infeasible inaccurate": interface.INFEASIBLE,
+    "dual infeasible inaccurate": interface.INFEASIBLE,
+    "solved inaccurate": interface.NUMERIC,
+    "solved": interface.OPTIMAL,
+    "maximum iterations reached": interface.ITERATION_LIMIT,
+    "unsolved": interface.SPECIAL,
+    "problem non convex": interface.SPECIAL,
+    "non-existing-status": "Here for testing that missing statuses are handled.",
 }
 
 _LP_METHODS = ("auto", "primal")
 
 _QP_METHODS = ("auto", "primal")
 
-_TYPES = ("continuous", )
+_TYPES = ("continuous",)
 
 
 class OSQPProblem(object):
@@ -114,7 +116,7 @@ class OSQPProblem(object):
             "time_limit": 0,
             "adaptive_rho": True,
             "rho": 1.0,
-            "alpha": 1.6
+            "alpha": 1.6,
         }
         self.__solution = None
 
@@ -126,34 +128,40 @@ class OSQPProblem(object):
         cmap = dict(zip(self.constraints, range(len(self.constraints))))
         nc = len(self.constraints)
         if len(self.obj_quadratic_coefs) > 0:
-            P = array([
-                [vmap[vn[0]], vmap[vn[1]], coef * d * 2.0]
-                for vn, coef in six.iteritems(self.obj_quadratic_coefs)
-            ])
-            P = csc_matrix((
-                P[:, 2],
-                (P[:, 0].astype("int64"), P[:, 1].astype("int64"))
-                ), shape=(nv, nv))
+            P = array(
+                [
+                    [vmap[vn[0]], vmap[vn[1]], coef * d * 2.0]
+                    for vn, coef in six.iteritems(self.obj_quadratic_coefs)
+                ]
+            )
+            P = csc_matrix(
+                (P[:, 2], (P[:, 0].astype("int64"), P[:, 1].astype("int64"))),
+                shape=(nv, nv),
+            )
         else:
             P = None
         q = zeros(nv)
-        q[[vmap[vn] for vn in self.obj_linear_coefs]] = \
-            list(self.obj_linear_coefs.values())
+        q[[vmap[vn] for vn in self.obj_linear_coefs]] = list(
+            self.obj_linear_coefs.values()
+        )
         q = q * d
         Av = array([[vmap[k] + nc, vmap[k], 1.0] for k in self.variables])
-        vbounds = array([
-            [self.variable_lbs[vn], self.variable_ubs[vn]]
-            for vn in self.variables
-            ])
+        vbounds = array(
+            [[self.variable_lbs[vn], self.variable_ubs[vn]] for vn in self.variables]
+        )
         if len(self.constraint_coefs) > 0:
-            A = array([
-                [cmap[vn[0]], vmap[vn[1]], coef]
-                for vn, coef in six.iteritems(self.constraint_coefs)
-            ])
-            bounds = array([
-                [self.constraint_lbs[cn], self.constraint_ubs[cn]]
-                for cn in self.constraints
-                ])
+            A = array(
+                [
+                    [cmap[vn[0]], vmap[vn[1]], coef]
+                    for vn, coef in six.iteritems(self.constraint_coefs)
+                ]
+            )
+            bounds = array(
+                [
+                    [self.constraint_lbs[cn], self.constraint_ubs[cn]]
+                    for cn in self.constraints
+                ]
+            )
             A = concatenate((A, Av))
             bounds = concatenate((bounds, vbounds))
         else:
@@ -164,7 +172,8 @@ class OSQPProblem(object):
         else:
             A = csc_matrix(
                 (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
-                shape=(nc + nv, nv))
+                shape=(nc + nv, nv),
+            )
         return P, q, A, bounds
 
     def solve(self):
@@ -174,15 +183,8 @@ class OSQPProblem(object):
         solver = osqp.OSQP()
         if P is None:
             # see https://github.com/cvxgrp/cvxpy/issues/898
-            settings.update({
-                "adaptive_rho": 0,
-                "rho": 1.0,
-                "alpha": 1.0
-            })
-        solver.setup(
-            P=P, q=q, A=A,
-            l=bounds[:, 0], u=bounds[:, 1],  # noqa
-            **settings)
+            settings.update({"adaptive_rho": 0, "rho": 1.0, "alpha": 1.0})
+        solver.setup(P=P, q=q, A=A, l=bounds[:, 0], u=bounds[:, 1], **settings)  # noqa
         if self.__solution is not None:
             if self.still_valid(A, bounds):
                 solver.warm_start(x=self.__solution["x"], y=self.__solution["y"])
@@ -192,7 +194,7 @@ class OSQPProblem(object):
         nv = len(self.variables)
         if not solution.x[0] is None:
             self.primals = dict(zip(self.variables, solution.x))
-            self.vduals = dict(zip(self.variables, solution.y[nc:(nc + nv)]))
+            self.vduals = dict(zip(self.variables, solution.y[nc : (nc + nv)]))
             if nc > 0:
                 self.cprimals = dict(zip(self.constraints, A.dot(solution.x)[0:nc]))
                 self.duals = dict(zip(self.constraints, solution.y[0:nc]))
@@ -206,7 +208,7 @@ class OSQPProblem(object):
         self.__solution = {
             "x": solution.x,
             "y": solution.y,
-            "rho": solution.info.rho_estimate
+            "rho": solution.info.rho_estimate,
         }
 
     def reset(self, everything=False):
@@ -221,41 +223,47 @@ class OSQPProblem(object):
 
     def still_valid(self, A, bounds):
         """Check if previous solutions is still feasible."""
-        if (len(self.__solution["x"]) != len(self.variables) or
-                len(self.__solution["y"]) != len(self.constraints)):
+        if len(self.__solution["x"]) != len(self.variables) or len(
+            self.__solution["y"]
+        ) != len(self.constraints):
             return False
         c = A.dot(self.__solution["x"])
         ea = self.settings["eps_abs"]
         er = self.settings["eps_rel"]
         valid = np.all(
-            (c + er * np.abs(c) + ea >= bounds[:, 0]) &
-            (c - er * np.abs(c) - ea <= bounds[:, 1])
+            (c + er * np.abs(c) + ea >= bounds[:, 0])
+            & (c - er * np.abs(c) - ea <= bounds[:, 1])
         )
-        return(valid)
+        return valid
 
     def clean(self):
         """Remove unused variables and constraints."""
         self.reset()
-        self.variable_lbs = {k: v for k, v in six.iteritems(self.variable_lbs)
-                             if k in self.variables}
-        self.variable_ubs = {k: v for k, v in six.iteritems(self.variable_ubs)
-                             if k in self.variables}
-        self.constraint_coefs = {k: v for k, v in
-                                 six.iteritems(self.constraint_coefs)
-                                 if k[0] in self.constraints and
-                                 k[1] in self.variables}
-        self.obj_linear_coefs = {k: v for k, v in
-                                 six.iteritems(self.obj_linear_coefs)
-                                 if k in self.variables}
+        self.variable_lbs = {
+            k: v for k, v in six.iteritems(self.variable_lbs) if k in self.variables
+        }
+        self.variable_ubs = {
+            k: v for k, v in six.iteritems(self.variable_ubs) if k in self.variables
+        }
+        self.constraint_coefs = {
+            k: v
+            for k, v in six.iteritems(self.constraint_coefs)
+            if k[0] in self.constraints and k[1] in self.variables
+        }
+        self.obj_linear_coefs = {
+            k: v for k, v in six.iteritems(self.obj_linear_coefs) if k in self.variables
+        }
         self.obj_quadratic_coefs = {
-            k: v for k, v in six.iteritems(self.obj_quadratic_coefs)
-            if k[0] in self.variables and k[1] in self.variables}
-        self.constraint_lbs = {k: v for k, v in
-                               six.iteritems(self.constraint_lbs)
-                               if k in self.constraints}
-        self.constraint_ubs = {k: v for k, v in
-                               six.iteritems(self.constraint_ubs)
-                               if k in self.constraints}
+            k: v
+            for k, v in six.iteritems(self.obj_quadratic_coefs)
+            if k[0] in self.variables and k[1] in self.variables
+        }
+        self.constraint_lbs = {
+            k: v for k, v in six.iteritems(self.constraint_lbs) if k in self.constraints
+        }
+        self.constraint_ubs = {
+            k: v for k, v in six.iteritems(self.constraint_ubs) if k in self.constraints
+        }
 
     def rename_constraint(self, old, new):
         """Rename a constraint."""
@@ -265,8 +273,7 @@ class OSQPProblem(object):
         name_map = {k: k for k in self.constraints}
         name_map[old] = new
         self.constraint_coefs = {
-            (name_map[k[0]], k[1]): v
-            for k, v in six.iteritems(self.constraint_coefs)
+            (name_map[k[0]], k[1]): v for k, v in six.iteritems(self.constraint_coefs)
         }
         self.constraint_lbs[new] = self.constraint_lbs.pop(old)
         self.constraint_ubs[new] = self.constraint_ubs.pop(old)
@@ -279,16 +286,14 @@ class OSQPProblem(object):
         name_map = {k: k for k in self.variables}
         name_map[old] = new
         self.constraint_coefs = {
-            (k[0], name_map[k[1]]): v
-            for k, v in six.iteritems(self.constraint_coefs)
+            (k[0], name_map[k[1]]): v for k, v in six.iteritems(self.constraint_coefs)
         }
         self.obj_quadratic_coefs = {
             (name_map[k[0]], name_map[k[1]]): v
             for k, v in six.iteritems(self.obj_quadratic_coefs)
         }
         self.obj_linear_coefs = {
-            name_map[k]: v
-            for k, v in six.iteritems(self.obj_linear_coefs)
+            name_map[k]: v for k, v in six.iteritems(self.obj_linear_coefs)
         }
         self.variable_lbs[new] = self.variable_lbs.pop(old)
         self.variable_ubs[new] = self.variable_ubs.pop(old)
@@ -304,9 +309,9 @@ class Variable(interface.Variable):
         if self.problem is not None:
             if value not in _TYPES:
                 raise ValueError(
-                    "OSQP cannot handle variables of type '%s'. " % value +
-                    "The following variable types are available: " +
-                    ", ".join(_TYPES)
+                    "OSQP cannot handle variables of type '%s'. " % value
+                    + "The following variable types are available: "
+                    + ", ".join(_TYPES)
                 )
         super(Variable, Variable).type.fset(self, value)
 
@@ -333,43 +338,41 @@ class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
-        super(Constraint, self).__init__(
-            expression, *args, sloppy=sloppy, **kwargs)
+        super(Constraint, self).__init__(expression, *args, sloppy=sloppy, **kwargs)
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
             self.problem.update()
             self.problem.problem.reset()
             for var, coef in six.iteritems(coefficients):
-                self.problem.problem.constraint_coefs[
-                    (self.name, var.name)] = float(coef)
+                self.problem.problem.constraint_coefs[(self.name, var.name)] = float(
+                    coef
+                )
         else:
             raise Exception(
                 "Can't change coefficients if constraint is not associated "
-                "with a model.")
+                "with a model."
+            )
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
             self.problem.update()
             coefs = {
-                v: self.problem.problem.constraint_coefs.get(
-                    (self.name, v.name), 0.0)
+                v: self.problem.problem.constraint_coefs.get((self.name, v.name), 0.0)
                 for v in variables
-                }
+            }
             return coefs
         else:
             raise Exception(
-                "Can't get coefficients from solver if constraint is not "
-                "in a model")
+                "Can't get coefficients from solver if constraint is not " "in a model"
+            )
 
     def _get_expression(self):
         if self.problem is not None:
             variables = self.problem._variables
             all_coefs = self.problem.problem.constraint_coefs
-            coefs = [(v, all_coefs.get((self.name, v.name), 0.0))
-                     for v in variables]
-            expression = add([
-                mul((symbolics.Real(co), v)) for (v, co) in coefs])
+            coefs = [(v, all_coefs.get((self.name, v.name), 0.0)) for v in variables]
+            expression = add([mul((symbolics.Real(co), v)) for (v, co) in coefs])
             self._expression = expression
         return self._expression
 
@@ -397,7 +400,7 @@ class Constraint(interface.Constraint):
         d = self.problem.problem.duals.get(self.name, None)
         if d is not None:
             d = -d
-        return(d)
+        return d
 
     @interface.Constraint.name.setter
     def name(self, value):
@@ -410,7 +413,7 @@ class Constraint(interface.Constraint):
     @interface.Constraint.lb.setter
     def lb(self, value):
         self._check_valid_lower_bound(value)
-        if getattr(self, 'problem', None) is not None:
+        if getattr(self, "problem", None) is not None:
             lb = -Infinity if value is None else float(value)
             self.problem.problem.constraint_lbs[self.name] = lb
         self._lb = value
@@ -418,7 +421,7 @@ class Constraint(interface.Constraint):
     @interface.Constraint.ub.setter
     def ub(self, value):
         self._check_valid_upper_bound(value)
-        if getattr(self, 'problem', None) is not None:
+        if getattr(self, "problem", None) is not None:
             ub = Infinity if value is None else float(value)
             self.problem.problem.constraint_ubs[self.name] = ub
         self._ub = value
@@ -442,12 +445,11 @@ class Objective(interface.Objective):
         super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         self._expression_expired = False
         if not (sloppy or self.is_Linear or self.is_Quadratic):
-            raise ValueError(
-                "OSQP only supports linear and quadratic objectives.")
+            raise ValueError("OSQP only supports linear and quadratic objectives.")
 
     @property
     def value(self):
-        if getattr(self, 'problem', None) is None:
+        if getattr(self, "problem", None) is None:
             return None
         if self.problem.problem.obj_value is None:
             return None
@@ -462,19 +464,25 @@ class Objective(interface.Objective):
             self.problem.problem.direction = -1
 
     def _get_expression(self):
-        if (self.problem is not None and self._expression_expired and
-                len(self.problem._variables) > 0):
+        if (
+            self.problem is not None
+            and self._expression_expired
+            and len(self.problem._variables) > 0
+        ):
             model = self.problem
             vars = model._variables
-            expression = add([
-                coef * vars[vn]
-                for vn, coef in six.iteritems(model.problem.obj_linear_coefs)
-            ])
-            q_ex = add([
-                coef * vars[vn[0]] * vars[vn[1]]
-                for vn, coef in
-                six.iteritems(model.problem.obj_quadratic_coefs)
-            ])
+            expression = add(
+                [
+                    coef * vars[vn]
+                    for vn, coef in six.iteritems(model.problem.obj_linear_coefs)
+                ]
+            )
+            q_ex = add(
+                [
+                    coef * vars[vn[0]] * vars[vn[1]]
+                    for vn, coef in six.iteritems(model.problem.obj_quadratic_coefs)
+                ]
+            )
             expression += q_ex
             self._expression = expression
             self._expression_expired = False
@@ -484,13 +492,13 @@ class Objective(interface.Objective):
         if self.problem is not None:
             self.problem.update()
             for v, coef in six.iteritems(coefficients):
-                self.problem.problem.obj_linear_coefs[v.name] = \
-                    float(coef)
+                self.problem.problem.obj_linear_coefs[v.name] = float(coef)
             self._expression_expired = True
         else:
             raise Exception(
                 "Can't change coefficients if objective is not associated "
-                "with a model.")
+                "with a model."
+            )
 
     def get_linear_coefficients(self, variables):
         if self.problem is not None:
@@ -498,19 +506,27 @@ class Objective(interface.Objective):
             coefs = {
                 v: self.problem.problem.obj_linear_coefs.get(v.name, 0.0)
                 for v in variables
-                }
+            }
             return coefs
         else:
             raise Exception(
-                "Can't get coefficients from solver if objective "
-                "is not in a model")
+                "Can't get coefficients from solver if objective " "is not in a model"
+            )
 
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
-    def __init__(self, lp_method="primal", presolve=False, verbosity=0,
-                 timeout=None, qp_method="primal", linear_solver="qdldl",
-                 *args, **kwargs):
+    def __init__(
+        self,
+        lp_method="primal",
+        presolve=False,
+        verbosity=0,
+        timeout=None,
+        qp_method="primal",
+        linear_solver="qdldl",
+        *args,
+        **kwargs
+    ):
         super(Configuration, self).__init__(*args, **kwargs)
         self.lp_method = lp_method
         self.presolve = presolve
@@ -532,8 +548,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def lp_method(self, lp_method):
         if lp_method not in _LP_METHODS:
             raise ValueError(
-                "LP Method %s is not valid (choose one of: %s)" %
-                (lp_method, ", ".join(_LP_METHODS)))
+                "LP Method %s is not valid (choose one of: %s)"
+                % (lp_method, ", ".join(_LP_METHODS))
+            )
 
     @property
     def linear_solver(self):
@@ -543,24 +560,23 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def linear_solver(self, solver):
         if solver not in ("qdldl", "mkl pardiso"):
             raise ValueError(
-                "%s is not valid (choose either `qdldl` or `mkl pardiso`)" %
-                solver
+                "%s is not valid (choose either `qdldl` or `mkl pardiso`)" % solver
             )
-        if getattr(self, 'problem', None) is not None:
+        if getattr(self, "problem", None) is not None:
             self.problem.problem.settings["linsys_solver"] = solver
         self._linear_solver = solver
 
     def _set_presolve(self, value):
-        if getattr(self, 'problem', None) is not None:
+        if getattr(self, "problem", None) is not None:
             if value is True:
                 self.problem.problem.settings["scaling"] = 10
             elif value is False or value == "auto":
                 self.problem.problem.settings["scaling"] = 0
             else:
                 raise ValueError(
-                    str(value) +
-                    " is not a valid presolve parameter. Must be True, "
-                    "False or 'auto'.")
+                    str(value) + " is not a valid presolve parameter. Must be True, "
+                    "False or 'auto'."
+                )
 
     @property
     def presolve(self):
@@ -577,7 +593,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @verbosity.setter
     def verbosity(self, value):
-        if getattr(self, 'problem', None) is not None:
+        if getattr(self, "problem", None) is not None:
             self.problem.problem.settings["verbose"] = int(value > 0)
         self._verbosity = value
 
@@ -587,21 +603,24 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     @timeout.setter
     def timeout(self, value):
-        if getattr(self, 'problem', None) is not None:
+        if getattr(self, "problem", None) is not None:
             if value is None:
                 self.problem.problem.settings["time_limit"] = 0
             else:
                 self.problem.problem.settings["time_limit"] = value
 
     def __getstate__(self):
-        return {"presolve": self.presolve,
-                "timeout": self.timeout,
-                "verbosity": self.verbosity,
-                "linear_solver": self.linear_solver,
-                "tolerances": {"feasibility": self.tolerances.feasibility,
-                               "optimality": self.tolerances.optimality,
-                               "integrality": self.tolerances.integrality}
-                }
+        return {
+            "presolve": self.presolve,
+            "timeout": self.timeout,
+            "verbosity": self.verbosity,
+            "linear_solver": self.linear_solver,
+            "tolerances": {
+                "feasibility": self.tolerances.feasibility,
+                "optimality": self.tolerances.optimality,
+                "integrality": self.tolerances.integrality,
+            },
+        }
 
     def __setstate__(self, state):
         for key, val in six.iteritems(state):
@@ -620,8 +639,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def qp_method(self, value):
         if value not in _QP_METHODS:
             raise ValueError(
-                "%s is not a valid qp_method. Choose between %s" %
-                (value, str(_QP_METHODS)))
+                "%s is not a valid qp_method. Choose between %s"
+                % (value, str(_QP_METHODS))
+            )
         self._qp_method = value
 
     def _get_feasibility(self):
@@ -644,21 +664,11 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.problem.problem.settings["eps_abs"] = value
         self.problem.problem.settings["eps_rel"] = value
 
-
     def _tolerance_functions(self):
         return {
-            "feasibility": (
-                self._get_feasibility,
-                self._set_feasibility
-            ),
-            "optimality": (
-                self._get_optimality,
-                self._set_optimality
-            ),
-            "integrality": (
-                self._get_integrality,
-                self._set_integrality
-            )
+            "feasibility": (self._get_feasibility, self._set_feasibility),
+            "optimality": (self._get_optimality, self._set_optimality),
+            "integrality": (self._get_integrality, self._set_integrality),
         }
 
 
@@ -672,54 +682,60 @@ class Model(interface.Model):
             raise TypeError("Provided problem is not a valid OSQP model.")
         self.problem = problem
         for name in self.problem.variables:
-            var = Variable(name, lb=self.problem.variable_lbs[name],
-                           ub=self.problem.variable_ubs[name],
-                           problem=self)
+            var = Variable(
+                name,
+                lb=self.problem.variable_lbs[name],
+                ub=self.problem.variable_ubs[name],
+                problem=self,
+            )
             super(Model, self)._add_variables([var])
 
         for name in self.problem.constraints:
             # Since constraint expressions are lazily retrieved from the
             # solver they don't have to be built here
             lhs = symbolics.Integer(0)
-            constr = Constraint(lhs, lb=self.problem.constraint_lbs[name],
-                                ub=self.problem.constraint_ubs[name],
-                                name=name, problem=self)
-
-            super(Model, self)._add_constraints(
-                [constr],
-                sloppy=True
+            constr = Constraint(
+                lhs,
+                lb=self.problem.constraint_lbs[name],
+                ub=self.problem.constraint_ubs[name],
+                name=name,
+                problem=self,
             )
+
+            super(Model, self)._add_constraints([constr], sloppy=True)
 
         if vc_mapping is None:
             for constr in self.constraints:
                 name = constr.name
                 for variable in constr.variables:
                     try:
-                        self._variables_to_constraints_mapping[
-                            variable.name].add(name)
+                        self._variables_to_constraints_mapping[variable.name].add(name)
                     except KeyError:
-                        self._variables_to_constraints_mapping[
-                            variable.name] = set([name])
+                        self._variables_to_constraints_mapping[variable.name] = set(
+                            [name]
+                        )
         else:
             self._variables_to_constraints_mapping = vc_mapping
 
-        linear_expression = add([
-            coef * self._variables[vn]
-            for vn, coef in six.iteritems(self.problem.obj_linear_coefs)
-        ])
-        quadratic_expression = add([
-            coef * self._variables[vn[0]] * self._variables[vn[1]]
-            for vn, coef in
-            six.iteritems(self.problem.obj_quadratic_coefs)
-        ])
+        linear_expression = add(
+            [
+                coef * self._variables[vn]
+                for vn, coef in six.iteritems(self.problem.obj_linear_coefs)
+            ]
+        )
+        quadratic_expression = add(
+            [
+                coef * self._variables[vn[0]] * self._variables[vn[1]]
+                for vn, coef in six.iteritems(self.problem.obj_quadratic_coefs)
+            ]
+        )
 
         self._objective_offset = offset
         self._objective = Objective(
             linear_expression + quadratic_expression + offset,
             problem=self,
-            direction=
-            {-1: 'max', 1: 'min'}[self.problem.direction],
-            name = "osqp_objective"
+            direction={-1: "max", 1: "min"}[self.problem.direction],
+            name="osqp_objective",
         )
 
     @property
@@ -735,10 +751,11 @@ class Model(interface.Model):
         super(Model, self.__class__).objective.fset(self, value)
         self.update()
         expression = self._objective._expression
-        offset, linear_coefficients, quadratic_coeffients = (
-            parse_optimization_expression(
-                value, quadratic=True, expression=expression)
-        )
+        (
+            offset,
+            linear_coefficients,
+            quadratic_coeffients,
+        ) = parse_optimization_expression(value, quadratic=True, expression=expression)
         self._objective_offset = offset
         if linear_coefficients:
             self.problem.obj_linear_coefs = {
@@ -748,20 +765,21 @@ class Model(interface.Model):
         for key, coef in six.iteritems(quadratic_coeffients):
             if len(key) == 1:
                 var = six.next(iter(key))
-                self.problem.obj_quadratic_coefs[(var.name, var.name)] = \
-                    float(coef)
+                self.problem.obj_quadratic_coefs[(var.name, var.name)] = float(coef)
             else:
                 var1, var2 = key
-                self.problem.obj_quadratic_coefs[(var1.name, var2.name)] = \
-                    0.5 * float(coef)
-                self.problem.obj_quadratic_coefs[(var2.name, var1.name)] = \
-                    0.5 * float(coef)
+                self.problem.obj_quadratic_coefs[(var1.name, var2.name)] = 0.5 * float(
+                    coef
+                )
+                self.problem.obj_quadratic_coefs[(var2.name, var1.name)] = 0.5 * float(
+                    coef
+                )
 
         self._set_objective_direction(value.direction)
         value.problem = self
 
     def _set_objective_direction(self, direction):
-        self.problem.direction = {'min': 1, 'max': -1}[direction]
+        self.problem.direction = {"min": 1, "max": -1}[direction]
 
     def _get_primal_values(self):
         if len(self.problem.primals) == 0:
@@ -823,7 +841,8 @@ class Model(interface.Model):
         # Not calling parent method to avoid expensive variable removal from sympy expressions
         if self.objective is not None:
             self.objective._expression = self.objective.expression.xreplace(
-                {var: 0 for var in variables})
+                {var: 0 for var in variables}
+            )
         for variable in variables:
             del self._variables_to_constraints_mapping[variable.name]
             variable.problem = None
@@ -838,26 +857,28 @@ class Model(interface.Model):
             constraint._problem = None  # This needs to be done in order to not trigger constraint._get_expression()
             if constraint.is_Linear:
                 _, coeff_dict, _ = parse_optimization_expression(constraint)
-                lb = (-Infinity if constraint.lb is None
-                      else float(constraint.lb))
-                ub = (Infinity if constraint.ub is None
-                      else float(constraint.ub))
+                lb = -Infinity if constraint.lb is None else float(constraint.lb)
+                ub = Infinity if constraint.ub is None else float(constraint.ub)
                 self.problem.constraints.add(constraint.name)
-                self.problem.constraint_coefs.update({
-                    (constraint.name, v.name): float(co)
-                    for v, co in six.iteritems(coeff_dict)
-                })
+                self.problem.constraint_coefs.update(
+                    {
+                        (constraint.name, v.name): float(co)
+                        for v, co in six.iteritems(coeff_dict)
+                    }
+                )
                 self.problem.constraint_lbs[constraint.name] = lb
                 self.problem.constraint_ubs[constraint.name] = ub
                 constraint.problem = self
             elif constraint.is_Quadratic:
                 raise NotImplementedError(
                     "Quadratic constraints (like %s) are not supported "
-                    "in OSQP yet." % constraint)
+                    "in OSQP yet." % constraint
+                )
             else:
                 raise ValueError(
                     "OSQP only supports linear or quadratic constraints. "
-                    "%s is neither linear nor quadratic." % constraint)
+                    "%s is neither linear nor quadratic." % constraint
+                )
 
     def _remove_constraints(self, constraints):
         super(Model, self)._remove_constraints(constraints)
@@ -876,7 +897,8 @@ class Model(interface.Model):
         osqp.variables = d["variables"]
         osqp.constraints = d["constraints"]
         self._initialize_model_from_problem(
-            osqp, vc_mapping=d["v_to_c"], offset=d["offset"])
+            osqp, vc_mapping=d["v_to_c"], offset=d["offset"]
+        )
         osqp.variables = set(osqp.variables)
         osqp.constraints = set(osqp.constraints)
         self.configuration = Configuration()
@@ -892,7 +914,7 @@ class Model(interface.Model):
             "constraints": [c.name for c in self._constraints],
             "v_to_c": self._variables_to_constraints_mapping,
             "config": self.configuration.__getstate__(),
-            "offset": getattr(self, "_objective_offset", 0.0)
+            "offset": getattr(self, "_objective_offset", 0.0),
         }
 
     @classmethod
@@ -905,12 +927,14 @@ class Model(interface.Model):
         """
         if available_solvers["CPLEX"]:
             from optlang import cplex_interface
+
             mod = cplex_interface.Model.from_lp(lp_problem_str)
             mod.configuration.lp_method = "auto"
             mod.configuration.qp_method = "auto"
             return super(Model, self).clone(mod)
         else:
             from optlang import glpk_interface
+
             mod = glpk_interface.Model.from_lp(lp_problem_str)
             mod.configuration.lp_method = "auto"
             return super(Model, self).clone(mod)
