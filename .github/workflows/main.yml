@@ -33,7 +33,7 @@ jobs:
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox -- --cov-report=xml
+      run: tox -- --cover-xml
     - name: Report coverage
       shell: bash
       run: bash <(curl -s https://codecov.io/bash)
