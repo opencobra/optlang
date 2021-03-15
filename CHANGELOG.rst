@@ -5,6 +5,7 @@ Next Release
 * removed support for Python 3.5
 * added support for Python 3.9
 * enabled code coverage in tox
+* support symengine 0.7.0
 
 1.4.7
 -----
