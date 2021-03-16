@@ -233,9 +233,9 @@ class Constraint(interface.Constraint):
                                               for var in new_vars])
 
             # Substitute var in expression with var * coef / old_coef
-            updates = [(var, var * coef / coeffs[var])
+            updates = {var: var * coef / coeffs[var]
                        for var, coef in self._changed_expression.items()
-                       if var not in new_vars]
+                       if var not in new_vars}
 
             self._expression = self._expression.subs(updates)
             self._changed_expression = {}
@@ -318,9 +318,9 @@ class Objective(interface.Objective):
                                               for var in new_vars])
 
             # Substitute var in expression with var * coef / old_coef
-            updates = [(var, var * coef / coeffs[var])
+            updates = {var: var * coef / coeffs[var]
                        for var, coef in self._changed_expression.items()
-                       if var not in new_vars]
+                       if var not in new_vars}
 
             self._expression = self._expression.subs(updates)
             self._changed_expression = {}
@@ -706,6 +706,8 @@ class Model(interface.Model):
 
     def _expr_to_mip_expr(self, expr):
         """Parses mip linear expression from expression."""
+        if hasattr(expr, "expression") and symbolics.USE_SYMENGINE:
+            expr._expression = expr.expression.expand()
         offset, coeffs, _ = parse_optimization_expression(expr)
         return offset + mip.xsum(to_float(coef) * self.problem.var_by_name('v_' + var.name)
                                  for var, coef in coeffs.items())
