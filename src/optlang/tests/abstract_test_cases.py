@@ -752,6 +752,8 @@ class AbstractModelTestCase(unittest.TestCase):
         self.assertEquals(len(cloned_model.variables), len(self.model.variables))
         self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
         cloned_model.optimize()
+        print(cloned_model.objective.expression)
+        print(cloned_model.objective.value)
         self.assertAlmostEqual(cloned_model.objective.value, opt)
 
     def test_remove_variable_not_in_model_raises(self):
