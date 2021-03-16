@@ -34,6 +34,8 @@ jobs:
         python -m pip install tox tox-gh-actions
     - name: Test with tox
       run: tox -- --cover-xml
+      env:
+        CI: true
     - name: Report coverage
       shell: bash
       run: bash <(curl -s https://codecov.io/bash)
