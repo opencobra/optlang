@@ -152,7 +152,6 @@ def list_available_solvers():
         pass
     if not solvers['OSQP']:
         log.debug('OSQP python bindings not available.')
-
     try:
         import mip
 
