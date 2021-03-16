@@ -106,7 +106,7 @@ def list_available_solvers():
         A dict like {'GLPK': True, 'GUROBI': False, ...}
     """
     solvers = dict(GUROBI=False, GLPK=False, MOSEK=False, CPLEX=False,
-                   COINOR_CBC=False, SCIPY=False)
+                   COINOR_CBC=False, SCIPY=False, OSQP=False)
     try:
         import gurobipy
 
@@ -135,6 +135,24 @@ def list_available_solvers():
         log.debug('CPLEX python bindings found at %s' % os.path.dirname(cplex.__file__))
     except Exception:
         log.debug('CPLEX python bindings not available.')
+
+    # OSQP can be provided by the base or CUDA package
+    solvers['OSQP'] = False
+    try:
+        import cuosqp
+        solvers['OSQP'] = True
+        log.debug('OSQP python bindings found at %s' % os.path.dirname(cuosqp.__file__))
+    except Exception:
+        pass
+    try:
+        import osqp
+        solvers['OSQP'] = True
+        log.debug('OSQP python bindings found at %s' % os.path.dirname(osqp.__file__))
+    except Exception:
+        pass
+    if not solvers['OSQP']:
+        log.debug('OSQP python bindings not available.')
+
     try:
         import mip
 
@@ -234,7 +252,7 @@ def parse_expr(expr, local_dict=None):
     elif expr["type"] == "Mul":
         return mul([parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Pow":
-        return Pow(parse_expr(arg, local_dict) for arg in expr["args"])
+        return Pow(*[parse_expr(arg, local_dict) for arg in expr["args"]])
     elif expr["type"] == "Symbol":
         try:
             return local_dict[expr["name"]]

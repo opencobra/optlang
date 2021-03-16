@@ -18,6 +18,8 @@ log.setLevel(logging.DEBUG)
 
 if six.PY3:
     nose.SkipTest('Skipping because py3')
+elif os.getenv('CI', 'false') == 'true':
+    nose.SkipTest('Skipping because solving problems takes very long.')
 else:
     try:
         import gurobipy

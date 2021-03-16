@@ -56,6 +56,13 @@ if available_solvers['COINOR_CBC']:
     except Exception:
         log.error('COINOR_CBC is available but could not load with error:\n  ' + str(traceback.format_exc()).strip().replace('\n','\n  '))
 
+if available_solvers['OSQP']:
+    try:
+        from optlang import osqp_interface
+    except Exception:
+        log.error('OSQP is available but could not load with error:\n  ' +
+            str(traceback.format_exc()).strip().replace('\n','\n  '))
+
 if available_solvers['SCIPY']:
     try:
         from optlang import scipy_interface

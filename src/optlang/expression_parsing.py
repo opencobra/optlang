@@ -72,6 +72,7 @@ def _parse_linear_expression(expression, expanded=False, **kwargs):
     """
     offset = 0
     constant = None
+    expression = expression.expand()
 
     if expression.is_Add:
         coefficients = expression.as_coefficients_dict()
@@ -108,6 +109,7 @@ def _parse_quadratic_expression(expression, expanded=False):
     linear_coefficients = {}
     quadratic_coefficients = {}
     offset = 0
+    expression = expression.expand()
 
     if expression.is_Number:  # Constant expression, no coefficients
         return float(expression), linear_coefficients, quadratic_coefficients
