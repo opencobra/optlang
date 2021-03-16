@@ -25,6 +25,10 @@ from optlang.tests import abstract_test_cases
 
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/coli_core.json')
 
+def same_ex(ex1, ex2):
+    """Compare to expressions for mathematical equality."""
+    return ex1.simplify() == ex2.simplify()
+
 class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
     interface = coinor_cbc_interface
 
@@ -332,12 +336,12 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         self.model.objective = self.interface.Objective(1. * v1 + 1. * v2)
         self.assertIn(v1.name, str(self.model.objective))
         self.assertIn(v2.name, str(self.model.objective))
-        self.assertEqual(self.model.objective._expression, 1.*v1 + 1.*v2)
+        self.assertTrue(same_ex(self.model.objective._expression, 1.*v1 + 1.*v2))
 
         self.model.objective = self.interface.Objective(v1 + v2)
         self.assertIn(v1.name, str(self.model.objective))
         self.assertIn(v2.name, str(self.model.objective))
-        self.assertEqual(self.model.objective._expression, 1.*v1 + 1.*v2)
+        self.assertTrue(same_ex(self.model.objective._expression, 1.*v1 + 1.*v2))
 
     def test_iadd_objective(self):
         v2, v3 = self.model.variables.values()[1:3]
