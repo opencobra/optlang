@@ -88,7 +88,7 @@ class AbstractVariableTestCase(unittest.TestCase):
     def test_setting_lower_bound_higher_than_upper_bound_raises(self):
         self.model.add(self.var)
         self.var.ub = 0
-        self.assertRaises(ValueError, setattr, self.model.variables[0], 'lb', 100.)
+        self.assertRaises(ValueError, setattr, self.model.variables["test"], 'lb', 100.)
 
     def test_setting_nonnumerical_bounds_raises(self):
         self.assertRaises(TypeError, setattr, self.var, "lb", "Minestrone")
@@ -263,17 +263,17 @@ class AbstractConstraintTestCase(unittest.TestCase):
 
         c.ub = 5
         model.optimize()
-        self.assertEqual(var.primal, 5)
+        self.assertAlmostEqual(var.primal, 5)
         c.ub = 4
         model.optimize()
-        self.assertEqual(var.primal, 4)
+        self.assertAlmostEqual(var.primal, 4)
         c.lb = -3
         model.objective.direction = "min"
         model.optimize()
-        self.assertEqual(var.primal, -3)
+        self.assertAlmostEqual(var.primal, -3)
         c.lb = sympy.Number(-4)  # Sympy numbers should be valid bounds
         model.optimize()
-        self.assertEqual(var.primal, -4)
+        self.assertAlmostEqual(var.primal, -4)
 
     def test_setting_nonnumerical_bounds_raises(self):
         var = self.interface.Variable("test")
@@ -434,14 +434,14 @@ class AbstractModelTestCase(unittest.TestCase):
 
     def test_pickle_empty_model(self):
         model = self.interface.Model()
-        self.assertEquals(model.objective.expression - 0, 0)
-        self.assertEquals(len(model.variables), 0)
-        self.assertEquals(len(model.constraints), 0)
+        self.assertEqual(model.objective.expression - 0, 0)
+        self.assertEqual(len(model.variables), 0)
+        self.assertEqual(len(model.constraints), 0)
         pickle_string = pickle.dumps(model)
         from_pickle = pickle.loads(pickle_string)
-        self.assertEquals(from_pickle.objective.expression - 0, 0)
-        self.assertEquals(len(from_pickle.variables), 0)
-        self.assertEquals(len(from_pickle.constraints), 0)
+        self.assertEqual(from_pickle.objective.expression - 0, 0)
+        self.assertEqual(len(from_pickle.variables), 0)
+        self.assertEqual(len(from_pickle.constraints), 0)
 
     def test_copy(self):
         self.model.optimize()
@@ -719,38 +719,38 @@ class AbstractModelTestCase(unittest.TestCase):
         self.model.objective = self.interface.Objective(self.model.variables[1] * 2)
 
     def test_clone_model_with_json(self):
-        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.assertEqual(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
         self.model.optimize()
         opt = self.model.objective.value
         cloned_model = self.interface.Model.clone(self.model)
-        self.assertEquals(cloned_model.configuration.verbosity, 3)
-        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        self.assertEqual(cloned_model.configuration.verbosity, 3)
+        self.assertEqual(len(cloned_model.variables), len(self.model.variables))
+        self.assertEqual(len(cloned_model.constraints), len(self.model.constraints))
         cloned_model.optimize()
         self.assertAlmostEqual(cloned_model.objective.value, opt)
 
     def test_clone_model_with_lp(self):
-        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.assertEqual(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
         self.model.optimize()
         opt = self.model.objective.value
         cloned_model = self.interface.Model.clone(self.model, use_lp=True)
-        self.assertEquals(cloned_model.configuration.verbosity, 3)
-        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        self.assertEqual(cloned_model.configuration.verbosity, 3)
+        self.assertEqual(len(cloned_model.variables), len(self.model.variables))
+        self.assertEqual(len(cloned_model.constraints), len(self.model.constraints))
         cloned_model.optimize()
         self.assertAlmostEqual(cloned_model.objective.value, opt)
 
     def test_clone_model_without_json(self):
-        self.assertEquals(self.model.configuration.verbosity, 0)
+        self.assertEqual(self.model.configuration.verbosity, 0)
         self.model.configuration.verbosity = 3
         self.model.optimize()
         opt = self.model.objective.value
         cloned_model = self.interface.Model.clone(self.model, use_json=False)
-        self.assertEquals(cloned_model.configuration.verbosity, 3)
-        self.assertEquals(len(cloned_model.variables), len(self.model.variables))
-        self.assertEquals(len(cloned_model.constraints), len(self.model.constraints))
+        self.assertEqual(cloned_model.configuration.verbosity, 3)
+        self.assertEqual(len(cloned_model.variables), len(self.model.variables))
+        self.assertEqual(len(cloned_model.constraints), len(self.model.constraints))
         cloned_model.optimize()
         print(cloned_model.objective.expression)
         print(cloned_model.objective.value)
@@ -986,6 +986,7 @@ class AbstractConfigurationTestCase(unittest.TestCase):
         params = dir(model.configuration.tolerances)
         for param in params:
             val = getattr(model.configuration.tolerances, param)
+            print(val)
             setattr(model.configuration.tolerances, param, 2 * val)
             self.assertEqual(
                 getattr(model.configuration.tolerances, param), 2 * val

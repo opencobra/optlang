@@ -22,6 +22,8 @@ def test_netlib(netlib_tar_path=os.path.join(os.path.dirname(__file__), 'data/ne
     """
     if six.PY3:
         nose.SkipTest('Skipping because py3')
+    elif os.getenv('CI', 'false') == 'true':
+        nose.SkipTest('Skipping because solving takes very long.')
     else:
         with open(os.path.join(os.path.dirname(__file__), 'data/the_final_netlib_results.pcl'), 'rb') as fhandle:
             THE_FINAL_NETLIB_RESULTS = pickle.load(fhandle)

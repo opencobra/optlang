@@ -2,10 +2,15 @@
 
 Next Release
 ------------
+
+1.5.0
+------------
 * removed support for Python 3.5
 * added support for Python 3.9
 * enabled code coverage in tox
 * support symengine 0.7.0
+* add [OSQP](https://github.com/oxfordcontrol/osqp) as additional solver
+* add [cbc](https://github.com/coin-or/python-mip) as additional solver
 
 1.4.7
 -----
