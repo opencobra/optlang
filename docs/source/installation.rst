@@ -44,6 +44,10 @@ The required python modules for the currently supported solvers are:
 
   - OSQP is an efficient open source solver for Quadratic Programs. It is self-contained and can be installed via pip. Alternatively, cuOSQP provides an experimental cuda-enabled implementation.
 
+- Cbc: :code:`mip`
+
+  - Cbc (Coin-or branch and cut) is an open-source mixed integer linear programming solver written in C++. It can be installed via mip (python3 only).
+
 
 After importing optlang you can check :code:`optlang.available_solvers` to verify that a solver is recognized.
 

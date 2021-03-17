@@ -16,6 +16,7 @@ Currently supported solvers are:
 * `Gurobi <http://www.gurobi.com/>`_ (LP/MILP/QP)
 * `inspyred <https://pypi.python.org/pypi/inspyred>`_ (heuristic optimization; experimental)
 * `OSQP <https://osqp.org/>`_ (LP/QP) OSQP is an efficient open source solver for Quadratic Programs. Alternatively, optlang can use cuOSQP which provides an experimental cuda-enabled implementation.
+* `Cbc <https://github.com/coin-or/Cbc>`_ (LP/MILP)
 
 Support for the following solvers is in the works:
 

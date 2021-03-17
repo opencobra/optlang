@@ -166,10 +166,10 @@ else:
                              [(constr.lb, constr.ub, constr.name) for constr in self.model.constraints])
 
         def test_config_gets_copied_too(self):
-            self.assertEquals(self.model.configuration.verbosity, 0)
+            self.assertEqual(self.model.configuration.verbosity, 0)
             self.model.configuration.verbosity = 3
             model_copy = copy.copy(self.model)
-            self.assertEquals(model_copy.configuration.verbosity, 3)
+            self.assertEqual(model_copy.configuration.verbosity, 3)
 
         def test_init_from_existing_problem(self):
             inner_prob = self.model.problem
