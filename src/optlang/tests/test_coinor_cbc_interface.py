@@ -447,7 +447,7 @@ else:
             w = [11, 15, 20, 35, 10, 33]
             c, I = 47, range(len(w))
 
-            x = [self.interface.Variable(type='binary', name=f'x{i}') for i in I]
+            x = [self.interface.Variable(type='binary', name='x{}'.format(i)) for i in I]
 
             obj = self.interface.Objective(sum(p[i] * x[i] for i in I), direction='max')
 
@@ -471,7 +471,7 @@ else:
             w = [11, 15, 20, 35, 10, 33]
             c, I = 47, range(len(w))
 
-            x = [self.interface.Variable(type='binary', name=f'x{i}') for i in I]
+            x = [self.interface.Variable(type='binary', name='x{}'.format(i)) for i in I]
 
             obj = self.interface.Objective(sum(p[i] * x[i] for i in I), direction='max')
 
@@ -499,7 +499,7 @@ else:
             w = [11, 15, 20, 35, 10, 33]
             c, I = 47, range(len(w))
 
-            x = [self.interface.Variable(type='binary', name=f'x{i}') for i in I]
+            x = [self.interface.Variable(type='binary', name='x{}'.format(i)) for i in I]
 
             obj = self.interface.Objective(sum(p[i] * x[i] for i in I), direction='max')
 
@@ -542,7 +542,7 @@ else:
             w = [11, 15, 20, 35, 10, 33]
             c, I = 47, range(len(w))
 
-            x = [self.interface.Variable(type='binary', name=f'x{i}') for i in I]
+            x = [self.interface.Variable(type='binary', name='x{}'.format(i)) for i in I]
 
             obj = self.interface.Objective(sum(p[i] * x[i] for i in I), direction='max')
 
@@ -598,11 +598,11 @@ else:
                   for j in V] for i in V]
 
             # binary variables indicating if arc (i,j) is used on the route or not
-            x = [[self.interface.Variable(type='binary', name=f'x_i={i}_j={j}_arc') for j in V] for i in V]
+            x = [[self.interface.Variable(type='binary', name='x_i={}_j={}_arc'.format(i, j)) for j in V] for i in V]
 
             # continuous variable to prevent subtours: each city will have a
             # different sequential id in the planned route except the first one
-            y = [self.interface.Variable(name=f'x{i}') for i in V]
+            y = [self.interface.Variable(name='x{}'.format(i)) for i in V]
 
             # objective function: minimize the distance
             obj = self.interface.Objective(sum(c[i][j]*x[i][j] for i in V for j in V), direction='min')
