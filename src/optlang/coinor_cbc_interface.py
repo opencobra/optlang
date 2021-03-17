@@ -35,8 +35,13 @@ from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
 from optlang import symbolics
 
-import mip
 from math import isclose, ceil, floor
+
+try:
+    import mip
+except ImportError:
+    raise ImportError("The coinor_cbc_interface requires mip!")
+
 
 log = logging.getLogger(__name__)
 
