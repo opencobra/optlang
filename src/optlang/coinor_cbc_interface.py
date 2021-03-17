@@ -27,7 +27,6 @@ and make sure that 'import mip' runs without error.
 """
 import logging
 
-import os
 import six
 
 from optlang.util import inheritdocstring, TemporaryFilename
