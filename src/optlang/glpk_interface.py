@@ -449,12 +449,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def _set_feasibility(self, value):
         return setattr(self._smcp, "tol_bnd", value)
 
-    def _get_optimality(self):
-        return getattr(self._smcp, "tol_dj")
-
-    def _set_optimality(self, value):
-        return setattr(self._smcp, "tol_dj", value)
-
     def _get_integrality(self):
         return getattr(self._iocp, "tol_int")
 
@@ -464,7 +458,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def _tolerance_functions(self):
         return {
             "feasibility": (self._get_feasibility, self._set_feasibility),
-            "optimality": (self._get_optimality, self._set_optimality),
             "integrality": (self._get_integrality, self._set_integrality)
         }
 
