@@ -15,7 +15,7 @@
 
 
 """
-Interface for the GNU Linear Programming Kit (GLPK)
+Interface for the GNU Linear Programming Kit (GLPK).
 
 Wraps the GLPK solver by subclassing and extending :class:`Model`,
 :class:`Variable`, and :class:`Constraint` from :mod:`interface`.
@@ -26,15 +26,12 @@ and make sure that 'import swiglpk' runs without error.
 """
 import logging
 
-import os
 import six
 
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
 from optlang import symbolics
-
-log = logging.getLogger(__name__)
 
 from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GLP_IV, GLP_BV, GLP_UNDEF, GLP_FEAS, \
     GLP_INFEAS, GLP_NOFEAS, GLP_OPT, GLP_UNBND, \
@@ -46,10 +43,9 @@ from swiglpk import glp_find_col, glp_get_col_prim, glp_get_col_dual, GLP_CV, GL
     glp_set_col_name, intArray, glp_del_cols, glp_add_rows, glp_set_row_name, doubleArray, glp_write_lp, glp_write_prob, \
     glp_set_mat_row, glp_set_col_bnds, glp_set_row_bnds, GLP_FR, GLP_UP, GLP_LO, GLP_FX, GLP_DB, glp_del_rows, \
     glp_get_mat_row, glp_get_row_ub, glp_get_row_type, glp_get_row_lb, glp_get_row_name, glp_get_obj_coef, \
-    glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_get_num_bin, glp_mip_col_val, \
+    glp_get_obj_dir, glp_scale_prob, GLP_SF_AUTO, glp_get_num_int, glp_mip_col_val, \
     glp_mip_obj_val, glp_mip_status, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_mip_row_val, \
-    get_col_primals, get_col_duals, get_row_primals, get_row_duals, glp_delete_prob
-
+    get_col_primals, get_col_duals, get_row_primals, get_row_duals
 
 
 _GLPK_STATUS_TO_STATUS = {
@@ -70,6 +66,8 @@ _GLPK_VTYPE_TO_VTYPE = {
 _VTYPE_TO_GLPK_VTYPE = dict(
     [(val, key) for key, val in six.iteritems(_GLPK_VTYPE_TO_VTYPE)]
 )
+
+log = logging.getLogger(__name__)
 
 
 def _glpk_validate_id(name):
@@ -150,7 +148,6 @@ class Variable(interface.Variable):
         _glpk_validate_id(value)
         if getattr(self, 'problem', None) is not None:
             glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
-
 
 
 @six.add_metaclass(inheritdocstring)
@@ -376,7 +373,6 @@ class Objective(interface.Objective):
             raise Exception("Can't get coefficients from solver if objective is not in a model")
 
 
-
 @six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
     def __init__(self, presolve="auto", verbosity=0, timeout=None, *args, **kwargs):
@@ -414,7 +410,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     def _set_presolve(self, value):
         self._smcp.presolve = {False: GLP_OFF, True: GLP_ON, "auto": GLP_OFF}[value]
-        self._iocp.presolve = {False: GLP_OFF, True: GLP_ON, "auto": GLP_OFF}[value]
+        self._iocp.presolve = {False: GLP_OFF, True: GLP_ON, "auto": GLP_ON}[value]
 
     def _set_verbosity(self, value):
         if value == 0:
@@ -453,10 +449,17 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     def _set_feasibility(self, value):
         return setattr(self._smcp, "tol_bnd", value)
 
+    def _get_integrality(self):
+        return getattr(self._iocp, "tol_int")
+
+    def _set_integrality(self, value):
+        return setattr(self._iocp, "tol_int", value)
+
     def _tolerance_functions(self):
         return {
-            "feasibility": (self._get_feasibility, self._set_feasibility)
-            }
+            "feasibility": (self._get_feasibility, self._set_feasibility),
+            "integrality": (self._get_integrality, self._set_integrality)
+        }
 
     @property
     def presolve(self):
@@ -599,14 +602,17 @@ class Model(interface.Model):
             if code != 0:
                 with open(tmp_file_name) as tmp_file:
                     invalid_problem = tmp_file.read()
-                raise Exception("The GLPK file " + tmp_file_name + " does not seem to contain a valid GLPK problem:\n\n" + invalid_problem)
+                raise Exception("The GLPK file " + tmp_file_name +
+                                " does not seem to contain a valid GLPK problem:\n\n" +
+                                invalid_problem)
         self.__init__(problem=problem)
         self.configuration = Configuration.clone(repr_dict['config'], problem=self)
         if repr_dict['glpk_status'] == 'optimal':
             self.optimize()  # since the start is an optimal solution, nothing will happen here
 
     # def __del__(self):  # To make sure that the glpk problem is deleted when this is garbage collected
-    # Gotcha: When objects with a __del__ method are part of a referencing cycle, the entire cycle is never automatically garbage collected
+    # Gotcha: When objects with a __del__ method are part of a referencing cycle, the entire
+    #         cycle is never automatically garbage collected
     #     glp_delete_prob(self.problem)
 
     @property
