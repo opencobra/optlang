@@ -3,8 +3,12 @@
 Next Release
 ------------
 
+1.5.1
+-----
+* GLPK now respects `Configuration.tolerances.integrality` again
+
 1.5.0
-------------
+-----
 * removed support for Python 3.5
 * added support for Python 3.9
 * enabled code coverage in tox
