@@ -36,8 +36,7 @@ if SYMENGINE_PREFERENCE.lower() in ("false", "no", "off"):
 else:  # pragma: no cover
     try:
         import symengine
-        import symengine.sympy_compat
-        from symengine.sympy_compat import Symbol as symengine_Symbol
+        from symengine import Symbol as symengine_Symbol
     except ImportError as e:
         if SYMENGINE_PREFERENCE.lower() in ("true", "yes", "on"):
             logger.warn("Symengine could not be imported: " + str(e))
@@ -59,11 +58,11 @@ if USE_SYMENGINE:  # pragma: no cover # noqa: C901
     Zero = Real(0)
     One = Real(1)
     NegativeOne = Real(-1)
-    sympify = symengine.sympy_compat.sympify
+    sympify = symengine.sympify
 
     Add = symengine.Add
     Mul = symengine.Mul
-    Pow = symengine.sympy_compat.Pow
+    Pow = symengine.Pow
 
     class Symbol(symengine_Symbol):
         def __new__(cls, name, *args, **kwargs):

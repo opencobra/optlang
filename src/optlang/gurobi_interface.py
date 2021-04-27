@@ -27,7 +27,6 @@ log = logging.getLogger(__name__)
 
 import os
 import six
-from functools import partial
 from optlang import interface
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
@@ -478,12 +477,26 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._timeout = value
 
     def __getstate__(self):
-        return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
+        return {
+            "presolve": self.presolve,
+            "timeout": self.timeout,
+            "verbosity": self.verbosity,
+            "lp_method": self.lp_method,
+            "qp_method": self.qp_method,
+            "tolerances": {
+                "feasibility": self.tolerances.feasibility,
+                "optimality": self.tolerances.optimality,
+                "integrality": self.tolerances.integrality,
+            },
+        }
 
     def __setstate__(self, state):
-        self.__init__()
         for key, val in six.iteritems(state):
-            setattr(self, key, val)
+            if key != "tolerances":
+                setattr(self, key, val)
+        for key, val in six.iteritems(state["tolerances"]):
+            if key in self._tolerance_functions():
+                setattr(self.tolerances, key, val)
 
     def _get_feasibility(self):
         return getattr(self.problem.problem.params, "FeasibilityTol")
@@ -593,21 +606,25 @@ class Model(interface.Model):
             self.problem.write(tmp_file_name)
             with open(tmp_file_name) as tmp_file:
                 lp_form = tmp_file.read()
-        repr_dict = {'lp': lp_form, 'status': self.status, 'config': self.configuration}
+        repr_dict = {
+            'lp': lp_form,
+            'status': self.status,
+            'config': self.configuration.__getstate__()
+        }
         return repr_dict
 
     def __setstate__(self, repr_dict):
         with TemporaryFilename(suffix=".lp", content=repr_dict["lp"]) as tmp_file_name:
             problem = gurobipy.read(tmp_file_name)
-        # if repr_dict['status'] == 'optimal':  # TODO: uncomment this
-        #     # turn off logging completely, get's configured later
-        #     problem.set_error_stream(None)
-        #     problem.set_warning_stream(None)
-        #     problem.set_log_stream(None)
-        #     problem.set_results_stream(None)
-        #     problem.solve()  # since the start is an optimal solution, nothing will happen here
+        # turn off logging completely, get's configured later
+        problem.set_error_stream(None)
+        problem.set_warning_stream(None)
+        problem.set_log_stream(None)
+        problem.set_results_stream(None)
         self.__init__(problem=problem)
-        self.configuration = Configuration.clone(repr_dict['config'], problem=self)  # TODO: make configuration work
+        self.configuration = Configuration()
+        self.configuration.problem = self
+        self.configuration.__setstate__(repr_dict["config"])
 
     def to_lp(self):
         self.problem.update()

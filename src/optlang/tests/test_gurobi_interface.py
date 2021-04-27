@@ -1,6 +1,7 @@
 # Copyright (c) 2016 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
+import pickle
 import unittest
 
 try:  # noqa: C901
@@ -178,6 +179,15 @@ else:
 
             self.assertEqual(self.model.constraints.keys(),
                              [constr.ConstrName for constr in self.model.problem.getConstrs()])
+
+        def test_model_can_be_pickled(self):
+            s = pickle.dumps(self.model)
+            mod = pickle.loads(s)
+            self.assertEqual(len(self.model.variables), len(mod.variables))
+            self.assertEqual(len(self.model.constraints), len(mod.constraints))
+            self.assertEqual(self.model.configuration.presolve, mod.configuration.presolve)
+            self.assertEqual(self.model.configuration.tolerances.feasibility,
+                             mod.configuration.tolerances.feasibility)
 
         def test_gurobi_add_variable(self):
             var = Variable('x')

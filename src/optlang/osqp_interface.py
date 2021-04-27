@@ -652,7 +652,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.problem.problem.settings["eps_dual_inf"] = value
 
     def _get_integrality(self):
-        return None
+        return 1e-6
 
     def _set_integrality(self, value):
         pass
