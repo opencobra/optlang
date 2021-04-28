@@ -616,11 +616,6 @@ class Model(interface.Model):
     def __setstate__(self, repr_dict):
         with TemporaryFilename(suffix=".lp", content=repr_dict["lp"]) as tmp_file_name:
             problem = gurobipy.read(tmp_file_name)
-        # turn off logging completely, get's configured later
-        problem.set_error_stream(None)
-        problem.set_warning_stream(None)
-        problem.set_log_stream(None)
-        problem.set_results_stream(None)
         self.__init__(problem=problem)
         self.configuration = Configuration()
         self.configuration.problem = self
