@@ -262,7 +262,7 @@ else:
                 coeff_dict[row.getVar(i).VarName] = row.getCoeff(i)
             self.assertDictEqual(coeff_dict, {'x': 0.3, 'y': 0.4, 'z': 66., 'test_aux': -1.0})
             self.assertEqual(internal_constraint.RHS, constr1.lb)
-            self.assertEqual(self.model.problem.getVarByName(internal_constraint.getAttr('ConstrName') + '_aux'), 100)
+            self.assertEqual(self.model.problem.getVarByName(internal_constraint.getAttr('ConstrName') + '_aux').ub, 100)
             # constr2
             coeff_dict = dict()
             internal_constraint = self.model.problem.getConstrByName(constr2.name)
@@ -307,7 +307,7 @@ else:
             z = Variable('z', lb=3, ub=10, type='integer')
             self.assertEqual(z._internal_variable, None)
             constraint += 77. * z
-            self.assertEqual(z._internal_variable, self.model.problem.getVarByName('z'))
+            self.assertIs(z._internal_variable, self.model.problem.getVarByName('z'))
             self.assertEqual(self.model.constraints['test'].lb, -100)
             self.assertEqual(
                 (self.model.constraints['test'].expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand() - 0,
