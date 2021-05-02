@@ -60,6 +60,8 @@ _VTYPE_TO_GUROBI_VTYPE = {'continuous': gurobipy.GRB.CONTINUOUS, 'integer': guro
                           'binary': gurobipy.GRB.BINARY}
 _GUROBI_VTYPE_TO_VTYPE = dict((val, key) for key, val in _VTYPE_TO_GUROBI_VTYPE.items())
 
+_GUROBI_MAJOR = int(gurobipy.__versio__.split(".")[0])
+
 
 def _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(lb, ub):
     """Helper function used by Constraint and Model"""
@@ -90,16 +92,15 @@ def _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(lb, ub):
 class Variable(interface.Variable):
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
+        self._original_name = name
 
     @property
     def _internal_variable(self):
         if getattr(self, 'problem', None) is not None:
-
-            internal_variable = self.problem.problem.getVarByName(self.name)
-
-            assert internal_variable is not None
-            # if internal_variable is None:
-            #     raise Exception('Cannot find variable {}')
+            if _GUROBI_MAJOR < 9:
+                internal_variable = self.problem.problem.getVarByName(self._original_name)
+            else:
+                internal_variable = self.problem.problem.getVarByName(self.name)
             return internal_variable
         else:
             return None
