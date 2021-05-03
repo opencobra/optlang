@@ -27,7 +27,6 @@ log = logging.getLogger(__name__)
 
 import os
 import six
-from functools import partial
 from optlang import interface
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
@@ -61,6 +60,9 @@ _VTYPE_TO_GUROBI_VTYPE = {'continuous': gurobipy.GRB.CONTINUOUS, 'integer': guro
                           'binary': gurobipy.GRB.BINARY}
 _GUROBI_VTYPE_TO_VTYPE = dict((val, key) for key, val in _VTYPE_TO_GUROBI_VTYPE.items())
 
+# hacky way since Gurobi does not allow getting the version via the API
+_IS_GUROBI_9_OR_NEWER = hasattr(gurobipy, "MLinExpr")
+
 
 def _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(lb, ub):
     """Helper function used by Constraint and Model"""
@@ -91,17 +93,15 @@ def _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(lb, ub):
 class Variable(interface.Variable):
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
-        self._original_name = name  # due to bug with getVarByName ... TODO: file bug report on gurobi google group
+        self._original_name = name
 
     @property
     def _internal_variable(self):
         if getattr(self, 'problem', None) is not None:
-
-            internal_variable = self.problem.problem.getVarByName(self._original_name)
-
-            assert internal_variable is not None
-            # if internal_variable is None:
-            #     raise Exception('Cannot find variable {}')
+            if _IS_GUROBI_9_OR_NEWER:
+                internal_variable = self.problem.problem.getVarByName(self.name)
+            else:
+                internal_variable = self.problem.problem.getVarByName(self._original_name)
             return internal_variable
         else:
             return None
@@ -478,12 +478,26 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._timeout = value
 
     def __getstate__(self):
-        return {'presolve': self.presolve, 'verbosity': self.verbosity, 'timeout': self.timeout}
+        return {
+            "presolve": self.presolve,
+            "timeout": self.timeout,
+            "verbosity": self.verbosity,
+            "lp_method": self.lp_method,
+            "qp_method": self.qp_method,
+            "tolerances": {
+                "feasibility": self.tolerances.feasibility,
+                "optimality": self.tolerances.optimality,
+                "integrality": self.tolerances.integrality,
+            },
+        }
 
     def __setstate__(self, state):
-        self.__init__()
         for key, val in six.iteritems(state):
-            setattr(self, key, val)
+            if key != "tolerances":
+                setattr(self, key, val)
+        for key, val in six.iteritems(state["tolerances"]):
+            if key in self._tolerance_functions():
+                setattr(self.tolerances, key, val)
 
     def _get_feasibility(self):
         return getattr(self.problem.problem.params, "FeasibilityTol")
@@ -593,21 +607,20 @@ class Model(interface.Model):
             self.problem.write(tmp_file_name)
             with open(tmp_file_name) as tmp_file:
                 lp_form = tmp_file.read()
-        repr_dict = {'lp': lp_form, 'status': self.status, 'config': self.configuration}
+        repr_dict = {
+            'lp': lp_form,
+            'status': self.status,
+            'config': self.configuration.__getstate__()
+        }
         return repr_dict
 
     def __setstate__(self, repr_dict):
         with TemporaryFilename(suffix=".lp", content=repr_dict["lp"]) as tmp_file_name:
             problem = gurobipy.read(tmp_file_name)
-        # if repr_dict['status'] == 'optimal':  # TODO: uncomment this
-        #     # turn off logging completely, get's configured later
-        #     problem.set_error_stream(None)
-        #     problem.set_warning_stream(None)
-        #     problem.set_log_stream(None)
-        #     problem.set_results_stream(None)
-        #     problem.solve()  # since the start is an optimal solution, nothing will happen here
         self.__init__(problem=problem)
-        self.configuration = Configuration.clone(repr_dict['config'], problem=self)  # TODO: make configuration work
+        self.configuration = Configuration()
+        self.configuration.problem = self
+        self.configuration.__setstate__(repr_dict["config"])
 
     def to_lp(self):
         self.problem.update()
