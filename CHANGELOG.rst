@@ -3,6 +3,12 @@
 Next Release
 ------------
 
+1.5.2
+-----
+* Gurobi can now serialize its configuration correctly. This also fixes pickling of Gurobi models.
+* Fix the shim for integrality tolerance in OSQP which makes it easier to clone OSQP Models to other solvers.
+* Fix an issue where one could not rename variables in Gurobi version 9.
+
 1.5.1
 -----
 * GLPK now respects `Configuration.tolerances.integrality` again
