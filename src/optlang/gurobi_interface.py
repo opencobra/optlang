@@ -740,6 +740,51 @@ class Model(interface.Model):
         for internal_constraint in internal_constraints:
             self.problem.remove(internal_constraint)
 
+    def _get_variables_names(self):
+        """The names of model variables.
+
+        Returns
+        -------
+        list
+        """
+        return self.problem.VarName
+
+    def _get_constraint_names(self):
+        """The names of model constraints.
+
+        Returns
+        -------
+        list
+        """
+        return self.problem.ConstrName
+
+    def _get_primal_values(self):
+        """The primal values of model variables.
+
+        Returns
+        -------
+        list
+        """
+        return self.problem.X
+
+    def _get_reduced_costs(self):
+        """The reduced costs/dual values of all variables.
+
+        Returns
+        -------
+        list
+        """
+        return self.problem.RC
+
+    def _get_shadow_prices(self):
+        """The shadow prices of model (dual values of all constraints).
+
+        Returns
+        -------
+        collections.OrderedDict
+        """
+        return self.problem.Pi
+
     @property
     def is_integer(self):
         self.problem.update()
