@@ -774,6 +774,9 @@ class Model(interface.Model):
         -------
         list
         """
+        if self.is_integer:
+            raise ValueError(
+                "Reduced costs are not well defined for integer problems.")
         return self.problem.RC
 
     def _get_shadow_prices(self):
@@ -783,6 +786,9 @@ class Model(interface.Model):
         -------
         collections.OrderedDict
         """
+        if self.is_integer:
+            raise ValueError(
+                "Shadow prices are not well defined for integer problems.")
         return self.problem.Pi
 
     @property
