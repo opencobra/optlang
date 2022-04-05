@@ -423,7 +423,7 @@ else:
             )
 
         def test_timeout(self):
-            self.model.configuration.timeout = 0
+            self.model.configuration.timeout = int(0)
             status = self.model.optimize()
             print(status)
             self.assertEqual(status, 'time_limit')
