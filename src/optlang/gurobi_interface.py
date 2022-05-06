@@ -34,6 +34,14 @@ from optlang import symbolics
 
 import gurobipy
 
+try:
+    version = gurobipy.gurobi.version()
+    if not (version[0] >= 9 and version[1] >= 5):
+        raise RuntimeError()
+except Exception:
+    raise RuntimeError(
+        "This version of optlang requires a Gurobi version of 9.5 or above.")
+
 _GUROBI_STATUS_TO_STATUS = {
     gurobipy.GRB.LOADED: interface.LOADED,
     gurobipy.GRB.OPTIMAL: interface.OPTIMAL,
@@ -59,9 +67,6 @@ _REVERSE_QP_METHODS = {v: k for k, v in _QP_METHODS.items()}
 _VTYPE_TO_GUROBI_VTYPE = {'continuous': gurobipy.GRB.CONTINUOUS, 'integer': gurobipy.GRB.INTEGER,
                           'binary': gurobipy.GRB.BINARY}
 _GUROBI_VTYPE_TO_VTYPE = dict((val, key) for key, val in _VTYPE_TO_GUROBI_VTYPE.items())
-
-# hacky way since Gurobi does not allow getting the version via the API
-_IS_GUROBI_9_OR_NEWER = hasattr(gurobipy, "MLinExpr")
 
 
 def _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(lb, ub):
@@ -98,10 +103,7 @@ class Variable(interface.Variable):
     @property
     def _internal_variable(self):
         if getattr(self, 'problem', None) is not None:
-            if _IS_GUROBI_9_OR_NEWER:
-                internal_variable = self.problem.problem.getVarByName(self.name)
-            else:
-                internal_variable = self.problem.problem.getVarByName(self._original_name)
+            internal_variable = self.problem.problem.getVarByName(self._original_name)
             return internal_variable
         else:
             return None
