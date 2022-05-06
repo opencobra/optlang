@@ -98,13 +98,11 @@ def _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(lb, ub):
 class Variable(interface.Variable):
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
-        self._original_name = name
 
     @property
     def _internal_variable(self):
         if getattr(self, 'problem', None) is not None:
-            internal_variable = self.problem.problem.getVarByName(self._original_name)
-            return internal_variable
+            return self.problem.problem.getVarByName(self.name)
         else:
             return None
 
