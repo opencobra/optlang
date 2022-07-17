@@ -494,7 +494,6 @@ class Model(interface.Model):
     def _initialize_problem(self):
         self.problem = glp_create_prob()
         glp_create_index(self.problem)
-        glp_scale_prob(self.problem, GLP_SF_AUTO)
         if self.name is not None:
             _glpk_validate_id(self.name)
             glp_set_prob_name(self.problem, str(self.name))
@@ -580,7 +579,6 @@ class Model(interface.Model):
             ),
             problem=self,
             direction={GLP_MIN: 'min', GLP_MAX: 'max'}[glp_get_obj_dir(self.problem)])
-        glp_scale_prob(self.problem, GLP_SF_AUTO)
 
     @classmethod
     def from_lp(cls, lp_form):
@@ -705,6 +703,7 @@ class Model(interface.Model):
         return status
 
     def _optimize(self):
+        glp_scale_prob(self.problem, GLP_SF_AUTO)
         status = self._run_glp_simplex()
 
         # Sometimes GLPK gets itself stuck with an invalid basis. This will help it get rid of it.
@@ -721,7 +720,6 @@ class Model(interface.Model):
             status = self._run_glp_mip()
             if status == 'undefined' or status == 'infeasible':
                 # Let's see if the presolver and some scaling can fix this issue
-                glp_scale_prob(self.problem, GLP_SF_AUTO)
                 original_presolve_setting = self.configuration.presolve
                 self.configuration.presolve = True
                 status = self._run_glp_mip()
