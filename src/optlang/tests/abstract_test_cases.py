@@ -634,15 +634,15 @@ class AbstractModelTestCase(unittest.TestCase):
         self.model.objective = self.interface.Objective(1. * v1 + 1. * v2)
         self.assertEqual(self.model.objective.direction, "max")
         self.assertEqual(
-            (self.model.objective.expression -
-             (1.0 * self.model.variables["R_PGK"] + 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])).expand(),
+            float((self.model.objective.expression -
+             (1.0 * self.model.variables["R_PGK"] + 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])).expand()),
             0.
         )
         self.model.objective = self.interface.Objective(v1 + v2)
         self.assertEqual(self.model.objective.direction, "max")
         self.assertEqual(
-            (self.model.objective.expression -
-             (1.0 * self.model.variables["R_PGK"] + 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])).expand(),
+            float((self.model.objective.expression -
+             (1.0 * self.model.variables["R_PGK"] + 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])).expand()),
             0.
         )
 
