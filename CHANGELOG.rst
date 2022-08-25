@@ -2,6 +2,8 @@
 
 Next Release
 ------------
+* fixes problem scaling for GLPK
+* fixes scaling output in GLPK that could not be turned off
 
 1.5.2
 -----
