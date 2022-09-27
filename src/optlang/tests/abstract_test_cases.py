@@ -16,18 +16,19 @@
 from __future__ import division
 
 import abc
+import copy
+import json
+import os
+import pickle
 import unittest
+from functools import partial
 
 import six
-from optlang import interface
-from optlang import symbolics
-import optlang
-import pickle
-import json
-import copy
-import os
 import sympy
-from functools import partial
+
+import optlang
+from optlang import interface, symbolics
+
 
 __test__ = False
 

@@ -17,11 +17,11 @@
 import os
 import unittest
 
-import nose
 import optlang
 import optlang.glpk_interface as glpk
 from optlang import interface
 from optlang.util import glpk_read_cplex
+
 
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
 
@@ -92,6 +92,3 @@ except ImportError as e:
                 pass
     else:
         raise
-
-if __name__ == '__main__':
-    nose.runmodule()

@@ -4,7 +4,7 @@
 import pickle
 import unittest
 
-from optlang.interface import Variable, Constraint, Model
+from optlang.interface import Constraint, Model, Variable
 
 
 class VariableTestCase(unittest.TestCase):
@@ -141,9 +141,3 @@ class ConstraintTestCase(unittest.TestCase):
         #     pickle_constraint = pickle.loads(pickle.dumps(constraint))
         #     keys = constraint.__dict__.keys()
         #     self.assertEqual([getattr(constraint, k) for k in keys], [getattr(pickle_constraint, k) for k in keys])
-
-
-if __name__ == '__main__':
-    import nose
-
-    nose.runmodule()

@@ -1,9 +1,10 @@
 # Copyright (c) 2016 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import pickle
 import os
+import pickle
 import unittest
+
 
 try:  # noqa: C901
     import gurobipy
@@ -18,18 +19,15 @@ except ImportError as e:
 else:
 
     import copy
-
+    import os
+    import pickle
     import random
 
-    import os
-
-    import nose
-    import pickle
-
-    from optlang.gurobi_interface import Variable, Constraint, Model, Objective
     from gurobipy import GurobiError
-    from optlang.tests import abstract_test_cases
+
     from optlang import gurobi_interface
+    from optlang.gurobi_interface import Constraint, Model, Objective, Variable
+    from optlang.tests import abstract_test_cases
 
     random.seed(666)
     TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
@@ -520,6 +518,3 @@ else:
                 objective = Objective(self.x1 ** 2 + self.x2 ** 2, direction="min")
                 self.model.objective = objective
                 self.assertEqual((self.model.objective.expression - (self.x1 ** 2 + self.x2 ** 2)).simplify(), 0)
-
-if __name__ == '__main__':
-    nose.runmodule()

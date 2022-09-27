@@ -1,13 +1,15 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import unittest
+import copy
 import json
 import os
-import optlang.interface
 import pickle
-import copy
 import sys
+import unittest
+
+import optlang.interface
+
 
 try:
     import scipy
@@ -22,6 +24,7 @@ except ImportError as e:
 
 from optlang import scipy_interface
 from optlang.tests import abstract_test_cases
+
 
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/coli_core.json')
 

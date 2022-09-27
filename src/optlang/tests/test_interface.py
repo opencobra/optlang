@@ -5,7 +5,7 @@ import sys
 from unittest import TestCase
 
 from optlang.exceptions import ContainerAlreadyContains
-from optlang.interface import Model, Variable, Constraint, Objective
+from optlang.interface import Constraint, Model, Objective, Variable
 
 
 class TestModel(TestCase):

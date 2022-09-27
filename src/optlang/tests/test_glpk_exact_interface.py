@@ -1,25 +1,45 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
+import copy
+import json
 import os
+import pickle
 import random
 import unittest
-import json
 
-import nose
+from swiglpk import (
+    GLP_CV,
+    GLP_DB,
+    GLP_FR,
+    GLP_FX,
+    GLP_IV,
+    GLP_LO,
+    GLP_MAX,
+    GLP_MIN,
+    GLP_UP,
+    doubleArray,
+    glp_find_col,
+    glp_get_col_kind,
+    glp_get_col_lb,
+    glp_get_col_name,
+    glp_get_col_ub,
+    glp_get_mat_row,
+    glp_get_num_cols,
+    glp_get_num_rows,
+    glp_get_obj_coef,
+    glp_get_obj_dir,
+    glp_get_prob_name,
+    glp_get_row_lb,
+    glp_get_row_name,
+    glp_get_row_type,
+    glp_get_row_ub,
+    intArray,
+)
 
-import copy
-import pickle
-
-from optlang import glpk_exact_interface
+from optlang import glpk_exact_interface, glpk_interface
 from optlang.tests import abstract_test_cases
-
-from optlang import glpk_interface
 from optlang.util import glpk_read_cplex
-from swiglpk import glp_get_num_rows, glp_get_col_name, glp_get_num_cols, glp_get_prob_name, glp_get_row_name, \
-    glp_get_col_kind, glp_find_col, intArray, doubleArray, glp_get_mat_row, glp_get_row_type, glp_get_row_lb, \
-    glp_get_row_ub, glp_get_obj_coef, GLP_UP, GLP_DB, GLP_LO, GLP_CV, GLP_IV, GLP_FX, GLP_FR, glp_get_col_lb, \
-    glp_get_col_ub, glp_get_obj_dir, GLP_MIN, GLP_MAX
 
 
 random.seed(666)
@@ -378,7 +398,3 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
 
     def test_integer_batch_duals(self):
         self.skipTest("No integers with glpk_exact")
-
-
-if __name__ == '__main__':
-    nose.runmodule()

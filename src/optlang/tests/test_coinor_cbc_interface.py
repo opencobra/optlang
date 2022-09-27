@@ -1,13 +1,15 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-import unittest
+import copy
 import json
 import os
-import optlang.interface
 import pickle
-import copy
 import sys
+import unittest
+
+import optlang.interface
+
 
 try:
     import mip

@@ -1,9 +1,11 @@
 import unittest
 
+
 try:
-    from optlang.inspyred_interface import Model, Objective, Variable
     import inspyred
     from inspyred import benchmarks
+
+    from optlang.inspyred_interface import Model, Objective, Variable
 
 
     def make_individual(evaluator):

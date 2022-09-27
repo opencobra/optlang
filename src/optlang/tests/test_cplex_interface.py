@@ -7,6 +7,7 @@ import pickle
 import random
 import unittest
 
+
 try:  # noqa: C901
     import cplex
 except ImportError as e:
@@ -21,13 +22,11 @@ except ImportError as e:
         raise
 else:
 
-    import nose
-    from optlang.tests import abstract_test_cases
-    from optlang.exceptions import SolverError
-    from optlang.interface import OPTIMAL, INFEASIBLE
-
-    from optlang.cplex_interface import Variable, Constraint, Model, Objective
     from optlang import cplex_interface
+    from optlang.cplex_interface import Constraint, Model, Objective, Variable
+    from optlang.exceptions import SolverError
+    from optlang.interface import INFEASIBLE, OPTIMAL
+    from optlang.tests import abstract_test_cases
 
     CplexSolverError = cplex.exceptions.CplexSolverError
 
@@ -651,7 +650,3 @@ else:
             with self.assertRaises(SolverError) as context:
                 self.model.shadow_prices
             self.assertIn("CPLEX Error  1217", str(context.exception))
-
-
-if __name__ == '__main__':
-    nose.runmodule()

@@ -4,17 +4,41 @@ import copy
 import os
 import pickle
 import random
-import unittest
 
-import nose
+from swiglpk import (
+    GLP_CV,
+    GLP_DB,
+    GLP_FR,
+    GLP_FX,
+    GLP_IV,
+    GLP_LO,
+    GLP_MAX,
+    GLP_MIN,
+    GLP_UP,
+    doubleArray,
+    glp_find_col,
+    glp_get_col_kind,
+    glp_get_col_lb,
+    glp_get_col_name,
+    glp_get_col_ub,
+    glp_get_mat_row,
+    glp_get_num_cols,
+    glp_get_num_rows,
+    glp_get_obj_coef,
+    glp_get_obj_dir,
+    glp_get_prob_name,
+    glp_get_row_lb,
+    glp_get_row_name,
+    glp_get_row_type,
+    glp_get_row_ub,
+    intArray,
+)
+
 import optlang
 from optlang import glpk_interface
 from optlang.tests import abstract_test_cases
 from optlang.util import glpk_read_cplex
-from swiglpk import glp_get_num_rows, glp_get_col_name, glp_get_num_cols, glp_get_prob_name, glp_get_row_name, \
-    glp_get_col_kind, glp_find_col, intArray, doubleArray, glp_get_mat_row, glp_get_row_type, glp_get_row_lb, \
-    glp_get_row_ub, glp_get_obj_coef, GLP_UP, GLP_DB, GLP_LO, GLP_CV, GLP_IV, GLP_FX, GLP_FR, glp_get_col_lb, \
-    glp_get_col_ub, glp_get_obj_dir, GLP_MIN, GLP_MAX
+
 
 random.seed(666)
 TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
@@ -112,7 +136,7 @@ class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
 
 class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
     interface = glpk_interface
-    
+
     def test_pickle_ability(self):
         config = self.interface.Configuration()
         config.tolerances.feasibility = 1e-01
@@ -444,7 +468,3 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
             col_name = glp_get_col_name(self.model.problem, ia[i])
             if col_name == 'R_Biomass_Ecoli_core_w_GAM':
                 self.assertEqual(da[i], 666.)
-
-
-if __name__ == '__main__':
-    nose.runmodule()

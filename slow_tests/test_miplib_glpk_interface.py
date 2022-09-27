@@ -17,16 +17,15 @@ import json
 import gzip
 import os
 import tempfile
-from functools import partial
+import pytest
 
-import nose
 from swiglpk import glp_read_mps, GLP_MPS_FILE, glp_create_prob, glp_get_num_cols
 
 from optlang.glpk_interface import Model
 
 # problems from http://miplib.zib.de/miplib2003/miplib2003.php
 
-TRAVIS = os.getenv('TRAVIS', False)
+CI = os.getenv('CI', False)
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), 'data')
 SOLUTION = os.path.join(DATA_PATH, "miplib2003.json")
@@ -50,36 +49,29 @@ def load_problem(mps_file):
 
 
 def check_dimensions(model, glpk_problem):
-    nose.tools.assert_true(glp_get_num_cols(glpk_problem) == len(model.variables))
+    assert glp_get_num_cols(glpk_problem) == len(model.variables)
 
 
 def check_optimization(model, expected_solution):
     status = model.optimize()
-    if status is not "time_limit":
-        nose.tools.assert_equals(status, expected_solution['status'])
+    if status != "time_limit":
+        assert status == expected_solution['status']
 
-        if status is "optimal":
-            nose.tools.assert_almost_equal(expected_solution['solution'], model.objective.value, places=4)
-
-
-def test_miplib(solutions=SOLUTION, problem_dir=PROBLEMS_DIR):
-    if TRAVIS:
-        raise nose.SkipTest('Skipping extensive MILP tests on travis-ci.')
-    with open(solutions, "r") as f:
-        data = json.load(f)
-        print(data)
-    for name, problem_data in data.items():
-        problem_file = os.path.join(problem_dir, "{}.mps.gz".format(name))
-
-        glpk_problem, model = load_problem(problem_file)
-        func = partial(check_dimensions, model, glpk_problem)
-        func.description = "test_miplib_dimensions_%s (%s)" % (name, os.path.basename(str(__file__)))
-        yield func
-
-        func = partial(check_optimization, model, problem_data)
-        func.description = "test_miplib_optimization_%s (%s)" % (name, os.path.basename(str(__file__)))
-        yield func
+        if status == "optimal":
+            assert expected_solution['solution'] == pytest.approx(model.objective.value, 1e-4, 1e-4)
 
 
-if __name__ == '__main__':
-    nose.runmodule()
+with open(SOLUTION, "r") as f:
+    data = json.load(f)
+    print(data)
+
+
+@pytest.mark.skipif(CI, reason="too slow on CI")
+@pytest.mark.parametrize("problem", data)
+def test_miplib(problem):
+    problem_file = os.path.join(PROBLEMS_DIR, "{}.mps.gz".format(problem))
+
+    glpk_problem, model = load_problem(problem_file)
+    check_dimensions(model, glpk_problem)
+
+    check_optimization(model, data[problem])
