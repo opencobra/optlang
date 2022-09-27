@@ -7,7 +7,7 @@ Next Release
 * Major performance improvements in the Gurobi interface when getting primals,
   shadow prices and reduced costs
 * Now only supports gurobipy>=9.5
-* Tests are now run with the Gurobi community edition
+* Tests are now run with the Gurobi and CPLEX community editions
 * Drop support for Python 2 and add support for Python 3.10
 
 1.5.2
