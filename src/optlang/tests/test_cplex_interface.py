@@ -378,7 +378,7 @@ else:
             self.model.update()
             self.model.objective = Objective(self.model.variables[2])
 
-        @pytest.mark.skipif(os.environ.get("CI", False), reason="not supported on community edition")
+        @pytest.mark.skipif(os.environ.get("CI", "false") == "true", reason="not supported on community edition")
         def test_large_objective(self):
             super().test_large_objective()
 
