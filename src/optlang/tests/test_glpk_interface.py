@@ -3,7 +3,9 @@
 import copy
 import os
 import pickle
+import pytest
 import random
+import sys
 
 from swiglpk import (
     GLP_CV,
@@ -444,6 +446,7 @@ class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
         )
         self.assertEqual(self.model.objective.direction, "max")
 
+    @pytest.mark.xfail(sys.platform == "win32", reason="buggy with windows clocks")
     def test_timeout(self):
         self.model.configuration.timeout = 0
         status = self.model.optimize()

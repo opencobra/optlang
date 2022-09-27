@@ -6,6 +6,7 @@ import os
 import pickle
 import pytest
 import random
+import sys
 import unittest
 
 
@@ -352,6 +353,7 @@ else:
             self.assertEqual(self.model.objective.direction, "max")
             self.assertEqual(self.model.objective.expression, 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])
 
+        @pytest.mark.xfail(sys.platform == "win32", reason="buggy with windows clocks")
         def test_timeout(self):
             self.model.configuration.timeout = 0
             status = self.model.optimize()
