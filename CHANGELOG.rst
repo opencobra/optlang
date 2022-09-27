@@ -4,6 +4,11 @@ Next Release
 ------------
 * fixes problem scaling for GLPK
 * fixes scaling output in GLPK that could not be turned off
+* Major performance improvements in the Gurobi interface when getting primals,
+  shadow prices and reduced costs
+* Now only supports gurobipy>=9.5
+* Tests are now run with the Gurobi community edition
+* Drop support for Python 2 and add support for Python 3.10
 
 1.5.2
 -----
