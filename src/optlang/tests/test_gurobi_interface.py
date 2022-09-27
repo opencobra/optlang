@@ -3,6 +3,8 @@
 
 import os
 import pickle
+import pytest
+import sys
 import unittest
 
 
@@ -420,6 +422,7 @@ else:
                 0
             )
 
+        @pytest.mark.xfail(sys.platform == "win32", reason="buggy with windows clocks")
         def test_timeout(self):
             self.model.configuration.timeout = int(0)
             status = self.model.optimize()
