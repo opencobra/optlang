@@ -7,6 +7,7 @@ import pickle
 import random
 import unittest
 
+
 try:  # noqa: C901
     import osqp
 except ImportError as e:
@@ -21,17 +22,17 @@ except ImportError as e:
         raise
 else:
 
-    from optlang.tests import abstract_test_cases
-    from optlang.exceptions import SolverError
-    from optlang.interface import OPTIMAL, INFEASIBLE, SPECIAL
-
-    from optlang.osqp_interface import Variable, Constraint, Model, Objective
-    from optlang import interface, osqp_interface
-
-    from numpy.testing import assert_allclose
-    import numpy as np
     import json
+
+    import numpy as np
     import six
+    from numpy.testing import assert_allclose
+
+    from optlang import interface, osqp_interface
+    from optlang.exceptions import SolverError
+    from optlang.interface import INFEASIBLE, OPTIMAL, SPECIAL
+    from optlang.osqp_interface import Constraint, Model, Objective, Variable
+    from optlang.tests import abstract_test_cases
 
     random.seed(666)
     TESTMODELPATH = os.path.join(os.path.dirname(__file__), 'data/model.lp')
@@ -621,7 +622,3 @@ else:
             with self.assertRaises(SolverError) as context:
                 self.model.shadow_prices
             self.assertIn("not been solved", str(context.exception))
-
-
-if __name__ == '__main__':
-    nose.runmodule()

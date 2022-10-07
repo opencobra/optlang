@@ -14,9 +14,10 @@
 # limitations under the License.
 
 import unittest
-from optlang.glpk_interface import Model, Variable, Constraint, Objective
-from optlang.duality import convert_linear_problem_to_dual
+
 import optlang
+from optlang.duality import convert_linear_problem_to_dual
+from optlang.glpk_interface import Constraint, Model, Objective, Variable
 
 
 class DualityTestCase(unittest.TestCase):

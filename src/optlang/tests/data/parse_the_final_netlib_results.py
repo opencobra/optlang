@@ -32,6 +32,7 @@ from fractions import Fraction
 
 import six
 
+
 OBJ_REGEX = re.compile('\* Objvalue : -?\d+/\d+')
 
 the_final_netlib_results = dict()

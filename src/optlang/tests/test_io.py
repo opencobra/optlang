@@ -5,7 +5,9 @@ import json
 import unittest
 
 import jsonschema
-from optlang.glpk_interface import Variable, Constraint, Objective, Model
+
+from optlang.glpk_interface import Constraint, Model, Objective, Variable
+
 
 bound_schema = {
     "oneOf": [
@@ -149,9 +151,3 @@ class JsonTest(unittest.TestCase):
         self.assertEqual(
             (model.objective.expression - sum(model.variables)).simplify(), 0
         )
-
-
-if __name__ == "__main__":
-    import nose
-
-    nose.runmodule()

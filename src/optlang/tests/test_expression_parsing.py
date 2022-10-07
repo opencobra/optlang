@@ -1,10 +1,10 @@
 # Copyright (c) 2013 Novo Nordisk Foundation Center for Biosustainability, DTU.
 # See LICENSE for details.
 
-from optlang.interface import Constraint, Variable, Objective
-from optlang.expression_parsing import parse_optimization_expression
-
 import unittest
+
+from optlang.expression_parsing import parse_optimization_expression
+from optlang.interface import Constraint, Objective, Variable
 
 
 def _quad_terms_to_expression(terms):

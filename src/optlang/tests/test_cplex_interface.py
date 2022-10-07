@@ -4,8 +4,11 @@
 import copy
 import os
 import pickle
+import pytest
 import random
+import sys
 import unittest
+
 
 try:  # noqa: C901
     import cplex
@@ -21,13 +24,11 @@ except ImportError as e:
         raise
 else:
 
-    import nose
-    from optlang.tests import abstract_test_cases
-    from optlang.exceptions import SolverError
-    from optlang.interface import OPTIMAL, INFEASIBLE
-
-    from optlang.cplex_interface import Variable, Constraint, Model, Objective
     from optlang import cplex_interface
+    from optlang.cplex_interface import Constraint, Model, Objective, Variable
+    from optlang.exceptions import SolverError
+    from optlang.interface import INFEASIBLE, OPTIMAL
+    from optlang.tests import abstract_test_cases
 
     CplexSolverError = cplex.exceptions.CplexSolverError
 
@@ -103,7 +104,8 @@ else:
             self.model.add(self.constraint)
             self.constraint.set_linear_coefficients({Variable('chip'): 33., self.model.variables.R_PGK: -33})
             sparse_pair = self.model.problem.linear_constraints.get_rows(self.constraint.name)
-            self.assertEqual(dict(zip(self.model.problem.variables.get_names(sparse_pair.ind), sparse_pair.val)),
+            names = [self.model.problem.variables.get_names(i) for i in sparse_pair.ind]
+            self.assertEqual(dict(zip(names, sparse_pair.val)),
                              dict([('R_PGK', -33.0), ('chap', 1.0), ('chip', 33.0)]))
 
         def test_get_primal(self):
@@ -351,6 +353,7 @@ else:
             self.assertEqual(self.model.objective.direction, "max")
             self.assertEqual(self.model.objective.expression, 1.0 * self.model.variables["R_Biomass_Ecoli_core_w_GAM"])
 
+        @pytest.mark.xfail(sys.platform == "win32", reason="buggy with windows clocks")
         def test_timeout(self):
             self.model.configuration.timeout = 0
             status = self.model.optimize()
@@ -376,6 +379,10 @@ else:
             self.model.remove(self.model.variables[1])
             self.model.update()
             self.model.objective = Objective(self.model.variables[2])
+
+        @pytest.mark.skipif(os.environ.get("CI", "false") == "true", reason="not supported on community edition")
+        def test_large_objective(self):
+            super().test_large_objective()
 
 
     class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
@@ -651,7 +658,3 @@ else:
             with self.assertRaises(SolverError) as context:
                 self.model.shadow_prices
             self.assertIn("CPLEX Error  1217", str(context.exception))
-
-
-if __name__ == '__main__':
-    nose.runmodule()

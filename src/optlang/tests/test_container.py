@@ -16,7 +16,7 @@ import pickle
 import unittest
 
 from optlang.container import Container
-from optlang.interface import Variable, Model
+from optlang.interface import Model, Variable
 
 
 class ContainerTestCase(unittest.TestCase):
