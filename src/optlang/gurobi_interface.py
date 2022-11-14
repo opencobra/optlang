@@ -36,7 +36,7 @@ import gurobipy
 
 try:
     version = gurobipy.gurobi.version()
-    if not version[:2] >= (9, 5):
+    if version[:2] < (9, 5):
         raise RuntimeError()
 except Exception:
     raise RuntimeError(
