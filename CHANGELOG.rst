@@ -3,6 +3,10 @@
 Next Release
 ------------
 
+1.6.1
+-----
+* fix the Gurobi version check to allow 10.0
+
 1.6.0
 -----
 * fixes problem scaling for GLPK
