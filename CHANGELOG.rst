@@ -2,6 +2,7 @@
 
 Next Release
 ------------
+* remove deprecated numpy type casts
 
 1.6.1
 -----
