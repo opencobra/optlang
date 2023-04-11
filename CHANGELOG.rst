@@ -4,6 +4,8 @@ Next Release
 ------------
 * remove deprecated numpy type casts
 
+* The symbolics module now has consistent exports
+
 1.6.1
 -----
 * fix the Gurobi version check to allow 10.0
