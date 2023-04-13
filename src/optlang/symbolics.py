@@ -14,7 +14,8 @@
 # limitations under the License.
 
 """
-This module contains a common interface to symbolic operations in Sympy and Symengine respectively.
+This module contains a common interface to symbolic operations in Sympy and Symengine
+respectively.
 All symbolic operations in the optlang codebase should use these functions.
 """
 
@@ -46,9 +47,6 @@ else:  # pragma: no cover
 
 
 if USE_SYMENGINE:  # pragma: no cover # noqa: C901
-    import operator
-    from six.moves import reduce
-
     optlang._USING_SYMENGINE = True
 
     Integer = symengine.Integer
@@ -59,12 +57,15 @@ if USE_SYMENGINE:  # pragma: no cover # noqa: C901
     One = Real(1)
     NegativeOne = Real(-1)
     sympify = symengine.sympify
+    Expr = symengine.Expr
 
     Add = symengine.Add
     Mul = symengine.Mul
     Pow = symengine.Pow
 
     class Symbol(symengine_Symbol):
+        """A generic symbol used in expressions."""
+
         def __new__(cls, name, *args, **kwargs):
             if not isinstance(name, six.string_types):
                 raise TypeError("name should be a string, not %s" % repr(type(name)))
@@ -102,7 +103,6 @@ else:  # Use sympy
     import sympy
     from sympy.core.assumptions import _assume_rules
     from sympy.core.facts import FactKB
-    from sympy.core.expr import Expr
 
     optlang._USING_SYMENGINE = False
 
@@ -114,12 +114,15 @@ else:  # Use sympy
     One = Real(1)
     NegativeOne = Real(-1)
     sympify = sympy.sympify
+    Expr = sympy.core.expr.Expr
 
     Add = sympy.Add
     Mul = sympy.Mul
     Pow = sympy.Pow
 
     class Symbol(sympy.Symbol):
+        """A generic symbol used in expressions."""
+
         def __new__(cls, name, **kwargs):
             if not isinstance(name, six.string_types):
                 raise TypeError("name should be a string, not %s" % repr(type(name)))
@@ -128,8 +131,8 @@ else:  # Use sympy
 
             obj.name = name
             obj._assumptions = FactKB(_assume_rules)
-            obj._assumptions._tell('commutative', True)
-            obj._assumptions._tell('uuid', uuid.uuid1())
+            obj._assumptions._tell("commutative", True)
+            obj._assumptions._tell("uuid", uuid.uuid1())
 
             return obj
 
