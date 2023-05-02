@@ -2,9 +2,12 @@
 
 Next Release
 ------------
-* remove deprecated numpy type casts
 
+1.7.0
+-----
+* remove deprecated numpy type casts
 * The symbolics module now has consistent exports
+* move the fast_dual function from MICOM back here
 
 1.6.1
 -----

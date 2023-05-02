@@ -16,8 +16,9 @@
 import unittest
 
 import optlang
-from optlang.duality import convert_linear_problem_to_dual
+from optlang.duality import convert_linear_problem_to_dual, fast_dual
 from optlang.glpk_interface import Constraint, Model, Objective, Variable
+from optlang.symbolics import Zero
 
 
 class DualityTestCase(unittest.TestCase):
@@ -193,3 +194,17 @@ class DualityTestCase(unittest.TestCase):
 
         self.assertEqual(self.model.objective.value, 31)
         self.assertEqual(dual.objective.value, 31)
+
+    def test_fast_dual(self):
+        model = self.model.clone()
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+        primal_res = model.objective.value()
+        dual_coefs = fast_dual(model)
+        dual_obj = model.interface.Objective(Zero, direction="min")
+        model.objective = dual_obj
+        model.objective.set_linear_coefficients(dual_coefs)
+        self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
+        dual_res = model.objective.value
+        self.assertEqual(primal_res, dual_res)
+
+
