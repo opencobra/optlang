@@ -196,7 +196,7 @@ class DualityTestCase(unittest.TestCase):
         self.assertEqual(dual.objective.value, 31)
 
     def test_fast_dual(self):
-        model = self.model.clone()
+        model = self.model
         self.assertEqual(model.optimize(), optlang.interface.OPTIMAL)
         primal_res = model.objective.value()
         dual_coefs = fast_dual(model)
