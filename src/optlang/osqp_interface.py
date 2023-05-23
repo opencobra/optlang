@@ -28,7 +28,8 @@ import pickle
 import numpy as np
 from numpy import array, concatenate, Infinity, zeros, isnan
 
-from optlang import interface, symbolics, available_solvers
+from optlang import symbolics, available_solvers
+import optlang.matrix_interface as mi
 from optlang.util import inheritdocstring
 from optlang.expression_parsing import parse_optimization_expression
 from optlang.exceptions import SolverError
@@ -77,7 +78,7 @@ _QP_METHODS = ("auto", "primal")
 _TYPES = ("continuous",)
 
 
-class OSQPProblem(object):
+class OSQPProblem(mi.MatrixProblem):
     """A concise representation of an OSQP problem.
 
     OSQP assumes that the problem will be pretty much immutable. This is
@@ -119,6 +120,24 @@ class OSQPProblem(object):
             "alpha": 1.6,
         }
         self.__solution = None
+
+    def map_settings(self):
+        """Map internal settings to OSQP settings."""
+        settings = {
+            "linsys_solver": "qdldl",
+            "max_iter": 100000,
+            "eps_abs": self.settings["optimality_tolerance"],
+            "eps_rel": self.settings["optimality_tolerance"],
+            "eps_prim_inf": self.settings["primal_inf_tolerance"],
+            "eps_dual_inf": self.settings["dual_inf_tolerance"],
+            "polish": True,
+            "verbose": False,
+            "scaling": 0,
+            "time_limit": 0,
+            "adaptive_rho": True,
+            "rho": 1.0,
+            "alpha": 1.6,
+        }
 
     def build(self):
         """Build the problem instance."""
