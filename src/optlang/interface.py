@@ -407,7 +407,6 @@ class OptimizationExpression(object):
         variable_substitutions = dict()
         for variable in expression.variables:
             if model is not None and variable.name in model.variables:
-                # print(variable.name, id(variable.problem))
                 variable_substitutions[variable] = model.variables[variable.name]
             else:
                 variable_substitutions[variable] = interface.Variable.clone(variable)

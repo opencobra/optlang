@@ -243,7 +243,7 @@ class Problem(object):
             index = self._get_constraint_index(name)
             return self._slacks[index]
 
-    def optimize(self, method="simplex", verbosity=False, tolerance=1e-9, **kwargs):
+    def optimize(self, method="highs", verbosity=False, tolerance=1e-9, **kwargs):
         """Run the linprog function on the problem. Returns None."""
         c = np.array([self.objective.get(name, 0) for name in self._variables])
         if self.direction == "max":
@@ -251,7 +251,7 @@ class Problem(object):
 
         bounds = list(six.itervalues(self.bounds))
         solution = linprog(c, self.A, self.upper_bounds, bounds=bounds, method=method,
-                           options={"maxiter": 10000, "disp": verbosity, "tol": tolerance}, **kwargs)
+                           options={"maxiter": 10000, "disp": verbosity}, **kwargs)
         self._solution = solution
         self._status = solution.status
         if SCIPY_STATUS[self._status] == interface.OPTIMAL:
