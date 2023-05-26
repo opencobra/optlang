@@ -10,7 +10,7 @@ Next Release
 * When sympy is used the internal Symbol class now derives from sympy.core.Dummy. This
   circumvents the hack in place to make Symbols unique and makes optlang work with
   sympy>=1.12 again.
-* Updated the scipy and the tests to work with newer versions of those packages.
+* Updated the scipy and the jsonschema tests to work with newer versions of those packages.
 * Package version dependencies are now more specific.
 * Tests are run for sympy and symengine now.
 * Updated support Python versions to >=3.8.
