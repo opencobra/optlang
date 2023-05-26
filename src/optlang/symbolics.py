@@ -101,8 +101,6 @@ if USE_SYMENGINE:  # pragma: no cover # noqa: C901
 
 else:  # Use sympy
     import sympy
-    from sympy.core.assumptions import _assume_rules
-    from sympy.core.facts import FactKB
 
     optlang._USING_SYMENGINE = False
 
@@ -120,21 +118,14 @@ else:  # Use sympy
     Mul = sympy.Mul
     Pow = sympy.Pow
 
-    class Symbol(sympy.Symbol):
+    class Symbol(sympy.core.Dummy):
         """A generic symbol used in expressions."""
 
-        def __new__(cls, name, **kwargs):
+        def __new__(cls, name, *args, **kwargs):
             if not isinstance(name, six.string_types):
                 raise TypeError("name should be a string, not %s" % repr(type(name)))
 
-            obj = sympy.Symbol.__new__(cls, str(uuid.uuid1()))
-
-            obj.name = name
-            obj._assumptions = FactKB(_assume_rules)
-            obj._assumptions._tell("commutative", True)
-            obj._assumptions._tell("uuid", uuid.uuid1())
-
-            return obj
+            return sympy.core.Dummy.__new__(cls, name)
 
         def __init__(self, *args, **kwargs):
             super(Symbol, self).__init__()

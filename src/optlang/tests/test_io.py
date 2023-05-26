@@ -17,7 +17,6 @@ bound_schema = {
 }
 
 variable_schema = {
-    "$schema": "variable",
     "type": "object",
     "properties": {
         "name": {
