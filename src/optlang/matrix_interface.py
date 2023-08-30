@@ -1,6 +1,3 @@
-# Copyright 2013 Novo Nordisk Foundation Center for Biosustainability,
-# Technical University of Denmark.
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -89,7 +86,7 @@ class MatrixProblem(object):
         self.direction = -1
         self.info = None
         self.status = None
-        self.__solution = None
+        self._solution = None
         self.default_settings()
 
     def default_settings(self):
@@ -113,7 +110,7 @@ class MatrixProblem(object):
         cmap = dict(zip(self.constraints, range(len(self.constraints))))
         nc = len(self.constraints)
         if len(self.obj_quadratic_coefs) > 0:
-            P = array(raise NotImplementedError("This needs to be overwritten by the child class.")
+            P = array(
                 [
                     [vmap[vn[0]], vmap[vn[1]], coef * d * 2.0]
                     for vn, coef in six.iteritems(self.obj_quadratic_coefs)
@@ -173,22 +170,11 @@ class MatrixProblem(object):
         self.duals = {}
         self.vduals = {}
         if everything:
-            self.__solution = None
+            self._solution = None
 
     def still_valid(self, A, bounds):
         """Check if previous solutions is still feasible."""
-        if len(self.__solution["x"]) != len(self.variables) or len(
-            self.__solution["y"]
-        ) != len(self.constraints):
-            return False
-        c = A.dot(self.__solution["x"])
-        ea = self.settings["eps_abs"]
-        er = self.settings["eps_rel"]
-        valid = np.all(
-            (c + er * np.abs(c) + ea >= bounds[:, 0])
-            & (c - er * np.abs(c) - ea <= bounds[:, 1])
-        )
-        return valid
+        raise NotImplementedError("This needs to be overwritten by the child class.")
 
     def clean(self):
         """Remove unused variables and constraints."""
@@ -218,6 +204,7 @@ class MatrixProblem(object):
         self.constraint_ubs = {
             k: v for k, v in six.iteritems(self.constraint_ubs) if k in self.constraints
         }
+        self.integer_vars = {v for v in self.integer_vars if v in self.variables}
 
     def rename_constraint(self, old, new):
         """Rename a constraint."""
@@ -495,7 +482,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     @property
     def lp_method(self):
         """The algorithm used to solve LP problems."""
-        return "default"
+        return "auto"
 
     @lp_method.setter
     def lp_method(self, lp_method):
@@ -505,26 +492,12 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 % (lp_method, ", ".join(_LP_METHODS))
             )
 
-    @property
-    def linear_solver(self):
-        return self._linear_solver
-
-    @linear_solver.setter
-    def linear_solver(self, solver):
-        if solver not in ("qdldl", "mkl pardiso"):
-            raise ValueError(
-                "%s is not valid (choose either `qdldl` or `mkl pardiso`)" % solver
-            )
-        if getattr(self, "problem", None) is not None:
-            self.problem.problem.settings["linsys_solver"] = solver
-        self._linear_solver = solver
-
     def _set_presolve(self, value):
         if getattr(self, "problem", None) is not None:
-            if value is True:
-                self.problem.problem.settings["scaling"] = 10
-            elif value is False or value == "auto":
-                self.problem.problem.settings["scaling"] = 0
+            if isinstance(value, bool):
+                self.problem.problem.settings["presolve"] = value
+            elif value == "auto":
+                self.problem.problem.settings["presove"] = False
             else:
                 raise ValueError(
                     str(value) + " is not a valid presolve parameter. Must be True, "
@@ -567,7 +540,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             "presolve": self.presolve,
             "timeout": self.timeout,
             "verbosity": self.verbosity,
-            "linear_solver": self.linear_solver,
             "tolerances": {
                 "feasibility": self.tolerances.feasibility,
                 "optimality": self.tolerances.optimality,
@@ -598,7 +570,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._qp_method = value
 
     def _get_feasibility(self):
-        return self.problem.problem.settings["primal_infeasibility"]
+        return self.problem.problem.settings["primal_inf_tolerance"]
 
     def _set_feasibility(self, value):
         self.problem.problem.settings["primal_inf_tolerance"] = value
@@ -857,7 +829,7 @@ class Model(interface.Model):
         )
         problem.variables = set(problem.variables)
         problem.constraints = set(problem.constraints)
-        self.configuration = Configuration()
+        self.configuration = self.interface.Configuration()
         self.configuration.problem = self
         self.configuration.__setstate__(d["config"])
 
