@@ -71,6 +71,9 @@ _STATUS_MAP = {
 }
 
 
+_LP_METHODS = ("auto", "simplex", "interior point")
+
+
 HIGHS_OPTION_MAP = {
     "presolve": {True: "on", False: "off", "auto": "choose"},
     "solver": {"simplex": "simplex", "interior point": "ipm", "auto": "choose"}
@@ -134,13 +137,7 @@ class HybridProblem(mi.MatrixProblem):
     def solve_osqp(self):
         """Solve a QP with OSQP."""
         settings = self.osqp_settings()
-        P, q, A, Av, bounds, vbounds, _ = self.build()
-        if len(self.constraints) > 0:
-            A = np.concatenate((A, Av))
-            bounds = np.concatenate((bounds, vbounds))
-        else:
-            A = Av
-            bounds = vbounds
+        P, q, A, bounds, _, _ = self.build(add_variable_constraints=True)
         solver = osqp.OSQP()
         if P is None:
             # see https://github.com/cvxgrp/cvxpy/issues/898
@@ -176,7 +173,7 @@ class HybridProblem(mi.MatrixProblem):
     def solve_highs(self):
         """Solve a problem with HIGHS."""
         options = self.highs_settings()
-        P, q, A, _, bounds, vbounds, ints = self.build()
+        P, q, A, bounds, vbounds, ints = self.build()
         env = self._highs_env
         model = hs.HighsModel()
         env.passOptions(options)
@@ -257,7 +254,7 @@ class Objective(mi.Objective):
 
 @six.add_metaclass(inheritdocstring)
 class Configuration(mi.Configuration):
-    pass
+    lp_methods = _LP_METHODS
 
 
 @six.add_metaclass(inheritdocstring)

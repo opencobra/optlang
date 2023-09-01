@@ -582,6 +582,9 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
+    lp_methods = _LP_METHODS
+    qp_methods = _QP_METHODS
+
     def __init__(
         self,
         lp_method="auto",
@@ -605,15 +608,17 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     @property
     def lp_method(self):
         """The algorithm used to solve LP problems."""
-        return "auto"
+        return self.problem.problem.settings["lp_method"]
 
     @lp_method.setter
     def lp_method(self, lp_method):
-        if lp_method not in _LP_METHODS:
+        if lp_method not in self.lp_methods:
             raise ValueError(
                 "LP Method %s is not valid (choose one of: %s)"
-                % (lp_method, ", ".join(_LP_METHODS))
+                % (lp_method, ", ".join(self.lp_methods))
             )
+        else:
+            self.problem.problem.settings["lp_method"] = lp_method
 
     def _set_presolve(self, value):
         if getattr(self, "problem", None) is not None:
@@ -679,16 +684,16 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     @property
     def qp_method(self):
         """Change the algorithm used to optimize QP problems."""
-        return "auto"
+        return self.problem.problem.settings["qp_method"]
 
     @qp_method.setter
     def qp_method(self, value):
-        if value not in _QP_METHODS:
+        if value not in self.qp_methods:
             raise ValueError(
                 "%s is not a valid qp_method. Choose between %s"
-                % (value, str(_QP_METHODS))
+                % (value, str(self.qp_methods))
             )
-        self._qp_method = value
+        self.problem.problem.settings["qp_method"] = value
 
     def _get_feasibility(self):
         return self.problem.problem.settings["primal_inf_tolerance"]
