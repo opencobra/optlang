@@ -24,6 +24,7 @@ import six
 import numpy as np
 
 import optlang.matrix_interface as mi
+from optlang import interface
 from optlang.util import inheritdocstring
 
 log = logging.getLogger(__name__)
@@ -43,6 +44,23 @@ except ImportError:
         raise ImportError("The osqp_interface requires osqp or cuosqp!")
 
 
+_STATUS_MAP = {
+    "interrupted by user": interface.ABORTED,
+    "run time limit reached": interface.TIME_LIMIT,
+    "feasible": interface.FEASIBLE,
+    "primal infeasible": interface.INFEASIBLE,
+    "dual infeasible": interface.INFEASIBLE,
+    "primal infeasible inaccurate": interface.INFEASIBLE,
+    "dual infeasible inaccurate": interface.INFEASIBLE,
+    "solved inaccurate": interface.NUMERIC,
+    "solved": interface.OPTIMAL,
+    "maximum iterations reached": interface.ITERATION_LIMIT,
+    "unsolved": interface.SPECIAL,
+    "problem non convex": interface.SPECIAL,
+    "non-existing-status": "Here for testing that missing statuses are handled."
+}
+
+
 class OSQPProblem(mi.MatrixProblem):
     """A concise representation of an OSQP problem.
 
@@ -51,7 +69,7 @@ class OSQPProblem(mi.MatrixProblem):
     but can also be converted to an OSQP problem without too much hassle.
     """
 
-    def map_settings(self):
+    def osqp_settings(self):
         """Map internal settings to OSQP settings."""
         settings = {
             "linsys_solver": "qdldl",
@@ -72,8 +90,8 @@ class OSQPProblem(mi.MatrixProblem):
 
     def solve(self):
         """Solve the OSQP problem."""
-        settings = self.map_settings()
-        P, q, A, bounds = self.build()
+        settings = self.osqp_settings()
+        P, q, A, bounds, _, _ = self.build(add_variable_constraints=True)
         solver = osqp.OSQP()
         if P is None:
             # see https://github.com/cvxgrp/cvxpy/issues/898
@@ -82,7 +100,8 @@ class OSQPProblem(mi.MatrixProblem):
         if self._solution is not None:
             if self.still_valid(A, bounds):
                 solver.warm_start(x=self._solution["x"], y=self._solution["y"])
-                solver.update_settings(rho=self._solution["rho"])
+                if "rho" in self._solution:
+                    solver.update_settings(rho=self._solution["rho"])
         solution = solver.solve()
         nc = len(self.constraints)
         nv = len(self.variables)
@@ -144,3 +163,4 @@ class Configuration(mi.Configuration):
 @six.add_metaclass(inheritdocstring)
 class Model(mi.Model):
     ProblemClass = OSQPProblem
+    status_map = _STATUS_MAP

@@ -15,12 +15,26 @@
 This interface is only supposed to be a basis to add matrix solvers to optlang. It
 creates a thin layer between all optlang operations and the standard formulation of
 LP, QP, and MILP problems.
+
+To create a solver from this, you need to do the following:
+
+1. Create a class that inherits from MatrixProblem and implement the `solve` method
+   and optionally overwrite the `reset` and `still_valid` methods.
+
+2. Create derived classes for Variable, Constraint, Objective, and Configuration.
+   You don't need to overwrite anything. Those should work out of the box.
+
+3. Create a derived class for Model and set the `ProblemClass` attribute to the class
+   from (1) and the `status_map` to map the solver status to an Optlang status from
+   `optlang.interface`.
+
+For an example take a look at `optlang.osqp_interface`.
 """
 
 import logging
 import six
 import pickle
-import numpy as np
+from collections import defaultdict
 from numpy import array, concatenate, Infinity, zeros
 
 from optlang import interface, symbolics, available_solvers
@@ -35,21 +49,7 @@ from optlang.symbolics import add, mul
 log = logging.getLogger(__name__)
 
 
-_STATUS_MAP = {
-    "interrupted by user": interface.ABORTED,
-    "run time limit reached": interface.TIME_LIMIT,
-    "feasible": interface.FEASIBLE,
-    "primal infeasible": interface.INFEASIBLE,
-    "dual infeasible": interface.INFEASIBLE,
-    "primal infeasible inaccurate": interface.INFEASIBLE,
-    "dual infeasible inaccurate": interface.INFEASIBLE,
-    "solved inaccurate": interface.NUMERIC,
-    "solved": interface.OPTIMAL,
-    "maximum iterations reached": interface.ITERATION_LIMIT,
-    "unsolved": interface.SPECIAL,
-    "problem non convex": interface.SPECIAL,
-    "non-existing-status": "Here for testing that missing statuses are handled.",
-}
+_STATUS_MAP = defaultdict(lambda: interface.UNDEFINED)
 
 _LP_METHODS = ("auto", )
 
@@ -63,8 +63,7 @@ class MatrixProblem(object):
 
     This class assumes that the problem will be pretty much immutable. This is
     a small intermediate layer based on dictionaries that is fast to modify
-    but can also be converted to a matrix formulation quickly. This is the only
-    thing you will need to modify.
+    but can also be converted to a matrix formulation quickly.
     """
 
     def __init__(self):
@@ -90,7 +89,13 @@ class MatrixProblem(object):
         self.default_settings()
 
     def default_settings(self):
-        """Set the default settings of the solver."""
+        """Set the default settings of the solver.
+
+        Returns
+        -------
+        dict
+            The default settings for the solver.
+        """
         self.settings = {
             "presolve": True,
             "lp_method": "auto",
@@ -99,11 +104,33 @@ class MatrixProblem(object):
             "primal_inf_tolerance": 1e-6,
             "dual_inf_tolerance": 1e-6,
             "optimality_tolerance": 1e-6,
-            "verbose": 0
+            "mip_tolerance": 1e-6,
+            "verbose": 1,
+            "threads": 1,
+            "iteration_limit": 100000
         }
 
-    def build(self):
-        """Build the problem instance."""
+    def build(self, add_variable_constraints=False):
+        """Build the problem instance.
+
+        Parameters
+        ----------
+        add_variable_constraints : bool
+            Whether to add constraints for each individual variables as a (sparse)
+            block diagonal to the constraint matrix A.
+
+        Returns
+        -------
+        tuple of [P, q, A, bounds, vbounds, integer] with the following components:
+            - P : Quadratic objective coefficients as an upper triangular CSC matrix
+            - q : Linear objective coefficients as an array.
+            - A : Constraint matrix as a CSC matrix.
+            - bounds : Constraint lower and upper bounds as a 2xNc matrix.
+            - vbounds : Variable bounds as a 2xNv matrix.
+            - integer : Binary array indicating whether variable i is integer
+                        (for MIPs).
+
+        """
         d = self.direction
         vmap = dict(zip(self.variables, range(len(self.variables))))
         nv = len(self.variables)
@@ -127,10 +154,10 @@ class MatrixProblem(object):
             self.obj_linear_coefs.values()
         )
         q = q * d
-        Av = array([[vmap[k] + nc, vmap[k], 1.0] for k in self.variables])
         vbounds = array(
             [[self.variable_lbs[vn], self.variable_ubs[vn]] for vn in self.variables]
         )
+
         if len(self.constraint_coefs) > 0:
             A = array(
                 [
@@ -144,26 +171,51 @@ class MatrixProblem(object):
                     for cn in self.constraints
                 ]
             )
-            A = concatenate((A, Av))
-            bounds = concatenate((bounds, vbounds))
-        else:
-            A = Av
-            bounds = vbounds
-        if A.shape[0] == 0:
-            A = None
-        else:
+            if add_variable_constraints:
+                Av = array([[vmap[k] + nc, vmap[k], 1.0] for k in self.variables])
+                A = concatenate((A, Av))
+                bounds = concatenate((bounds, vbounds))
             A = csc_matrix(
                 (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
                 shape=(nc + nv, nv),
             )
-        return P, q, A, bounds
+        elif add_variable_constraints:
+            Av = array([[vmap[k], vmap[k], 1.0] for k in self.variables])
+            A = csc_matrix(
+                (Av[:, 2], (Av[:, 0].astype("int64"), Av[:, 1].astype("int64"))),
+                shape=(nv, nv),
+            )
+            bounds = vbounds
+        else:
+            A = None
+            bounds = None
+
+        integer = array([int(vn in self.integer_vars) for vn in self.variables])
+        return P, q, A, bounds, vbounds, integer
 
     def solve(self):
-        """Solve the problem."""
+        """Solve the problem.
+
+        This will return nothing but will fill the solution attributes.
+
+        Returns
+        -------
+        Nothing.
+        """
         raise NotImplementedError("This needs to be overwritten by the child class.")
 
     def reset(self, everything=False):
-        """Reset the public solver solution."""
+        """Reset the public solver solution.
+
+        Parameters
+        ----------
+        everything : bool
+            If true will also clear cached solution bases or warm start solutions.
+
+        Returns
+        -------
+        Nothing.
+        """
         self.info = None
         self.primals = {}
         self.cprimals = {}
@@ -173,7 +225,21 @@ class MatrixProblem(object):
             self._solution = None
 
     def still_valid(self, A, bounds):
-        """Check if previous solutions is still feasible."""
+        """Check if previous solutions is still feasible.
+
+        Parameters
+        ----------
+        A : numpy.csc_matrix
+            The constraint matrix A.
+        bounds : numpy.array
+            The constraint bounds.
+
+        Returns
+        -------
+        bool
+            Whether the current solution still fulfills the bounds.
+
+        """
         raise NotImplementedError("This needs to be overwritten by the child class.")
 
     def clean(self):
@@ -207,7 +273,20 @@ class MatrixProblem(object):
         self.integer_vars = {v for v in self.integer_vars if v in self.variables}
 
     def rename_constraint(self, old, new):
-        """Rename a constraint."""
+        """Rename a constraint.
+
+        Parameters
+        ----------
+        old : str
+            The old name of the constraint.
+        new : str
+            The new name of the constraint.
+
+        Returns
+        -------
+        Nothing.
+
+        """
         self.reset()
         self.constraints.remove(old)
         self.constraints.add(new)
@@ -220,7 +299,20 @@ class MatrixProblem(object):
         self.constraint_ubs[new] = self.constraint_ubs.pop(old)
 
     def rename_variable(self, old, new):
-        """Rename a variable."""
+        """Rename a variable.
+
+        Parameters
+        ----------
+        old : str
+            The old name of the variable.
+        new : str
+            The new name of the variable.
+
+        Returns
+        -------
+        Nothing.
+
+        """
         self.reset()
         self.variables.remove(old)
         self.variables.add(new)
@@ -494,10 +586,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     def _set_presolve(self, value):
         if getattr(self, "problem", None) is not None:
-            if isinstance(value, bool):
+            if value in [True, False, "auto"]:
                 self.problem.problem.settings["presolve"] = value
-            elif value == "auto":
-                self.problem.problem.settings["presove"] = False
             else:
                 raise ValueError(
                     str(value) + " is not a valid presolve parameter. Must be True, "
@@ -599,6 +689,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 @six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
     ProblemClass = MatrixProblem
+    status_map = _STATUS_MAP
 
     def _initialize_problem(self):
         self.problem = self.ProblemClass()
@@ -733,14 +824,14 @@ class Model(interface.Model):
 
     @property
     def is_integer(self):
-        return False
+        return len(self.problem.integer_vars) > 0
 
     def _optimize(self):
         self.update()
         self.problem.solve()
         prior_status = self.problem.status
         self._original_status = prior_status
-        status = _STATUS_MAP[prior_status]
+        status = self.status_map[prior_status]
         return status
 
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):
@@ -761,6 +852,8 @@ class Model(interface.Model):
             self.problem.variables.add(variable.name)
             self.problem.variable_lbs[variable.name] = lb
             self.problem.variable_ubs[variable.name] = ub
+            if variable.type in ("binary", "integer"):
+                self.problem.integer_vars.add(variable.name)
             variable.problem = self
 
     def _remove_variables(self, variables):
