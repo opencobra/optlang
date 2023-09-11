@@ -31,14 +31,13 @@ To create a solver from this, you need to do the following:
 For an example take a look at `optlang.osqp_interface`.
 """
 
+import abc
 import logging
-import six
 import pickle
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from numpy import array, concatenate, Infinity, zeros
 
 from optlang import interface, symbolics, available_solvers
-from optlang.util import inheritdocstring
 from optlang.expression_parsing import parse_optimization_expression
 from optlang.exceptions import SolverError
 
@@ -57,8 +56,14 @@ _QP_METHODS = ("auto", )
 
 _TYPES = ("continuous", "binary", "integer")
 
+SparseProblem = namedtuple(
+    "SparseProblem",
+    ["P", "q", "A", "bounds", "vbounds", "integer"]
+)
+"""A representation of the Problem in standard form."""
 
-class MatrixProblem(object):
+
+class MatrixProblem(abc.ABC):
     """A concise representation of an LP/QP/MILP problem.
 
     This class assumes that the problem will be pretty much immutable. This is
@@ -66,7 +71,8 @@ class MatrixProblem(object):
     but can also be converted to a matrix formulation quickly.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.variables = set()
         self.integer_vars = set()
         self.constraints = set()
@@ -140,7 +146,7 @@ class MatrixProblem(object):
             P = array(
                 [
                     [vmap[vn[0]], vmap[vn[1]], coef * d * 2.0]
-                    for vn, coef in six.iteritems(self.obj_quadratic_coefs)
+                    for vn, coef in self.obj_quadratic_coefs.items()
                 ]
             )
             P = csc_matrix(
@@ -162,7 +168,7 @@ class MatrixProblem(object):
             A = array(
                 [
                     [cmap[vn[0]], vmap[vn[1]], coef]
-                    for vn, coef in six.iteritems(self.constraint_coefs)
+                    for vn, coef in self.constraint_coefs.items()
                 ]
             )
             bounds = array(
@@ -191,8 +197,9 @@ class MatrixProblem(object):
             bounds = None
 
         integer = array([int(vn in self.integer_vars) for vn in self.variables])
-        return P, q, A, bounds, vbounds, integer
+        return SparseProblem(P, q, A, bounds, vbounds, integer)
 
+    @abc.abstractmethod
     def solve(self):
         """Solve the problem.
 
@@ -224,6 +231,7 @@ class MatrixProblem(object):
         if everything:
             self._solution = None
 
+    @abc.abstractmethod
     def still_valid(self, A, bounds):
         """Check if previous solutions is still feasible.
 
@@ -242,33 +250,33 @@ class MatrixProblem(object):
         """
         raise NotImplementedError("This needs to be overwritten by the child class.")
 
-    def clean(self):
+    def prune(self):
         """Remove unused variables and constraints."""
         self.reset()
         self.variable_lbs = {
-            k: v for k, v in six.iteritems(self.variable_lbs) if k in self.variables
+            k: v for k, v in self.variable_lbs.items() if k in self.variables
         }
         self.variable_ubs = {
-            k: v for k, v in six.iteritems(self.variable_ubs) if k in self.variables
+            k: v for k, v in self.variable_ubs.items() if k in self.variables
         }
         self.constraint_coefs = {
             k: v
-            for k, v in six.iteritems(self.constraint_coefs)
+            for k, v in self.constraint_coefs.items()
             if k[0] in self.constraints and k[1] in self.variables
         }
         self.obj_linear_coefs = {
-            k: v for k, v in six.iteritems(self.obj_linear_coefs) if k in self.variables
+            k: v for k, v in self.obj_linear_coefs.items() if k in self.variables
         }
         self.obj_quadratic_coefs = {
             k: v
-            for k, v in six.iteritems(self.obj_quadratic_coefs)
+            for k, v in self.obj_quadratic_coefs.items()
             if k[0] in self.variables and k[1] in self.variables
         }
         self.constraint_lbs = {
-            k: v for k, v in six.iteritems(self.constraint_lbs) if k in self.constraints
+            k: v for k, v in self.constraint_lbs.items() if k in self.constraints
         }
         self.constraint_ubs = {
-            k: v for k, v in six.iteritems(self.constraint_ubs) if k in self.constraints
+            k: v for k, v in self.constraint_ubs.items() if k in self.constraints
         }
         self.integer_vars = {v for v in self.integer_vars if v in self.variables}
 
@@ -293,7 +301,7 @@ class MatrixProblem(object):
         name_map = {k: k for k in self.constraints}
         name_map[old] = new
         self.constraint_coefs = {
-            (name_map[k[0]], k[1]): v for k, v in six.iteritems(self.constraint_coefs)
+            (name_map[k[0]], k[1]): v for k, v in self.constraint_coefs.items()
         }
         self.constraint_lbs[new] = self.constraint_lbs.pop(old)
         self.constraint_ubs[new] = self.constraint_ubs.pop(old)
@@ -319,23 +327,22 @@ class MatrixProblem(object):
         name_map = {k: k for k in self.variables}
         name_map[old] = new
         self.constraint_coefs = {
-            (k[0], name_map[k[1]]): v for k, v in six.iteritems(self.constraint_coefs)
+            (k[0], name_map[k[1]]): v for k, v in self.constraint_coefs.items()
         }
         self.obj_quadratic_coefs = {
             (name_map[k[0]], name_map[k[1]]): v
-            for k, v in six.iteritems(self.obj_quadratic_coefs)
+            for k, v in self.obj_quadratic_coefs.items()
         }
         self.obj_linear_coefs = {
-            name_map[k]: v for k, v in six.iteritems(self.obj_linear_coefs)
+            name_map[k]: v for k, v in self.obj_linear_coefs.items()
         }
         self.variable_lbs[new] = self.variable_lbs.pop(old)
         self.variable_ubs[new] = self.variable_ubs.pop(old)
 
 
-@six.add_metaclass(inheritdocstring)
 class Variable(interface.Variable):
     def __init__(self, name, *args, **kwargs):
-        super(Variable, self).__init__(name, **kwargs)
+        super(Variable, self).__init__(name=name, **kwargs)
 
     @interface.Variable.type.setter
     def type(self, value):
@@ -366,7 +373,6 @@ class Variable(interface.Variable):
                 self.problem.problem.rename_variable(old_name, value)
 
 
-@six.add_metaclass(inheritdocstring)
 class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
@@ -377,7 +383,7 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             self.problem.update()
             self.problem.problem.reset()
-            for var, coef in six.iteritems(coefficients):
+            for var, coef in coefficients.items():
                 self.problem.problem.constraint_coefs[(self.name, var.name)] = float(
                     coef
                 )
@@ -472,7 +478,6 @@ class Constraint(interface.Constraint):
         return self
 
 
-@six.add_metaclass(inheritdocstring)
 class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, **kwargs):
         super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
@@ -508,13 +513,13 @@ class Objective(interface.Objective):
             expression = add(
                 [
                     coef * vars[vn]
-                    for vn, coef in six.iteritems(model.problem.obj_linear_coefs)
+                    for vn, coef in model.problem.obj_linear_coefs.items()
                 ]
             )
             q_ex = add(
                 [
                     coef * vars[vn[0]] * vars[vn[1]]
-                    for vn, coef in six.iteritems(model.problem.obj_quadratic_coefs)
+                    for vn, coef in model.problem.obj_quadratic_coefs.items()
                 ]
             )
             expression += q_ex
@@ -525,7 +530,7 @@ class Objective(interface.Objective):
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
             self.problem.update()
-            for v, coef in six.iteritems(coefficients):
+            for v, coef in coefficients.items():
                 self.problem.problem.obj_linear_coefs[v.name] = float(coef)
             self._expression_expired = True
         else:
@@ -548,7 +553,6 @@ class Objective(interface.Objective):
             )
 
 
-@six.add_metaclass(inheritdocstring)
 class Configuration(interface.MathematicalProgrammingConfiguration):
     def __init__(
         self,
@@ -567,7 +571,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.timeout = timeout
         self.qp_method = qp_method
         if "tolerances" in kwargs:
-            for key, val in six.iteritems(kwargs["tolerances"]):
+            for key, val in kwargs["tolerances"].items():
                 if key in self._tolerance_functions():
                     setattr(self.tolerances, key, val)
 
@@ -638,10 +642,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         }
 
     def __setstate__(self, state):
-        for key, val in six.iteritems(state):
+        for key, val in state.items():
             if key != "tolerances":
                 setattr(self, key, val)
-        for key, val in six.iteritems(state["tolerances"]):
+        for key, val in state["tolerances"].items():
             if key in self._tolerance_functions():
                 setattr(self.tolerances, key, val)
 
@@ -686,7 +690,6 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         }
 
 
-@six.add_metaclass(inheritdocstring)
 class Model(interface.Model):
     ProblemClass = MatrixProblem
     status_map = _STATUS_MAP
@@ -737,13 +740,13 @@ class Model(interface.Model):
         linear_expression = add(
             [
                 coef * self._variables[vn]
-                for vn, coef in six.iteritems(self.problem.obj_linear_coefs)
+                for vn, coef in self.problem.obj_linear_coefs.items()
             ]
         )
         quadratic_expression = add(
             [
                 coef * self._variables[vn[0]] * self._variables[vn[1]]
-                for vn, coef in six.iteritems(self.problem.obj_quadratic_coefs)
+                for vn, coef in self.problem.obj_quadratic_coefs.items()
             ]
         )
 
@@ -776,12 +779,12 @@ class Model(interface.Model):
         self._objective_offset = offset
         if linear_coefficients:
             self.problem.obj_linear_coefs = {
-                v.name: float(c) for v, c in six.iteritems(linear_coefficients)
+                v.name: float(c) for v, c in linear_coefficients.items()
             }
 
-        for key, coef in six.iteritems(quadratic_coeffients):
+        for key, coef in quadratic_coeffients.items():
             if len(key) == 1:
-                var = six.next(iter(key))
+                var = next(iter(key))
                 self.problem.obj_quadratic_coefs[(var.name, var.name)] = float(coef)
             else:
                 var1, var2 = key
@@ -868,7 +871,7 @@ class Model(interface.Model):
             variable.problem = None
             del self._variables[variable.name]
             self.problem.variables.remove(variable.name)
-        self.problem.clean()
+        self.problem.prune()
 
     def _add_constraints(self, constraints, sloppy=False):
         super(Model, self)._add_constraints(constraints, sloppy=sloppy)
@@ -884,7 +887,7 @@ class Model(interface.Model):
                 self.problem.constraint_coefs.update(
                     {
                         (constraint.name, v.name): float(co)
-                        for v, co in six.iteritems(coeff_dict)
+                        for v, co in coeff_dict.items()
                     }
                 )
                 self.problem.constraint_lbs[constraint.name] = lb
@@ -905,7 +908,7 @@ class Model(interface.Model):
         super(Model, self)._remove_constraints(constraints)
         for constraint in constraints:
             self.problem.constraints.remove(constraint.name)
-        self.problem.clean()
+        self.problem.prune()
 
     def _get_variable_indices(self, names):
         vmap = dict(zip(self.variables, range(len(self.variables))))

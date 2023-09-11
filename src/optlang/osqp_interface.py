@@ -91,14 +91,21 @@ class OSQPProblem(mi.MatrixProblem):
     def solve(self):
         """Solve the OSQP problem."""
         settings = self.osqp_settings()
-        P, q, A, bounds, _, _ = self.build(add_variable_constraints=True)
+        sp = self.build(add_variable_constraints=True)
         solver = osqp.OSQP()
-        if P is None:
+        if sp.P is None:
             # see https://github.com/cvxgrp/cvxpy/issues/898
             settings.update({"adaptive_rho": 0, "rho": 1.0, "alpha": 1.0})
-        solver.setup(P=P, q=q, A=A, l=bounds[:, 0], u=bounds[:, 1], **settings)  # noqa
+        solver.setup(
+            P=sp.P,
+            q=sp.q,
+            A=sp.A,
+            l=sp.bounds[:, 0],
+            u=sp.bounds[:, 1],
+            **settings
+        )
         if self._solution is not None:
-            if self.still_valid(A, bounds):
+            if self.still_valid(sp.A, sp.bounds):
                 solver.warm_start(x=self._solution["x"], y=self._solution["y"])
                 if "rho" in self._solution:
                     solver.update_settings(rho=self._solution["rho"])
@@ -109,7 +116,7 @@ class OSQPProblem(mi.MatrixProblem):
             self.primals = dict(zip(self.variables, solution.x))
             self.vduals = dict(zip(self.variables, solution.y[nc : (nc + nv)]))
             if nc > 0:
-                self.cprimals = dict(zip(self.constraints, A.dot(solution.x)[0:nc]))
+                self.cprimals = dict(zip(self.constraints, sp.A.dot(solution.x)[0:nc]))
                 self.duals = dict(zip(self.constraints, solution.y[0:nc]))
         if not np.isnan(solution.info.obj_val):
             self.obj_value = solution.info.obj_val * self.direction
@@ -140,27 +147,22 @@ class OSQPProblem(mi.MatrixProblem):
         return valid
 
 
-@six.add_metaclass(inheritdocstring)
 class Variable(mi.Variable):
     pass
 
 
-@six.add_metaclass(inheritdocstring)
 class Constraint(mi.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
 
-@six.add_metaclass(inheritdocstring)
 class Objective(mi.Objective):
     pass
 
 
-@six.add_metaclass(inheritdocstring)
 class Configuration(mi.Configuration):
     pass
 
 
-@six.add_metaclass(inheritdocstring)
 class Model(mi.Model):
     ProblemClass = OSQPProblem
     status_map = _STATUS_MAP
