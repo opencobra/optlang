@@ -34,19 +34,18 @@ For an example take a look at `optlang.osqp_interface`.
 import abc
 import logging
 import pickle
-from collections import defaultdict, namedtuple
-from numpy import array, concatenate, Infinity, zeros
+from collections import defaultdict
+from typing import NamedTuple
 
-from optlang import interface, symbolics, available_solvers
-from optlang.expression_parsing import parse_optimization_expression
-from optlang.exceptions import SolverError
-
+from numpy import Infinity, array, concatenate, zeros
 from scipy.sparse import csc_matrix
 
+from optlang import available_solvers, interface, symbolics
+from optlang.exceptions import SolverError
+from optlang.expression_parsing import parse_optimization_expression
 from optlang.symbolics import add, mul
 
 log = logging.getLogger(__name__)
-
 
 _STATUS_MAP = defaultdict(lambda: interface.UNDEFINED)
 
@@ -56,11 +55,41 @@ _QP_METHODS = ("auto", )
 
 _TYPES = ("continuous", "binary", "integer")
 
-SparseProblem = namedtuple(
-    "SparseProblem",
-    ["P", "q", "A", "bounds", "vbounds", "integer"]
-)
-"""A representation of the Problem in standard form."""
+
+class SparseProblem(NamedTuple):
+    """A representation of the convex optimizatgion problem in standard form.
+
+    This defines the problem in the form.
+
+    ..math::
+
+      \text{minimize }& \frac{1}{2}x^T\mathbf{P}x + q^Tx \\
+      \text{s.t.: }& bounds_{.0} \leq \mathbf{A} \leq bounds_{.1} \\
+      & vbounds_{.0} \leq x \leq vbounds_{.1} \\
+      & \{x_k \in \mathbb{N}^0 \text{ if } integer_k = 1 \}
+
+    Attributes
+    ----------
+    P : csc_matrix
+        A semidefinite positive matrix specifying the coefficients for the quadratic
+        objective.
+    q : array
+        A vector specfiying the linear objective coefficients.
+    A : csc_matrix
+        The constraint matrix.
+    bounds : array
+        The lower and upper bounds corresponding to the rows in `A`.
+    vbounds : array
+        The lower and upper bounds of the variables `x`.
+    integer : array
+        Indicator vector denoting if `x[k]` is integer.
+    """
+    P : csc_matrix
+    q : array
+    A : csc_matrix
+    bounds : array
+    vbounds : array
+    integer : array
 
 
 class MatrixProblem(abc.ABC):
@@ -72,7 +101,6 @@ class MatrixProblem(abc.ABC):
     """
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self.variables = set()
         self.integer_vars = set()
         self.constraints = set()
@@ -342,7 +370,7 @@ class MatrixProblem(abc.ABC):
 
 class Variable(interface.Variable):
     def __init__(self, name, *args, **kwargs):
-        super(Variable, self).__init__(name=name, **kwargs)
+        super().__init__(name=name, **kwargs)
 
     @interface.Variable.type.setter
     def type(self, value):
@@ -376,8 +404,8 @@ class Variable(interface.Variable):
 class Constraint(interface.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
-    def __init__(self, expression, sloppy=False, *args, **kwargs):
-        super(Constraint, self).__init__(expression, *args, sloppy=sloppy, **kwargs)
+    def __init__(self, expression, sloppy=False, **kwargs):
+        super().__init__(expression=expression, sloppy=sloppy, **kwargs)
 
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
@@ -471,16 +499,16 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             problem_reference = self.problem
             self.problem._remove_constraint(self)
-            super(Constraint, self).__iadd__(other)
+            super().__iadd__(other)
             problem_reference._add_constraint(self, sloppy=False)
         else:
-            super(Constraint, self).__iadd__(other)
+            super().__iadd__(other)
         return self
 
 
 class Objective(interface.Objective):
     def __init__(self, expression, sloppy=False, **kwargs):
-        super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
+        super().__init__(expression=expression, sloppy=sloppy, **kwargs)
         self._expression_expired = False
         if not (sloppy or self.is_Linear or self.is_Quadratic):
             raise ValueError(
@@ -561,10 +589,9 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         verbosity=0,
         timeout=None,
         qp_method="auto",
-        *args,
         **kwargs
     ):
-        super(Configuration, self).__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.lp_method = lp_method
         self.presolve = presolve
         self.verbosity = verbosity
@@ -708,7 +735,7 @@ class Model(interface.Model):
                 ub=self.problem.variable_ubs[name],
                 problem=self,
             )
-            super(Model, self)._add_variables([var])
+            super()._add_variables([var])
 
         for name in self.problem.constraints:
             # Since constraint expressions are lazily retrieved from the
@@ -722,7 +749,7 @@ class Model(interface.Model):
                 problem=self,
             )
 
-            super(Model, self)._add_constraints([constr], sloppy=True)
+            super()._add_constraints([constr], sloppy=True)
 
         if vc_mapping is None:
             for constr in self.constraints:
@@ -847,7 +874,7 @@ class Model(interface.Model):
             self.problem.variable_ubs[var.name] = float(ub)
 
     def _add_variables(self, variables):
-        super(Model, self)._add_variables(variables)
+        super()._add_variables(variables)
         self.problem.reset()
         for variable in variables:
             lb = -Infinity if variable.lb is None else float(variable.lb)
@@ -874,7 +901,7 @@ class Model(interface.Model):
         self.problem.prune()
 
     def _add_constraints(self, constraints, sloppy=False):
-        super(Model, self)._add_constraints(constraints, sloppy=sloppy)
+        super()._add_constraints(constraints, sloppy=sloppy)
         self.problem.reset()
         for constraint in constraints:
             # This needs to be done in order to not trigger constraint._get_expression()
@@ -905,7 +932,7 @@ class Model(interface.Model):
                 )
 
     def _remove_constraints(self, constraints):
-        super(Model, self)._remove_constraints(constraints)
+        super()._remove_constraints(constraints)
         for constraint in constraints:
             self.problem.constraints.remove(constraint.name)
         self.problem.prune()
@@ -955,10 +982,10 @@ class Model(interface.Model):
             mod = cplex_interface.Model.from_lp(lp_problem_str)
             mod.configuration.lp_method = "auto"
             mod.configuration.qp_method = "auto"
-            return super(Model, self).clone(mod)
+            return super().clone(mod)
         else:
             from optlang import glpk_interface
 
             mod = glpk_interface.Model.from_lp(lp_problem_str)
             mod.configuration.lp_method = "auto"
-            return super(Model, self).clone(mod)
+            return super().clone(mod)
