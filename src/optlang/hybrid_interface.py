@@ -20,13 +20,12 @@ interface.
 Make sure that `import osqp` and `import highspy` runs without error.
 """
 import logging
-import six
 import numpy as np
 
+import pickle
 import optlang.matrix_interface as mi
 from optlang import interface
 from optlang.exceptions import SolverError
-from optlang.util import inheritdocstring
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +66,7 @@ _STATUS_MAP = {
     "Time limit reached": interface.TIME_LIMIT,
     "Iteration limit reached": interface.ITERATION_LIMIT,
     "Solution limit reached": interface.NODE_LIMIT,
-    "Unknown": interface.UNDEFINED
+    "Unknown": interface.UNDEFINED,
 }
 
 
@@ -76,7 +75,7 @@ _LP_METHODS = ("auto", "simplex", "interior point")
 
 HIGHS_OPTION_MAP = {
     "presolve": {True: "on", False: "off", "auto": "choose"},
-    "solver": {"simplex": "simplex", "interior point": "ipm", "auto": "choose"}
+    "solver": {"simplex": "simplex", "interior point": "ipm", "auto": "choose"},
 }
 
 HIGHS_VAR_TYPES = np.array([hs.HighsVarType.kContinuous, hs.HighsVarType.kInteger])
@@ -137,14 +136,17 @@ class HybridProblem(mi.MatrixProblem):
     def solve_osqp(self):
         """Solve a QP with OSQP."""
         settings = self.osqp_settings()
-        P, q, A, bounds, _, _ = self.build(add_variable_constraints=True)
+        d = float(self.direction)
+        sp = self.build(add_variable_constraints=True)
         solver = osqp.OSQP()
-        if P is None:
+        if sp.P is None:
             # see https://github.com/cvxgrp/cvxpy/issues/898
             settings.update({"adaptive_rho": 0, "rho": 1.0, "alpha": 1.0})
-        solver.setup(P=P, q=q, A=A, l=bounds[:, 0], u=bounds[:, 1], **settings)  # noqa
+        solver.setup(
+            P=sp.P, q=sp.q, A=sp.A, l=sp.bounds[:, 0], u=sp.bounds[:, 1], **settings
+        )
         if self._solution is not None:
-            if self.still_valid(A, bounds):
+            if self.still_valid(sp.A, sp.bounds):
                 solver.warm_start(x=self._solution["x"], y=self._solution["y"])
                 if "rho" in self._solution:
                     solver.update_settings(rho=self._solution["rho"])
@@ -153,10 +155,10 @@ class HybridProblem(mi.MatrixProblem):
         nv = len(self.variables)
         if not solution.x[0] is None:
             self.primals = dict(zip(self.variables, solution.x))
-            self.vduals = dict(zip(self.variables, solution.y[nc : (nc + nv)]))
+            self.vduals = dict(zip(self.variables, solution.y[nc : (nc + nv)] * d))
             if nc > 0:
-                self.cprimals = dict(zip(self.constraints, A.dot(solution.x)[0:nc]))
-                self.duals = dict(zip(self.constraints, solution.y[0:nc]))
+                self.cprimals = dict(zip(self.constraints, sp.A.dot(solution.x)[0:nc]))
+                self.duals = dict(zip(self.constraints, solution.y[0:nc] * d))
         if not np.isnan(solution.info.obj_val):
             self.obj_value = solution.info.obj_val * self.direction
             self.status = solution.info.status
@@ -172,26 +174,28 @@ class HybridProblem(mi.MatrixProblem):
 
     def solve_highs(self):
         """Solve a problem with HIGHS."""
+        d = float(self.direction)
         options = self.highs_settings()
-        P, q, A, bounds, vbounds, ints = self.build()
+        sp = self.build()
         env = self._highs_env
         model = hs.HighsModel()
         env.passOptions(options)
+        model.lp_.sense_ = hs.ObjSense.kMinimize
         model.lp_.num_col_ = len(self.variables)
         model.lp_.num_row_ = len(self.constraints)
         # Set variable bounds and objective coefficients
-        model.lp_.col_cost_ = q
-        model.lp_.col_lower_ = vbounds[:, 0]
-        model.lp_.col_upper_ = vbounds[:, 1]
+        model.lp_.col_cost_ = sp.q
+        model.lp_.col_lower_ = sp.vbounds[:, 0]
+        model.lp_.col_upper_ = sp.vbounds[:, 1]
         # Set constraints and bounds
-        if A is not None:
-            model.lp_.a_matrix_.start_ = A.indptr
-            model.lp_.a_matrix_.index_ = A.indices
-            model.lp_.a_matrix_.value_ = A.data
-            model.lp_.row_lower_ = bounds[:, 0]
-            model.lp_.row_upper_ = bounds[:, 1]
+        if sp.A is not None:
+            model.lp_.a_matrix_.start_ = sp.A.indptr
+            model.lp_.a_matrix_.index_ = sp.A.indices
+            model.lp_.a_matrix_.value_ = sp.A.data
+            model.lp_.row_lower_ = sp.bounds[:, 0]
+            model.lp_.row_upper_ = sp.bounds[:, 1]
         if len(self.integer_vars) > 0:
-            model.lp_.integrality_ = HIGHS_VAR_TYPES[ints]
+            model.lp_.integrality_ = HIGHS_VAR_TYPES[sp.integer]
         env.passModel(model)
         env.run()
         info = env.getInfo()
@@ -199,12 +203,12 @@ class HybridProblem(mi.MatrixProblem):
         sol = env.getSolution()
         self._solution = {
             "x": list(sol.col_value),
-            "y": list(sol.row_dual) + list(sol.col_dual)
+            "y": list(sol.row_dual) + list(sol.col_dual),
         }
-        self.primals = dict(zip(self.variables, list(sol.col_value)))
-        self.vduals = dict(zip(self.variables, list(sol.col_dual)))
-        self.cprimals = dict(zip(self.constraints, list(sol.row_value)))
-        self.duals = dict(zip(self.constraints, list(sol.row_dual)))
+        self.primals = dict(zip(self.variables, np.array(sol.col_value)))
+        self.vduals = dict(zip(self.variables, np.array(sol.col_dual) * d))
+        self.cprimals = dict(zip(self.constraints, np.array(sol.row_value)))
+        self.duals = dict(zip(self.constraints, np.array(sol.row_dual) * d))
         self.obj_value = info.objective_function_value * self.direction
         self.info = info
 
@@ -237,27 +241,51 @@ class HybridProblem(mi.MatrixProblem):
         self._highs_env = hs.Highs()
 
 
-@six.add_metaclass(inheritdocstring)
 class Variable(mi.Variable):
     pass
 
 
-@six.add_metaclass(inheritdocstring)
 class Constraint(mi.Constraint):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
 
-@six.add_metaclass(inheritdocstring)
 class Objective(mi.Objective):
     pass
 
 
-@six.add_metaclass(inheritdocstring)
 class Configuration(mi.Configuration):
     lp_methods = _LP_METHODS
 
 
-@six.add_metaclass(inheritdocstring)
 class Model(mi.Model):
     ProblemClass = HybridProblem
     status_map = _STATUS_MAP
+
+    def __setstate__(self, d):
+        self.__init__()
+        problem = pickle.loads(d["problem"])
+        problem._highs_env = hs.Highs()
+        # workaround to conserve the order
+        problem.variables = d["variables"]
+        problem.constraints = d["constraints"]
+        self._initialize_model_from_problem(
+            problem, vc_mapping=d["v_to_c"], offset=d["offset"]
+        )
+        problem.variables = set(problem.variables)
+        problem.constraints = set(problem.constraints)
+        self.configuration = self.interface.Configuration()
+        self.configuration.problem = self
+        self.configuration.__setstate__(d["config"])
+
+    def __getstate__(self):
+        self.problem.reset()
+        self.problem._highs_env = None
+        self.update()
+        return {
+            "problem": pickle.dumps(self.problem),
+            "variables": [v.name for v in self._variables],
+            "constraints": [c.name for c in self._constraints],
+            "v_to_c": self._variables_to_constraints_mapping,
+            "config": self.configuration.__getstate__(),
+            "offset": getattr(self, "_objective_offset", 0.0),
+        }
