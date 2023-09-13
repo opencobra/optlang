@@ -366,6 +366,9 @@ class MatrixProblem(abc.ABC):
         }
         self.variable_lbs[new] = self.variable_lbs.pop(old)
         self.variable_ubs[new] = self.variable_ubs.pop(old)
+        if old in self.integer_vars:
+            self.integer_vars.remove(old)
+            self.integer_vars.add(new)
 
 
 class Variable(interface.Variable):
@@ -381,6 +384,15 @@ class Variable(interface.Variable):
                     + "The following variable types are available: "
                     + ", ".join(_TYPES)
                 )
+            if value == "binary":
+                self.lb = 0
+                self.ub = 1
+                self.problem.problem.integer_vars.add(self.name)
+            elif value == "integer":
+                self.problem.problem.integer_vars.add(self.name)
+            elif value == "continuous":
+                if self.name in self.problem.problem.integer_vars:
+                    self.problem.problem.integer_vars.remove(self.name)
         super(Variable, Variable).type.fset(self, value)
 
     def _get_primal(self):
@@ -388,6 +400,8 @@ class Variable(interface.Variable):
 
     @property
     def dual(self):
+        if self.problem.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
         if self.problem is not None:
             return self.problem.problem.vduals.get(self.name, None)
         return None
@@ -462,11 +476,11 @@ class Constraint(interface.Constraint):
 
     @property
     def dual(self):
+        if self.problem.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
         if self.problem is None:
             return None
         d = self.problem.problem.duals.get(self.name, None)
-        if d is not None:
-            d = -d
         return d
 
     @interface.Constraint.name.setter
@@ -582,6 +596,9 @@ class Objective(interface.Objective):
 
 
 class Configuration(interface.MathematicalProgrammingConfiguration):
+    lp_methods = _LP_METHODS
+    qp_methods = _QP_METHODS
+
     def __init__(
         self,
         lp_method="auto",
@@ -605,14 +622,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     @property
     def lp_method(self):
         """The algorithm used to solve LP problems."""
-        return "auto"
+        return self.problem.problem.settings["lp_method"]
 
     @lp_method.setter
     def lp_method(self, lp_method):
-        if lp_method not in _LP_METHODS:
+        if lp_method not in self.lp_methods:
             raise ValueError(
                 "LP Method %s is not valid (choose one of: %s)"
-                % (lp_method, ", ".join(_LP_METHODS))
+                % (lp_method, ", ".join(self.lp_methods))
             )
 
     def _set_presolve(self, value):
@@ -679,14 +696,14 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
     @property
     def qp_method(self):
         """Change the algorithm used to optimize QP problems."""
-        return "auto"
+        return self.problem.problem.settings["qp_method"]
 
     @qp_method.setter
     def qp_method(self, value):
         if value not in _QP_METHODS:
             raise ValueError(
                 "%s is not a valid qp_method. Choose between %s"
-                % (value, str(_QP_METHODS))
+                % (value, str(self.qp_methods))
             )
         self._qp_method = value
 
@@ -698,10 +715,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.problem.problem.settings["dual_inf_tolerance"] = value
 
     def _get_integrality(self):
-        return 1e-6
+        return self.problem.problem.settings["mip_tolerance"]
 
     def _set_integrality(self, value):
-        pass
+        self.problem.problem.settings["mip_tolerance"] = value
 
     def _get_optimality(self):
         return self.problem.problem.settings["optimality_tolerance"]
@@ -782,7 +799,7 @@ class Model(interface.Model):
             linear_expression + quadratic_expression + offset,
             problem=self,
             direction={-1: "max", 1: "min"}[self.problem.direction],
-            name="osqp_objective",
+            name="matrix_objective",
         )
 
     @property
@@ -835,21 +852,25 @@ class Model(interface.Model):
         return primal_values
 
     def _get_reduced_costs(self):
-        if len(self.problem.duals) == 0:
+        if self.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
+        if len(self.problem.vduals) == 0:
             raise SolverError("The problem has not been solved yet!")
         reduced_costs = [self.problem.vduals[v.name] for v in self._variables]
         return reduced_costs
 
     def _get_constraint_values(self):
-        if len(self.problem.primals) == 0:
+        if len(self.problem.cprimals) == 0:
             raise SolverError("The problem has not been solved yet!")
         constraint_primals = [self.problem.cprimals[c.name] for c in self._constraints]
         return constraint_primals
 
     def _get_shadow_prices(self):
-        if len(self.problem.primals) == 0:
+        if self.is_integer:
+            raise ValueError("Dual values are not well-defined for integer problems")
+        if len(self.problem.duals) == 0:
             raise SolverError("The problem has not been solved yet!")
-        dual_values = [-self.problem.duals[c.name] for c in self._constraints]
+        dual_values = [self.problem.duals[c.name] for c in self._constraints]
         return dual_values
 
     @property

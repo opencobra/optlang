@@ -20,12 +20,10 @@ interface.
 Make sure that 'import osqp' runs without error.
 """
 import logging
-import six
 import numpy as np
 
 import optlang.matrix_interface as mi
 from optlang import interface
-from optlang.util import inheritdocstring
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +55,7 @@ _STATUS_MAP = {
     "maximum iterations reached": interface.ITERATION_LIMIT,
     "unsolved": interface.SPECIAL,
     "problem non convex": interface.SPECIAL,
-    "non-existing-status": "Here for testing that missing statuses are handled."
+    "non-existing-status": "Here for testing that missing statuses are handled.",
 }
 
 
@@ -91,18 +89,14 @@ class OSQPProblem(mi.MatrixProblem):
     def solve(self):
         """Solve the OSQP problem."""
         settings = self.osqp_settings()
+        d = float(self.direction)
         sp = self.build(add_variable_constraints=True)
         solver = osqp.OSQP()
         if sp.P is None:
             # see https://github.com/cvxgrp/cvxpy/issues/898
             settings.update({"adaptive_rho": 0, "rho": 1.0, "alpha": 1.0})
         solver.setup(
-            P=sp.P,
-            q=sp.q,
-            A=sp.A,
-            l=sp.bounds[:, 0],
-            u=sp.bounds[:, 1],
-            **settings
+            P=sp.P, q=sp.q, A=sp.A, l=sp.bounds[:, 0], u=sp.bounds[:, 1], **settings
         )
         if self._solution is not None:
             if self.still_valid(sp.A, sp.bounds):
@@ -116,8 +110,10 @@ class OSQPProblem(mi.MatrixProblem):
             self.primals = dict(zip(self.variables, solution.x))
             self.vduals = dict(zip(self.variables, solution.y[nc : (nc + nv)]))
             if nc > 0:
-                self.cprimals = dict(zip(self.constraints, sp.A.dot(solution.x)[0:nc]))
-                self.duals = dict(zip(self.constraints, solution.y[0:nc]))
+                self.cprimals = dict(
+                    zip(self.constraints, sp.A.dot(solution.x)[0:nc] * d)
+                )
+                self.duals = dict(zip(self.constraints, solution.y[0:nc] * d))
         if not np.isnan(solution.info.obj_val):
             self.obj_value = solution.info.obj_val * self.direction
             self.status = solution.info.status
