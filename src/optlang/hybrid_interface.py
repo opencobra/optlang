@@ -20,18 +20,20 @@ interface.
 Make sure that `import osqp` and `import highspy` runs without error.
 """
 import logging
+import pickle
+
 import numpy as np
 
-import pickle
 import optlang.matrix_interface as mi
 from optlang import interface
 from optlang.exceptions import SolverError
 
+
 log = logging.getLogger(__name__)
 
 try:
-    import osqp as osqp
     import highspy as hs
+    import osqp as osqp
 except ImportError:
     raise ImportError("The hybrid interface requires highs and osqp!")
 
