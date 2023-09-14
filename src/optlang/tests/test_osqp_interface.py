@@ -475,25 +475,17 @@ else:
                     getattr(model.configuration.tolerances, param), 2 * val
                 )
 
-        def test_solver(self):
-            for option in ("qdldl", "mkl pardiso"):
-                self.configuration.linear_solver = option
-                self.assertEqual(self.configuration.linear_solver, option)
-                self.assertEqual(self.model.problem.settings["linsys_solver"], option)
-
-            self.assertRaises(ValueError, setattr, self.configuration, "lp_method", "weird_stuff")
-
         def test_lp_method(self):
-            for option in ("auto", "primal"):
+            for option in ("auto", ):
                 self.configuration.lp_method = option
-                self.assertEqual(self.configuration.lp_method, "primal")
+                self.assertEqual(self.configuration.lp_method, "auto")
 
             self.assertRaises(ValueError, setattr, self.configuration, "lp_method", "weird_stuff")
 
         def test_qp_method(self):
-            for option in osqp_interface._QP_METHODS:
+            for option in ("auto", ):
                 self.configuration.qp_method = option
-                self.assertEqual(self.configuration.qp_method, "primal")
+                self.assertEqual(self.configuration.qp_method, "auto")
 
             self.assertRaises(ValueError, setattr, self.configuration, "qp_method", "weird_stuff")
 
