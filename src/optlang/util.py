@@ -153,6 +153,14 @@ def list_available_solvers():
     if not solvers['OSQP']:
         log.debug('OSQP python bindings not available.')
     try:
+        import highspy
+        solvers['HIGHS'] = True
+        log.debug('HIGHS python bindings found at %s' % os.path.dirname(highspy.__file__))
+    except Exception:
+        pass
+    if not solvers['OSQP'] and not solvers['HIGHS']:
+        log.debug('HIGHS python bindings not available.')
+    try:
         import mip
 
         solvers['COINOR_CBC'] = True

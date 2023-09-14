@@ -62,6 +62,12 @@ if available_solvers['OSQP']:
     except Exception:
         log.error('OSQP is available but could not load with error:\n  ' +
             str(traceback.format_exc()).strip().replace('\n','\n  '))
+    if available_solvers['HIGHS']:
+        try:
+            from optlang import hybrid_interface
+        except Exception:
+            log.error('OSQP and HIGHS are available but could not load with error:\n  ' +
+                str(traceback.format_exc()).strip().replace('\n','\n  '))
 
 if available_solvers['SCIPY']:
     try:

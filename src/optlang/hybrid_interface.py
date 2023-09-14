@@ -20,7 +20,6 @@ interface.
 Make sure that `import osqp` and `import highspy` runs without error.
 """
 import logging
-import pickle
 
 import numpy as np
 
@@ -203,14 +202,18 @@ class HybridProblem(mi.MatrixProblem):
         info = env.getInfo()
         self.status = env.modelStatusToString(env.getModelStatus())
         sol = env.getSolution()
+        primals = np.array(sol.col_value)
+        vduals = np.array(sol.col_dual) * d
+        cprimals = np.array(sol.row_value)
+        duals = np.array(sol.row_dual) * d
         self._solution = {
-            "x": list(sol.col_value),
-            "y": list(sol.row_dual) + list(sol.col_dual),
+            "x": primals,
+            "y": np.concatenate((duals, vduals)) * d,
         }
-        self.primals = dict(zip(self.variables, np.array(sol.col_value)))
-        self.vduals = dict(zip(self.variables, np.array(sol.col_dual) * d))
-        self.cprimals = dict(zip(self.constraints, np.array(sol.row_value)))
-        self.duals = dict(zip(self.constraints, np.array(sol.row_dual) * d))
+        self.primals = dict(zip(self.variables, primals))
+        self.vduals = dict(zip(self.variables, vduals))
+        self.cprimals = dict(zip(self.constraints, cprimals))
+        self.duals = dict(zip(self.constraints, duals))
         self.obj_value = info.objective_function_value * self.direction
         self.info = info
 
@@ -242,6 +245,15 @@ class HybridProblem(mi.MatrixProblem):
         super().reset(everything)
         self._highs_env = hs.Highs()
 
+    def __setstate__(self, state):
+        state["_highs_env"] = hs.Highs()
+        self.__dict__ = state
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        del d["_highs_env"]
+        return d
+
 
 class Variable(mi.Variable):
     pass
@@ -262,32 +274,3 @@ class Configuration(mi.Configuration):
 class Model(mi.Model):
     ProblemClass = HybridProblem
     status_map = _STATUS_MAP
-
-    def __setstate__(self, d):
-        self.__init__()
-        problem = pickle.loads(d["problem"])
-        problem._highs_env = hs.Highs()
-        # workaround to conserve the order
-        problem.variables = d["variables"]
-        problem.constraints = d["constraints"]
-        self._initialize_model_from_problem(
-            problem, vc_mapping=d["v_to_c"], offset=d["offset"]
-        )
-        problem.variables = set(problem.variables)
-        problem.constraints = set(problem.constraints)
-        self.configuration = self.interface.Configuration()
-        self.configuration.problem = self
-        self.configuration.__setstate__(d["config"])
-
-    def __getstate__(self):
-        self.problem.reset()
-        self.problem._highs_env = None
-        self.update()
-        return {
-            "problem": pickle.dumps(self.problem),
-            "variables": [v.name for v in self._variables],
-            "constraints": [c.name for c in self._constraints],
-            "v_to_c": self._variables_to_constraints_mapping,
-            "config": self.configuration.__getstate__(),
-            "offset": getattr(self, "_objective_offset", 0.0),
-        }
