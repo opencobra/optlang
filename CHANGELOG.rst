@@ -3,6 +3,9 @@
 Next Release
 -----
 
+* refactor the OSQP interface into a generic matrix interface to allow easy addition
+  of new solvers that expect an immutable problem in standard form as input
+
 1.7.0
 -----
 * remove deprecated numpy type casts
