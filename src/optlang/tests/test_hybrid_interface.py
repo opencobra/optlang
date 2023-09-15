@@ -12,9 +12,11 @@ try:  # noqa: C901
     import osqp
     import highspy
 except ImportError as e:
-    @unittest.skip("Missing dependencies")
-    def test_fail(self):
-        pass
+
+    class TestMissingDependency(unittest.TestCase):
+        @unittest.skip("Missing dependencies")
+        def test_fail(self):
+            pass
 else:
 
     import json
