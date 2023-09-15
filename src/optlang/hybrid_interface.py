@@ -32,9 +32,22 @@ log = logging.getLogger(__name__)
 
 try:
     import highspy as hs
+except ImportError:
+    raise ImportError("The hybrid interface requires HIGHS and highspy!")
+
+try:
     import osqp as osqp
 except ImportError:
-    raise ImportError("The hybrid interface requires highs and osqp!")
+    try:
+        import cuosqp as osqp
+
+        log.warning(
+            "cuOSQP is still experimental and may not work for all problems. "
+            "It may not converge as fast as the normal osqp package or not "
+            "converge at all."
+        )
+    except ImportError:
+        raise ImportError("The osqp_interface requires osqp or cuosqp!")
 
 
 _STATUS_MAP = {
@@ -140,9 +153,6 @@ class HybridProblem(mi.MatrixProblem):
         d = float(self.direction)
         sp = self.build(add_variable_constraints=True)
         solver = osqp.OSQP()
-        if sp.P is None:
-            # see https://github.com/cvxgrp/cvxpy/issues/898
-            settings.update({"adaptive_rho": 0, "rho": 1.0, "alpha": 1.0})
         solver.setup(
             P=sp.P, q=sp.q, A=sp.A, l=sp.bounds[:, 0], u=sp.bounds[:, 1], **settings
         )
