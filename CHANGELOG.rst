@@ -3,8 +3,12 @@
 Next Release
 -----
 
-* refactor the OSQP interface into a generic matrix interface to allow easy addition
-  of new solvers that expect an immutable problem in standard form as input
+* add a generic matrix interface to allow easy addition of new solvers
+  that expect an immutable problem in standard form as input
+* replace the OSQP interface with a hybrid interface that uses HIGHS for (MI)LPs and
+  OSQP for QPs
+* `osqp_interface` is now deprecated, will import the hybrid interface when used, and
+  will be removed entirely soon
 
 1.7.0
 -----
