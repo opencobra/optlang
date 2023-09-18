@@ -453,16 +453,16 @@ else:
                 )
 
         def test_lp_method(self):
-            for option in ("auto", "simplex", "interior point"):
+            for option in self.configuration.lp_methods:
                 self.configuration.lp_method = option
-                self.assertEqual(self.configuration.lp_method, "auto")
+                self.assertEqual(self.configuration.lp_method, option)
 
             self.assertRaises(ValueError, setattr, self.configuration, "lp_method", "weird_stuff")
 
         def test_qp_method(self):
-            for option in ("auto", ):
+            for option in self.configuration.qp_methods:
                 self.configuration.qp_method = option
-                self.assertEqual(self.configuration.qp_method, "auto")
+                self.assertEqual(self.configuration.qp_method, option)
 
             self.assertRaises(ValueError, setattr, self.configuration, "qp_method", "weird_stuff")
 
