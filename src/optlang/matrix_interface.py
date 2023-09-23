@@ -890,6 +890,12 @@ class Model(interface.Model):
         status = self.status_map[prior_status]
         return status
 
+    def optimize(self):
+        self.update()
+        status = self._optimize()
+        self._status = status
+        return status
+
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):
         self.problem.reset()
         for var, val in var_lb:
