@@ -61,7 +61,8 @@ if available_solvers['OSQP'] and available_solvers['HIGHS']:
         from optlang import hybrid_interface
         osqp_interface = hybrid_interface  # DEPRECATED: will be removed soon!
     except Exception:
-        log.error('OSQP and HIGHS are available but could not load with error:\n  ' +
+    except ImportError as exc:
+        log.error('OSQP and HIGHS are available but could not load the hybrid interface.\n', exc_info=exc)
             str(traceback.format_exc()).strip().replace('\n','\n  '))
 
 if available_solvers['SCIPY']:
