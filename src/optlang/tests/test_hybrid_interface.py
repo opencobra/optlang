@@ -10,16 +10,13 @@ import unittest
 
 try:  # noqa: C901
     import osqp
+    import highspy
 except ImportError as e:
 
-    if str(e).find('osqp') >= 0:
-        class TestMissingDependency(unittest.TestCase):
-
-            @unittest.skip('Missing dependency - ' + str(e))
-            def test_fail(self):
-                pass
-    else:
-        raise
+    class TestMissingDependency(unittest.TestCase):
+        @unittest.skip("Missing dependencies")
+        def test_fail(self):
+            pass
 else:
 
     import json
@@ -28,10 +25,10 @@ else:
     import six
     from numpy.testing import assert_allclose
 
-    from optlang import interface, osqp_interface
+    from optlang import interface, hybrid_interface
     from optlang.exceptions import SolverError
     from optlang.interface import INFEASIBLE, OPTIMAL, SPECIAL
-    from optlang.osqp_interface import Constraint, Model, Objective, Variable
+    from optlang.hybrid_interface import Constraint, Model, Objective, Variable
     from optlang.tests import abstract_test_cases
 
     random.seed(666)
@@ -45,12 +42,13 @@ else:
         LARGE_QPS,
         ((10399, 11362, 7867.4911490000004051),
          (4001, 11999, -35.7794529499999996))))
+    TOL = 1e-6
 
 
     class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         __test__ = True
 
-        interface = osqp_interface
+        interface = hybrid_interface
 
         def setUp(self):
             self.var = self.interface.Variable('test')
@@ -65,17 +63,17 @@ else:
             print(model.problem.settings)
             model.optimize()
             self.assertEqual(model.status, 'optimal')
-            assert_allclose(model.objective.value, 0.8739215069684305, 1e-4, 1e-4)
+            assert_allclose(model.objective.value, 0.8739215069684305, TOL, TOL)
             ref_sol = [0.8739215069684306, -16.023526143167608, 16.023526143167604]
             primals = [var.primal for var in model.variables[0:3]]
-            assert_allclose(primals, ref_sol, 1e-4, 1e-4)
+            assert_allclose(primals, ref_sol, TOL, TOL)
 
         def test_get_dual(self):
             with open(TESTMODELPATH) as tp:
                 model = Model.from_lp(tp.read())
             model.optimize()
             self.assertEqual(model.status, 'optimal')
-            assert_allclose(model.objective.value, 0.8739215069684305, 1e-4, 1e-4)
+            assert_allclose(model.objective.value, 0.8739215069684305, TOL, TOL)
             self.assertTrue(isinstance(model.variables[0].dual, float))
 
         def test_changing_variable_names_is_reflected_in_the_solver(self):
@@ -92,7 +90,7 @@ else:
                 self.assertNotIn(old_name, model.problem.variable_ubs)
                 self.assertNotIn(old_name, model._variables_to_constraints_mapping)
 
-        def test_osqp_setting_bounds(self):
+        def test_hybrid_setting_bounds(self):
             with open(TESTMODELPATH) as tp:
                 model = Model.from_lp(tp.read())
             var = model.variables[0]
@@ -112,16 +110,16 @@ else:
             model.objective = self.interface.Objective(1.0 * var)
             model.update()
             print(model.problem.variables)
-            self.assertEqual(model.optimize(), interface.INFEASIBLE)
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
             var.ub = 10
             self.assertEqual(model.optimize(), interface.OPTIMAL)
             var.ub = None
-            self.assertEqual(model.optimize(), interface.INFEASIBLE)
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
             self.model.objective.direction = "min"
             var.lb = -10
             self.assertEqual(model.optimize(), interface.OPTIMAL)
             var.lb = None
-            self.assertEqual(model.optimize(), interface.INFEASIBLE)
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
         def test_set_bounds_method(self):
             var = self.interface.Variable("test", lb=-10)
@@ -147,7 +145,7 @@ else:
 
             obj.direction = "max"
             var.set_bounds(1, None)
-            self.assertEqual(model.optimize(), interface.INFEASIBLE)
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
             self.assertRaises(ValueError, var.set_bounds, 2, 1)
 
@@ -160,14 +158,10 @@ else:
             self.var.type = "continuous"
             self.assertEqual(self.var.type, "continuous")
 
-        def test_change_variable_type(self):
-            # not supported by OSQP
-            pass
-
 
 
     class ConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
-        interface = osqp_interface
+        interface = hybrid_interface
 
         def test_set_linear_coefficients(self):
             self.model.add(self.constraint)
@@ -184,15 +178,15 @@ else:
             self.assertEqual(self.constraint.primal, None)
             self.model.optimize()
             self.assertEqual(self.model.status, 'optimal')
-            assert_allclose(self.model.objective.value, 0.8739215069684305, 1e-3, 1e-3)
+            assert_allclose(self.model.objective.value, 0.8739215069684305, TOL, TOL)
             primals = [constraint.primal for constraint in self.model.constraints]
-            assert_allclose(primals, np.zeros(len(primals)), 1e-3, 1e-3)  # only equality constraints
+            assert_allclose(primals, np.zeros(len(primals)), TOL, TOL)  # only equality constraints
 
         def test_get_dual(self):
             self.assertEqual(self.constraint.primal, None)
             self.model.optimize()
             self.assertEqual(self.model.status, 'optimal')
-            assert_allclose(self.model.objective.value, 0.8739215069684305, 1e-3, 1e-3)
+            assert_allclose(self.model.objective.value, 0.8739215069684305, TOL, TOL)
             duals = [constraint.dual for constraint in self.model.constraints]
             self.assertTrue(all(isinstance(d, float) for d in duals))
 
@@ -205,15 +199,15 @@ else:
             model.objective = obj
             self.assertEqual(model.optimize(), interface.OPTIMAL)
             const.ub = None
-            self.assertEqual(model.optimize(), interface.INFEASIBLE)
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
             const.ub = 10
             const.lb = None
             obj.direction = "min"
-            self.assertEqual(model.optimize(), interface.INFEASIBLE)
+            self.assertEqual(model.optimize(), interface.UNBOUNDED)
 
 
     class ObjectiveTestCase(abstract_test_cases.AbstractObjectiveTestCase):
-        interface = osqp_interface
+        interface = hybrid_interface
 
         def setUp(self):
             with open(TESTMODELPATH) as tp:
@@ -232,12 +226,12 @@ else:
 
 
     class ModelTestCase(abstract_test_cases.AbstractModelTestCase):
-        interface = osqp_interface
-
-        def test_change_variable_type(self):
-            pass
+        interface = hybrid_interface
 
         def test_clone_model_with_lp(self):
+            pass
+
+        def test_integer_batch_duals(self):
             pass
 
         def test_pickle_ability(self):
@@ -277,7 +271,7 @@ else:
             var_from_pickle = repickled.variables['12x!!@#5_3']
             self.assertIn(var_from_pickle.name, self.model.problem.variables)
 
-        def test_osqp_remove_variable(self):
+        def test_hybrid_remove_variable(self):
             var = self.model.variables[0]
             self.assertEqual(var.problem, self.model)
             self.model.remove(var)
@@ -311,28 +305,11 @@ else:
                 0
             )
 
-        def test_implicitly_convert_milp_to_lp(self):
-            pass
-
-        def test_integer_batch_duals(self):
-            pass
-
-        def test_integer_constraint_dual(self):
-            pass
-
-        def test_integer_variable_dual(self):
-            pass
-
-        def test_is_integer(self):
-            pass
 
         def test_optimize(self):
             self.model.optimize()
             self.assertEqual(self.model.status, 'optimal')
-            assert_allclose(self.model.objective.value, 0.8739215069684303, 1e-3, 1e-3)
-
-        def test_optimize_milp(self):
-            pass
+            assert_allclose(self.model.objective.value, 0.8739215069684303, TOL, TOL)
 
         def test_non_convex_obj(self):
             pass
@@ -444,7 +421,7 @@ else:
             coeff_dict = constraint.expression.as_coefficients_dict()
             self.assertEqual(coeff_dict[self.model.variables.R_Biomass_Ecoli_core_w_GAM], 666.)
 
-        def test_osqp_change_objective_can_handle_removed_vars(self):
+        def test_hybrid_change_objective_can_handle_removed_vars(self):
             self.model.objective = Objective(self.model.variables[0])
             self.model.remove(self.model.variables[0])
             self.model.update()
@@ -458,7 +435,7 @@ else:
 
     class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
 
-        interface = osqp_interface
+        interface = hybrid_interface
 
         def setUp(self):
             self.model = Model()
@@ -466,7 +443,7 @@ else:
 
         def test_tolerance_parameters(self):
             model = self.interface.Model()
-            params = ["optimality", "feasibility"]
+            params = ["optimality", "feasibility", "integrality"]
             for param in params:
                 val = getattr(model.configuration.tolerances, param)
                 print(val)
@@ -476,16 +453,16 @@ else:
                 )
 
         def test_lp_method(self):
-            for option in ("auto", ):
+            for option in self.configuration.lp_methods:
                 self.configuration.lp_method = option
-                self.assertEqual(self.configuration.lp_method, "auto")
+                self.assertEqual(self.configuration.lp_method, option)
 
             self.assertRaises(ValueError, setattr, self.configuration, "lp_method", "weird_stuff")
 
         def test_qp_method(self):
-            for option in ("auto", ):
+            for option in self.configuration.qp_methods:
                 self.configuration.qp_method = option
-                self.assertEqual(self.configuration.qp_method, "auto")
+                self.assertEqual(self.configuration.qp_method, option)
 
             self.assertRaises(ValueError, setattr, self.configuration, "qp_method", "weird_stuff")
 
@@ -515,15 +492,15 @@ else:
             obj = Objective(self.x1 ** 2 + self.x2 ** 2, direction="min")
             model.objective = obj
             model.optimize()
-            assert_allclose(model.objective.value, 0.5, 1e-4, 1e-4)
-            assert_allclose(self.x1.primal, 0.5, 1e-4, 1e-4)
-            assert_allclose(self.x2.primal, 0.5, 1e-4, 1e-4)
+            assert_allclose(model.objective.value, 0.5, TOL, TOL)
+            assert_allclose(self.x1.primal, 0.5, TOL, TOL)
+            assert_allclose(self.x2.primal, 0.5, TOL, TOL)
 
             obj_2 = Objective(self.x1, direction="min")
             model.objective = obj_2
             model.optimize()
-            assert_allclose(model.objective.value, 0.0, 1e-4, 1e-4)
-            assert_allclose(self.x1.primal, 0.0, 1e-4, 1e-4)
+            assert_allclose(model.objective.value, 0.0, TOL, TOL)
+            assert_allclose(self.x1.primal, 0.0, TOL, TOL)
 
         def test_non_convex_obj(self):
             model = self.model
@@ -534,8 +511,8 @@ else:
             obj_2 = Objective(self.x1, direction="min")
             model.objective = obj_2
             model.optimize()
-            assert_allclose(model.objective.value, 0.0, 1e-4, 1e-4)
-            assert_allclose(self.x1.primal, 0.0, 1e-4, 1e-4)
+            assert_allclose(model.objective.value, 0.0, TOL, TOL)
+            assert_allclose(self.x1.primal, 0.0, TOL, TOL)
 
         def test_qp_convex(self):
             for qp, info in six.iteritems(LARGE_QPS):
@@ -563,7 +540,7 @@ else:
 
     class UnsolvedTestCase(unittest.TestCase):
 
-        interface = osqp_interface
+        interface = hybrid_interface
 
         def setUp(self):
             model = self.interface.Model()

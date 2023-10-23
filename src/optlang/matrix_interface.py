@@ -625,12 +625,15 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         return self.problem.problem.settings["lp_method"]
 
     @lp_method.setter
-    def lp_method(self, lp_method):
-        if lp_method not in self.lp_methods:
+    def lp_method(self, value):
+        if value not in self.lp_methods:
             raise ValueError(
                 "LP Method %s is not valid (choose one of: %s)"
-                % (lp_method, ", ".join(self.lp_methods))
+                % (value, ", ".join(self.lp_methods))
             )
+        if getattr(self, "problem", None) is not None:
+            self.problem.problem.settings["lp_method"] = value
+        self._lp_method = value
 
     def _set_presolve(self, value):
         if getattr(self, "problem", None) is not None:
@@ -705,6 +708,8 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 "%s is not a valid qp_method. Choose between %s"
                 % (value, str(self.qp_methods))
             )
+        if getattr(self, "problem", None) is not None:
+            self.problem.problem.settings["qp_method"] = value
         self._qp_method = value
 
     def _get_feasibility(self):
@@ -883,6 +888,12 @@ class Model(interface.Model):
         prior_status = self.problem.status
         self._original_status = prior_status
         status = self.status_map[prior_status]
+        return status
+
+    def optimize(self):
+        self.update()
+        status = self._optimize()
+        self._status = status
         return status
 
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):

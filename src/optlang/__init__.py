@@ -56,12 +56,12 @@ if available_solvers['COINOR_CBC']:
     except Exception:
         log.error('COINOR_CBC is available but could not load with error:\n  ' + str(traceback.format_exc()).strip().replace('\n','\n  '))
 
-if available_solvers['OSQP']:
+if available_solvers['OSQP'] and available_solvers['HIGHS']:
     try:
-        from optlang import osqp_interface
-    except Exception:
-        log.error('OSQP is available but could not load with error:\n  ' +
-            str(traceback.format_exc()).strip().replace('\n','\n  '))
+        from optlang import hybrid_interface
+        osqp_interface = hybrid_interface  # DEPRECATED: will be removed soon!
+    except Exception as exc:
+        log.error('OSQP and HIGHS are available but could not load the hybrid interface.', exc_info=exc)
 
 if available_solvers['SCIPY']:
     try:
