@@ -3,6 +3,8 @@
 Next Release
 -----
 
+1.8.0
+-----
 * add a generic matrix interface to allow easy addition of new solvers
   that expect an immutable problem in standard form as input
 * replace the OSQP interface with a hybrid interface that uses HIGHS for (MI)LPs and
