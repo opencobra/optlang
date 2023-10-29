@@ -84,3 +84,6 @@ for engine_str in ['cplex_interface', 'gurobi_interface', 'glpk_interface',
 else:
     # We were unable to find any valid solvers
     log.error('No solvers were available and/or loadable.')
+
+from . import _version
+__version__ = _version.get_versions()['version']
