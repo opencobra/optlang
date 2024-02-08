@@ -777,6 +777,9 @@ class Model(interface.Model):
         if self.is_integer:
             raise ValueError(
                 "Reduced costs are not well defined for integer problems.")
+        if self.is_mip:
+            raise ValueError(
+                "Reduced costs are not well defined for mixed integer problems. Try relaxing your model first.")
         return self.problem.RC
 
     def _get_shadow_prices(self):
@@ -789,12 +792,20 @@ class Model(interface.Model):
         if self.is_integer:
             raise ValueError(
                 "Shadow prices are not well defined for integer problems.")
+        if self.is_mip:
+            raise ValueError(
+                "Shadow prices are not well defined for mixed integer problems. Try relaxing your model first.")
         return self.problem.Pi
 
     @property
     def is_integer(self):
         self.problem.update()
         return self.problem.NumIntVars > 0
+
+    @property
+    def is_mip(self):
+        self.problem.update()
+        return self.problem.IsMIP == 1
 
 
 if __name__ == '__main__':
