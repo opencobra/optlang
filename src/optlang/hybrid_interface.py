@@ -240,7 +240,7 @@ class HybridProblem(mi.MatrixProblem):
         """Check if previous solutions is still feasible."""
         if len(self._solution["x"]) != len(self.variables) or len(
             self._solution["y"]
-        ) != len(self.constraints):
+        ) != len(self.constraints) + len(self.variables):
             return False
         c = A.dot(self._solution["x"])
         ea = self.settings["eps_abs"]
