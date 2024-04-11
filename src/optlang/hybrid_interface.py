@@ -243,11 +243,10 @@ class HybridProblem(mi.MatrixProblem):
         ) != len(self.constraints) + len(self.variables):
             return False
         c = A.dot(self._solution["x"])
-        ea = self.settings["eps_abs"]
-        er = self.settings["eps_rel"]
+        tol = self.settings["primal_inf_tolerance"]
         valid = np.all(
-            (c + er * np.abs(c) + ea >= bounds[:, 0])
-            & (c - er * np.abs(c) - ea <= bounds[:, 1])
+            (c + tol * np.abs(c) + tol >= bounds[:, 0])
+            & (c - tol * np.abs(c) - tol <= bounds[:, 1])
         )
         return valid
 

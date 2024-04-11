@@ -432,6 +432,11 @@ else:
             self.assertEqual(self.model.problem.obj_linear_coefs,
                 {self.model.variables[2].name: 1.0})
 
+        def test_check_for_valid_solution(self):
+            form = self.model.problem.build(True)
+            self.model.optimize()
+            self.assertTrue(self.model.problem.still_valid(form.A, form.bounds))
+
 
     class ConfigurationTestCase(abstract_test_cases.AbstractConfigurationTestCase):
 
