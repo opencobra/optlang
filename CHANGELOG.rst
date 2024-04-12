@@ -3,6 +3,14 @@
 Next Release
 -----
 
+1.8.2
+-----
+* fix the feasibility check in the hybrid solver
+
+1.8.1
+-----
+* update versioneer to support newer Python versions
+
 1.8.0
 -----
 * add a generic matrix interface to allow easy addition of new solvers
