@@ -211,7 +211,7 @@ class MatrixProblem(abc.ABC):
                 bounds = concatenate((bounds, vbounds))
             A = csc_matrix(
                 (A[:, 2], (A[:, 0].astype("int64"), A[:, 1].astype("int64"))),
-                shape=(nc + nv, nv),
+                shape=(bounds.shape[0], nv),
             )
         elif add_variable_constraints:
             Av = array([[vmap[k], vmap[k], 1.0] for k in self.variables])

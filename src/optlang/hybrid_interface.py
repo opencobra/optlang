@@ -153,14 +153,16 @@ class HybridProblem(mi.MatrixProblem):
         d = float(self.direction)
         sp = self.build(add_variable_constraints=True)
         solver = osqp.OSQP()
+        log.debug("Setting up OSQP problem.")
         solver.setup(
             P=sp.P, q=sp.q, A=sp.A, l=sp.bounds[:, 0], u=sp.bounds[:, 1], **settings
         )
         if self._solution is not None:
-            if self.still_valid(sp.A, sp.bounds):
+            if self.still_valid(sp):
                 solver.warm_start(x=self._solution["x"], y=self._solution["y"])
                 if "rho" in self._solution:
                     solver.update_settings(rho=self._solution["rho"])
+        log.debug("Starting OSQP solve.")
         solution = solver.solve()
         nc = len(self.constraints)
         nv = len(self.variables)
@@ -188,6 +190,7 @@ class HybridProblem(mi.MatrixProblem):
         d = float(self.direction)
         options = self.highs_settings()
         sp = self.build()
+        log.debug("Setting up HIGHS problem.")
         env = self._highs_env
         model = hs.HighsModel()
         env.passOptions(options)
@@ -208,6 +211,7 @@ class HybridProblem(mi.MatrixProblem):
         if len(self.integer_vars) > 0:
             model.lp_.integrality_ = HIGHS_VAR_TYPES[sp.integer]
         env.passModel(model)
+        log.debug("Starting HIGHS solve.")
         env.run()
         info = env.getInfo()
         self.status = env.modelStatusToString(env.getModelStatus())
@@ -236,18 +240,19 @@ class HybridProblem(mi.MatrixProblem):
             else:
                 self.solve_osqp()
 
-    def still_valid(self, A, bounds):
+    def still_valid(self, problem):
         """Check if previous solutions is still feasible."""
-        if len(self._solution["x"]) != len(self.variables) or len(
+        nv, nc = len(self.variables), len(self.constraints)
+        b = problem.bounds
+        if len(self._solution["x"]) != nv or len(
             self._solution["y"]
-        ) != len(self.constraints):
+        ) != nc + nv:
             return False
-        c = A.dot(self._solution["x"])
-        ea = self.settings["eps_abs"]
-        er = self.settings["eps_rel"]
+        c = problem.A.dot(self._solution["x"])
+        tol = self.settings["primal_inf_tolerance"]
         valid = np.all(
-            (c + er * np.abs(c) + ea >= bounds[:, 0])
-            & (c - er * np.abs(c) - ea <= bounds[:, 1])
+            (c + tol * np.abs(c) + tol >= b[:, 0])
+            & (c - tol * np.abs(c) - tol <= b[:, 1])
         )
         return valid
 
