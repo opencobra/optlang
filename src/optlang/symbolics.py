@@ -19,10 +19,7 @@ respectively.
 All symbolic operations in the optlang codebase should use these functions.
 """
 
-from __future__ import division
-
 import os
-import six
 import uuid
 import logging
 import optlang
@@ -67,7 +64,7 @@ if USE_SYMENGINE:  # pragma: no cover # noqa: C901
         """A generic symbol used in expressions."""
 
         def __new__(cls, name, *args, **kwargs):
-            if not isinstance(name, six.string_types):
+            if not isinstance(name, str):
                 raise TypeError("name should be a string, not %s" % repr(type(name)))
 
             return symengine_Symbol.__new__(cls, name)
@@ -122,7 +119,7 @@ else:  # Use sympy
         """A generic symbol used in expressions."""
 
         def __new__(cls, name, *args, **kwargs):
-            if not isinstance(name, six.string_types):
+            if not isinstance(name, str):
                 raise TypeError("name should be a string, not %s" % repr(type(name)))
 
             return sympy.core.Dummy.__new__(cls, name)

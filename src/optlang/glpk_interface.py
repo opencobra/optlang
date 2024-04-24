@@ -26,8 +26,6 @@ and make sure that 'import swiglpk' runs without error.
 """
 import logging
 
-import six
-
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
@@ -64,7 +62,7 @@ _GLPK_VTYPE_TO_VTYPE = {
 }
 
 _VTYPE_TO_GLPK_VTYPE = dict(
-    [(val, key) for key, val in six.iteritems(_GLPK_VTYPE_TO_VTYPE)]
+    [(val, key) for key, val in _GLPK_VTYPE_TO_VTYPE.items()]
 )
 
 log = logging.getLogger(__name__)
@@ -77,8 +75,7 @@ def _glpk_validate_id(name):
         raise ValueError("GLPK does not support ID's longer than 256 characters")
 
 
-@six.add_metaclass(inheritdocstring)
-class Variable(interface.Variable):
+class Variable(interface.Variable, metaclass=inheritdocstring):
     def __init__(self, name, index=None, *args, **kwargs):
         _glpk_validate_id(name)
         super(Variable, self).__init__(name, **kwargs)
@@ -150,8 +147,7 @@ class Variable(interface.Variable):
             glp_set_col_name(self.problem.problem, glp_find_col(self.problem.problem, old_name), str(value))
 
 
-@six.add_metaclass(inheritdocstring)
-class Constraint(interface.Constraint):
+class Constraint(interface.Constraint, metaclass=inheritdocstring):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
@@ -264,7 +260,7 @@ class Constraint(interface.Constraint):
             va = doubleArray(num_cols + 1)
 
             num_rows = glp_get_mat_row(self.problem.problem, self._index, ia, va)
-            variables_and_coefficients = {var.name: coeff for var, coeff in six.iteritems(coefficients)}
+            variables_and_coefficients = {var.name: coeff for var, coeff in coefficients.items()}
 
             final_variables_and_coefficients = {
                 glp_get_col_name(problem, ia[i]): va[i] for i in range(1, num_rows + 1)
@@ -274,7 +270,7 @@ class Constraint(interface.Constraint):
             ia = intArray(num_cols + 1)
             va = doubleArray(num_cols + 1)
 
-            for i, (name, coeff) in enumerate(six.iteritems(final_variables_and_coefficients)):
+            for i, (name, coeff) in enumerate(final_variables_and_coefficients.items()):
                 ia[i + 1] = self.problem._variables[name]._index
                 va[i + 1] = float(coeff)
 
@@ -299,8 +295,7 @@ class Constraint(interface.Constraint):
             raise Exception("Can't get coefficients from solver if constraint is not in a model")
 
 
-@six.add_metaclass(inheritdocstring)
-class Objective(interface.Objective):
+class Objective(interface.Objective, metaclass=inheritdocstring):
     def __init__(self, expression, sloppy=False, **kwargs):
         if len(kwargs.get("name", "")) > 256:
             raise ValueError("GLPK does not support ID's longer than 256 characters")
@@ -373,8 +368,7 @@ class Objective(interface.Objective):
             raise Exception("Can't get coefficients from solver if objective is not in a model")
 
 
-@six.add_metaclass(inheritdocstring)
-class Configuration(interface.MathematicalProgrammingConfiguration):
+class Configuration(interface.MathematicalProgrammingConfiguration, metaclass=inheritdocstring):
     def __init__(self, presolve="auto", verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._smcp = glp_smcp()
@@ -386,7 +380,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.verbosity = verbosity
         self.timeout = timeout
         if "tolerances" in kwargs:
-            for key, val in six.iteritems(kwargs["tolerances"]):
+            for key, val in kwargs["tolerances"].items():
                 try:
                     setattr(self.tolerances, key, val)
                 except AttributeError:
@@ -401,10 +395,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
 
     def __setstate__(self, state):
         self.__init__()
-        for key, val in six.iteritems(state):
+        for key, val in state.items():
             if key != "tolerances":
                 setattr(self, key, val)
-        for key, val in six.iteritems(state["tolerances"]):
+        for key, val in state["tolerances"].items():
             if key in self._tolerance_functions():
                 setattr(self.tolerances, key, val)
 
@@ -489,8 +483,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._timeout = value
 
 
-@six.add_metaclass(inheritdocstring)
-class Model(interface.Model):
+class Model(interface.Model, metaclass=inheritdocstring):
     def _initialize_problem(self):
         self.problem = glp_create_prob()
         glp_create_index(self.problem)

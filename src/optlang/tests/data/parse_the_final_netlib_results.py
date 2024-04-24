@@ -30,8 +30,6 @@ import pickle
 import re
 from fractions import Fraction
 
-import six
-
 
 OBJ_REGEX = re.compile('\* Objvalue : -?\d+/\d+')
 
@@ -47,7 +45,7 @@ for path in glob.glob("netlib_reference_results/*.txt.gz"):
                     "Objvalue": obj_value}
                 break
 
-for key, value in six.iteritems(the_final_netlib_results):
+for key, value in the_final_netlib_results.items():
     assert "Objvalue" in value
     assert isinstance(value['Objvalue'], Fraction)
 

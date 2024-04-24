@@ -5,7 +5,6 @@ import copy
 import json
 import os
 import pickle
-import sys
 import unittest
 
 import optlang.interface
