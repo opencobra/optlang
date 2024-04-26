@@ -26,7 +26,6 @@ import logging
 log = logging.getLogger(__name__)
 
 import os
-import six
 from optlang import interface
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
@@ -94,8 +93,7 @@ def _constraint_lb_and_ub_to_gurobi_sense_rhs_and_range_value(lb, ub):
     return sense, rhs, range_value
 
 
-@six.add_metaclass(inheritdocstring)
-class Variable(interface.Variable):
+class Variable(interface.Variable, metaclass=inheritdocstring):
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
 
@@ -175,8 +173,7 @@ class Variable(interface.Variable):
             self.problem.problem.update()
 
 
-@six.add_metaclass(inheritdocstring)
-class Constraint(interface.Constraint):
+class Constraint(interface.Constraint, metaclass=inheritdocstring):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, *args, **kwargs):
@@ -186,7 +183,7 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             self.problem.update()
             grb_constraint = self.problem.problem.getConstrByName(self.name)
-            for var, coeff in six.iteritems(coefficients):
+            for var, coeff in coefficients.items():
                 self.problem.problem.chgCoeff(grb_constraint, self.problem.problem.getVarByName(var.name), float(coeff))
             self.problem.update()
         else:
@@ -328,8 +325,7 @@ class Constraint(interface.Constraint):
         return self
 
 
-@six.add_metaclass(inheritdocstring)
-class Objective(interface.Objective):
+class Objective(interface.Objective, metaclass=inheritdocstring):
     def __init__(self, expression, sloppy=False, *args, **kwargs):
         super(Objective, self).__init__(expression, *args, sloppy=sloppy, **kwargs)
         self._expression_expired = False
@@ -397,8 +393,7 @@ class Objective(interface.Objective):
         return self._expression
 
 
-@six.add_metaclass(inheritdocstring)
-class Configuration(interface.MathematicalProgrammingConfiguration):
+class Configuration(interface.MathematicalProgrammingConfiguration, metaclass=inheritdocstring):
     def __init__(self, lp_method='primal', qp_method='primal', presolve=False,
                  verbosity=0, timeout=None, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
@@ -408,7 +403,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.presolve = presolve
         self.timeout = timeout
         if "tolerances" in kwargs:
-            for key, val in six.iteritems(kwargs["tolerances"]):
+            for key, val in kwargs["tolerances"].items():
                 try:
                     setattr(self.tolerances, key, val)
                 except AttributeError:
@@ -492,10 +487,10 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         }
 
     def __setstate__(self, state):
-        for key, val in six.iteritems(state):
+        for key, val in state.items():
             if key != "tolerances":
                 setattr(self, key, val)
-        for key, val in six.iteritems(state["tolerances"]):
+        for key, val in state["tolerances"].items():
             if key in self._tolerance_functions():
                 setattr(self.tolerances, key, val)
 
@@ -652,7 +647,7 @@ class Model(interface.Model):
         for key, coef in quadratic_coefficients.items():
             coef = float(coef)
             if len(key) == 1:
-                var = six.next(iter(key))
+                var = next(iter(key))
                 var = self.problem.getVarByName(var.name)
                 grb_terms.append(coef * var * var)
             else:

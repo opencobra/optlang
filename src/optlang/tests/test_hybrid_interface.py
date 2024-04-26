@@ -22,7 +22,6 @@ else:
     import json
 
     import numpy as np
-    import six
     from numpy.testing import assert_allclose
 
     from optlang import interface, hybrid_interface
@@ -522,7 +521,7 @@ else:
             assert_allclose(self.x1.primal, 0.0, TOL, TOL)
 
         def test_qp_convex(self):
-            for qp, info in six.iteritems(LARGE_QPS):
+            for qp, info in LARGE_QPS.items():
                 nv, nc, ref_sol = info
                 prob = json.load(open(qp))
                 model = Model.from_json(prob)

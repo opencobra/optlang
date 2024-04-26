@@ -27,8 +27,6 @@ and make sure that 'import mip' runs without error.
 """
 import logging
 
-import six
-
 from optlang.util import inheritdocstring, TemporaryFilename
 from optlang.expression_parsing import parse_optimization_expression
 from optlang import interface
@@ -64,7 +62,7 @@ _MIP_VTYPE_TO_VTYPE = {
 }
 
 _VTYPE_TO_MIP_VTYPE = dict(
-    [(val, key) for key, val in six.iteritems(_MIP_VTYPE_TO_VTYPE)]
+    [(val, key) for key, val in _MIP_VTYPE_TO_VTYPE.items()]
 )
 
 _DIR_TO_MIP_DIR = {
@@ -73,7 +71,7 @@ _DIR_TO_MIP_DIR = {
 }
 
 _MIP_DIR_TO_DIR = dict(
-    [(val, key) for key, val in six.iteritems(_DIR_TO_MIP_DIR)]
+    [(val, key) for key, val in _DIR_TO_MIP_DIR.items()]
 )
 
 # Needs to be used for to_bound during _initialize_model_from_problem
@@ -98,8 +96,7 @@ def to_symbolic_expr(coeffs):
     return symbolics.add([var * coef for var, coef in coeffs.items()
                           if not isclose(0, to_float(coef))])
 
-@six.add_metaclass(inheritdocstring)
-class Variable(interface.Variable):
+class Variable(interface.Variable, metaclass=inheritdocstring):
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
 
@@ -162,8 +159,7 @@ class Variable(interface.Variable):
             raise Exception('COIN-OR CBC doesn\'t support variable name change')
 
 
-@six.add_metaclass(inheritdocstring)
-class Constraint(interface.Constraint):
+class Constraint(interface.Constraint, metaclass=inheritdocstring):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
@@ -289,8 +285,7 @@ class Constraint(interface.Constraint):
         return {v: expr.get(mip_var('v_' + v.name), 0) for v in variables}
 
 
-@six.add_metaclass(inheritdocstring)
-class Objective(interface.Objective):
+class Objective(interface.Objective, metaclass=inheritdocstring):
     def __init__(self, expression, sloppy=False, **kwargs):
         self._changed_expression = {}
         super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
@@ -367,8 +362,7 @@ class Objective(interface.Objective):
         return {v: coeffs.get(mip_var('v_' + v.name), 0) for v in variables}
 
 
-@six.add_metaclass(inheritdocstring)
-class Configuration(interface.MathematicalProgrammingConfiguration):
+class Configuration(interface.MathematicalProgrammingConfiguration, metaclass=inheritdocstring):
     def __init__(self, verbosity=0, timeout=None, presolve='auto',
                  max_nodes=None, max_solutions=None, relax=False,
                  emphasis=0, cuts=-1, threads=0, *args, **kwargs):
@@ -419,7 +413,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.threads = threads
 
         if 'tolerances' in kwargs:
-            for key, val in six.iteritems(kwargs['tolerances']):
+            for key, val in kwargs['tolerances'].items():
                 if key in self._tolerance_functions():
                     setattr(self.tolerances, key, val)
 
@@ -534,13 +528,13 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
             }
 
     def __setstate__(self, state):
-        for key, val in six.iteritems(state):
+        for key, val in state.items():
             if key != 'tolerances':
                 setattr(self, key, val)
         # TODO: remove if check before final merge. Only here for backwards
         #       compatability for current pickle files stored in cobrapy
         if 'tolerances' in state:
-            for key, val in six.iteritems(state['tolerances']):
+            for key, val in state['tolerances'].items():
                 if key in self._tolerance_functions():
                     setattr(self.tolerances, key, val)
 
@@ -592,8 +586,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         }
 
 
-@six.add_metaclass(inheritdocstring)
-class Model(interface.Model):
+class Model(interface.Model, metaclass=inheritdocstring):
 
     def _initialize_problem(self):
         self.problem = mip.Model(solver_name=mip.CBC)
