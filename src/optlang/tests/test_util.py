@@ -4,7 +4,6 @@
 import os
 
 import pytest
-import six
 from swiglpk import glp_create_index, glp_create_prob, glp_get_num_cols, glp_get_num_rows, glp_read_lp
 
 from optlang.util import glpk_read_cplex, list_available_solvers, solve_with_glpsol
@@ -101,13 +100,13 @@ def test_solve_with_glpsol():
                  'R_GND': ['1', '4.95998494457465', '0'], 'R_ACt2r': ['1', '-0', '0'],
                  'R_PPC': ['1', '2.50430947036873', '0'], 'R_EX_etoh_e': ['2', '0', '-0.0394667658003924'],
                  'R_AKGt2r': ['1', '-0', '0'], 'R_GLUN': ['2', '0', '-0.00509248590972805']}
-    for key, val in six.iteritems(result):
+    for key, val in result.items():
         assert val == reference[key]
 
 
 def test_list_available_solvers():
     solvers = list_available_solvers()
-    for solver, boolean in six.iteritems(solvers):
+    for solver, boolean in solvers.items():
         assert boolean is True or boolean is False
 
 

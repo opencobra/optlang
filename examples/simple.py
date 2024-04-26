@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import six
 
 from optlang import Model, Variable, Constraint, Objective
 
@@ -29,5 +28,5 @@ model.add([c1, c2, c3])
 status = model.optimize()
 print("status:", model.status)
 print("objective value:", model.objective.value)
-for var_name, var in six.iteritems(model.variables):
+for var_name, var in model.variables.items():
     print(var_name, "=", var.primal)

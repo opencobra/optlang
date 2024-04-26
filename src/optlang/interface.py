@@ -37,8 +37,6 @@ import uuid
 import warnings
 import sympy
 
-import six
-
 import optlang
 from optlang.exceptions import IndicatorConstraintsNotSupported
 
@@ -164,10 +162,6 @@ class Variable(symbolics.Symbol):
         return cls(variable.name, lb=variable.lb, ub=variable.ub, type=variable.type, **kwargs)
 
     def __init__(self, name, lb=None, ub=None, type="continuous", problem=None, *args, **kwargs):
-
-        # Ensure that name is str and not unicode - some solvers only support string type in Python 2.
-        if six.PY2:
-            name = str(name)
 
         self.__validate_variable_name(name)
 
@@ -407,7 +401,6 @@ class OptimizationExpression(object):
         variable_substitutions = dict()
         for variable in expression.variables:
             if model is not None and variable.name in model.variables:
-                # print(variable.name, id(variable.problem))
                 variable_substitutions[variable] = model.variables[variable.name]
             else:
                 variable_substitutions[variable] = interface.Variable.clone(variable)
@@ -415,9 +408,6 @@ class OptimizationExpression(object):
         return adjusted_expression
 
     def __init__(self, expression, name=None, problem=None, sloppy=False, *args, **kwargs):
-        # Ensure that name is str and not unicode - some solvers only support string type in Python 2.
-        if six.PY2 and name is not None:
-            name = str(name)
 
         self._validate_optimization_expression_name(name)
 

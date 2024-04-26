@@ -21,8 +21,6 @@ except ImportError as e:
 else:
 
     import copy
-    import os
-    import pickle
     import random
 
     from gurobipy import GurobiError

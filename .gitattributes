@@ -1,1 +1,2 @@
 optlang/_version.py export-subst
+src/optlang/_version.py export-subst

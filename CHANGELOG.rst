@@ -1,13 +1,37 @@
 =======
 
 Next Release
-------------
+-----
+* move the fast_dual function from MICOM back here
+
+1.8.2
+-----
+* fix the feasibility check in the hybrid solver
+
+1.8.1
+-----
+* update versioneer to support newer Python versions
+
+1.8.0
+-----
+* add a generic matrix interface to allow easy addition of new solvers
+  that expect an immutable problem in standard form as input
+* replace the OSQP interface with a hybrid interface that uses HIGHS for (MI)LPs and
+  OSQP for QPs
+* `osqp_interface` is now deprecated, will import the hybrid interface when used, and
+  will be removed entirely soon
 
 1.7.0
 -----
 * remove deprecated numpy type casts
 * The symbolics module now has consistent exports
-* move the fast_dual function from MICOM back here
+* When sympy is used the internal Symbol class now derives from sympy.core.Dummy. This
+  circumvents the hack in place to make Symbols unique and makes optlang work with
+  sympy>=1.12 again.
+* Updated the scipy and the jsonschema tests to work with newer versions of those packages.
+* Package version dependencies are now more specific.
+* Tests are run for sympy and symengine now.
+* Updated support Python versions to >=3.8.
 
 1.6.1
 -----

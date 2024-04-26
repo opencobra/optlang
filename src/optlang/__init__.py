@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-
 import logging
 import traceback
 from optlang._version import get_versions
@@ -56,12 +54,12 @@ if available_solvers['COINOR_CBC']:
     except Exception:
         log.error('COINOR_CBC is available but could not load with error:\n  ' + str(traceback.format_exc()).strip().replace('\n','\n  '))
 
-if available_solvers['OSQP']:
+if available_solvers['OSQP'] and available_solvers['HIGHS']:
     try:
-        from optlang import osqp_interface
-    except Exception:
-        log.error('OSQP is available but could not load with error:\n  ' +
-            str(traceback.format_exc()).strip().replace('\n','\n  '))
+        from optlang import hybrid_interface
+        osqp_interface = hybrid_interface  # DEPRECATED: will be removed soon!
+    except Exception as exc:
+        log.error('OSQP and HIGHS are available but could not load the hybrid interface.', exc_info=exc)
 
 if available_solvers['SCIPY']:
     try:
@@ -72,7 +70,7 @@ if available_solvers['SCIPY']:
 
 # Go through and find the best solver that loaded. Load that one as the default
 for engine_str in ['cplex_interface', 'gurobi_interface', 'glpk_interface',
-                   'scipy_interface', 'coinor_cbc_interface']:
+                   'hybrid_interface', 'scipy_interface', 'coinor_cbc_interface']:
     # Must check globals since not all interface variables will be defined
     if engine_str in globals():
         engine = globals()[engine_str]
@@ -84,3 +82,6 @@ for engine_str in ['cplex_interface', 'gurobi_interface', 'glpk_interface',
 else:
     # We were unable to find any valid solvers
     log.error('No solvers were available and/or loadable.')
+
+from . import _version
+__version__ = _version.get_versions()['version']
