@@ -24,8 +24,6 @@ and make sure that 'import swiglpk' runs without error.
 
 import logging
 
-import six
-
 from optlang.util import inheritdocstring
 from optlang import interface
 from optlang import glpk_interface
@@ -37,8 +35,7 @@ from swiglpk import glp_exact, glp_create_prob, glp_get_status, \
     GLP_SF_AUTO, GLP_ETMLIM, glp_adv_basis, glp_read_lp, glp_scale_prob
 
 
-@six.add_metaclass(inheritdocstring)
-class Variable(glpk_interface.Variable):
+class Variable(glpk_interface.Variable, metaclass=inheritdocstring):
     def __init__(self, name, index=None, type="continuous", **kwargs):
         if type in ("integer", "binary"):
             raise ValueError("The GLPK exact solver does not support integer and mixed integer problems")
@@ -51,23 +48,19 @@ class Variable(glpk_interface.Variable):
         super(Variable, Variable).type.fset(self, value)
 
 
-@six.add_metaclass(inheritdocstring)
-class Constraint(glpk_interface.Constraint):
+class Constraint(glpk_interface.Constraint, metaclass=inheritdocstring):
     pass
 
 
-@six.add_metaclass(inheritdocstring)
-class Objective(glpk_interface.Objective):
+class Objective(glpk_interface.Objective, metaclass=inheritdocstring):
     pass
 
 
-@six.add_metaclass(inheritdocstring)
-class Configuration(glpk_interface.Configuration):
+class Configuration(glpk_interface.Configuration, metaclass=inheritdocstring):
     pass
 
 
-@six.add_metaclass(inheritdocstring)
-class Model(glpk_interface.Model):
+class Model(glpk_interface.Model, metaclass=inheritdocstring):
     def _run_glp_exact(self):
         return_value = glp_exact(self.problem, self.configuration._smcp)
         glpk_status = glp_get_status(self.problem)

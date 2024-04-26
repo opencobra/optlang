@@ -22,14 +22,10 @@ This interface works well with small to medium scale models but for better perfo
 solvers should be used for large models.
 """
 
-
-from __future__ import absolute_import, print_function
-
 from collections import OrderedDict
 from itertools import islice
 
 import numpy as np
-import six
 from optlang import interface
 from optlang.expression_parsing import parse_optimization_expression
 from scipy.optimize import linprog
@@ -249,7 +245,7 @@ class Problem(object):
         if self.direction == "max":
             c *= -1
 
-        bounds = list(six.itervalues(self.bounds))
+        bounds = list(self.bounds.values())
         solution = linprog(c, self.A, self.upper_bounds, bounds=bounds, method=method,
                            options={"maxiter": 10000, "disp": verbosity}, **kwargs)
         self._solution = solution
@@ -292,8 +288,7 @@ class Problem(object):
         self._f = None
 
 
-@six.add_metaclass(inheritdocstring)
-class Variable(interface.Variable):
+class Variable(interface.Variable, metaclass=inheritdocstring):
     def __init__(self, name, lb=None, ub=None, type="continuous", *args, **kwargs):
         if type != "continuous":
             raise ValueError("Scipy solver only works with continuous variables. Please use another interface")
@@ -345,8 +340,7 @@ class Variable(interface.Variable):
         super(Variable, Variable).name.fset(self, value)
 
 
-@six.add_metaclass(inheritdocstring)
-class Constraint(interface.Constraint):
+class Constraint(interface.Constraint, metaclass=inheritdocstring):
     _INDICATOR_CONSTRAINT_SUPPORT = False
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
@@ -454,8 +448,7 @@ class Constraint(interface.Constraint):
             raise Exception("Can't get coefficients from solver if constraint is not in a model")
 
 
-@six.add_metaclass(inheritdocstring)
-class Objective(interface.Objective):
+class Objective(interface.Objective, metaclass=inheritdocstring):
     def __init__(self, expression, sloppy=False, **kwargs):
         super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         if not (sloppy or self.is_Linear):
@@ -515,8 +508,7 @@ class Objective(interface.Objective):
             raise Exception("Can't get coefficients from solver if objective is not in a model")
 
 
-@six.add_metaclass(inheritdocstring)
-class Configuration(interface.MathematicalProgrammingConfiguration):
+class Configuration(interface.MathematicalProgrammingConfiguration, metaclass=inheritdocstring):
     def __init__(self, verbosity=0, tolerance=1e-9, *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
         self._verbosity = verbosity
@@ -557,8 +549,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self._tolerance = value
 
 
-@six.add_metaclass(inheritdocstring)
-class Model(interface.Model):
+class Model(interface.Model, metaclass=inheritdocstring):
     def _initialize_problem(self):
         self.problem = Problem()
 

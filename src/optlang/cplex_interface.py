@@ -24,9 +24,8 @@ Make sure that 'import cplex' runs without error.
 import logging
 import sys
 
-import six
 import os
-from six.moves import StringIO
+from io import StringIO
 
 import cplex
 from cplex.exceptions import CplexSolverError
@@ -127,7 +126,7 @@ _QP_METHODS = ("auto", "primal", "dual", "network", "barrier")
 _CPLEX_VTYPE_TO_VTYPE = {'C': 'continuous', 'I': 'integer', 'B': 'binary'}
 
 _VTYPE_TO_CPLEX_VTYPE = dict(
-    [(val, key) for key, val in six.iteritems(_CPLEX_VTYPE_TO_VTYPE)]
+    [(val, key) for key, val in _CPLEX_VTYPE_TO_VTYPE.items()]
 )
 
 _CPLEX_MIP_TYPES_TO_CONTINUOUS = {
@@ -162,8 +161,7 @@ def _constraint_lb_and_ub_to_cplex_sense_rhs_and_range_value(lb, ub):
     return sense, rhs, range_value
 
 
-@six.add_metaclass(inheritdocstring)
-class Variable(interface.Variable):
+class Variable(interface.Variable, metaclass=inheritdocstring):
     def __init__(self, name, *args, **kwargs):
         super(Variable, self).__init__(name, **kwargs)
 
@@ -210,8 +208,7 @@ class Variable(interface.Variable):
             self.problem.problem.variables.set_names(old_name, value)
 
 
-@six.add_metaclass(inheritdocstring)
-class Constraint(interface.Constraint):
+class Constraint(interface.Constraint, metaclass=inheritdocstring):
     _INDICATOR_CONSTRAINT_SUPPORT = True
 
     def __init__(self, expression, sloppy=False, *args, **kwargs):
@@ -220,7 +217,7 @@ class Constraint(interface.Constraint):
     def set_linear_coefficients(self, coefficients):
         if self.problem is not None:
             self.problem.update()
-            triplets = [(self.name, var.name, float(coeff)) for var, coeff in six.iteritems(coefficients)]
+            triplets = [(self.name, var.name, float(coeff)) for var, coeff in coefficients.items()]
             self.problem.problem.linear_constraints.set_coefficients(triplets)
         else:
             raise Exception("Can't change coefficients if constraint is not associated with a model.")
@@ -337,8 +334,7 @@ class Constraint(interface.Constraint):
         return self
 
 
-@six.add_metaclass(inheritdocstring)
-class Objective(interface.Objective):
+class Objective(interface.Objective, metaclass=inheritdocstring):
     def __init__(self, expression, sloppy=False, **kwargs):
         super(Objective, self).__init__(expression, sloppy=sloppy, **kwargs)
         self._expression_expired = False
@@ -390,8 +386,7 @@ class Objective(interface.Objective):
             raise Exception("Can't get coefficients from solver if objective is not in a model")
 
 
-@six.add_metaclass(inheritdocstring)
-class Configuration(interface.MathematicalProgrammingConfiguration):
+class Configuration(interface.MathematicalProgrammingConfiguration, metaclass=inheritdocstring):
     def __init__(self, lp_method='primal', presolve="auto", verbosity=0, timeout=None,
                  solution_target="auto", qp_method="primal", *args, **kwargs):
         super(Configuration, self).__init__(*args, **kwargs)
@@ -402,7 +397,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         self.solution_target = solution_target
         self.qp_method = qp_method
         if "tolerances" in kwargs:
-            for key, val in six.iteritems(kwargs["tolerances"]):
+            for key, val in kwargs["tolerances"].items():
                 try:
                     setattr(self.tolerances, key, val)
                 except AttributeError:
@@ -532,7 +527,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
                 }
 
     def __setstate__(self, state):
-        for key, val in six.iteritems(state):
+        for key, val in state.items():
             if key != "tolerances":
                 setattr(self, key, val)
 
@@ -600,8 +595,7 @@ class Configuration(interface.MathematicalProgrammingConfiguration):
         }
 
 
-@six.add_metaclass(inheritdocstring)
-class Model(interface.Model):
+class Model(interface.Model, metaclass=inheritdocstring):
     def _initialize_problem(self):
         self.problem = cplex.Cplex()
 
@@ -742,7 +736,7 @@ class Model(interface.Model):
 
         for key, coef in quadratic_coeffients.items():
             if len(key) == 1:
-                var = six.next(iter(key))
+                var = next(iter(key))
                 self.problem.objective.set_quadratic_coefficients(var.name, var.name, float(coef) * 2)
             else:
                 var1, var2 = key
