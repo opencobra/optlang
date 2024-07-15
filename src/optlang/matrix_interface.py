@@ -37,7 +37,7 @@ import pickle
 from collections import defaultdict
 from typing import NamedTuple
 
-from numpy import Infinity, array, concatenate, zeros
+from numpy import inf, array, concatenate, zeros
 from scipy.sparse import csc_matrix
 
 from optlang import available_solvers, interface, symbolics
@@ -495,7 +495,7 @@ class Constraint(interface.Constraint):
     def lb(self, value):
         self._check_valid_lower_bound(value)
         if getattr(self, "problem", None) is not None:
-            lb = -Infinity if value is None else float(value)
+            lb = -inf if value is None else float(value)
             self.problem.problem.constraint_lbs[self.name] = lb
         self._lb = value
 
@@ -503,7 +503,7 @@ class Constraint(interface.Constraint):
     def ub(self, value):
         self._check_valid_upper_bound(value)
         if getattr(self, "problem", None) is not None:
-            ub = Infinity if value is None else float(value)
+            ub = inf if value is None else float(value)
             self.problem.problem.constraint_ubs[self.name] = ub
         self._ub = value
 
@@ -899,18 +899,18 @@ class Model(interface.Model):
     def _set_variable_bounds_on_problem(self, var_lb, var_ub):
         self.problem.reset()
         for var, val in var_lb:
-            lb = -Infinity if val is None else float(val)
+            lb = -inf if val is None else float(val)
             self.problem.variable_lbs[var.name] = lb
         for var, val in var_ub:
-            ub = Infinity if val is None else val
+            ub = inf if val is None else val
             self.problem.variable_ubs[var.name] = float(ub)
 
     def _add_variables(self, variables):
         super()._add_variables(variables)
         self.problem.reset()
         for variable in variables:
-            lb = -Infinity if variable.lb is None else float(variable.lb)
-            ub = Infinity if variable.ub is None else float(variable.ub)
+            lb = -inf if variable.lb is None else float(variable.lb)
+            ub = inf if variable.ub is None else float(variable.ub)
             self.problem.variables.add(variable.name)
             self.problem.variable_lbs[variable.name] = lb
             self.problem.variable_ubs[variable.name] = ub
@@ -940,8 +940,8 @@ class Model(interface.Model):
             constraint._problem = None
             if constraint.is_Linear:
                 _, coeff_dict, _ = parse_optimization_expression(constraint)
-                lb = -Infinity if constraint.lb is None else float(constraint.lb)
-                ub = Infinity if constraint.ub is None else float(constraint.ub)
+                lb = -inf if constraint.lb is None else float(constraint.lb)
+                ub = inf if constraint.ub is None else float(constraint.ub)
                 self.problem.constraints.add(constraint.name)
                 self.problem.constraint_coefs.update(
                     {
