@@ -7,6 +7,7 @@ Next Release
 1.8.2
 -----
 * fix the feasibility check in the hybrid solver
+* make optlang compatible with numpy>=2.0
 
 1.8.1
 -----
