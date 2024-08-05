@@ -1,0 +1,43 @@
+name: Test Suite
+
+on:
+  workflow_dispatch: {}
+  workflow_call: {}
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-13, windows-latest]
+        python-version: ["3.8", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install build tox tox-gh-actions twine
+
+    - name: Build package
+      run: python -m build
+
+    - name: Check the package distribution
+      run: twine check dist/*
+
+    - name: Test with tox
+      run: tox -- --cover-xml
+      env:
+        CI: true
+
+    - name: Report coverage
+      shell: bash
+      run: bash <(curl -s https://codecov.io/bash)
+
