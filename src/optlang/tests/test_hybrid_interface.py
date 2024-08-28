@@ -324,7 +324,11 @@ else:
             self.assertEqual(constraint.name, "test")
             self.assertEqual(constraint.lb, -100)
             self.assertEqual(constraint.ub, None)
-            self.assertEqual((constraint.expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand(), 0.0)
+            self.assertEqual(
+                float((constraint.expression -
+                       (0.4 * y + 0.3 * x + 77.0 * z)).expand().evalf()),
+                0.0
+            )
 
         def test_change_of_objective_is_reflected_in_low_level_solver(self):
             x = Variable('x', lb=-83.3, ub=1324422.)

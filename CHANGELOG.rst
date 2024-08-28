@@ -3,6 +3,10 @@
 Next Release
 -----
 
+1.8.3
+-----
+* fix the objective offset test for compatibility with Debian sid
+
 1.8.2
 -----
 * fix the feasibility check in the hybrid solver
