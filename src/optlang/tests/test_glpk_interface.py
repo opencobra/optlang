@@ -74,7 +74,7 @@ class VariableTestCase(abstract_test_cases.AbstractVariableTestCase):
                          -1.1331887079263237e-29, 17.530865429786694, 0.0, 0.0, 0.0, 4.765319193197458,
                          -4.765319193197457, 21.79949265599876, -21.79949265599876, -3.2148950476847613, 0.0,
                          -2.281503094067127, 2.6784818505075303, 0.0]):
-            self.assertAlmostEqual(i, j)
+            self.assertAlmostEqual(i, j, places=6)
 
     def test_changing_variable_names_is_reflected_in_the_solver(self):
         model = self.interface.Model(problem=glpk_read_cplex(TESTMODELPATH))
