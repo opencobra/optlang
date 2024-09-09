@@ -7,7 +7,7 @@ Next Release
 -----
 * fix the objective offset test for compatibility with Debian sid
 * enable compatibility with Gurobi 12.0
-* fix an issue where the rmoval of more than 350 constraints
+* fix an issue where the removal of more than 350 constraints
   would lead to dangling references
 
 1.8.2
