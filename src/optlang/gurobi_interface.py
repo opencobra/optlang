@@ -286,7 +286,7 @@ class Constraint(interface.Constraint, metaclass=inheritdocstring):
                 updated_row = row - aux_var
                 self.problem.problem.remove(gurobi_constraint)
                 self.problem.problem.update()
-                self.problem.problem.addConstr(updated_row, sense, rhs, self.name)
+                self.problem.problem.addLConstr(updated_row, sense, rhs, self.name)
             aux_var.setAttr("UB", range_value)
         self.problem.update()
 
@@ -720,7 +720,7 @@ class Model(interface.Model):
                     self.problem.update()
                     lhs = lhs - aux_var
 
-                self.problem.addConstr(lhs, sense, rhs, name=constraint.name)
+                self.problem.addLConstr(lhs, sense, rhs, name=constraint.name)
             else:
                 raise ValueError(
                     "GUROBI currently only supports linear constraints. %s is not linear." % self)
