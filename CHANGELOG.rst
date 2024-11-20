@@ -6,6 +6,8 @@ Next Release
 1.8.3
 -----
 * fix the objective offset test for compatibility with Debian sid
+* fix an issue where the removal of more than 350 constraints
+  would lead to dangling references
 
 1.8.2
 -----
