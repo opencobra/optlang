@@ -6,6 +6,7 @@ Next Release
 1.8.3
 -----
 * fix the objective offset test for compatibility with Debian sid
+* enable compatibility with Gurobi 12.0
 
 1.8.2
 -----
