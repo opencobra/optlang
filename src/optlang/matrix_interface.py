@@ -57,16 +57,16 @@ _TYPES = ("continuous", "binary", "integer")
 
 
 class SparseProblem(NamedTuple):
-    """A representation of the convex optimizatgion problem in standard form.
+    """A representation of the convex optimization problem in standard form.
 
     This defines the problem in the form.
 
     ..math::
 
-      \text{minimize }& \frac{1}{2}x^T\mathbf{P}x + q^Tx \\
-      \text{s.t.: }& bounds_{.0} \leq \mathbf{A} \leq bounds_{.1} \\
-      & vbounds_{.0} \leq x \leq vbounds_{.1} \\
-      & \{x_k \in \mathbb{N}^0 \text{ if } integer_k = 1 \}
+      \\text{minimize }& \\frac{1}{2}x^T\\mathbf{P}x + q^Tx \\\\
+      \\text{s.t.: }& bounds_{.0} \\leq \\mathbf{A} \\leq bounds_{.1} \\\\
+      & vbounds_{.0} \\leq x \\leq vbounds_{.1} \\\\
+      & \\{x_k \\in \\mathbb{N}^0 \\text{ if } integer_k = 1 \\}
 
     Attributes
     ----------
