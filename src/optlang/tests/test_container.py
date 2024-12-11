@@ -48,7 +48,7 @@ class ContainerTestCase(unittest.TestCase):
         self.container.append(var)
         print(dir(self.container))
         self.assertTrue(
-            all(attribute in dir(self.container)
+            all(hasattr(self.container, attribute)
                 for attribute in ['__contains__', 'keys', 'values'])
         )
 
