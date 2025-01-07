@@ -9,6 +9,7 @@ Next Release
 * enable compatibility with Gurobi 12.0
 * fix an issue where the removal of more than 350 constraints
   would lead to dangling references
+* add support for Python 3.13
 
 1.8.2
 -----
