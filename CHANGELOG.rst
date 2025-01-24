@@ -2,6 +2,7 @@
 
 Next Release
 -----
+* move the fast_dual function from MICOM back here
 
 1.8.3
 -----
@@ -40,7 +41,6 @@ Next Release
 * Package version dependencies are now more specific.
 * Tests are run for sympy and symengine now.
 * Updated support Python versions to >=3.8.
-
 
 1.6.1
 -----
