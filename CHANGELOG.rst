@@ -3,6 +3,11 @@
 Next Release
 -----
 
+1.9.0
+-----
+* enable Python 3.14
+* bump OSQP to 1.0+
+
 1.8.3
 -----
 * fix the objective offset test for compatibility with Debian sid
