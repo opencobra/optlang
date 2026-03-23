@@ -110,16 +110,18 @@ class HybridProblem(mi.MatrixProblem):
     def osqp_settings(self):
         """Map internal settings to OSQP settings."""
         settings = {
-            "linsys_solver": "qdldl",
+            "solver_type": "direct",
             "max_iter": self.settings["iteration_limit"],
             "eps_abs": self.settings["optimality_tolerance"],
             "eps_rel": self.settings["optimality_tolerance"],
             "eps_prim_inf": self.settings["primal_inf_tolerance"],
             "eps_dual_inf": self.settings["dual_inf_tolerance"],
-            "polish": True,
+            "polishing": True,
             "verbose": int(self.settings["verbose"] > 0),
             "scaling": 10 if self.settings["presolve"] is True else 0,
-            "time_limit": self.settings["time_limit"],
+            "time_limit": (
+                self.settings["time_limit"] if self.settings["time_limit"] > 0 else 1e10
+            ),
             "adaptive_rho": True,
             "rho": 1.0,
             "alpha": 1.6,
@@ -154,9 +156,15 @@ class HybridProblem(mi.MatrixProblem):
         sp = self.build(add_variable_constraints=True)
         solver = osqp.OSQP()
         log.debug("Setting up OSQP problem.")
-        solver.setup(
-            P=sp.P, q=sp.q, A=sp.A, l=sp.bounds[:, 0], u=sp.bounds[:, 1], **settings
-        )
+        try:
+            solver.setup(
+                P=sp.P, q=sp.q, A=sp.A, l=sp.bounds[:, 0], u=sp.bounds[:, 1], **settings
+            )
+        except osqp.interface.OSQPException as err:
+            reason = ",".join(str(a) for a in err.args)
+            if len(err.args) > 0 and err.args[0] == 4:
+                reason = "non-convex problem"
+            raise ValueError(f"OSQP error: {reason}")
         if self._solution is not None:
             if self.still_valid(sp):
                 solver.warm_start(x=self._solution["x"], y=self._solution["y"])
@@ -244,9 +252,7 @@ class HybridProblem(mi.MatrixProblem):
         """Check if previous solutions is still feasible."""
         nv, nc = len(self.variables), len(self.constraints)
         b = problem.bounds
-        if len(self._solution["x"]) != nv or len(
-            self._solution["y"]
-        ) != nc + nv:
+        if len(self._solution["x"]) != nv or len(self._solution["y"]) != nc + nv:
             return False
         c = problem.A.dot(self._solution["x"])
         tol = self.settings["primal_inf_tolerance"]
