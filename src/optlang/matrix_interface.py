@@ -452,7 +452,11 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             variables = self.problem._variables
             all_coefs = self.problem.problem.constraint_coefs
-            coefs = [(v, all_coefs.get((self.name, v.name), 0.0)) for v in variables]
+            coefs = [
+                (variables[vname], coef)
+                for (cname, vname), coef in all_coefs.items()
+                if cname == self.name
+            ]
             expression = add([mul((symbolics.Real(co), v)) for (v, co) in coefs])
             self._expression = expression
         return self._expression
@@ -823,7 +827,7 @@ class Model(interface.Model):
         (
             offset,
             linear_coefficients,
-            quadratic_coeffients,
+            quadratic_coefficients,
         ) = parse_optimization_expression(value, quadratic=True, expression=expression)
         self._objective_offset = offset
         if linear_coefficients:
@@ -831,7 +835,7 @@ class Model(interface.Model):
                 v.name: float(c) for v, c in linear_coefficients.items()
             }
 
-        for key, coef in quadratic_coeffients.items():
+        for key, coef in quadratic_coefficients.items():
             if len(key) == 1:
                 var = next(iter(key))
                 self.problem.obj_quadratic_coefs[(var.name, var.name)] = float(coef)
