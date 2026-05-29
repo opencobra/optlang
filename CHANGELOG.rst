@@ -3,6 +3,12 @@
 Next Release
 -----
 
+1.9.1
+-----
+* expressions for Constraint in the matrix interface are now assembled from only non-zero
+  coefficients, speeding up JSON conversion as a side effect
+* fixed a typo in the matrix interface
+
 1.9.0
 -----
 * enable Python 3.14
