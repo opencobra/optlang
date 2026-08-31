@@ -4,12 +4,10 @@ top of optlang's generic abstract test suite (abstract_test_cases.py).
 
 Scope
 -----
-highs_interface currently only supports continuous LP/QP problems (see the
-module docstring in highs_interface.py) - there is no MILP support. The
-abstract suite includes a number of tests that exercise integer/binary
-variables and indicator constraints; those are skipped here rather than
-implemented, per the LP/QP-only scope of this interface. Everything else
-from the abstract suite is implemented.
+highs_interface supports continuous LP/QP problems and mixed-integer linear
+programs. The abstract suite includes indicator constraints, which are still
+sped here because HiGHS indicator constraints are not implemented in this
+interface. Everything else from the abstract suite is implemented.
 
 `test_clone_model_with_lp` is skipped too: it exercises Model.clone's
 use_lp=True path (round-tripping through to_lp()/from_lp()), which this
@@ -67,27 +65,15 @@ class HighsVariableTestCase(abstract_test_cases.AbstractVariableTestCase):
         self.assertIn("test_2", self.model.variables)
         self.assertNotIn("test", self.model.variables)
 
-    def test_set_wrong_type_raises(self):
-        # Trimmed from the abstract version: this interface is LP/QP only
-        # (see highs_interface.Variable.__init__), so there's no valid
-        # "integer" type to switch to for the final two lines of the
-        # original test. See test_integer_and_binary_types_are_rejected
-        # below for the MIP-specific replacement.
-        self.assertRaises(ValueError, self.interface.Variable, name="test", type="mayo")
-        self.assertRaises(Exception, setattr, self.var, 'type', 'ketchup')
-        self.model.add(self.var)
-        self.assertRaises(ValueError, setattr, self.var, "type", "mustard")
-
-    @unittest.skip("HiGHS interface only supports continuous variables (LP/QP, no MIP).")
     def test_change_type(self):
-        pass
-
-    def test_integer_and_binary_types_are_rejected(self):
-        """Replacement for test_change_type: rather than silently accepting
-        a variable type the solver can never honor, construction should
-        fail outright for non-continuous types."""
-        self.assertRaises(ValueError, self.interface.Variable, "int_var", type="integer")
-        self.assertRaises(ValueError, self.interface.Variable, "bin_var", type="binary")
+        self.var.type = "continuous"
+        self.assertEqual(self.var.type, "continuous")
+        self.var.type = "integer"
+        self.assertEqual(self.var.type, "integer")
+        self.var.type = "binary"
+        self.assertEqual(self.var.type, "binary")
+        self.var.type = "continuous"
+        self.assertEqual(self.var.type, "continuous")
 
 
 class HighsConstraintTestCase(abstract_test_cases.AbstractConstraintTestCase):
@@ -350,97 +336,6 @@ class HighsModelTestCase(abstract_test_cases.AbstractModelTestCase):
             (self.model.problem.variableName(int(i)) for i in idx), val
         ))
         self.assertAlmostEqual(coeffs.get('y', 0), 3.0)
-
-    # --- concrete (non-abstract) tests from the base suite that needed
-    # adapting for this interface: binary/integer variables replaced with
-    # continuous ones (this interface is LP/QP only), and sloppy=False
-    # added where a test relies on validation/canonicalization this
-    # interface skips by default. -----------------------------------
-
-    def test_add_constraints(self):
-        x = self.interface.Variable('x', lb=0, ub=1)
-        y = self.interface.Variable('y', lb=-181133.3, ub=12000.)
-        z = self.interface.Variable('z', lb=0., ub=3)
-        constr1 = self.interface.Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-        constr2 = self.interface.Constraint(2.333 * x + y + 3.333, ub=100.33, name='test2')
-        constr3 = self.interface.Constraint(2.333 * x + y + z, ub=100.33, lb=-300)
-        constr4 = self.interface.Constraint(77 * x, lb=10, name='Mul_constraint')
-        constr5 = self.interface.Constraint(x, ub=-10, name='Only_var_constraint')
-        constr6 = self.interface.Constraint(3, ub=88., name='Number_constraint')
-        self.model.add(constr1)
-        self.model.add(constr2)
-        self.model.add(constr3, sloppy=True)
-        self.model.add([constr4, constr5, constr6])
-        self.assertIn(constr1.name, self.model.constraints)
-        self.assertIn(constr2.name, self.model.constraints)
-        self.assertIn(constr3.name, self.model.constraints)
-        self.assertIn(constr4.name, self.model.constraints)
-        self.assertIn(constr5.name, self.model.constraints)
-        self.assertIn(constr6.name, self.model.constraints)
-
-    def test_remove_constraints(self):
-        x = self.interface.Variable('x', lb=0, ub=1)
-        y = self.interface.Variable('y', lb=-181133.3, ub=12000.)
-        z = self.interface.Variable('z', lb=4, ub=4)
-        constr1 = self.interface.Constraint(0.3 * x + 0.4 * y + 66. * z, lb=-100, ub=0., name='test')
-        self.assertEqual(constr1.problem, None)
-        self.model.add(constr1)
-        self.model.update()
-        self.assertEqual(constr1.problem, self.model)
-        self.assertIn(constr1, self.model.constraints)
-        self.model.remove(constr1.name)
-        self.model.update()
-        self.assertEqual(constr1.problem, None)
-        self.assertNotIn(constr1, self.model.constraints)
-
-    def test_add_nonlinear_constraint_raises(self):
-        x = self.interface.Variable('x', lb=0, ub=1)
-        y = self.interface.Variable('y', lb=-181133.3, ub=12000.)
-        z = self.interface.Variable('z', lb=3, ub=3)
-        with self.assertRaises(ValueError):
-            constraint = self.interface.Constraint(
-                0.3 * x + 0.4 * y ** x + 66. * z, lb=-100, ub=0., name='test'
-            )
-            self.model.add(constraint)
-
-    # --- MIP-only tests from the abstract suite: skipped, see module
-    # docstring. ------------------------------------------------------
-
-    @unittest.skip("MIP (integer variables) is not supported by this interface.")
-    def test_add_integer_var(self):
-        pass
-
-    @unittest.skip("MIP (integer variables) is not supported by this interface.")
-    def test_change_variable_type(self):
-        pass
-
-    @unittest.skip("MIP (binary variables) is not supported by this interface.")
-    def test_binary_variables(self):
-        pass
-
-    @unittest.skip("MIP (integer variables) is not supported by this interface.")
-    def test_integer_variable_dual(self):
-        pass
-
-    @unittest.skip("MIP (integer variables) is not supported by this interface.")
-    def test_integer_constraint_dual(self):
-        pass
-
-    @unittest.skip("MIP (integer variables) is not supported by this interface.")
-    def test_integer_batch_duals(self):
-        pass
-
-    @unittest.skip("MIP (integer variables) is not supported by this interface.")
-    def test_implicitly_convert_milp_to_lp(self):
-        pass
-
-    @unittest.skip("MIP (integer variables) is not supported by this interface.")
-    def test_optimize_milp(self):
-        pass
-
-    @unittest.skip("MIP (integer variables) is not supported by this interface.")
-    def test_is_integer(self):
-        pass
 
     @unittest.skip("Cloning via LP export/import (to_lp/from_lp) is not implemented for this interface.")
     def test_clone_model_with_lp(self):
