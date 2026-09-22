@@ -36,6 +36,12 @@ if available_solvers['GLPK']:
     except Exception:
         log.error('GLPK is available but could not load with error:\n  ' + str(traceback.format_exc()).strip().replace('\n','\n  '))
 
+if available_solvers['HIGHS']:
+    try:
+        from optlang import highs_interface
+    except Exception:
+        log.error('HiGHS is available but could not load with error:\n  ' + str(traceback.format_exc()).strip().replace('\n','\n  '))
+
 if available_solvers['CPLEX']:
     try:
         from optlang import cplex_interface
@@ -69,7 +75,7 @@ if available_solvers['SCIPY']:
 
 
 # Go through and find the best solver that loaded. Load that one as the default
-for engine_str in ['cplex_interface', 'gurobi_interface', 'glpk_interface',
+for engine_str in ['cplex_interface', 'gurobi_interface', 'glpk_interface', 'highs_interface',
                    'hybrid_interface', 'scipy_interface', 'coinor_cbc_interface']:
     # Must check globals since not all interface variables will be defined
     if engine_str in globals():
