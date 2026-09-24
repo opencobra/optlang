@@ -165,10 +165,10 @@ else:
         def test_set_linear_coefficients(self):
             self.model.add(self.constraint)
             self.constraint.set_linear_coefficients({Variable('chip'): 33., self.model.variables.R_PGK: -33})
+            constr = self.model.problem.constraint_coefs[self.constraint.name]
             coefs = {
-                v.name: self.model.problem.constraint_coefs[(self.constraint.name, v.name)]
-                for v in self.model.variables
-                if (self.constraint.name, v.name) in self.model.problem.constraint_coefs
+                v.name: constr[v.name]
+                for v in self.constraint.variables
             }
             self.assertEqual(coefs,
                              dict([('R_PGK', -33.0), ('chap', 1.0), ('chip', 33.0)]))
@@ -290,14 +290,14 @@ else:
                 0
             )
             self.assertEqual(
-                [self.model.problem.constraint_coefs[k]
-                    for k in [('test', 'x'), ('test', 'y')]],
+                [self.model.problem.constraint_coefs['test'][k]
+                    for k in ['x', 'y']],
                 [0.3, 0.4])
             z = Variable('z', lb=3, ub=4, type='integer')
             constraint += 77. * z
             self.assertEqual(
-                [self.model.problem.constraint_coefs[k]
-                    for k in [('test', 'x'), ('test', 'y'), ('test', 'z')]],
+                [self.model.problem.constraint_coefs['test'][k]
+                    for k in ['x', 'y', 'z']],
                 [0.3, 0.4, 77.])
             self.assertEqual(
                 (self.model.constraints['test'].expression - (0.4 * y + 0.3 * x + 77.0 * z)).expand() - 0,

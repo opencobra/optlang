@@ -195,8 +195,9 @@ class MatrixProblem(abc.ABC):
         if len(self.constraint_coefs) > 0:
             A = array(
                 [
-                    [cmap[vn[0]], vmap[vn[1]], coef]
-                    for vn, coef in self.constraint_coefs.items()
+                    (cmap[cname], vmap[vname], co)
+                    for cname, coefs in self.constraint_coefs.items()
+                    for vname, co in coefs.items()
                 ]
             )
             bounds = array(
@@ -288,9 +289,13 @@ class MatrixProblem(abc.ABC):
             k: v for k, v in self.variable_ubs.items() if k in self.variables
         }
         self.constraint_coefs = {
-            k: v
-            for k, v in self.constraint_coefs.items()
-            if k[0] in self.constraints and k[1] in self.variables
+            cname: {
+                vname: coef
+                for vname, coef in coefs.items()
+                if vname in self.variables
+            }
+            for cname, coefs in self.constraint_coefs.items()
+            if cname in self.constraints
         }
         self.obj_linear_coefs = {
             k: v for k, v in self.obj_linear_coefs.items() if k in self.variables
@@ -326,11 +331,8 @@ class MatrixProblem(abc.ABC):
         self.reset()
         self.constraints.remove(old)
         self.constraints.add(new)
-        name_map = {k: k for k in self.constraints}
-        name_map[old] = new
-        self.constraint_coefs = {
-            (name_map[k[0]], k[1]): v for k, v in self.constraint_coefs.items()
-        }
+        coefs = self.constraint_coefs.pop(old)
+        self.constraint_coefs[new] = coefs
         self.constraint_lbs[new] = self.constraint_lbs.pop(old)
         self.constraint_ubs[new] = self.constraint_ubs.pop(old)
 
@@ -354,9 +356,11 @@ class MatrixProblem(abc.ABC):
         self.variables.add(new)
         name_map = {k: k for k in self.variables}
         name_map[old] = new
-        self.constraint_coefs = {
-            (k[0], name_map[k[1]]): v for k, v in self.constraint_coefs.items()
-        }
+        for cname in self.constraint_coefs:
+            coefs = self.constraint_coefs[cname]
+            self.constraint_coefs[cname] = {
+                name_map[k]: v for k, v in coefs.items()
+            }
         self.obj_quadratic_coefs = {
             (name_map[k[0]], name_map[k[1]]): v
             for k, v in self.obj_quadratic_coefs.items()
@@ -426,7 +430,7 @@ class Constraint(interface.Constraint):
             self.problem.update()
             self.problem.problem.reset()
             for var, coef in coefficients.items():
-                self.problem.problem.constraint_coefs[(self.name, var.name)] = float(
+                self.problem.problem.constraint_coefs[self.name][var.name] = float(
                     coef
                 )
         else:
@@ -439,7 +443,7 @@ class Constraint(interface.Constraint):
         if self.problem is not None:
             self.problem.update()
             coefs = {
-                v: self.problem.problem.constraint_coefs.get((self.name, v.name), 0.0)
+                v: self.problem.problem.constraint_coefs.get(self.name, {}).get(v.name, 0.0)
                 for v in variables
             }
             return coefs
@@ -451,14 +455,12 @@ class Constraint(interface.Constraint):
     def _get_expression(self):
         if self.problem is not None:
             variables = self.problem._variables
-            all_coefs = self.problem.problem.constraint_coefs
-            coefs = [
-                (variables[vname], coef)
-                for (cname, vname), coef in all_coefs.items()
-                if cname == self.name
+            coefs = self.problem.problem.constraint_coefs[self.name]
+            terms = [
+                mul((symbolics.Real(coef), variables[vname]))
+                for vname, coef in coefs.items()
             ]
-            expression = add([mul((symbolics.Real(co), v)) for (v, co) in coefs])
-            self._expression = expression
+            self._expression = add(terms)
         return self._expression
 
     @property
@@ -947,12 +949,10 @@ class Model(interface.Model):
                 lb = -inf if constraint.lb is None else float(constraint.lb)
                 ub = inf if constraint.ub is None else float(constraint.ub)
                 self.problem.constraints.add(constraint.name)
-                self.problem.constraint_coefs.update(
-                    {
-                        (constraint.name, v.name): float(co)
-                        for v, co in coeff_dict.items()
-                    }
-                )
+                self.problem.constraint_coefs[constraint.name] = {
+                    v.name: float(co)
+                    for v, co in coeff_dict.items()
+                }
                 self.problem.constraint_lbs[constraint.name] = lb
                 self.problem.constraint_ubs[constraint.name] = ub
                 constraint.problem = self
