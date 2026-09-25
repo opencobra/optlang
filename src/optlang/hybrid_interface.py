@@ -84,12 +84,12 @@ _STATUS_MAP = {
 }
 
 
-_LP_METHODS = ("auto", "simplex", "interior point")
+_LP_METHODS = ("auto", "simplex", "interior point", "hipo")
 
 
 HIGHS_OPTION_MAP = {
     "presolve": {True: "on", False: "off", "auto": "choose"},
-    "solver": {"simplex": "simplex", "interior point": "ipm", "auto": "choose"},
+    "solver": {"simplex": "simplex", "interior point": "ipm", "hipo": "hipo", "auto": "choose"},
 }
 
 HIGHS_VAR_TYPES = np.array([hs.HighsVarType.kContinuous, hs.HighsVarType.kInteger])
@@ -129,7 +129,7 @@ class HybridProblem(mi.MatrixProblem):
         return settings
 
     def highs_settings(self):
-        """Map internal settings to OSQP settings."""
+        """Map internal settings to Highs settings."""
         options = hs.HighsOptions()
         options.primal_feasibility_tolerance = self.settings["primal_inf_tolerance"]
         options.dual_feasibility_tolerance = self.settings["dual_inf_tolerance"]
